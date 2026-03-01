@@ -1,0 +1,32 @@
+program Contabilidad;
+
+uses
+  Forms,
+  UMenuPrincipal in 'UMenuPrincipal.pas' {frmMenu},
+  UConectar in 'UConectar.pas' {frmInciaConeccion},
+  uLogin in 'uLogin.pas' {frmLogin},
+  UGlobal in 'UGlobal.pas',
+  UDatModCompania in 'UDatModCompania.pas' {dmCompania: TDataModule},
+  UDatModControl in 'UDatModControl.pas' {dmControl: TDataModule},
+  UGlobalCp in 'UGlobalCp.pas',
+  UDatModBanco in 'UDatModBanco.pas' {dmBanco: TDataModule},
+  UDatosCambioTasa in 'UDatosCambioTasa.pas' {frmDatosCambioTasa},
+  UDatModUsuarios in 'UDatModUsuarios.pas' {dmUsuarios: TDataModule},
+  UDatModClientes in 'UDatModClientes.pas' {dmClientes: TDataModule},
+  URegistro in 'URegistro.pas' {frmTrgtr},
+  UDatModConectar in 'UDatModConectar.pas' {dmCon: TDataModule};
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.Title := 'Sistema Contabilidad';
+  Application.CreateForm(TdmClientes, dmClientes);
+  Application.CreateForm(TdmUsuarios, dmUsuarios);
+  Application.CreateForm(TdmBanco, dmBanco);
+  Application.CreateForm(TdmCompania, dmCompania);
+  Application.CreateForm(TdmControl, dmControl);
+  Application.CreateForm(TfrmMenu, frmMenu);
+  Application.CreateForm(TdmCon, dmCon);
+  Application.Run;
+end.

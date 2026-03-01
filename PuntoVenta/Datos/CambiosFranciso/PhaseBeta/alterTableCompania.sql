@@ -1,0 +1,4 @@
+ALTER TABLE COMPANIA ADD 
+LogoCia Varchar(80),
+OFFICE_ID integer;
+

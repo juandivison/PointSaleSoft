@@ -1,0 +1,277 @@
+procedure TdmCalculos.POSProcesaCalculos;
+var
+  x, porItbi: Real;
+begin
+  //Exit;
+  //tttt POSTotales_Data;
+  if (frmProcVentaRapidaPOS.tblPOSVentadetStatus.Value = 'C') then Exit;
+
+  frmProcVentaRapidaPOS.tblPOSVentadet.AutoCalcFields:=False;
+
+  if (frmProcVentaRapidaPOS.qryInventarioPAGA_ITBI.Value = 1) then
+  GlbPagaITbis := True
+  else
+  GlbPagaITbis := False;
+
+  if frmProcVentaRapidaPOS.tblPOSVentadet.State In [dsBrowse] Then
+  frmProcVentaRapidaPOS.tblPOSVentadet.Edit;
+  if frmProcVentaRapidaPOS.tblPOSVentadetStatus.IsNull then
+  frmProcVentaRapidaPOS.tblPOSVentadetStatus.Value:='A';
+  if frmProcVentaRapidaPOS.tblPOSVentadet.State In [dsEdit, dsInsert] then
+  begin
+    if not frmProcVentaRapidaPOS.tblPOSTotalesMoneda.IsNull then
+    frmProcVentaRapidaPOS.tblPOSVentadetMoneda.Value:= frmProcVentaRapidaPOS.tblPOSTotalesMoneda.Value;
+    if frmProcVentaRapidaPOS.tblPOSVentadetCantPax.Value > 0 then
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value:= (frmProcVentaRapidaPOS.tblPOSVentadetCant.Value * frmProcVentaRapidaPOS.tblPOSVentadetPrecio.Value) *
+    frmProcVentaRapidaPOS.tblPOSVentadetCantPax.Value
+    else
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value:= (frmProcVentaRapidaPOS.tblPOSVentadetCant.Value * frmProcVentaRapidaPOS.tblPOSVentadetPrecio.Value);
+    frmProcVentaRapidaPOS.lblTasa.Visible := False;
+    if not frmProcVentaRapidaPOS.tblPOSVentadetMoneda.IsNull then
+    begin
+      if (frmProcVentaRapidaPOS.tblPOSVentadetMonedaBase.Value <> frmProcVentaRapidaPOS.tblPOSTotalesmoneda.Value) then
+      if (not frmProcVentaRapidaPOS.tblPOSVentadetMonedaBase.IsNull and (frmProcVentaRapidaPOS.tblPOSVentadetMonedaBase.Value <> '')) then
+      begin
+        frmProcVentaRapidaPOS.tblPOSVentadetmonto_tasa.Value:= GlbMontoTasa(frmProcVentaRapidaPOS.tblPOSVentadetMonedaBase.Value);
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value:= frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value * frmProcVentaRapidaPOS.tblPOSVentadetmonto_tasa.Value;
+
+        GlbMontoTasa(frmProcVentaRapidaPOS.tblPOSVentadetMonedaBase.Value);
+        frmProcVentaRapidaPOS.lblTasa.Caption:=Concat('1 = ',InsertarComa(FloatToStr(GlbMontoTasa(frmProcVentaRapidaPOS.tblPOSVentadetMonedaBase.Value))));
+        frmProcVentaRapidaPOS.tblPOSTotalestotalneto.DisplayFormat:=Concat(SimboloMoneda(frmProcVentaRapidaPOS.tblPOSTotalesMoneda.Value),',0.00');
+        frmProcVentaRapidaPOS.lblTasa.Visible:=True;
+      end;
+    end;
+
+    if EsDevolucion then
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value:= frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value * -1;
+
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoDescItem.Value:= frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value * frmProcVentaRapidaPOS.tblPOSVentadetPorcDescItem.Value / 100;
+
+    porItbi := FGlbPorcItbi(ExtraerFecha(frmProcVentaRapidaPOS.tblPOSVentadetFecha.Value), frmProcVentaRapidaPOS.tblPOSVentadetCodArticulo.Value);
+    frmProcVentaRapidaPOS.tblPOSVentadetIDTasaITBIS.Value := GlbIDTasa;
+
+    if chkExentoChecked then
+    begin
+      porItbi := 0;
+      frmProcVentaRapidaPOS.tblPOSVentadetItbisExento.Value := 1;
+    end else
+    frmProcVentaRapidaPOS.tblPOSVentadetItbisExento.Value:=0;
+
+    if Not EsDevolucion then
+    frmProcVentaRapidaPOS.tblPOSVentadetPorc_Desc.Value := frmProcVentaRapidaPOS.qryInventarioPORC_DESCUENTO.Value;
+
+    if not GLBEsFastFood then
+    PORC_TRANSP_ITBIS := FGlbPorcItbi(ExtraerFecha(frmProcVentaRapidaPOS.tblPOSVentadetFecha.Value), frmProcVentaRapidaPOS.tblPOSVentadetCodArticulo.Value)/
+                       (1+FGlbPorcItbi(ExtraerFecha(frmProcVentaRapidaPOS.tblPOSVentadetFecha.Value), frmProcVentaRapidaPOS.tblPOSVentadetCodArticulo.Value)/100)
+    else
+    PORC_TRANSP_ITBIS := FGlbPorcItbi(ExtraerFecha(frmProcVentaRapidaPOS.tblPOSVentadetFecha.Value), frmProcVentaRapidaPOS.tblPOSVentadetCodArticulo.Value);
+
+    frmProcVentaRapidaPOS.tblPOSVentadetIDTasaITBIS.Value := GlbIDTasa;
+
+    if (GlbTransparentaITBI = 1) then
+    porItbi := PORC_TRANSP_ITBIS;
+    //t if qryInventarioporcitbis.Value > 0 then
+    //t if (PORC_TRANSP_ITBIS > 0) then
+    //tPORC_TRANSP_ITBIS := PORC_TRANSP_ITBIS / //t qryInventarioporcitbis.Value/
+                       //(1+qryInventarioporcitbis.Value/100);
+    //t                   (1 + PORC_TRANSP_ITBIS / 100);
+
+    //Transparentar el ITBIS
+    if (frmProcVentaRapidaPOS.qryInventarioPAGA_ITBI.Value = 1) And
+       ((frmProcVentaRapidaPOS.tblPOSVentadetPorc_Desc.Value = 0) Or frmProcVentaRapidaPOS.tblPOSVentadetPorc_Desc.IsNull ) And
+       (GlbTransparentaITBI = 1) And
+       (Not chkExentoChecked) Then
+    frmProcVentaRapidaPOS.tblPOSVentadetPorc_Desc.Value := PORC_TRANSP_ITBIS;
+    //End transparentar itbis
+
+    if frmProcVentaRapidaPOS.tblPOSVentadetPorc_Desc.Value > 0 then
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoDescuento.Value := ((frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value
+    -(frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value * frmProcVentaRapidaPOS.tblPOSVentadetPorcDescItem.Value/100)) * frmProcVentaRapidaPOS.tblPOSVentadetporc_desc.Value/100)
+    else frmProcVentaRapidaPOS.tblPOSVentadetMontoDescuento.Value := 0;
+
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoNeto.Value := frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value -
+    (frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value * (frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value/100)) -
+    (frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value * frmProcVentaRapidaPOS.tblPOSVentadetPorcDescItem.Value/100);
+
+    //(TasaITBIS-TasaITBIS*PorcDescGlobal/100)*MontoBruto/100
+
+    //t frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value := (frmProcVentaRapidaPOS.tblPOSVentadetMontoNeto.Value * porItbi / 100);
+
+    frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value := (frmProcVentaRapidaPOS.tblPOSVentadetPORC_DESC.Value -
+    frmProcVentaRapidaPOS.tblPOSVentadetPORC_DESC.Value*
+    frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value/100)*
+    frmProcVentaRapidaPOS.tblPOSVentadetMONTOBRUTO.Value/100;
+
+    if not GlbPagaITbis then
+    porItbi:=0;
+
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoDesGlobal.Value := frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value * (frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value / 100);
+
+    if chkExentoChecked then
+    begin
+      porItbi := 0;
+      frmProcVentaRapidaPOS.tblPOSVentadetItbisExento.Value := 1;
+      frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value := 0;
+    end;
+
+    if not GlbUsandoCotiza And not GlbPagaITbis then
+    frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value:=0;
+    if (frmProcVentaRapidaPOS.qryInventarioPAGA_ITBI.Value = 1) And (Not chkExentoChecked) and
+      (not GlbUsandoCotiza or ( frmProcVentaRapidaPOS.tblPOSVentadetStatus.Value = 'I') or (frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value = 0) )  then
+    begin
+      //frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value := (frmProcVentaRapidaPOS.tblPOSVentadetMontoNeto.Value * porItbi / 100)
+      frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value := (frmProcVentaRapidaPOS.tblPOSVentadetPORC_DESC.Value -
+      frmProcVentaRapidaPOS.tblPOSVentadetPORC_DESC.Value *
+      frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value/100)*
+      frmProcVentaRapidaPOS.tblPOSVentadetMONTOBRUTO.Value/100;
+    end else
+    if PrecioCambio then
+    begin
+      //frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value:= (frmProcVentaRapidaPOS.tblPOSVentadetMontoNeto.Value * porItbi / 100);
+      frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value := (frmProcVentaRapidaPOS.tblPOSVentadetPORC_DESC.Value -
+      frmProcVentaRapidaPOS.tblPOSVentadetPORC_DESC.Value *
+      frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value/100)*
+      frmProcVentaRapidaPOS.tblPOSVentadetMONTOBRUTO.Value/100;
+    end;
+
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:= 0;
+    precioSum := frmProcVentaRapidaPOS.tblPOSTotalesSubTotal.Value - FMontoDescNivelItem;
+
+   frmProcVentaRapidaPOS.tblPOSVentadetMontoDescGlbDist.Value:= 0;
+   if (frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value > 0) And (Abs(frmProcVentaRapidaPOS.tblPOSTotalesMontoDescAdicional.Value) > 0) and (Abs(precioSum) > 0) then
+   begin
+     frmProcVentaRapidaPOS.tblPOSVentadetMontoDescGlbDist.Value:= ((frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value / precioSum) * (frmProcVentaRapidaPOS.tblPOSTotalesMontoDescAdicional.Value)) * porItbi / 100;
+     if (frmProcVentaRapidaPOS.tblPOSVentadetTipoVenta.Value = 2 ) then
+     frmProcVentaRapidaPOS.tblPOSVentadetMontoDescGlbDist.Value := frmProcVentaRapidaPOS.tblPOSVentadetMontoDescGlbDist.Value * -1;
+   end;
+
+   //a partir de aqui voy
+    if (Abs(frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value) > 0) And (Abs(precioSum) > 0) then
+    begin
+      if (frmProcVentaRapidaPOS.tblPOSVentadetTipoVenta.Value = 2) Or  (abs(frmProcVentaRapidaPOS.tblPOSVentadetPorcDescItem.Value) > 0 ) then
+      begin
+        if (abs(frmProcVentaRapidaPOS.tblPOSVentadetPorcDescItem.Value) > 0) then
+          frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:= (((frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value)/ precioSum) * (frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value)) * porItbi / 100
+        else
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:= ((frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value / precioSum) * (frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value*-1)) * porItbi / 100;
+
+        if (frmProcVentaRapidaPOS.tblPOSVentadetTipoVenta.Value = 2) then
+        frmProcVentaRapidaPOS.tblPOSVentadetRecargo.Value := (frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value / precioSum) * frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value*-1
+        else
+        frmProcVentaRapidaPOS.tblPOSVentadetRecargo.Value := (frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value / precioSum) * frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value;
+
+        if (abs(frmProcVentaRapidaPOS.tblPOSVentadetPorcDescItem.Value) > 0 ) then
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoItbRecItmConDesc.Value:=
+        (((frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value * frmProcVentaRapidaPOS.tblPOSVentadetPorcDescItem.Value/100)/ precioSum) * frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value*-1)* porItbi / 100;
+        if IsInfinite(frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value) then
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:=0;
+      end else
+      begin
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:= ((frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value / (frmProcVentaRapidaPOS.tblPOSTotalesSubTotal.Value - FMontoDescNivelItem)) * (frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value)) * porItbi / 100;
+        frmProcVentaRapidaPOS.tblPOSVentadetRecargo.Value := (frmProcVentaRapidaPOS.tblPOSVentadetPrecio.Value / (frmProcVentaRapidaPOS.tblPOSTotalesSubTotal.Value - FMontoDescNivelItem)) * frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value;
+        if IsInfinite(frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value) then
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:=0;
+
+        //Exito
+        if (frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value > 0) And (frmProcVentaRapidaPOS.tblPOSTotalesMontoDescAdicional.Value > 0) then
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoDescGlbDist.Value:= ((frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value / precioSum) * (frmProcVentaRapidaPOS.tblPOSTotalesMontoDescAdicional.Value)) * porItbi / 100
+        else
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoDescGlbDist.Value:= 0;
+        //Exito end
+      end;
+    end;
+
+    //J60 = Porciento ITBIS =  18%
+    //L60 = Precio          = 100
+    //N60 = Monto Descuento =  10  = =+((L60)*$N$58)/100
+    //O60 = Monto Recargo   =  =+(L60/L$66)*$O$67
+
+    //Monto ITBIS =(J60/(1+J60/100)*(L60+O60-N60))/100
+    if (EsDevolucion) then
+    begin
+      if (frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value > 0) then
+      frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:=frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value * -1
+      else
+      begin
+        frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:= ((frmProcVentaRapidaPOS.tblPOSVentadetMontoBruto.Value / (frmProcVentaRapidaPOS.tblPOSTotalesSubTotal.Value - FMontoDescNivelItem)) * (frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value)) * (porItbi*-1) / 100;
+        frmProcVentaRapidaPOS.tblPOSVentadetRecargo.Value := (frmProcVentaRapidaPOS.tblPOSVentadetPrecio.Value / precioSum) * frmProcVentaRapidaPOS.tblPOSTotalesRecargo.Value;
+      end;
+      if frmProcVentaRapidaPOS.tblPOSVentadetRecargo.Value > 0 then
+      frmProcVentaRapidaPOS.tblPOSVentadetRecargo.Value:=frmProcVentaRapidaPOS.tblPOSVentadetRecargo.Value * -1;
+
+     if Abs(frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value) > 0 then
+     frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:=frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value *-1;
+
+     if IsInfinite(frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value) then
+     frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value:=0;
+    end;
+
+    frmProcVentaRapidaPOS.tblPOSVentadetMontoNeto.Value:=frmProcVentaRapidaPOS.tblPOSVentadetMontoNeto.Value + frmProcVentaRapidaPOS.tblPOSVentadetitbi.Value + frmProcVentaRapidaPOS.tblPOSVentadetMontoItbisRecargo.Value;
+    GlbSalvarQuery(frmProcVentaRapidaPOS.tblPOSVentadet);
+    //frmProcVentaRapidaPOS.tblPOSVentadet.Post;
+  end;
+  if (EsModificandoCotiza) and (Assigned(frmCotizaciones))
+  and (frmCotizaciones.ibqryCotizacionMasterPORC_DESCUENTO.Value  > 0) then
+  begin
+    frmProcVentaRapidaPOS.tblPOSTotales.edit;
+    frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value :=
+    frmCotizaciones.ibqryCotizacionMasterPORC_DESCUENTO.Value;
+    if frmProcVentaRapidaPOS.tblPOSTotales.State = dsEdit then
+    GlbSalvarQuery(frmProcVentaRapidaPOS.tblPOSTotales);
+    if frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value > 0 then
+    chKDescuentoGlobalChecked := True else
+    chKDescuentoGlobalChecked := False;
+  end;
+  if frmProcVentaRapidaPOS.tblPOSTotales.State = dsBrowse then
+  frmProcVentaRapidaPOS.tblPOSTotales.edit;
+
+  //frmProcVentaRapidaPOS.tblPOSTotalesitbis.Value := frmProcVentaRapidaPOS.tblPOSTotalesMontoDesc.Value +
+  if frmProcVentaRapidaPOS.tblPOSTotalesMoneda.IsNull then
+  frmProcVentaRapidaPOS.tblPOSTotalesMoneda.Value   := '1';
+  
+  if not frmProcVentaRapidaPOS.tblPOSTotalesTipoNCFIFiscal.IsNull then
+  if Pos('EXONERA',UpperCase(dmFactura.ibQryViewNCFDESCRIPCION.Value)) > 0 then
+  begin
+      frmProcVentaRapidaPOS.label29.Caption := 'ITBIS Exonerado';
+      frmProcVentaRapidaPOS.label29.Visible := True;
+      frmProcVentaRapidaPOS.dbTextMontoExoneraITBIS.Visible := True;
+      frmProcVentaRapidaPOS.dbTextMontoExoneraITBIs.BringToFront;
+      frmProcVentaRapidaPOS.tblPOSTotalesMontoExoneraITBIS.Value:= frmProcVentaRapidaPOS.tblPOSTotalesitbis.Value;
+  end;
+  if frmProcVentaRapidaPOS.tblPOSTotales.State = dsBrowse then
+  frmProcVentaRapidaPOS.tblPOSTotales.Edit;
+  frmProcVentaRapidaPOS.tblPOSTotalesMontoDescAdicional.Value:= (frmProcVentaRapidaPOS.tblPOSTotalesSubTotal.Value * frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value / 100);
+  if (abs(frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value) > 0) then
+  begin
+    frmProcVentaRapidaPOS.tblPOSTotales.Edit;
+    frmProcVentaRapidaPOS.tblPOSTotalesMontoDescAdicional.Value:= (frmProcVentaRapidaPOS.tblPOSTotalesSubTotal.Value * frmProcVentaRapidaPOS.tblPOSTotalesPorcDesAdicional.Value / 100);
+    GlbSalvarQuery(frmProcVentaRapidaPOS.tblPOSTotales);
+    if frmProcVentaRapidaPOS.tblPOSVentadet.State = dsBrowse then
+    frmProcVentaRapidaPOS.tblPOSVentadet.Edit;
+
+    if chkExentoChecked then
+    begin
+      porItbi := 0;
+      frmProcVentaRapidaPOS.tblPOSVentadetItbisExento.Value := 1;
+    end;
+    GlbSalvarQuery(frmProcVentaRapidaPOS.tblPOSVentadet);
+  end;
+
+  if EsModificandoCotiza And (Assigned(frmCotizaciones)) then
+  begin
+    frmProcVentaRapidaPOS.tblPOSTotales.Edit;
+    frmProcVentaRapidaPOS.tblPOSTotalesComentario.Value:= frmCotizaciones.ibqryCotizacionMasterCOMENTARIO.Value;
+    frmProcVentaRapidaPOS.tblPOSTotalesFechaCotizacion.Value:= frmCotizaciones.ibqryCotizacionMasterFECHA.Value;
+    frmProcVentaRapidaPOS.tblPOSTotalesReferenciaCte.Value  := frmCotizaciones.ibqryCotizacionMasterREFERENCIACTE.Value;
+  end;
+
+  frmProcVentaRapidaPOS.Enabled:= True;
+  frmProcVentaRapidaPOS.tblPOSVentadet.AutoCalcFields := False;
+  procCalc:= False;//frmProcVentaRapidaPOS.tblPOSTotales.State
+  frmProcVentaRapidaPOS.ProcGuardarDetalle;
+  GlbSalvarQuery(frmProcVentaRapidaPOS.tblPOSTotales);
+
+  frmProcVentaRapidaPOS.tblPOSVentasMast.Refresh;
+  frmProcVentaRapidaPOS.tblPOSVentadet.Refresh;
+  frmProcVentaRapidaPOS.tblPOSTotales.Refresh;
+end;

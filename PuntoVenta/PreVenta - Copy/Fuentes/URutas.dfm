@@ -1,0 +1,374 @@
+object frmRutas: TfrmRutas
+  Left = 240
+  Top = 156
+  Width = 633
+  Height = 355
+  Caption = 'Registro de rutas'
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poScreenCenter
+  OnCreate = FormCreate
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Label1: TLabel
+    Left = 16
+    Top = 40
+    Width = 42
+    Height = 13
+    Caption = 'CODIGO'
+    FocusControl = DBEdit1
+  end
+  object Label2: TLabel
+    Left = 73
+    Top = 40
+    Width = 87
+    Height = 13
+    Caption = 'Nombre Empleado'
+  end
+  object Label3: TLabel
+    Left = 405
+    Top = 40
+    Width = 31
+    Height = 13
+    Caption = 'FICHA'
+    FocusControl = DBEdit3
+  end
+  object Label4: TLabel
+    Left = 448
+    Top = 40
+    Width = 35
+    Height = 13
+    Caption = 'FECHA'
+  end
+  object Label5: TLabel
+    Left = 536
+    Top = 40
+    Width = 43
+    Height = 13
+    Caption = 'STATUS'
+    FocusControl = DBEdit4
+  end
+  object Label6: TLabel
+    Left = 248
+    Top = 40
+    Width = 66
+    Height = 13
+    Caption = 'Tipo Comision'
+  end
+  object DBEdit1: TDBEdit
+    Left = 16
+    Top = 56
+    Width = 51
+    Height = 21
+    DataField = 'CODIGO'
+    DataSource = DataSource1
+    TabOrder = 0
+  end
+  object DBEdit3: TDBEdit
+    Left = 405
+    Top = 56
+    Width = 38
+    Height = 21
+    DataField = 'FICHA'
+    DataSource = DataSource1
+    TabOrder = 3
+  end
+  object DBEdit4: TDBEdit
+    Left = 536
+    Top = 56
+    Width = 33
+    Height = 21
+    DataField = 'STATUS'
+    DataSource = DataSource1
+    TabOrder = 5
+  end
+  object DBGrid1: TDBGrid
+    Left = 16
+    Top = 112
+    Width = 553
+    Height = 177
+    DataSource = DataSource1
+    TabOrder = 6
+    TitleFont.Charset = DEFAULT_CHARSET
+    TitleFont.Color = clWindowText
+    TitleFont.Height = -11
+    TitleFont.Name = 'MS Sans Serif'
+    TitleFont.Style = []
+    Columns = <
+      item
+        Expanded = False
+        FieldName = 'CODIGO'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'CODIGO_EMP'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'TIPO_COMISION'
+        Width = 64
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'FICHA'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'FECHA'
+        Width = 64
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'STATUS'
+        Width = 64
+        Visible = True
+      end>
+  end
+  object Panel1: TPanel
+    Left = 0
+    Top = 0
+    Width = 625
+    Height = 34
+    Align = alTop
+    Color = 10547677
+    TabOrder = 7
+    object RxSpeedButton1: TRxSpeedButton
+      Left = 453
+      Top = 4
+      Width = 84
+      Height = 25
+      Caption = 'Reportes'
+      Glyph.Data = {
+        76010000424D7601000000000000760000002800000020000000100000000100
+        0400000000000001000000000000000000001000000010000000000000000000
+        800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333330000000
+        00003333377777777777333330FFFFFFFFF03FF3F7FFFF33FFF7003000000FF0
+        00F077F7777773F77737E00FBFBFB0FFFFF07773333FF7FF33F7E0FBFB00000F
+        F0F077F333777773F737E0BFBFBFBFB0FFF077F3333FFFF733F7E0FBFB00000F
+        F0F077F333777773F737E0BFBFBFBFB0FFF077F33FFFFFF733F7E0FB0000000F
+        F0F077FF777777733737000FB0FFFFFFFFF07773F7F333333337333000FFFFFF
+        FFF0333777F3FFF33FF7333330F000FF0000333337F777337777333330FFFFFF
+        0FF0333337FFFFFF7F37333330CCCCCC0F033333377777777F73333330FFFFFF
+        0033333337FFFFFF773333333000000003333333377777777333}
+      Layout = blGlyphLeft
+      NumGlyphs = 2
+    end
+    object btnInsertar: TBitBtn
+      Left = 9
+      Top = 4
+      Width = 74
+      Height = 25
+      Caption = '&Insertar'
+      TabOrder = 0
+      OnClick = btnInsertarClick
+      Glyph.Data = {
+        76010000424D7601000000000000760000002800000020000000100000000100
+        0400000000000001000000000000000000001000000010000000000000000000
+        800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+        33333333FF33333333FF333993333333300033377F3333333777333993333333
+        300033F77FFF3333377739999993333333333777777F3333333F399999933333
+        33003777777333333377333993333333330033377F3333333377333993333333
+        3333333773333333333F333333333333330033333333F33333773333333C3333
+        330033333337FF3333773333333CC333333333FFFFF77FFF3FF33CCCCCCCCCC3
+        993337777777777F77F33CCCCCCCCCC3993337777777777377333333333CC333
+        333333333337733333FF3333333C333330003333333733333777333333333333
+        3000333333333333377733333333333333333333333333333333}
+      NumGlyphs = 2
+    end
+    object btnModificar: TBitBtn
+      Left = 94
+      Top = 4
+      Width = 71
+      Height = 25
+      Cancel = True
+      Caption = '&Modificar'
+      TabOrder = 1
+      OnClick = btnModificarClick
+      Glyph.Data = {
+        EE000000424DEE000000000000007600000028000000100000000F0000000100
+        0400000000007800000000000000000000001000000010000000000000000000
+        8000008000000080800080000000800080008080000080808000C0C0C0000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00000000000000
+        000808888888888888080808080808080808000000000000000880EFEFEFEF08
+        888880F0000EF088888880E080EF0088888880F00EF08008888880E0EF088000
+        888880FEF08880B7088880EF088880B8088880F08888880B708880088888880B
+        008880888888888019088888888888800088}
+      NumGlyphs = 2
+    end
+    object btnSalvar: TBitBtn
+      Left = 176
+      Top = 4
+      Width = 79
+      Height = 25
+      Caption = '&Guardar'
+      Default = True
+      TabOrder = 2
+      OnClick = btnSalvarClick
+      Glyph.Data = {
+        DE010000424DDE01000000000000760000002800000024000000120000000100
+        0400000000006801000000000000000000001000000010000000000000000000
+        80000080000000808000800000008000800080800000C0C0C000808080000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+        3333333333333333333333330000333333333333333333333333F33333333333
+        00003333344333333333333333388F3333333333000033334224333333333333
+        338338F3333333330000333422224333333333333833338F3333333300003342
+        222224333333333383333338F3333333000034222A22224333333338F338F333
+        8F33333300003222A3A2224333333338F3838F338F33333300003A2A333A2224
+        33333338F83338F338F33333000033A33333A222433333338333338F338F3333
+        0000333333333A222433333333333338F338F33300003333333333A222433333
+        333333338F338F33000033333333333A222433333333333338F338F300003333
+        33333333A222433333333333338F338F00003333333333333A22433333333333
+        3338F38F000033333333333333A223333333333333338F830000333333333333
+        333A333333333333333338330000333333333333333333333333333333333333
+        0000}
+      NumGlyphs = 2
+    end
+    object btnCancelar: TBitBtn
+      Left = 263
+      Top = 4
+      Width = 75
+      Height = 25
+      Caption = '&Cancelar'
+      Default = True
+      TabOrder = 3
+      OnClick = btnCancelarClick
+      Glyph.Data = {
+        76010000424D7601000000000000760000002800000020000000100000000100
+        0400000000000001000000000000000000001000000010000000000000000000
+        800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+        333333333333333333FF33333333333330003333333333333777333333333333
+        300033FFFFFF3333377739999993333333333777777F3333333F399999933333
+        3300377777733333337733333333333333003333333333333377333333333333
+        3333333333333333333F333333333333330033333F33333333773333C3333333
+        330033337F3333333377333CC3333333333333F77FFFFFFF3FF33CCCCCCCCCC3
+        993337777777777F77F33CCCCCCCCCC399333777777777737733333CC3333333
+        333333377F33333333FF3333C333333330003333733333333777333333333333
+        3000333333333333377733333333333333333333333333333333}
+      NumGlyphs = 2
+    end
+    object btnCerarAbrirres: TBitBtn
+      Left = 347
+      Top = 4
+      Width = 95
+      Height = 25
+      Caption = '&Refrescar'
+      TabOrder = 4
+      OnClick = btnCerarAbrirresClick
+      Glyph.Data = {
+        DE010000424DDE01000000000000760000002800000024000000120000000100
+        0400000000006801000000000000000000001000000010000000000000000000
+        80000080000000808000800000008000800080800000C0C0C000808080000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333444444
+        33333333333F8888883F33330000324334222222443333388F3833333388F333
+        000032244222222222433338F8833FFFFF338F3300003222222AAAAA22243338
+        F333F88888F338F30000322222A33333A2224338F33F8333338F338F00003222
+        223333333A224338F33833333338F38F00003222222333333A444338FFFF8F33
+        3338888300003AAAAAAA33333333333888888833333333330000333333333333
+        333333333333333333FFFFFF000033333333333344444433FFFF333333888888
+        00003A444333333A22222438888F333338F3333800003A2243333333A2222438
+        F38F333333833338000033A224333334422224338338FFFFF8833338000033A2
+        22444442222224338F3388888333FF380000333A2222222222AA243338FF3333
+        33FF88F800003333AA222222AA33A3333388FFFFFF8833830000333333AAAAAA
+        3333333333338888883333330000333333333333333333333333333333333333
+        0000}
+      NumGlyphs = 2
+    end
+    object BitBtn2: TBitBtn
+      Left = 545
+      Top = 4
+      Width = 75
+      Height = 25
+      TabOrder = 5
+      Kind = bkClose
+    end
+  end
+  object DBDateEdit1: TDBDateEdit
+    Left = 448
+    Top = 56
+    Width = 81
+    Height = 21
+    DataField = 'FECHA'
+    DataSource = DataSource1
+    NumGlyphs = 2
+    TabOrder = 4
+  end
+  object RxDBLookupCombo2: TRxDBLookupCombo
+    Left = 71
+    Top = 56
+    Width = 173
+    Height = 21
+    DropDownCount = 18
+    DropDownWidth = 225
+    DataField = 'CODIGO_EMP'
+    DataSource = DataSource1
+    LookupField = 'CODIGO'
+    LookupDisplay = 'NOMBRE_EMPLEADO'
+    LookupSource = dsQryEmpleados
+    TabOrder = 1
+  end
+  object RxDBLookupCombo1: TRxDBLookupCombo
+    Left = 248
+    Top = 56
+    Width = 153
+    Height = 21
+    DropDownCount = 8
+    DropDownWidth = 220
+    DataField = 'TIPO_COMISION'
+    DataSource = DataSource1
+    LookupField = 'CODIGO'
+    LookupDisplay = 'DESCRIPCION'
+    LookupSource = dstblTipoComision
+    TabOrder = 2
+  end
+  object DBNavigatorE1: TDBNavigatorE
+    Left = 16
+    Top = 80
+    Width = 552
+    Height = 25
+    FieldFindParam.FieldFormat = '%s'
+    FieldFindParam.Like = True
+    FieldFindParam.SQLUpper = 'UPPER'
+    FindWindowPos.Top = -1
+    FindWindowPos.Left = -1
+    FindWindowPos.Width = -1
+    FindWindowPos.Height = -1
+    Gradiente.Left = 0
+    Gradiente.Top = 0
+    Gradiente.Width = 552
+    Gradiente.Height = 25
+    Gradiente.ColorHasta = clBtnFace
+    Gradiente.Align = alClient
+    DataSource = DataSource1
+    VisibleButtons = [nbFirst, nbPrior, nbNext, nbLast]
+    FullRepaint = False
+    TabOrder = 8
+  end
+  object DataSource1: TDataSource
+    DataSet = dmRutas.tblRutas
+    Left = 328
+    Top = 152
+  end
+  object dsQryEmpleados: TDataSource
+    DataSet = dmRutas.qryEmpleados
+    Left = 432
+    Top = 144
+  end
+  object dstblTipoComision: TDataSource
+    DataSet = dmRutas.tblTipoComision
+    Left = 168
+    Top = 168
+  end
+end

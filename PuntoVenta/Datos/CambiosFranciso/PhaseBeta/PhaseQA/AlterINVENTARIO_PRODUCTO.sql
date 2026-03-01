@@ -1,0 +1,10 @@
+Alter table INVENTARIO_PRODUCTO
+add SituacionProd smallint,
+add AplicaImptoCompra smallint,
+add CodFabricante integer,
+add CtaInventario varchar(7),
+add CtaVenta Varchar(7),
+add CtaCompra Varchar(7),
+add CodSubCategoria integer,
+add CodCategoria integer,
+add PorcItbis numeric(15,2);

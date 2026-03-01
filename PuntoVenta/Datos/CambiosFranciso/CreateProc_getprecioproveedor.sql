@@ -1,0 +1,52 @@
+SET TERM ^ ;
+alter PROCEDURE Proc_getprecioproveedor(codigoprod integer)
+RETURNS(
+  fecha timestamp,
+  CODIGO_PROV SMALLINT,
+  NombreProveedor VARCHAR(40) CHARACTER SET NONE,    
+  PRECIO FLOAT,
+  TELEFONO VARCHAR(12) CHARACTER SET NONE,
+  EMAIL VARCHAR(40) CHARACTER SET NONE)
+AS
+BEGIN
+  FOR
+    SELECT 
+      Max(DESPACHO_MASTER.FECHA) fecha,
+      DESPACHO.CODIGO_PROD,      
+      PROVEEDORES.DESCRIPCION,
+      DESPACHO.PRECIO,
+      PROVEEDORES.TELEFONO,
+      PROVEEDORES.EMAIL
+    FROM
+      DESPACHO_MASTER
+      INNER JOIN DESPACHO ON (DESPACHO_MASTER.NUMERO = DESPACHO.NUMERO)
+      INNER JOIN PROVEEDORES ON (DESPACHO_MASTER.CODIGO_PROV = PROVEEDORES.CODIGO_CTE)
+    Where DESPACHO.CODIGO_PROD =:codigoprod                                                                     
+   
+      Group by 
+      DESPACHO.CODIGO_PROD,      
+      PROVEEDORES.DESCRIPCION,
+      DESPACHO_MASTER.CODIGO_PROV,      
+      DESPACHO.PRECIO,
+      PROVEEDORES.TELEFONO,
+      PROVEEDORES.EMAIL
+    INTO
+    :fecha,
+    :CODIGO_PROV,
+    :NombreProveedor,    
+    :PRECIO,
+    :TELEFONO,
+    :EMAIL
+  DO
+  BEGIN
+    SUSPEND;
+  END
+END^
+SET TERM ; ^
+
+GRANT EXECUTE
+ ON PROCEDURE Proc_getprecioproveedor TO  DIVISON;
+ GRANT EXECUTE
+ ON PROCEDURE Proc_getprecioproveedor TO  sysdba;
+
+;

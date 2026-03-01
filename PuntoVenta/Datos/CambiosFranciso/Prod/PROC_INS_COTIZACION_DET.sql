@@ -1,0 +1,133 @@
+SET TERM ^ ;
+ALTER PROCEDURE PROC_INS_COTIZACION_DET (
+    NUMERO integer,
+    CODIGO_PROD varchar(40),
+    CODIGO_BARRA varchar(20),
+    DESCRIPCION varchar(80),
+    CANTIDAD numeric(15,2),
+    PRECIO numeric(15,2),
+    PORC_DESC_DET numeric(15,2),
+    ITBI_DET numeric(15,2),
+    VALOR_SERVICIO_DET numeric(15,2),
+    VALOR_TOTAL_DET numeric(15,2),
+    NUM_FACTURA double precision,
+    STATUS_DET char(1),
+    FECHA_IN timestamp,
+    IN_POR varchar(12),
+    FECHA_MOD timestamp,
+    MOD_POR varchar(12),
+    CANT_REGRESO numeric(15,2),
+    CANT_PROMO numeric(15,2),
+    MONTO_DIETA numeric(15,2),
+    MONTO_AJUSTE numeric(15,2),
+    SERIE_PROD varchar(50),
+    STATUS_CNT char(1),
+    TIPO_UNIDAD integer,
+    ITBIS_EXENTO smallint,
+    TIPO_VENTA smallint,
+    DESCRIPCIONPRODUCTO  blob sub_type 1,
+    COD_EMPLEADO_CONDUCTOR numeric(15,2),
+    PLACA_VEHICULO varchar(20),
+    MONEDA char(1),
+    MONTO_TASA numeric(15,2),
+    CAPACIDAD numeric(15,2),
+    CANT_VIAJES numeric(15,2),
+    CANT_METROS_CUBICO numeric(15,2),
+    FICHA_VEH integer,
+    IDZONA_ORIGEN integer,
+    IDZONA_DETALLE integer )
+RETURNS (
+    SERIE_TRNS integer )
+AS
+declare variable xSerie integer;
+BEGIN
+ Select Gen_id(GEN_NUM_COTIZA_DET,1) From rdb$database
+  into :SERIE_TRNS;
+  
+  xSerie =:SERIE_TRNS;
+  INSERT INTO COTIZACION_DET_new (
+    SERIE,
+    NUMERO,
+    CODIGO_PROD,
+    CODIGO_BARRA,
+    DESCRIPCION,
+    CANTIDAD,
+    PRECIO,
+    PORC_DESC_DET,
+    ITBI_DET,
+    VALOR_SERVICIO_DET,
+    VALOR_TOTAL_DET,
+    NUM_FACTURA,
+    STATUS_DET,
+    FECHA_IN,
+    IN_POR,
+    FECHA_MOD,
+    MOD_POR,
+    CANT_REGRESO,
+    CANT_PROMO,
+    MONTO_DIETA,
+    MONTO_AJUSTE,
+    SERIE_PROD,
+    STATUS_CNT,
+    TIPO_UNIDAD,
+    ITBIS_EXENTO,
+    TIPO_VENTA,
+    DESCRIPCIONPRODUCTO,
+    COD_EMPLEADO_CONDUCTOR,
+    PLACA_VEHICULO,
+    MONEDA,
+    MONTO_TASA,
+    CAPACIDAD,
+    CANT_VIAJES,
+    CANT_METROS_CUBICO,
+    FICHA_VEH,
+    IDZONA_ORIGEN,
+    IDZONA_DETALLE)
+  VALUES (
+    :xSerie,
+    :NUMERO,
+    :CODIGO_PROD,
+    :CODIGO_BARRA,
+    :DESCRIPCION,
+    :CANTIDAD,
+    :PRECIO,
+    :PORC_DESC_DET,
+    :ITBI_DET,
+    :VALOR_SERVICIO_DET,
+    :VALOR_TOTAL_DET,
+    :NUM_FACTURA,
+    :STATUS_DET,
+    :FECHA_IN,
+    :IN_POR,
+    :FECHA_MOD,
+    :MOD_POR,
+    :CANT_REGRESO,
+    :CANT_PROMO,
+    :MONTO_DIETA,
+    :MONTO_AJUSTE,
+    :SERIE_PROD,
+    :STATUS_CNT,
+    :TIPO_UNIDAD,
+    :ITBIS_EXENTO,
+    :TIPO_VENTA,
+    :DESCRIPCIONPRODUCTO,
+    :COD_EMPLEADO_CONDUCTOR,
+    :PLACA_VEHICULO,
+    :MONEDA,
+    :MONTO_TASA,
+    :CAPACIDAD,
+    :CANT_VIAJES,
+    :CANT_METROS_CUBICO,
+    :FICHA_VEH,
+    :IDZONA_ORIGEN,
+    :IDZONA_DETALLE);
+END^
+SET TERM ; ^
+
+
+GRANT EXECUTE
+ ON PROCEDURE PROC_INS_COTIZACION_DET TO  DIVISON;
+
+GRANT EXECUTE
+ ON PROCEDURE PROC_INS_COTIZACION_DET TO  SYSDBA;
+

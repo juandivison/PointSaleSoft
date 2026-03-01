@@ -1,0 +1,2 @@
+alter table FACTURAS_PENDIENTES
+add numero_trn_vta integer;

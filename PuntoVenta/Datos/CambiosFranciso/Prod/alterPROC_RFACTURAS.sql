@@ -1,0 +1,28 @@
+SET TERM ^ ;
+ALTER PROCEDURE PROC_RFACTURAS (
+    FECHAINI timestamp,
+    FECHAFIN timestamp,
+    MONEDAI char(1),
+    MONEDAF char(1) )
+AS
+BEGIN
+  INSERT INTO 
+  FACTURAS_PENDIENTES(TIPO,MONEDA,NUMERO_FACT,MONTO_PENDIENTE,STATUS, NUMERO_TRN_VTA)
+  Select TIPO,MONEDA,NUMERO,MONTO_FACT,"A",NUMERO_TRN_VTA
+  From facturas
+  WHERE FECHA BETWEEN :FECHAINI AND :FECHAFIN
+  and moneda BETWEEN  :monedaI AND :MONEDAF
+  and status = "P";
+
+  UPDATE FACTURAS
+  SET STATUS = "F" 
+  where fecha between :fechaini and :fechafin
+  and moneda BETWEEN  :monedaI AND :MONEDAF
+  and status = "P";
+END^
+SET TERM ; ^
+
+
+GRANT EXECUTE
+ ON PROCEDURE PROC_RFACTURAS TO  DIVISON;
+

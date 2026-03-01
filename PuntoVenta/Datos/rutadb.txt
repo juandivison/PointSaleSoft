@@ -1,0 +1,4 @@
+ruta base de datos:
+
+C:\Proyectos\PointSaleSoftSRY\PuntoVenta\Datos
+

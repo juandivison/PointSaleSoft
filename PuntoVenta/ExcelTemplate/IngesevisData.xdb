@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xdb="http://www.borland.com/schemas/delphi/6.0/XMLDataBinding">
+  <xs:element name="WorkSheet" type="WorkSheetType"/>
+  <xs:complexType name="WorkSheetType"><xs:annotation>
+      <xs:appinfo xdb:docElement="WorkSheet"/>
+    </xs:annotation>
+    
+    <xs:sequence>
+      <xs:element name="Header" type="HeaderType"/>
+      <xs:element name="SheetData" type="SheetDataType"/>
+      <xs:element name="Footer" type="FooterType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="HeaderType">
+    <xs:sequence>
+      <xs:element name="Tag" type="TagType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="TagType">
+    <xs:sequence/>
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="value" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="SheetDataType">
+    <xs:sequence>
+      <xs:element name="ArrayData" type="ArrayDataType"/>
+    </xs:sequence>
+    <xs:attribute name="OrginalRange" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="ArrayDataType">
+    <xs:sequence>
+      <xs:element name="item" type="itemType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="itemType">
+    <xs:sequence/>
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="value" type="xs:integer"/>
+  </xs:complexType>
+  <xs:complexType name="FooterType">
+    <xs:sequence>
+      <xs:element name="Tag" type="TagType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

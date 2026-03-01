@@ -1,0 +1,561 @@
+unit UDatModNomina;
+
+interface
+
+uses
+  SysUtils, Classes, DB, IBCustomDataSet, IBQuery, IBTable, IBStoredProc;
+
+type
+  TdmNomina = class(TDataModule)
+    tblNomina: TIBDataSet;
+    qryEmpleados: TIBQuery;
+    qryEmpleadosCODIGO: TIntegerField;
+    qryEmpleadosCODIGO_CIA: TIntegerField;
+    qryEmpleadosNOMBRE: TIBStringField;
+    qryEmpleadosAPELLIDO: TIBStringField;
+    qryEmpleadosCEDULA: TIBStringField;
+    qryEmpleadosFOTO: TBlobField;
+    qryEmpleadosPASSPORT: TIBStringField;
+    qryEmpleadosCALLE: TIBStringField;
+    qryEmpleadosNUM_CASA: TSmallintField;
+    qryEmpleadosCIUDAD: TIBStringField;
+    qryEmpleadosPAIS: TIBStringField;
+    qryEmpleadosTELEF_CASA: TIBStringField;
+    qryEmpleadosTELEF_OFICINA: TIBStringField;
+    qryEmpleadosCELULAR: TIBStringField;
+    qryEmpleadosEMAIL: TIBStringField;
+    qryEmpleadosSEXO: TIBStringField;
+    qryEmpleadosESTADO_CIVIL: TIBStringField;
+    qryEmpleadosTELEF_REFERENCIA: TIBStringField;
+    qryEmpleadosNOMBRE_REFERENCIA: TIBStringField;
+    qryEmpleadosFECHA_NAC: TDateTimeField;
+    qryEmpleadosNACIONALIDAD: TIBStringField;
+    qryEmpleadosFECHA_ENTRADA: TDateTimeField;
+    qryEmpleadosFECHA_SALIDA: TDateTimeField;
+    qryEmpleadosSALARIO: TFloatField;
+    qryEmpleadosTIPO_NOMINA: TSmallintField;
+    qryEmpleadosTIPO_EMPLEADO: TSmallintField;
+    qryEmpleadosDEPTO_EMP: TSmallintField;
+    qryEmpleadosSECCION: TSmallintField;
+    qryEmpleadosCARGO: TSmallintField;
+    qryEmpleadosPAGA_AFP: TSmallintField;
+    qryEmpleadosPAGA_TSS: TSmallintField;
+    qryEmpleadosSTATUS: TIBStringField;
+    qryEmpleadosFECHA_IN: TDateTimeField;
+    qryEmpleadosIN_POR: TIBStringField;
+    qryEmpleadosFECHA_MOD: TDateTimeField;
+    qryEmpleadosMOD_POR: TIBStringField;
+    qryEmpleadosLICENCIA: TIBStringField;
+    qryEmpleadosFECHA_VENCE_LICENCIA: TDateTimeField;
+    dstblNomina: TDataSource;
+    dsqryEmpleados: TDataSource;
+    qryDeducciones: TIBQuery;
+    qryDeduccionesTIPO_NOMINA: TIntegerField;
+    qryDeduccionesCODIGO_DESCUENTO: TSmallintField;
+    qryDeduccionesFECHA_INICIAL: TDateTimeField;
+    qryDeduccionesFECHA_FINAL: TDateTimeField;
+    qryDeduccionesPORCIENTO_EMP: TFloatField;
+    qryDeduccionesPORCIENTO_EMPLEADOR: TFloatField;
+    qryDeduccionesDESCRIPCION: TIBStringField;
+    qryDeduccionesSTATUS: TIBStringField;
+    tblPrestamo: TIBDataSet;
+    tblPrestamoNUMERO: TIntegerField;
+    tblPrestamoCODIGO_EMP: TIntegerField;
+    tblPrestamoRUTA: TIntegerField;
+    tblPrestamoFECHA: TDateTimeField;
+    tblPrestamoTIPO_PRESTAMO: TSmallintField;
+    tblPrestamoCUOTAS: TFloatField;
+    tblPrestamoPORC_INTERES: TFloatField;
+    tblPrestamoMONTO_PRESTAMO: TFloatField;
+    tblPrestamoMONTO_PAGADO: TFloatField;
+    tblPrestamoFECHA_ULTIMO_PAGO: TDateTimeField;
+    tblPrestamoSTATUS: TIBStringField;
+    tblPrestamoIN_POR: TIBStringField;
+    tblPrestamoFECHA_IN: TDateTimeField;
+    tblPrestamoMOD_POR: TIBStringField;
+    tblPrestamoFECHA_MOD: TDateTimeField;
+    tblNominaSERIE_NOMINA: TIntegerField;
+    tblNominaCIA_KEY: TSmallintField;
+    tblNominaTIPO_NOMINA: TSmallintField;
+    tblNominaCODIGO_EMP: TIntegerField;
+    tblNominaFECHA_NOMINA: TDateTimeField;
+    tblNominaSALARIO_BRUTO: TFloatField;
+    tblNominaIDSS: TFloatField;
+    tblNominaCOOPERATIVA: TFloatField;
+    tblNominaMONTO_AFP: TFloatField;
+    tblNominaSEGURO_MEDICO: TFloatField;
+    tblNominaISR: TFloatField;
+    tblNominaOTROS_INGRESOS: TFloatField;
+    tblNominaOTRAS_DEDUCCIONES: TFloatField;
+    tblNominaSALARIO_NETO: TFloatField;
+    tblNominaFECHA_IN: TDateTimeField;
+    tblNominaCODIGO_USUARIO: TIntegerField;
+    tblNominaSTATUS_NOMINA: TIBStringField;
+    tblNominaNUMERO_CKS: TIntegerField;
+    tblNominaCUOTA_PRESTAMO: TFloatField;
+    tblNominaTSS: TFloatField;
+    tblNominaCOMISION: TFloatField;
+    qryDatosComision: TIBQuery;
+    tblControl: TIBDataSet;
+    tblControlFECHA_ACT: TDateTimeField;
+    tblControlSISTEMA: TIntegerField;
+    tblControlSUB_SISTEMA: TIntegerField;
+    qryRepNomina: TIBQuery;
+    qryRepNominaSERIE_NOMINA: TIntegerField;
+    qryRepNominaCIA_KEY: TSmallintField;
+    qryRepNominaTIPO_NOMINA: TSmallintField;
+    qryRepNominaCODIGO_EMP: TIntegerField;
+    qryRepNominaFECHA_NOMINA: TDateTimeField;
+    qryRepNominaSALARIO_BRUTO: TFloatField;
+    qryRepNominaIDSS: TFloatField;
+    qryRepNominaCOOPERATIVA: TFloatField;
+    qryRepNominaMONTO_AFP: TFloatField;
+    qryRepNominaSEGURO_MEDICO: TFloatField;
+    qryRepNominaISR: TFloatField;
+    qryRepNominaOTROS_INGRESOS: TFloatField;
+    qryRepNominaOTRAS_DEDUCCIONES: TFloatField;
+    qryRepNominaSALARIO_NETO: TFloatField;
+    qryRepNominaFECHA_IN: TDateTimeField;
+    qryRepNominaCODIGO_USUARIO: TIntegerField;
+    qryRepNominaSTATUS_NOMINA: TIBStringField;
+    qryRepNominaNUMERO_CKS: TIntegerField;
+    qryRepNominaCUOTA_PRESTAMO: TFloatField;
+    qryRepNominaTSS: TFloatField;
+    qryRepNominaCOMISION: TFloatField;
+    qryRepNominaNOMBRE: TIBStringField;
+    qryRepNominaAPELLIDO: TIBStringField;
+    qryRepNominaCEDULA: TIBStringField;
+    qryDatosComisionCODIGO_EMP: TIntegerField;
+    qryDatosComisionCODIGO_RUTA: TIntegerField;
+    qryDatosComisionTIPO_COMISION: TIntegerField;
+    qryDatosComisionCODIGO_PROD: TIBStringField;
+    qryDatosComisionMONTO_COMISION: TFloatField;
+    qryDatosComisionCANT_CAJAS_VENDIDAS: TFloatField;
+    qryDatosComisionCOMISION_NETA: TFloatField;
+    qryTipoNomina: TIBQuery;
+    qryTipoNominaCODIGO: TIntegerField;
+    qryTipoNominaDESCRIPCION: TIBStringField;
+    qryTipoNominaOBSERVACIONES: TIBStringField;
+    qryTipoNominaSTATUS_TIPO_NOMINA: TIBStringField;
+    dsqryTipoNomina: TDataSource;
+    DtTipoEmp: TDataSource;
+    QryTipoEmp: TIBQuery;
+    QryTipoEmpCODIGO_TIPO_EMP: TSmallintField;
+    QryTipoEmpDESCRIPCION: TIBStringField;
+    QryTipoEmpOBSERVACIONES: TIBStringField;
+    QryTipoEmpSTATUS_TIPO_EMP: TIBStringField;
+    QryDepto: TIBQuery;
+    QryDeptoCODIGO: TSmallintField;
+    QryDeptoNOMBRE: TIBStringField;
+    QryDeptoSTATUS: TIBStringField;
+    QryDeptoFECHA_IN: TDateTimeField;
+    QryDeptoIN_POR: TIBStringField;
+    QryDeptoFECHA_MOD: TDateTimeField;
+    QryDeptoMOD_POR: TIBStringField;
+    DtDepto: TDataSource;
+    QryTipoNom: TIBQuery;
+    DtTipoNom: TDataSource;
+    tCargosEmp: TIBDataSet;
+    tCargosEmpCODIGO: TIntegerField;
+    tCargosEmpNOMBRE: TStringField;
+    tCargosEmpSTATUS: TStringField;
+    tCargosEmpIN_POR: TStringField;
+    tCargosEmpFECHA_IN: TDateTimeField;
+    tCargosEmpMOD_POR: TStringField;
+    tCargosEmpFECHA_MOD: TDateTimeField;
+    dtCargosEmp: TDataSource;
+    dtDeptoSeccion: TDataSource;
+    tDeptoSeccion: TIBDataSet;
+    tDeptoSeccionCODIGO: TIntegerField;
+    tDeptoSeccionNOMBRE: TIBStringField;
+    tDeptoSeccionSTATUS: TIBStringField;
+    tDeptoSeccionIN_POR: TIBStringField;
+    tDeptoSeccionFECHA_IN: TDateTimeField;
+    tDeptoSeccionMOD_POR: TIBStringField;
+    tDeptoSeccionFECHA_MOD: TDateTimeField;
+    tDeptosEmp: TIBDataSet;
+    tDeptosEmpCODIGO: TSmallintField;
+    tDeptosEmpNOMBRE: TIBStringField;
+    tDeptosEmpSTATUS: TIBStringField;
+    tDeptosEmpFECHA_IN: TDateTimeField;
+    tDeptosEmpIN_POR: TIBStringField;
+    tDeptosEmpFECHA_MOD: TDateTimeField;
+    tDeptosEmpMOD_POR: TIBStringField;
+    dtTipoPax: TDataSource;
+    tTipoPax: TIBDataSet;
+    tTipoPaxCODIGO: TIntegerField;
+    tTipoPaxDESCRIPCION: TIBStringField;
+    tTipoPaxDESC_ABR: TIBStringField;
+    tTipoPaxCODIGOOLD: TIntegerField;
+    tTipoPaxDESCRIPCIONOLD: TIBStringField;
+    tDepartamentos: TIBDataSet;
+    tDepartamentosCODIGO: TStringField;
+    tDepartamentosNOMBRE: TStringField;
+    tDepartamentosSTATUS: TStringField;
+    tDepartamentosIN_POR: TStringField;
+    tDepartamentosFECHA_IN: TDateTimeField;
+    tDepartamentosMOD_POR: TStringField;
+    tDepartamentosFECHA_MOD: TDateTimeField;
+    tDepartamentosJCodigo: TStringField;
+    dtDepartamentos: TDataSource;
+    QryTipoNomCODIGO: TIntegerField;
+    QryTipoNomDESCRIPCION: TIBStringField;
+    QryTipoNomOBSERVACIONES: TIBStringField;
+    QryTipoNomSTATUS_TIPO_NOMINA: TIBStringField;
+    tblDependienteNomDet: TIBDataSet;
+    tblDependienteNomDetSERIE: TIntegerField;
+    tblDependienteNomDetCODIGO_EMP: TIntegerField;
+    tblDependienteNomDetTIPO_PLAN: TSmallintField;
+    tblDependienteNomDetOBSERVACION: TIBStringField;
+    tblDependienteNomDetMONTO: TFloatField;
+    tblDependienteNomDetSTATUS: TIBStringField;
+    tblDependienteNomDetCOD_USUARIO: TIntegerField;
+    tblDependienteNomDetFECHA_IN: TDateTimeField;
+    tblDependienteNomDetIN_POR: TIBStringField;
+    tblDependienteNomDetFECHA_MOD: TDateTimeField;
+    tblDependienteNomDetMOD_POR: TIBStringField;
+    tblDependienteNomMaster: TIBDataSet;
+    tblDependienteNomMasterCODIGO_EMP: TIntegerField;
+    tblDependienteNomMasterTIPO_DESCUENTO: TIntegerField;
+    tblDependienteNomMasterFECHA_INI: TDateTimeField;
+    tblDependienteNomMasterFECHA_FIN: TDateTimeField;
+    tblDependienteNomMasterOBSERVACION: TMemoField;
+    tblDependienteNomMasterSTATUS: TIBStringField;
+    tblDependienteNomMasterCOD_USUARIO: TIntegerField;
+    tblDependienteNomMasterFECHA_IN: TDateTimeField;
+    tblDependienteNomMasterIN_POR: TIBStringField;
+    tblDependienteNomMasterFECHA_MOD: TDateTimeField;
+    tblDependienteNomMasterMOD_POR: TIBStringField;
+    tblTipoPlanSFS: TIBTable;
+    tblTipoPlanSFSCODIGO: TSmallintField;
+    tblTipoPlanSFSDESCRIPCION: TIBStringField;
+    qryListaDependienteEmp: TIBQuery;
+    tblDependienteNomDetCEDULA: TIBStringField;
+    tblDependienteNomDetNSS: TIBStringField;
+    tblDependienteNomDetNOMBRE_DEPENDIENTE: TIBStringField;
+    ibstpAplicaISR: TIBStoredProc;
+    qryEscalaISR: TIBQuery;
+    qryEscalaISRR1: TFloatField;
+    qryEscalaISRR2: TFloatField;
+    qryEscalaISRR3: TFloatField;
+    QryVaca: TIBDataSet;
+    QryVacaCODIGO_TRANS: TIntegerField;
+    QryVacaCODIGO_TIPO_TRANS: TSmallintField;
+    QryVacaCODIGO_TIPO_NOMINA: TSmallintField;
+    QryVacaCODIGO: TIntegerField;
+    QryVacaVALOR_TRANS: TFloatField;
+    QryVacaFECHA_ENT: TDateTimeField;
+    QryVacaFECHA_SAL: TDateTimeField;
+    QryVacaOBSERVACIONES: TIBStringField;
+    QryVacaSTATUS_TRANS: TIBStringField;
+    QryVacaTIPO_CTA: TSmallintField;
+    QryVacaCANT_DIAS: TIntegerField;
+    QryVacaFECHA_EFECTIVA: TDateTimeField;
+    qryEmpleadosNOMBRECOMPLETO: TIBStringField;
+    StpVacaciones: TIBStoredProc;
+    QryRepNomGral: TIBQuery;
+    QryRepNomGralSERIE_NOMINA: TIntegerField;
+    QryRepNomGralCIA_KEY: TSmallintField;
+    QryRepNomGralTIPO_NOMINA: TSmallintField;
+    QryRepNomGralCODIGO_EMP: TIntegerField;
+    QryRepNomGralFECHA_NOMINA: TDateTimeField;
+    QryRepNomGralSALARIO_BRUTO: TFloatField;
+    QryRepNomGralIDSS: TFloatField;
+    QryRepNomGralCOOPERATIVA: TFloatField;
+    QryRepNomGralMONTO_AFP: TFloatField;
+    QryRepNomGralBMI: TIntegerField;
+    QryRepNomGralISR: TFloatField;
+    QryRepNomGralOTROS_INGRESOS: TFloatField;
+    QryRepNomGralOTRAS_DEDUCCIONES: TFloatField;
+    QryRepNomGralSALARIO_NETO: TFloatField;
+    QryRepNomGralFECHA_ENT: TIBStringField;
+    QryRepNomGralSTATUS_NOMINA: TIBStringField;
+    QryRepNomGralNOMBRE: TIBStringField;
+    QryRepNomGralAPELLIDO: TIBStringField;
+    QryRepNomGralNUMERO_CKS: TIntegerField;
+    QryRepNomGralCODIGO: TIBStringField;
+    QryRepNomGralCOD_ORDEN: TIntegerField;
+    QryRepNomGralDEPTO_EMP: TSmallintField;
+    QryRepNomGralSECCION_EMP: TSmallintField;
+    QryRepNomGralCARGO_EMP: TSmallintField;
+    StpStatus: TIBStoredProc;
+    QryRepNomGralTotal_Deduc: TCurrencyField;
+    QryRepNomGralTotal_Ing: TCurrencyField;
+    ibstpProcActNomTotales: TIBStoredProc;
+    tblNominaSFS_DEPENDIENTES: TFloatField;
+    tblNominaSFS_COMPLEMENTARIO: TFloatField;
+    qryRepNominaSFS_DEPENDIENTES: TFloatField;
+    qryRepNominaSFS_COMPLEMENTARIO: TFloatField;
+    tblDependienteNomDetMONTO_COMPLEMENTARIO: TFloatField;
+    tblDependienteNomMasterMONTO_COMPLENTARIO: TFloatField;
+    qryListaDependienteEmpCODIGO_EMP: TIntegerField;
+    qryListaDependienteEmpTIPO_DESCUENTO: TIntegerField;
+    qryListaDependienteEmpMONTO_DEPENDIENTE: TFloatField;
+    qryListaDependienteEmpMONTO_COMPLEMENTARIOASEGURADO: TFloatField;
+    qryListaDependienteEmpMONTO_COMPLEMENTARIODEPENDIENTE: TFloatField;
+    qryListaDependienteEmpTIPO_PLAN: TSmallintField;
+    QryRepNomGralSFS_COMPLEMENTARIO: TFloatField;
+    QryRepNomGralSFS_DEPENDIENTES: TFloatField;
+    QryRepNomGralTSS: TFloatField;
+    QryRepNomGralDEPTO_EMP_DESC: TStringField;
+    QryRepNomGralSECCION_EMP_DESC: TStringField;
+    QryRepNomGralCARGO_EMP_DESC: TStringField;
+    tblNominaContratista: TIBDataSet;
+    tblNominaContratistaCIA_KEY: TIntegerField;
+    tblNominaContratistaCODIGO_EMP: TIntegerField;
+    tblNominaContratistaCODIGO_PROY: TIntegerField;
+    tblNominaContratistaFECHA_NOMINA: TDateTimeField;
+    tblNominaContratistaCANT_DIAS: TFloatField;
+    tblNominaContratistaPRECIO_XDIA: TFloatField;
+    tblNominaContratistaSALARIO_BRUTO: TFloatField;
+    tblNominaContratistaCOOPERATIVA: TFloatField;
+    tblNominaContratistaMONTO_AFP: TFloatField;
+    tblNominaContratistaISR: TFloatField;
+    tblNominaContratistaCUOTA_PRESTAMO: TFloatField;
+    tblNominaContratistaTSS: TFloatField;
+    tblNominaContratistaSFS_DEPENDIENTES: TFloatField;
+    tblNominaContratistaSFS_COMPLEMENTARIO: TFloatField;
+    tblNominaContratistaOTROS_INGRESOS: TFloatField;
+    tblNominaContratistaOTRAS_DEDUCCIONES: TFloatField;
+    tblNominaContratistaSALARIO_NETO: TFloatField;
+    tblNominaContratistaCODIGO_USUARIO: TIntegerField;
+    tblNominaContratistaSTATUS: TIBStringField;
+    tblNominaContratistaNUMERO_CKS: TIntegerField;
+    tblNominaContratistaFECHA_IN: TDateTimeField;
+    tblNominaContratistaIN_POR: TIBStringField;
+    tblNominaContratistaFECHA_MOD: TDateTimeField;
+    tblNominaContratistaMOD_POR: TIBStringField;
+    dstblNominaContratista: TDataSource;
+    tblProyectos: TIBDataSet;
+    tblProyectosCODIGO: TIntegerField;
+    tblProyectosFECHA_INICIAL: TDateTimeField;
+    tblProyectosFECHA_FINAL: TDateTimeField;
+    tblProyectosNOMBRE_PROYECTO: TIBStringField;
+    tblProyectosOBSERVACION: TMemoField;
+    tblProyectosSTATUS: TIBStringField;
+    tblProyectosIN_POR: TIBStringField;
+    tblProyectosFECHA_IN: TDateTimeField;
+    tblProyectosFECHA_MOD: TDateTimeField;
+    tblProyectosMODI_POR: TIBStringField;
+    dstblProyectos: TDataSource;
+    qryProyectos: TIBQuery;
+    qryProyectosCODIGO: TIntegerField;
+    qryProyectosFECHA_INICIAL: TDateTimeField;
+    qryProyectosFECHA_FINAL: TDateTimeField;
+    qryProyectosNOMBRE_PROYECTO: TIBStringField;
+    qryProyectosOBSERVACION: TMemoField;
+    qryProyectosSTATUS: TIBStringField;
+    qryProyectosIN_POR: TIBStringField;
+    qryProyectosFECHA_IN: TDateTimeField;
+    qryProyectosFECHA_MOD: TDateTimeField;
+    qryProyectosMODI_POR: TIBStringField;
+    dsqryProyectos: TDataSource;
+    tblContratistas: TIBDataSet;
+    tblContratistasCIA_KEY: TIntegerField;
+    tblContratistasCODIGO: TIntegerField;
+    tblContratistasNOMBRE: TIBStringField;
+    tblContratistasAPELLIDO: TIBStringField;
+    tblContratistasCEDULA: TIBStringField;
+    tblContratistasLICENCIA: TIBStringField;
+    tblContratistasFECHA_VENCE_LICENCIA: TDateTimeField;
+    tblContratistasFOTO: TBlobField;
+    tblContratistasPASSPORT: TIBStringField;
+    tblContratistasFECHA_VENCE_PASSPORT: TDateTimeField;
+    tblContratistasCALLE: TIBStringField;
+    tblContratistasNUM_CASA: TSmallintField;
+    tblContratistasCIUDAD: TIBStringField;
+    tblContratistasPAIS: TIBStringField;
+    tblContratistasTELEF_CASA: TIBStringField;
+    tblContratistasCELULAR: TIBStringField;
+    tblContratistasEMAIL: TIBStringField;
+    tblContratistasSEXO: TIBStringField;
+    tblContratistasESTADO_CIVIL: TIBStringField;
+    tblContratistasTELEF_CONYUGUE: TIBStringField;
+    tblContratistasNOMBRE_CONYUGUE: TIBStringField;
+    tblContratistasFECHA_NAC: TDateTimeField;
+    tblContratistasNACIONALIDAD: TIBStringField;
+    tblContratistasFECHA_ENTRADA: TDateTimeField;
+    tblContratistasFECHA_SALIDA: TDateTimeField;
+    tblContratistasSALARIO_XDIA: TFloatField;
+    tblContratistasTIPO_NOMINA: TSmallintField;
+    tblContratistasTIPO_EMPLEADO: TSmallintField;
+    tblContratistasCARGO: TSmallintField;
+    tblContratistasPAGA_AFP: TSmallintField;
+    tblContratistasPAGA_TSS: TSmallintField;
+    tblContratistasPAGA_RETENCION: TSmallintField;
+    tblContratistasSTATUS: TIBStringField;
+    tblContratistasFECHA_IN: TDateTimeField;
+    tblContratistasIN_POR: TIBStringField;
+    tblContratistasFECHA_MOD: TDateTimeField;
+    tblContratistasMOD_POR: TIBStringField;
+    dstblContratistas: TDataSource;
+    tblProyectosPORC_RETENCION: TFloatField;
+    qryContratistas: TIBQuery;
+    qryContratistasCIA_KEY: TIntegerField;
+    qryContratistasCODIGO: TIntegerField;
+    qryContratistasNOMBRE: TIBStringField;
+    qryContratistasAPELLIDO: TIBStringField;
+    qryContratistasCEDULA: TIBStringField;
+    qryContratistasLICENCIA: TIBStringField;
+    qryContratistasFECHA_VENCE_LICENCIA: TDateTimeField;
+    qryContratistasFOTO: TBlobField;
+    qryContratistasPASSPORT: TIBStringField;
+    qryContratistasFECHA_VENCE_PASSPORT: TDateTimeField;
+    qryContratistasCALLE: TIBStringField;
+    qryContratistasNUM_CASA: TSmallintField;
+    qryContratistasCIUDAD: TIBStringField;
+    qryContratistasPAIS: TIBStringField;
+    qryContratistasTELEF_CASA: TIBStringField;
+    qryContratistasCELULAR: TIBStringField;
+    qryContratistasEMAIL: TIBStringField;
+    qryContratistasSEXO: TIBStringField;
+    qryContratistasESTADO_CIVIL: TIBStringField;
+    qryContratistasTELEF_CONYUGUE: TIBStringField;
+    qryContratistasNOMBRE_CONYUGUE: TIBStringField;
+    qryContratistasFECHA_NAC: TDateTimeField;
+    qryContratistasNACIONALIDAD: TIBStringField;
+    qryContratistasFECHA_ENTRADA: TDateTimeField;
+    qryContratistasFECHA_SALIDA: TDateTimeField;
+    qryContratistasSALARIO_XDIA: TFloatField;
+    qryContratistasTIPO_NOMINA: TSmallintField;
+    qryContratistasTIPO_EMPLEADO: TSmallintField;
+    qryContratistasCARGO: TSmallintField;
+    qryContratistasPAGA_AFP: TSmallintField;
+    qryContratistasPAGA_TSS: TSmallintField;
+    qryContratistasPAGA_RETENCION: TSmallintField;
+    qryContratistasSTATUS: TIBStringField;
+    qryContratistasFECHA_IN: TDateTimeField;
+    qryContratistasIN_POR: TIBStringField;
+    qryContratistasFECHA_MOD: TDateTimeField;
+    qryContratistasMOD_POR: TIBStringField;
+    dsqryContratistas: TDataSource;
+    tblNominaContratistaMONTO_RETENCIONDGII: TFloatField;
+    qryProyectosPORC_RETENCION: TFloatField;
+    qryRepNominaContratista: TIBQuery;
+    qryRepNominaContratistaCIA_KEY: TIntegerField;
+    qryRepNominaContratistaCODIGO_EMP: TIntegerField;
+    qryRepNominaContratistaCODIGO_PROY: TIntegerField;
+    qryRepNominaContratistaFECHA_NOMINA: TDateTimeField;
+    qryRepNominaContratistaCANT_DIAS: TFloatField;
+    qryRepNominaContratistaPRECIO_XDIA: TFloatField;
+    qryRepNominaContratistaSALARIO_BRUTO: TFloatField;
+    qryRepNominaContratistaCOOPERATIVA: TFloatField;
+    qryRepNominaContratistaMONTO_AFP: TFloatField;
+    qryRepNominaContratistaISR: TFloatField;
+    qryRepNominaContratistaCUOTA_PRESTAMO: TFloatField;
+    qryRepNominaContratistaTSS: TFloatField;
+    qryRepNominaContratistaSFS_DEPENDIENTES: TFloatField;
+    qryRepNominaContratistaSFS_COMPLEMENTARIO: TFloatField;
+    qryRepNominaContratistaOTROS_INGRESOS: TFloatField;
+    qryRepNominaContratistaOTRAS_DEDUCCIONES: TFloatField;
+    qryRepNominaContratistaSALARIO_NETO: TFloatField;
+    qryRepNominaContratistaCODIGO_USUARIO: TSmallintField;
+    qryRepNominaContratistaSTATUS: TIBStringField;
+    qryRepNominaContratistaNUMERO_CKS: TSmallintField;
+    qryRepNominaContratistaMOD_POR: TIBStringField;
+    qryRepNominaContratistaMONTO_RETENCIONDGII: TFloatField;
+    qryRepNominaContratistaNOMBRE_CONTRATISTA: TIBStringField;
+    qryRepNominaContratistaCEDULA: TIBStringField;
+    qryRepNominaContratistaDESCCARGOCONTRATISTA: TIBStringField;
+    qryRepNominaContratistaCODIGO_CARGO: TSmallintField;
+    tblNominaDiasTrab: TCurrencyField;
+    tblContratistasIDPROYECTO: TIntegerField;
+    qryContratistasIDPROYECTO: TIntegerField;
+    ibstpAplicaISRC: TIBStoredProc;
+    qryRepNominaContratistaNOMBRE_PROYECTO: TIBStringField;
+    QryRepNomGralNOMBRE_EMP_DEP: TIBStringField;
+    tblTipoNomina: TIBTable;
+    tblTipoNominaCODIGO: TIntegerField;
+    tblTipoNominaDESCRIPCION: TIBStringField;
+    tblTipoNominaOBSERVACIONES: TIBStringField;
+    tblTipoNominaSTATUS_TIPO_NOMINA: TIBStringField;
+    tblTipoNominaULT_FECHA_NOM: TDateTimeField;
+    StpIntegraComisionXVta: TIBQuery;
+    QryRepNomGralPREST_OFIC: TFloatField;
+    ibstpProcActNomComisiones: TIBStoredProc;
+    procedure tblNominaSALARIO_BRUTOChange(Sender: TField);
+    procedure tblDependienteNomMasterAfterScroll(DataSet: TDataSet);
+    procedure QryRepNomGralCalcFields(DataSet: TDataSet);
+    procedure tblNominaCalcFields(DataSet: TDataSet);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  dmNomina: TdmNomina;
+
+implementation
+
+uses UDatModConectar, UFormNominaEmpleado, UGlobal;
+
+{$R *.dfm}
+
+procedure TdmNomina.tblNominaSALARIO_BRUTOChange(Sender: TField);
+begin
+  tblNominaSALARIO_NETO.Value:=
+  tblNominaSALARIO_BRUTO.Value  +
+  tblNominaCOMISION.Value       +
+  tblNominaOTROS_INGRESOS.Value -
+  ( tblNominaCOOPERATIVA.Value  +
+            tblNominaTSS.Value  +
+      tblNominaMONTO_AFP.Value  +
+  tblNominaSEGURO_MEDICO.Value  +
+  tblNominaOTRAS_DEDUCCIONES.Value +
+  tblNominaISR.Value +
+  tblNominaCUOTA_PRESTAMO.Value);
+end;
+
+procedure TdmNomina.tblDependienteNomMasterAfterScroll(DataSet: TDataSet);
+begin
+  tblDependienteNomDet.Close;
+  tblDependienteNomDet.Params[0].Value :=tblDependienteNomMasterCODIGO_EMP.Value; 
+  tblDependienteNomDet.Open;
+end;
+
+procedure TdmNomina.QryRepNomGralCalcFields(DataSet: TDataSet);
+begin
+  QryRepNomGralTotal_Deduc.Value :=
+  QryRepNomGralIDSS.Value +
+  QryRepNomGralISR.Value  +
+  QryRepNomGralCooperativa.Value +
+  QryRepNomGralBMI.Value         +
+  QryRepNomGralTSS.Value         +
+  QryRepNomGralOtras_Deducciones.Value +
+  QryRepNomGralMONTO_AFP.Value         +
+  QryRepNomGralPREST_OFIC.Value
+  ;
+
+  QryRepNomGralTotal_Ing.Value := QryRepNomGralSALARIO_BRUTO.Value
+  + QryRepNomGralOTROS_INGRESOS.Value;
+end;
+
+procedure TdmNomina.tblNominaCalcFields(DataSet: TDataSet);
+begin
+  if not Assigned(frmNominaEmpleado) then exit;
+ if frmNominaEmpleado.EditN1.ValueFloat > 0 Then
+     Begin
+       If dmNomina.tblNominaTIPO_NOMINA.Value = 1 Then  //***Semanal***
+          Begin
+            dmNomina.tblNominaDiasTrab.Value := frmNominaEmpleado.EditN1.ValueFloat * ((dmNomina.tblNominaSALARIO_BRUTO.Value / glbDNomina) / 5.5);
+          End
+       Else
+       If dmNomina.tblNominaTIPO_NOMINA.Value = 2 Then  //***Quincenal***                        
+          Begin
+            dmNomina.tblNominaDiasTrab.Value := frmNominaEmpleado.EditN1.ValueFloat * ((dmNomina.tblNominaSALARIO_BRUTO.Value/ glbDNomina) / 11.915);
+          End
+       Else
+       If dmNomina.tblNominaTIPO_NOMINA.Value = 3 Then  //***Mensual***
+          Begin
+            dmNomina.tblNominaDiasTrab.Value := frmNominaEmpleado.EditN1.ValueFloat * ((dmNomina.tblNominaSALARIO_BRUTO.Value/ glbDNomina) / 23.83);
+          End;
+      End
+  Else
+  if frmNominaEmpleado.EditN1.ValueFloat = 0 Then
+     Begin
+       dmNomina.tblNominaDiasTrab.Value := 0;//dmNomina.tblNominaDSalario.Value / glbDNomina;
+     End;
+end;
+
+end.

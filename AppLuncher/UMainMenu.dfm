@@ -1,0 +1,152 @@
+object frmMenu: TfrmMenu
+  Left = 356
+  Top = 204
+  Width = 937
+  Height = 535
+  Caption = 'Menu Principal'
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  Icon.Data = {
+    0000010001002020100000000000E80200001600000028000000200000004000
+    0000010004000000000080020000000000000000000000000000000000000000
+    000000008000008000000080800080000000800080008080000080808000C0C0
+    C0000000FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF000000
+    00007FFFFFFFFFF80000000007FF08873000008FFFFFFFFF7001910000080888
+    88730008FFFFFFFFF000999100000788888870008FFFFFFFF700999991000388
+    888887007FFFFFFFF80019999910008888888830000078FFF800199999910078
+    8888888000000007F80019999999003888888830001000000000999999997007
+    8888830009999100000019999999F0007888300099999990000000999999F800
+    0383000999999900077000019999FF8000000099999990007FFF70000199FFF8
+    7000099999990007FFFFFF700019FFFFF00099999990007FFFFFFFF80000FFFF
+    F0019999990007FFFFFFFFFFF700FFFFF000999990007FFFFFFFFFFFFF80FFFF
+    F70099990007FFFFFFFFFFFFFFF8FFFFF8001990007FFF78FFFFFFFFFFFFFFFF
+    FF00090007FFF700FFFFFFFFFFFF8FFFFF7000007FFFF807FFFFFFFFFFFF07FF
+    FFF00007FFFFFFFFFFFFFFFFFFFF00078880007FFFFFFFFFF708FFFFFFFF0000
+    0000007FFFFFFFFFF0008FFFFFFF01000000000FFFFFFFFFF8000FFFFFFF0999
+    91191007FFFFFFFFFF800FFFFFFF019999999000FFFFFFFFFFFFFFFF70000099
+    999999007FFFFFFFFFFFFF80000000199999991008FFFFFFFFFFFF0000770009
+    9999999000FFFFFFFFFFF7007888700199999991007FFFFFFFFFF0008888F000
+    199999991008FFFFFFFFF0078888F8000199999990008FFFFFFFF00788880000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    000000000000000000000000000000000000000000000000000000000000}
+  OldCreateOrder = False
+  Visible = True
+  OnCreate = FormCreate
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Label1: TLabel
+    Left = 32
+    Top = 176
+    Width = 32
+    Height = 13
+    Caption = 'Label1'
+  end
+  object Label2: TLabel
+    Left = 32
+    Top = 200
+    Width = 32
+    Height = 13
+    Caption = 'Label2'
+  end
+  object Label3: TLabel
+    Left = 32
+    Top = 224
+    Width = 32
+    Height = 13
+    Caption = 'Label3'
+  end
+  object Label4: TLabel
+    Left = 32
+    Top = 32
+    Width = 53
+    Height = 13
+    Caption = 'Source File'
+  end
+  object Label5: TLabel
+    Left = 32
+    Top = 56
+    Width = 50
+    Height = 13
+    Caption = 'Target File'
+  end
+  object Label6: TLabel
+    Left = 31
+    Top = 120
+    Width = 53
+    Height = 13
+    Caption = 'Source File'
+  end
+  object Label7: TLabel
+    Left = 31
+    Top = 144
+    Width = 50
+    Height = 13
+    Caption = 'Target File'
+  end
+  object Label8: TLabel
+    Left = 32
+    Top = 101
+    Width = 65
+    Height = 13
+    Caption = 'Database File'
+  end
+  object Label9: TLabel
+    Left = 32
+    Top = 11
+    Width = 77
+    Height = 13
+    Caption = 'Applicaction File'
+  end
+  object Button1: TButton
+    Left = 32
+    Top = 256
+    Width = 75
+    Height = 25
+    Caption = 'Button1'
+    TabOrder = 0
+    OnClick = Button1Click
+  end
+  object edtSourceFile: TEdit
+    Left = 97
+    Top = 28
+    Width = 457
+    Height = 21
+    TabOrder = 1
+  end
+  object edtTargetFile: TEdit
+    Left = 97
+    Top = 52
+    Width = 457
+    Height = 21
+    TabOrder = 2
+  end
+  object edtDbSource: TEdit
+    Left = 96
+    Top = 116
+    Width = 457
+    Height = 21
+    TabOrder = 3
+  end
+  object edtTargetDbFile: TEdit
+    Left = 96
+    Top = 140
+    Width = 457
+    Height = 21
+    TabOrder = 4
+  end
+  object Memo1: TMemo
+    Left = 136
+    Top = 200
+    Width = 777
+    Height = 289
+    Lines.Strings = (
+      'Memo1')
+    TabOrder = 5
+  end
+end

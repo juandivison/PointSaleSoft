@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<WorkSheet>
+<Header>
+<Tag name="NoFactura" value=""/>
+<Tag name="Fecha" value=""/>
+<Tag name="Pagina" value=""/>
+<Tag name="NCF" value=""/>
+<Tag name="Cliente" value=""/>
+<Tag name="RNC" value=""/>
+<Tag name="Referencia" value=""/>
+<Tag name="Condicion" value=""/>
+<Tag name="Vendedor" value=""/>
+<Tag name="Moneda" value=""/>
+<Tag name="TipoComprobante" value=""/>
+</Header>
+<SheetData OrginalRange="17:44">
+<ArrayData>
+ <item name="Codigo" value="1452"/>
+ <item name="Descripcion" value=""/>
+ <item name="Cant" value=""/>
+ <item name="Preci" value=""/>
+  <item name="Importe" value=""/>
+  </ArrayData>
+</SheetData>
+<Footer>
+<Tag name="SubTotal" value=""/>
+<Tag name="Impto" value=""/>
+<Tag name="Total" value=""/>
+</Footer>
+</WorkSheet>

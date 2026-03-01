@@ -1,0 +1,75 @@
+//imprimir archivo
+Var 
+FText : TextFile ; 
+Begin 
+AssignFile(Ftext,'lpt1') ; 
+Rewrite(Ftext); 
+Write(FText,'Esto va a LPT1') ; 
+CloseFile(FText) ; 
+End ; 
+
+
+
+
+
+
+procedure TForm1.Button1Click(Sender: TObject);
+
+ procedure SendControlCode(S: string);
+ var
+  Handle, hDeviceMode: THandle;
+  N: DWORD;
+  DocInfo1: TDocInfo1;
+  Device, Driver, Port: array[0..255] of char;
+  PrinterName: string;
+  buf:array[0..255] of char;
+  lbuf:integer;
+ begin
+  Printer.GetPrinter(Device, Driver, Port, hDeviceMode);
+  PrinterName := Format('%s', [Device]);
+  if not OpenPrinter(PChar(PrinterName), Handle, nil) then
+   RaiseLastWin32Error;
+  try
+   with DocInfo1 do
+   begin
+    pDocName := 'Control';
+    pOutputFile := nil;
+    pDataType := 'RAW';
+   end;
+   StartDocPrinter(Handle, 1, @DocInfo1);
+   try
+    lbuf:=length(s);
+    copymemory(@buf,Pchar(s),lbuf);
+    if not WritePrinter(Handle, @buf, lbuf, N) then
+     RaiseLastWin32Error;
+   finally
+    EndDocPrinter(Handle);
+   end;
+  finally
+   ClosePrinter(Handle);
+  end;
+ end;
+
+ procedure AbrirCajon;
+ var
+  cadena:string;
+ begin
+  if printer.Printers.count<1 then
+   Raise Exception.Create('No se instaló ninguna impresora'+
+                                         '/There are not installed printers');
+  if printer.printing then
+  begin
+   Raise Exception.Create('No puede estar imprimiendo mientras se abre el cajón'+
+                                          '/Can not send control codes while printing');
+  end;
+     {Poned aquí la secuencia de escape para abrir el cajon}
+    {Put here the control codes to send to printer}
+  cadena:=#27+'p0'+#100+#100;
+  if length(cadena)<1 then
+   exit;
+  SendControlCode(cadena);
+ end;
+
+ begin
+   AbrirCajon;
+ end;

@@ -1,0 +1,3 @@
+ALTER TABLE VENTAS_DET ADD 
+DescripcionProducto CAMPO_MEMO;
+

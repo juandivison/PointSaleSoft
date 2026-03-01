@@ -1,0 +1,119 @@
+object frmModificaCotiza: TfrmModificaCotiza
+  Left = 454
+  Top = 173
+  Width = 332
+  Height = 238
+  Caption = 'Mantenimiento Cotizacion'
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poMainFormCenter
+  PixelsPerInch = 96
+  TextHeight = 13
+  object SpeedButton1: TSpeedButton
+    Left = 74
+    Top = 121
+    Width = 81
+    Height = 33
+    Caption = '&Guardar'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    Glyph.Data = {
+      76010000424D7601000000000000760000002800000020000000100000000100
+      04000000000000010000120B0000120B00001000000000000000000000000000
+      800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+      FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+      333333FFFFFFFFFFFFF33000077777770033377777777777773F000007888888
+      00037F3337F3FF37F37F00000780088800037F3337F77F37F37F000007800888
+      00037F3337F77FF7F37F00000788888800037F3337777777337F000000000000
+      00037F3FFFFFFFFFFF7F00000000000000037F77777777777F7F000FFFFFFFFF
+      00037F7F333333337F7F000FFFFFFFFF00037F7F333333337F7F000FFFFFFFFF
+      00037F7F333333337F7F000FFFFFFFFF00037F7F333333337F7F000FFFFFFFFF
+      00037F7F333333337F7F000FFFFFFFFF07037F7F33333333777F000FFFFFFFFF
+      0003737FFFFFFFFF7F7330099999999900333777777777777733}
+    NumGlyphs = 2
+    ParentFont = False
+    OnClick = SpeedButton1Click
+  end
+  object DBStatusLabel1: TDBStatusLabel
+    Left = 168
+    Top = 168
+    Width = 85
+    Height = 13
+    DatasetName = 'Trans'
+    DataSource = dstblCotizaMaster
+  end
+  object Label3: TLabel
+    Left = 16
+    Top = 8
+    Width = 82
+    Height = 13
+    Caption = 'Fecha Cotizacion'
+  end
+  object SpeedButton3: TSpeedButton
+    Left = 170
+    Top = 121
+    Width = 81
+    Height = 33
+    Caption = '&Salir'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    Glyph.Data = {
+      76010000424D7601000000000000760000002800000020000000100000000100
+      04000000000000010000130B0000130B00001000000000000000000000000000
+      800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+      FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+      333333333333333333FF33333333333330003333333333333777333333333333
+      300033FFFFFF3333377739999993333333333777777F3333333F399999933333
+      3300377777733333337733333333333333003333333333333377333333333333
+      3333333333333333333F333333333333330033333F33333333773333C3333333
+      330033337F3333333377333CC3333333333333F77FFFFFFF3FF33CCCCCCCCCC3
+      993337777777777F77F33CCCCCCCCCC399333777777777737733333CC3333333
+      333333377F33333333FF3333C333333330003333733333333777333333333333
+      3000333333333333377733333333333333333333333333333333}
+    NumGlyphs = 2
+    ParentFont = False
+    OnClick = SpeedButton3Click
+  end
+  object Label2: TLabel
+    Left = 16
+    Top = 56
+    Width = 60
+    Height = 13
+    Caption = 'Observacion'
+  end
+  object DBDateEdit1: TDBDateEdit
+    Left = 16
+    Top = 24
+    Width = 121
+    Height = 21
+    DataField = 'FECHA'
+    DataSource = dstblCotizaMaster
+    NumGlyphs = 2
+    TabOrder = 0
+  end
+  object DBEdit1: TDBEdit
+    Left = 16
+    Top = 72
+    Width = 233
+    Height = 21
+    DataField = 'OBSERVACION'
+    DataSource = dstblCotizaMaster
+    TabOrder = 1
+  end
+  object dstblCotizaMaster: TDataSource
+    DataSet = frmCotizaciones.tblCotizaMaster
+    Left = 208
+    Top = 48
+  end
+end

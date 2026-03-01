@@ -1,0 +1,42 @@
+ REQUERIMIENTOS PARA REPUESTO CASANDRA 2
+
+X 1-En la factura de credito que salga  la PALABRA CREDITO CENTRALIZADA Y EN NEGRITA
+
+x EN LA MISMA QUE SALGA EL NOMBRE DEL TIPO DE COMPROBANTE FISCAL
+
+x 2-EN LA FACTURA DE CONTADO QUE SALGAN LOS NUMERO DE COMPROBANTE PARA CONSUMIDOR FINAL Y QUE LO IMPRIMA 
+
+3-QUE EN EL REGISTRO DE PEDIDO EL SISTEMA CADA VEZ QUE SE HAGA UN ARTICULO AHÍ MISMO LE PIDA TIRAR EL LABEL
+
+3-1QUE EN EL LABEL SALGA LA FECHA DE IMPRESIÓN DE EL ARTICULO EN EL REGISTRO DE PEDIDO  
+
+
+4-QUE EN EL RECIBO DE INGRESO SALGA RECIBO DE INGRESO EN NEGRITA Y CENTRALIZADO 
+
+5 QUE EN  LAS FACTURAS DE CREDITO Y DE CONTADO PERMITA REIMPRIMIR FACTURA 
+
+6-Y QUE SE PUEDA CONFIGURAR LAS IMPRESORAS EN CADA TIPO DE FACTURA 
+
+EJEMPLO 
+
+IMPRESORA PUNTO DE VENTAS RECIBO
+FACTURAS DE CONTADO 
+
+EN LA IMPRESORA LX300+
+SALGAN LAS FACTURAS DE CREDITO Y LOS REPORTES 
+
+
+
+1) Ahi que hacer una sub ventana dentro de la de ventas para buscar los articulos 
+2) Que muestre el precio de ventas 
+3) Que las facturas de contado puedan ponerle diferentes tipos de comprobantes fiscales de contado 
+4) Vino ban resrvas y compro una compra de contado con valor fiscal 
+como le hacemos una venta de contado con valor fiscal 
+5) y en la factura de credito no imprime el rnc del cliente 
+x - 6) en el pedido debe de buscar el producto por nombre, no solo por codigo 
+7) ahi que ver donde va el dinero cuando las facturas de compra es de credito 
+8) en el inventario el sistema debe de generar el codigo del articulo automatico 
+9) del registro de pedido que el primer articulo es que sale como precio de compra para todos los articulos 
+si ahi mas de uno sale en todos los articulos el mismo precio de compra 
+10) en las ctas por pagar debes poner el pago de facturas de los proveedores 
+x 11) un error que tira despues de procesar una venta que dice codigo no encontrado en el inventario 

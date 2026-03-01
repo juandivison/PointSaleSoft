@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <StartArguments>/u=jacobo-samedi /h=%40hotmail.com /p=amos040591 /t=jacobo-samedi%40hotmail.com /c=jacobo-samedi%40hotmail.com /b=jacobo-samedi%40hotmail.com /s=prueba /f=Hola /a=C:\Users\Jacobo\Desktop\codigo.jpg%3bC:\Users\Jacobo\Desktop\codigo.jpg%3b /auto=1 /error=0</StartArguments>
+  </PropertyGroup>
+</Project>

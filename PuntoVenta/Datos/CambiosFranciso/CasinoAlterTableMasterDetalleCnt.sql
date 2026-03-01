@@ -1,0 +1,32 @@
+set term !! ;
+CREATE TRIGGER GEN_NUMERO_TRNCNT_MASTER 
+FOR TRNCNT_MASTER
+ACTIVE BEFORE INSERT POSITION 0
+AS
+BEGIN
+  if (NEW.NUMERO is NULL) 
+  then NEW.NUMERO = GEN_ID(GEN_NUMERO_TRNCNT_MASTER, 1);
+END!!
+set term ; !!
+
+set term !! ;
+CREATE TRIGGER GEN_NUMERO_TRNCNT_DETALLE
+FOR TRNCNT_DETALLE
+ACTIVE BEFORE INSERT POSITION 0
+AS
+BEGIN
+  if (NEW.SERIE is NULL) 
+  then NEW.SERIE = GEN_ID(GEN_NUMERO_TRNCNT_DETALLE, 1);
+END!!
+set term ; !!
+
+
+
+Alter Table TRNCNT_DETALLE
+Add numero_subloc Integer,
+Add serie_subloc Integer;
+
+Alter Table TRNCNT_MASTER
+Add numero_subloc integer;
+
+

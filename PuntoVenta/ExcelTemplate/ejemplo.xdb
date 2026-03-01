@@ -1,0 +1,66 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xdb="http://www.borland.com/schemas/delphi/6.0/XMLDataBinding">
+	<xs:element name="WorkSheet">
+		<xs:complexType>
+			<xs:annotation>
+        <xs:appinfo xdb:docElement="WorkSheet"/>
+      </xs:annotation>
+      <xs:sequence>
+				<xs:element name="Header">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Tag" maxOccurs="unbounded" minOccurs="0">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute type="xs:string" name="name" use="optional"/>
+											<xs:attribute type="xs:string" name="value" use="optional"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="SheetData">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="ArrayData">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="item" maxOccurs="unbounded" minOccurs="0">
+											<xs:complexType>
+												<xs:simpleContent>
+													<xs:extension base="xs:string">
+														<xs:attribute type="xs:string" name="name" use="optional"/>
+														<xs:attribute type="xs:string" name="value" use="optional"/>
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute type="xs:string" name="OrginalRange"/>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Footer">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Tag" maxOccurs="unbounded" minOccurs="0">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute type="xs:string" name="name" use="optional"/>
+											<xs:attribute type="xs:string" name="value" use="optional"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

@@ -1,0 +1,1093 @@
+Title: 
+Message: Iniciando
+StackTrace: 
+Date/Time: 14/11/2018 9:01:50
+================================================
+Title: Verificar puerto abierto
+Message: Step 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:50
+================================================
+Title: Cerrar Puerto
+Message: Puerto Cerrado con exito: 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:50
+================================================
+Title: Abriendo Base de Datos
+Message: Step 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:50
+================================================
+Title: Verificando parametros de entrada
+Message: Step 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:53
+================================================
+Title: PortComm=4, Baudrate=9600, TipoDoc=DVF, ReporteZ=xPOR_DIA_IMP, Status=ifOnlineN, Cancelar=false, ImprimeZ=0, CierreX=False, CierreZ=False, Cierre=XX, ImpCierreX=0, ConfFile=DatosConfIFiscal.dat, FileToPrint=C:\PROYECTOS\RECIBOS\Recibo0001TM-T88IV800324543.txt, FastFood=0, pagaPropinaLey=N, 
+Message: Step 4
+StackTrace: Parametros de entrada:
+Date/Time: 14/11/2018 9:01:53
+================================================
+Title: Verificando ImpresoraOnline()
+Message: Step 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:53
+================================================
+Title: Abrir puerto Comm
+Message: Step 6
+StackTrace: 
+Date/Time: 14/11/2018 9:01:53
+================================================
+Title: cmbPortNumber 4 cmbPortBaudRate= 9600
+Message: 
+StackTrace: cmdOpenPort( )
+Date/Time: 14/11/2018 9:01:55
+================================================
+Title: Metodo InformacionDeTicket()
+Message: Step 7
+StackTrace: 
+Date/Time: 14/11/2018 9:01:56
+================================================
+Title: Cargar Datos Configuracion Impresora
+Message: Step 8
+StackTrace: 
+Date/Time: 14/11/2018 9:01:56
+================================================
+Title: Private Sub GuardarDatosConfiguracionImpF(ByVal list As ArrayList)
+Message: Step Inicio Guardar Datos Impresora
+StackTrace: DatosConfIFiscal.dat
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step Terminado Guardar Datos Impresora
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Leer archivo a imprimir
+Message: Step 10
+StackTrace: fileToPrint
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: resultado = dbDal.getUpdateStatusIPrinter(dbDal.myConnection1
+Message: Step 10A
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Inicio lectura de archivo a imprimir
+Message: Step 10C
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Inicio impresion documento
+Message: Step 12
+StackTrace: Lne 2473 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: OPENCF = OPEN_CF
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: EXTENSION = 0
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: SUCURSAL = 0001
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: RNCCLIENTE = 07900012779
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: NCFAFECTADO = 
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DENSIDAD = 
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: CAJA = 0001
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: LOGO = 
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: RAZONSOCIAL = 
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: COPIAS = 0
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: NCF = 00000000B0200046873
+Message: Step Parameter 1
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA6 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA2 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA7 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA3 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: TIPOVENTA = 0
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA8 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA4 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCITEM = ITBIS 18
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: ITEM_CF = ITEM_CF
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: PRECIO = 17023
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA9 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA5 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA1 = 
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: CANTIDAD = 1000
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: TASAITBIS = 1800
+Message: Step Parameter 2
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA1 = 
+Message: Step Parameter 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA2 = 
+Message: Step Parameter 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA3 = 
+Message: Step Parameter 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: TIPOPAGO = 3
+Message: Step Parameter 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: NUMEROTRN = 324543
+Message: Step Parameter 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: MONTO = 10000
+Message: Step Parameter 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: PAGO_CF = PAGO_CF
+Message: Step Parameter 3
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA1 = 
+Message: Step Parameter 4
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA2 = 
+Message: Step Parameter 4
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: DESCEXTRA3 = 
+Message: Step Parameter 4
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: TIPOPAGO = 1
+Message: Step Parameter 4
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: NUMEROTRN = 324543
+Message: Step Parameter 4
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: COMENT7 = 
+Message: Step Parameter 4
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: MONTO = 9619
+Message: Step Parameter 4
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: PAGO_CF = PAGO_CF
+Message: Step Parameter 4
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: NUMEROTRN = 324543
+Message: Step Parameter 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: TRAILER3 = 
+Message: Step Parameter 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: TRAILER1 = 
+Message: Step Parameter 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: CLOSE_CF = CLOSE_CF
+Message: Step Parameter 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: TRAILER2 = 
+Message: Step Parameter 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: COLAREEMP3 = 
+Message: Step Parameter 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: COLAREEMP2 = 
+Message: Step Parameter 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: COLAREEMP1 = Gracias por su compra
+Message: Step Parameter 5
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Key = OPENCF
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: OPENCF enviado sin error
+Message: Step 13 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Preparando Extension
+Message: Step 13 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =0001
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 0001
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =0001
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 0001
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =00000000B0200046873
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 00000000B0200046873
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =07900012779
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 07900012779
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito. 
+
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:57
+================================================
+Title: Tratando de determinar # NIF de la impresora dbDal.NIFEnProceso
+Message: 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Verificando si NIF existe. NIF : Campo_6|1009220000000768 Numero TRN: 324543
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Key = ITEM1
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =ITBIS 18
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. ITBIS 18
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =1000
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 1000
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =17023
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 17023
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =1800
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 1800
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Key = PAGO1
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Debug
+Message: Balance Linea 7355: Balance|17023   
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito. 
+
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Debug
+Message: ***TotalBruto LIne 7382: 17023   
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Debug
+Message: currentmontoNeto: 144.26  
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Debug
+Message: ***ITBIS Impresora: 2597   
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: Verificando si NIF existe. NIF : 1009220000000768 Numero TRN: 324543
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:58
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =3
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 3
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: vAuxiliar 44.26; FAcumMonto 100; currentmontoNeto 144.26 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: FAcumMonto 100 currentmontoNeto 144.26 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: FAcumMonto 100 - currentmontoNeto 144.26 = -44.26 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =10000
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 10000
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Key = PAGO2
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: Balance Linea 7355: Balance|  
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: ***TotalBruto LIne 7382: 17023   
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: currentmontoNeto: 144.26  
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: ***ITBIS Impresora: 2597   
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =1
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 1
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: vAuxiliar 48.07; FAcumMonto 196.19; currentmontoNeto 144.26 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: FAcumMonto 196.19 currentmontoNeto 144.26 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Debug
+Message: FAcumMonto 196.19 - currentmontoNeto 144.26 = 51.93 
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =9619
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 9619
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:01:59
+================================================
+Title: 
+Message: Step 13
+StackTrace: Key = CLOSE
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. 
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =  
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito.   
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =Numero Trans: 324543
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. Numero Trans: 324543
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. 
+
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado = 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito.  
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =1
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. 1
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =Gracias por su compra
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. Gracias por su compra
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =2
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. 2
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =3
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. 3
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step 13
+StackTrace: Mensaje enviado =
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Campo agregado con exito. 
+Message: Step 13
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: Verifica ultimo NIF
+Message: Step 14 
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Step Final
+StackTrace: 
+Date/Time: 14/11/2018 9:02:00
+================================================
+Title: 
+Message: Error cerrando puerto: 0
+StackTrace: 
+Date/Time: 14/11/2018 9:02:01
+================================================

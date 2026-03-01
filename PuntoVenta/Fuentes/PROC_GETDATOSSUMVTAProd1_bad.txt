@@ -1,0 +1,224 @@
+SET TERM ^ ;
+ALTER PROCEDURE PROC_GETDATOSSUMVTA (
+    NUMERO_IN integer )
+RETURNS (
+    SERIE integer,
+    NUMERO integer,
+    CODIGO_USUARIO integer,
+    FECHA timestamp,
+    CANTIDAD numeric(15,2),
+    MONTO_TOTAL_BRUTO numeric(15,2),
+    TIPO_VENTA smallint,
+    STATUS_DET char(1),
+    CANT_VIAJES numeric(15,2),
+    PRECIO numeric(15,2),
+    DESCUENTO numeric(15,2),
+    MONTODESCITEM numeric(15,2),
+    ITBIS numeric(15,2),
+    MONTOBRUTO numeric(15,2),
+    PRECIOSUM numeric(15,2),
+    MONTORECITBISCONDESC numeric(15,2),
+    MONTORECITBIS numeric(15,2),
+    MONTODESCGLBDIST numeric(15,2),
+    MONTOITBISRECARGO numeric(15,2),
+    CODIGOPROD integer,
+    MONTOITBRECITMCONDESC numeric(15,2),
+    RECARGO_DET numeric(15,2),
+    MONTODESCADICIONAL numeric(15,2),
+    PORCDESADICIONAL numeric(15,2),
+    TIPONCFIFISCAL smallint,
+    PROPINALEY smallint,
+    MONTOPROPINA numeric(15,2),
+    NETO numeric(15,2),
+    PORC_DESC_ITEM numeric(15,2),
+    X1 numeric(15,2),
+    X2 numeric(15,2),
+    X3 numeric(15,2),
+    X4_MONTODESCADICIONAL numeric(15,2) )
+AS
+declare variable PORC_DESC_DET NUMERIC(15, 2);
+declare variable ITBI_DET NUMERIC(15, 2);
+declare variable VALOR_SERVICIO_DET NUMERIC(15, 2);
+declare variable VALOR_TOTAL_DET NUMERIC(15, 2);
+declare variable ITBIS_EXENTO SMALLINT;
+declare variable tasaitbi NUMERIC(15, 2);
+declare variable monto_recargo NUMERIC(15, 2);
+declare variable PorcPropina NUMERIC(15, 2);
+
+BEGIN
+  CANTIDAD = 0;
+  PORC_DESC_DET = 0;
+  ITBI_DET = 0;
+  VALOR_SERVICIO_DET = 0;
+  VALOR_TOTAL_DET = 0;
+  ITBIS_EXENTO = 0;
+  --MontoItbisRecargo = 0;
+  tasaitbi = 0;
+  Select r.PORCPROPLEGAL From REGISTRO r
+  into 
+  :PorcPropina;
+  
+  FOR
+    SELECT 
+      VENTAS_DET_RECOVER.SERIE,
+      VENTAS_DET_RECOVER.CODIGO_PROD,
+      VENTAS_RECOVER_MAST.NUMERO,
+      VENTAS_RECOVER_MAST.CODIGO_USUARIO,      
+      VENTAS_RECOVER_MAST.FECHA,
+      VENTAS_RECOVER_MAST.PORCDESADICIONAL,
+      abs(VENTAS_RECOVER_MAST.MONTO_TOTAL_BRUTO),
+      abs(VENTAS_DET_RECOVER.CANTIDAD),
+      abs(VENTAS_DET_RECOVER.PRECIO),
+      VENTAS_DET_RECOVER.PORC_DESC_DET,
+      abs(VENTAS_DET_RECOVER.ITBI_DET),
+      abs(VENTAS_DET_RECOVER.VALOR_SERVICIO_DET),
+      abs(VENTAS_DET_RECOVER.VALOR_TOTAL_DET),
+      abs(VENTAS_DET_RECOVER.ITBIS_EXENTO),
+      VENTAS_DET_RECOVER.TIPO_VENTA,      
+      VENTAS_DET_RECOVER.STATUS_DET,
+      abs(VENTAS_DET_RECOVER.cant_viajes),
+      --VENTAS_DET_RECOVER.PorcDescItem,
+      abs(VENTAS_RECOVER_MAST.MONTO_RECARGO),
+      VENTAS_RECOVER_MAST.TIPONCFIFISCAL,
+      abs(VENTAS_RECOVER_MAST.PROPINALEY),
+      VENTAS_DET_RECOVER.PORC_DESC_ITEM
+    FROM
+      VENTAS_RECOVER_MAST
+      INNER JOIN VENTAS_DET_RECOVER ON (VENTAS_RECOVER_MAST.NUMERO = VENTAS_DET_RECOVER.NUMERO)
+    Where VENTAS_RECOVER_MAST.NUMERO=:numero_in
+    INTO
+      :Serie,
+      :codigoprod,
+      :NUMERO,
+      :CODIGO_USUARIO,
+      :FECHA,
+      :PORCDESADICIONAL,
+      :MONTO_TOTAL_BRUTO,
+      :CANTIDAD,
+      :PRECIO,
+      :PORC_DESC_DET,
+      :ITBI_DET,
+      :VALOR_SERVICIO_DET,
+      :VALOR_TOTAL_DET,
+      :ITBIS_EXENTO,
+      :TIPO_VENTA,      
+      :STATUS_DET,
+      :cant_viajes,
+      --:PorcDescItem,
+      :monto_recargo      ,
+      :TIPONCFIFISCAL,
+      :PROPINALEY,
+      :PORC_DESC_ITEM
+  DO
+  BEGIN
+    Select distinct t.PORCIENTO 
+    From INVENTARIO_PRODUCTO i
+    inner join TASA_ITBIS t on t.IDTASAITBIS = i.IDTASAITBIS  
+    Where i.CODIGO = :codigoprod   
+    Into  
+    :tasaitbi;
+        
+    MontoPropina = 0;
+    MontoItbisRecargo =0;
+    MontoBruto = 0;
+    Itbis = 0;
+    Descuento = 0;
+    MontoItbRecItmConDesc = 0;
+    montorecitbiscondesc = 0;
+    montodescglbdist = 0;
+    Neto = 0;
+    MontoDescAdicional = 0;
+    MontoPropina = 0;
+    Montorecitbis = 0;
+    Recargo_det =0;
+    Descuento=0;    
+    Descuento=0;    
+    preciosum = 0;    
+    montodescitem = 0;
+    
+    if (cant_viajes is null) then cant_viajes = 0;
+        
+    if (abs(PORCDESADICIONAL) > 0) then
+    MontoDescAdicional = ((:CANTIDAD * :precio) * PORCDESADICIONAL / 100);      
+    else 
+    IF (PORC_DESC_ITEM > 0) THEN
+    Descuento = ((:CANTIDAD * :precio) * PORC_DESC_ITEM/100);    
+
+    x4_MontoDescAdicional  = MontoDescAdicional;
+    
+    --if (PORCDESADICIONAL > 0) THEN
+    --MONTO_TOTAL_BRUTO = MONTO_TOTAL_BRUTO - (MONTO_TOTAL_BRUTO*PORCDESADICIONAL/100);
+    
+    
+    MONTO_TOTAL_BRUTO = MONTO_TOTAL_BRUTO - Descuento;
+    
+    if (ABS(MONTO_TOTAL_BRUTO) > 0) then
+    MontoItbisRecargo = (((:CANTIDAD * :precio)/ MONTO_TOTAL_BRUTO) * (monto_recargo))  * :tasaitbi / 100;       
+    
+    if (ABS(MONTO_TOTAL_BRUTO) > 0 AND abs(monto_recargo) > 0) THEN    
+    begin
+      if (PORC_DESC_ITEM > 0 or TIPO_VENTA = 2) THEN  
+      begin        
+        if (PORC_DESC_ITEM > 0) then
+        MontoItbisRecargo = (((:CANTIDAD * :precio)/ MONTO_TOTAL_BRUTO) * (monto_recargo))  * :tasaitbi / 100;       
+        else 
+        MontoItbisRecargo= (((:CANTIDAD * :precio)/ MONTO_TOTAL_BRUTO)  * (monto_recargo*-1)) * :tasaitbi / 100;
+        
+        if (TIPO_VENTA = 2) THEN  
+        Recargo_det = ((:CANTIDAD * :precio) / MONTO_TOTAL_BRUTO) * monto_recargo*-1;
+        else
+        Recargo_det = ((:CANTIDAD * :precio) / MONTO_TOTAL_BRUTO) * monto_recargo;
+        
+        if (abs(PORC_DESC_ITEM) > 0 ) then
+        MontoItbRecItmConDesc =
+        ((((:CANTIDAD * :precio) * PORC_DESC_ITEM/100)/ MONTO_TOTAL_BRUTO) * monto_recargo*-1)* :tasaitbi / 100;
+        
+        Descuento = (:CANTIDAD * :precio) * PORC_DESC_ITEM/100;
+      end  else 
+      BEGIN
+        Descuento = (:CANTIDAD * :precio) * PORC_DESC_ITEM/100;
+        MontoItbisRecargo = ((:CANTIDAD * :precio / (MONTO_TOTAL_BRUTO - Descuento)) * (monto_recargo)) * :tasaitbi / 100;        
+        Recargo_det = (Precio / (MONTO_TOTAL_BRUTO - Descuento)) * monto_recargo;      
+      end    
+    end
+    
+    MontoBruto =  (:CANTIDAD * :precio) - Descuento;
+    
+    Neto = (:CANTIDAD * :precio) + Recargo_det - Descuento - MontoDescAdicional;
+    
+    if (ITBI_DET is null) then ITBI_DET = 0;
+    
+    --xPorcDescItem = PORC_DESC_ITEM;
+    --Neto = 0;
+    
+    if (PROPINALEY > 0 and PROPINALEY = 1 ) THEN
+    begin
+      if  (Recargo_det is null) then  Recargo_det = 0;
+      MontoPropina =  
+      ((:CANTIDAD * :precio) + (Recargo_det - Descuento - MontoDescAdicional) 
+      --+((:CANTIDAD * :precio) - Descuento - MontoDescAdicional)
+      )* PorcPropina/100;
+      
+      Neto = Neto + MontoPropina ;
+      
+     if (:TIPONCFIFISCAL in (4,5,6,7)) then
+     Neto = Neto -  :ITBI_DET;      
+      --temporal
+      x1 = :CANTIDAD * :precio;
+      x2 = :CANTIDAD * :precio + Recargo_det;
+      x3 = (((:CANTIDAD * :precio) - Descuento - MontoDescAdicional)* PorcPropina/100) ;
+    end
+    
+    Itbis = Itbis + :ITBI_DET;
+    SUSPEND;
+  END
+END^
+SET TERM ; ^
+
+
+GRANT EXECUTE
+ ON PROCEDURE PROC_GETDATOSSUMVTA TO  DIVISON;
+
+GRANT EXECUTE
+ ON PROCEDURE PROC_GETDATOSSUMVTA TO  SYSDBA;
+

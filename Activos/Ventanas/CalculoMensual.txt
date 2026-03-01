@@ -1,0 +1,44 @@
+procedure TfrmCalculoDepMensual.CalculoDepre;
+Var
+  AnioCompra, MesCompra, DiaCompra : Word;
+  AnioActual, MesActual, DiaActual : Word;
+  ValorDepreciable : Real;
+begin
+  qryDatosActivos.First;
+  qryDatosActivos.DisableControls;
+  While not qryDatosActivos.Eof do
+  begin
+    dm.rxDepreciacion.Insert;
+    DecodeDate(qryDatosActivosFECHA_COMPRA.Value,AnioCompra,
+               MesCompra, DiaCompra);
+    DecodeDate(dtpkfecha.Date,AnioActual,MesActual,DiaActual);
+    if (AnioCompra = AnioActual) And (MesCompra <= MesActual) then
+    MesActual := 12 - MesCompra + 1 else MesActual := 12;
+
+    if qryDatosActivosVALOR_EN_LIBRO.Value > 100.01 then
+    begin
+      ValorDepreciable:= qryDatosActivosVALOR_DEPRECIABLE.Value;
+      if (MesCompra <= MesActual) And (Aniocompra = AnioActual) then
+      ValorDepreciable:=qryDatosActivosValor_Original.Value;
+
+      dm.rxDepreciacionDepre_Anual.Value := 
+      ValorDepreciable * (qryDatosActivosPORC_DEPRE.Value/2)/100;
+      if (AnioCompra = AnioActual) then //si es el primer año
+      dm.rxDepreciacionDepre_Anual.Value :=
+      dm.rxDepreciacionDepre_Anual.Value / 2;
+    end else
+    dm.rxDepreciacionDepre_Anual.Value := qryDatosActivosDEPRE_ANUAL.Value;
+    if (MesCompra = MesActual) and (AnioCompra = AnioActual) then
+    dm.rxDepreciacionVALOR.Value       := dm.rxDepreciacionDepre_Anual.Value
+    else dm.rxDepreciacionVALOR.Value  := dm.rxDepreciacionDepre_Anual.Value / MesActual;
+    dm.rxDepreciacionTIPO.Value        := qryDatosActivosTIPO.Value;
+    dm.rxDepreciacionDescripcion.Value := qryDatosActivosDESCRIPCION.Value;
+    dm.rxDepreciacionCODIGO.Value      := qryDatosActivosCODIGO.Value;
+    dm.rxDepreciacionFECHA.Value       := ExtraerFecha(dtpkFecha.Datetime);
+    dm.rxDepreciacionSTATUS.Value      := 'A';
+    dm.rxDepreciacion.Post;
+    Progressbar1.StepIt;
+    qryDatosActivos.Next;
+  end;
+  qryDatosActivos.EnableControls;
+end;

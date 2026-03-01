@@ -1,0 +1,230 @@
+object ImageForm: TImageForm
+  Left = 243
+  Top = 168
+  ActiveControl = FileListBox1
+  BorderIcons = [biSystemMenu, biMinimize]
+  BorderStyle = bsSingle
+  Caption = 'Image Viewer'
+  ClientHeight = 435
+  ClientWidth = 861
+  Color = clBtnFace
+  ParentFont = True
+  KeyPreview = True
+  OldCreateOrder = True
+  Position = poDefaultPosOnly
+  OnClose = FormClose
+  OnCreate = FormCreate
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Bevel1: TBevel
+    Left = 316
+    Top = 5
+    Width = 533
+    Height = 428
+  end
+  object Label1: TLabel
+    Left = 325
+    Top = 11
+    Width = 147
+    Height = 13
+    AutoSize = False
+    Caption = 'Preview'
+  end
+  object Label2: TLabel
+    Left = 8
+    Top = 312
+    Width = 32
+    Height = 13
+    Caption = 'Label2'
+    Visible = False
+  end
+  object DirectoryListBox1: TDirectoryListBox
+    Left = 8
+    Top = 12
+    Width = 148
+    Height = 260
+    FileList = FileListBox1
+    IntegralHeight = True
+    ItemHeight = 16
+    TabOrder = 1
+  end
+  object DriveComboBox1: TDriveComboBox
+    Left = 9
+    Top = 277
+    Width = 148
+    Height = 19
+    DirList = DirectoryListBox1
+    TabOrder = 3
+  end
+  object FileEdit: TEdit
+    Left = 166
+    Top = 13
+    Width = 139
+    Height = 21
+    TabOrder = 0
+    Text = '*.bmp;*.ico;*.wmf;*.emf,*.jpg'
+    OnKeyPress = FileEditKeyPress
+  end
+  object Panel1: TPanel
+    Left = 324
+    Top = 27
+    Width = 517
+    Height = 366
+    BevelInner = bvLowered
+    TabOrder = 6
+    object Image1: TImage
+      Left = 2
+      Top = 2
+      Width = 513
+      Height = 362
+      Align = alClient
+    end
+  end
+  object FileListBox1: TFileListBox
+    Left = 166
+    Top = 41
+    Width = 139
+    Height = 227
+    FileEdit = FileEdit
+    ItemHeight = 13
+    Mask = '*.bmp;*.ico;*.wmf;*.emf,*.jpg'
+    TabOrder = 2
+    OnClick = FileListBox1Click
+  end
+  object ViewBtn: TBitBtn
+    Left = 701
+    Top = 402
+    Width = 63
+    Height = 24
+    Caption = '&Full View'
+    TabOrder = 5
+    OnClick = ViewBtnClick
+  end
+  object FilterComboBox1: TFilterComboBox
+    Left = 166
+    Top = 275
+    Width = 140
+    Height = 21
+    FileList = FileListBox1
+    Filter = 
+      'Image Files (*.bmp, *.ico, *.wmf, *.emf)|*.bmp;*.ico;*.wmf;*.emf' +
+      ',*.jpg|Bitmap Files (*.bmp)|*.bmp|Icons (*.ico)|*.ico|Metafiles ' +
+      '(*.wmf, *.emf)|*.wmf;*.emf|JPG|*.jpg|All files (*.*)|*.*'
+    TabOrder = 4
+  end
+  object StretchCheck: TCheckBox
+    Left = 781
+    Top = 408
+    Width = 64
+    Height = 17
+    Caption = 'Stretch'
+    TabOrder = 7
+    OnClick = StretchCheckClick
+  end
+  object Panel2: TPanel
+    Left = 8
+    Top = 344
+    Width = 299
+    Height = 65
+    TabOrder = 8
+    Visible = False
+    object Label3: TLabel
+      Left = 0
+      Top = 0
+      Width = 102
+      Height = 13
+      Caption = 'Descripcion Producto'
+    end
+    object Edit1: TEdit
+      Left = 0
+      Top = 20
+      Width = 153
+      Height = 21
+      TabOrder = 0
+    end
+    object BitBtn10: TBitBtn
+      Left = 158
+      Top = 16
+      Width = 36
+      Height = 25
+      TabOrder = 1
+      Glyph.Data = {
+        76010000424D7601000000000000760000002800000020000000100000000100
+        04000000000000010000130B0000130B00001000000000000000000000000000
+        800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+        33333333333333333333EEEEEEEEEEEEEEE333FFFFFFFFFFFFF3E00000000000
+        00E337777777777777F3E0F77777777770E337F33333333337F3E0F333333333
+        70E337F33333333337F3E0F33333333370E337F3333F3FF337F3E0F333030033
+        70E337F3337F77F337F3E0F33003003370E337F3377F77F337F3E0F300030033
+        70E337F3777F77F337F3E0F33003003370E337F3377F77F337F3E0F333030033
+        70E337F33373773337F3E0F33333333370E337F33333333337F3E0F333333333
+        70E337F33333333337F3E0FFFFFFFFFFF0E337FFFFFFFFFFF7F3E00000000000
+        00E33777777777777733EEEEEEEEEEEEEEE33333333333333333}
+      NumGlyphs = 2
+    end
+    object BitBtn11: TBitBtn
+      Left = 197
+      Top = 16
+      Width = 31
+      Height = 25
+      TabOrder = 2
+      Glyph.Data = {
+        76010000424D7601000000000000760000002800000020000000100000000100
+        04000000000000010000120B0000120B00001000000000000000000000000000
+        800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+        3333333333333333333333333333333333333333333333333333333333333333
+        3333333333333FF3333333333333003333333333333F77F33333333333009033
+        333333333F7737F333333333009990333333333F773337FFFFFF330099999000
+        00003F773333377777770099999999999990773FF33333FFFFF7330099999000
+        000033773FF33777777733330099903333333333773FF7F33333333333009033
+        33333333337737F3333333333333003333333333333377333333333333333333
+        3333333333333333333333333333333333333333333333333333333333333333
+        3333333333333333333333333333333333333333333333333333}
+      NumGlyphs = 2
+    end
+    object BitBtn12: TBitBtn
+      Left = 227
+      Top = 16
+      Width = 33
+      Height = 25
+      TabOrder = 3
+      Glyph.Data = {
+        76010000424D7601000000000000760000002800000020000000100000000100
+        04000000000000010000120B0000120B00001000000000000000000000000000
+        800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+        3333333333333333333333333333333333333333333333333333333333333333
+        3333333333333333333333333333333333333333333FF3333333333333003333
+        3333333333773FF3333333333309003333333333337F773FF333333333099900
+        33333FFFFF7F33773FF30000000999990033777777733333773F099999999999
+        99007FFFFFFF33333F7700000009999900337777777F333F7733333333099900
+        33333333337F3F77333333333309003333333333337F77333333333333003333
+        3333333333773333333333333333333333333333333333333333333333333333
+        3333333333333333333333333333333333333333333333333333}
+      NumGlyphs = 2
+    end
+    object BitBtn13: TBitBtn
+      Left = 262
+      Top = 16
+      Width = 30
+      Height = 25
+      TabOrder = 4
+      Glyph.Data = {
+        76010000424D7601000000000000760000002800000020000000100000000100
+        04000000000000010000130B0000130B00001000000000000000000000000000
+        800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+        33333333333333333333EEEEEEEEEEEEEEE333FFFFFFFFFFFFF3E00000000000
+        00E337777777777777F3E0F77777777770E337F33333333337F3E0F333333333
+        70E337F33333333337F3E0F33333333370E337F333FF3F3337F3E0F330030333
+        70E337F3377F7FF337F3E0F33003003370E337F3377F77FF37F3E0F330030003
+        70E337F3377F777337F3E0F33003003370E337F3377F773337F3E0F330030333
+        70E337F33773733337F3E0F33333333370E337F33333333337F3E0F333333333
+        70E337F33333333337F3E0FFFFFFFFFFF0E337FFFFFFFFFFF7F3E00000000000
+        00E33777777777777733EEEEEEEEEEEEEEE33333333333333333}
+      NumGlyphs = 2
+    end
+  end
+end

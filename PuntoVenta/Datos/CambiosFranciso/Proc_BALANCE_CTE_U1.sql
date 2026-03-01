@@ -1,0 +1,54 @@
+SET TERM ^ ;
+alter PROCEDURE Proc_BALANCE_CTE_U1(tipoaccion smallint,
+  CODIGO INTEGER,
+  SERVICIO INTEGER,
+  MONEDA CHAR(1),
+  BALANCE_ACT NUMERIC(15, 2),
+  BALANCE_ANT NUMERIC(15, 2),
+  DEBITO_MES NUMERIC(15, 2),  
+  DEBITO_ACM NUMERIC(15, 2),  
+  FECHA_MOD timestamp,
+  MOD_POR VARCHAR(12)
+  ) 
+AS
+BEGIN
+    if (tipoaccion = 0) then --anula cargo
+    begin
+      UPDATE BALANCE_CTE
+      SET          
+      BALANCE_ANT = :BALANCE_ACT,
+      BALANCE_ACT = BALANCE_ACT - :BALANCE_ACT,        
+      DEBITO_MES = DEBITO_MES - :DEBITO_MES,    
+      DEBITO_ACM = DEBITO_ACM - :DEBITO_ACM,  
+ 
+      FECHA_MOD = :FECHA_MOD,
+      MOD_POR = :MOD_POR        
+      WHERE
+      (CODIGO = :CODIGO) AND 
+     (SERVICIO = :SERVICIO) AND 
+     (MONEDA = :MONEDA);
+   end else  
+  if (tipoaccion = 1) then --carga valor
+  begin
+    UPDATE BALANCE_CTE
+    SET   
+    BALANCE_ANT = :BALANCE_ACT,
+    BALANCE_ACT = BALANCE_ACT + :BALANCE_ACT,        
+    DEBITO_MES = DEBITO_MES + :DEBITO_MES,    
+    DEBITO_ACM = DEBITO_ACM + :DEBITO_ACM, 
+    FECHA_MOD = :FECHA_MOD,
+    MOD_POR = :MOD_POR
+   WHERE
+      (CODIGO = :CODIGO) AND 
+     (SERVICIO = :SERVICIO) AND 
+     (MONEDA = :MONEDA);    
+  end  
+END^
+SET TERM ; ^
+
+
+GRANT EXECUTE
+ ON PROCEDURE Proc_BALANCE_CTE_U1 TO  DIVISON;
+ 
+ GRANT EXECUTE
+ ON PROCEDURE Proc_BALANCE_CTE_U1 TO  sysdba;

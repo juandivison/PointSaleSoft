@@ -1,0 +1,96 @@
+SET TERM ^ ;
+ALTER PROCEDURE PROC_GETSUMVTAEXTRA (
+    NUMEROTRN integer )
+RETURNS (
+    NUMERO integer,
+    DC_MONTOBRUTO numeric(15,2),
+    D_TASA_ITBIS numeric(15,2),
+    T_PROPINA numeric(15,2),
+    T_MONTOINTERES numeric(15,2),
+    T_MONTONCRAPLICADO numeric(15,2),
+    TC_ITBIS numeric(15,2),
+    DC_MONTODESCITEM double precision,
+    TC_MONTODESCGLOBAL double precision,
+    TC_MONTODESCITEMS double precision,
+    TC_FMONTODESCNIVELITEM double precision,
+    TC_SUBTOTAL double precision,
+    TC_MONTODESCADICIONAL double precision,
+    DC_PROPINALEGAL double precision,
+    DC_ITBIS_CLD double precision,
+    TC_MONTOITBISRECARGO_GLB double precision,
+    TC_MONTOITBISRECARGO_ITM double precision,
+    T_RECARGO double precision,
+    TOTAL_ITBIS numeric(15,2) )
+AS
+BEGIN
+ 
+  FOR
+    SELECT 
+      POS_EXTRA_SUM.NUMERO,
+      sum(DISTINCT DC_MONTOBRUTO) AS DC_MONTOBRUTO,
+      sum(D_TASA_ITBIS) AS D_TASA_ITBIS,      
+      sum(distinct T_PROPINA) AS T_PROPINA,
+      sum(T_MONTOINTERES) AS T_MONTOINTERES,
+      sum(T_MONTONCRAPLICADO) AS T_MONTONCRAPLICADO,
+      sum(TC_ITBIS) AS TC_ITBIS,
+      sum(DC_MONTODESCITEM) AS DC_MONTODESCITEM,
+      sum(TC_MONTODESCGLOBAL) AS TC_MONTODESCGLOBAL,
+      sum(DISTINCT TC_MONTODESCITEMS) AS TC_MONTODESCITEMS,
+      sum(DISTINCT TC_FMONTODESCNIVELITEM) AS TC_FMONTODESCNIVELITEM,
+      sum(distinct TC_SUBTOTAL) AS TC_SUBTOTAL,
+      sum(DISTINCT TC_MONTODESCADICIONAL) AS TC_MONTODESCADICIONAL,
+      sum(distinct DC_PROPINALEGAL) AS DC_PROPINALEGAL,
+      sum(round(DC_ITBIS_CLD,2)) AS DC_ITBIS_CLD,
+      sum(TC_MONTOITBISRECARGO_GLB) AS TC_MONTOITBISRECARGO_GLB,
+      sum(TC_MONTOITBISRECARGO_ITM) AS TC_MONTOITBISRECARGO_ITM,
+      sum(distinct t_recargo) as t_recargo
+    FROM
+      POS_EXTRA_SUM
+    where numero =:numerotrn
+    GROUP BY
+      POS_EXTRA_SUM.NUMERO
+
+    INTO
+      :NUMERO,
+      :DC_MONTOBRUTO,
+      :D_TASA_ITBIS,      
+      :T_PROPINA,
+      :T_MONTOINTERES,
+      :T_MONTONCRAPLICADO,
+      :TC_ITBIS,
+      :DC_MONTODESCITEM,
+      :TC_MONTODESCGLOBAL,
+      :TC_MONTODESCITEMS,
+      :TC_FMONTODESCNIVELITEM,
+      :TC_SUBTOTAL,
+      :TC_MONTODESCADICIONAL,
+      :DC_PROPINALEGAL,
+      :DC_ITBIS_CLD,
+      :TC_MONTOITBISRECARGO_GLB,
+      :TC_MONTOITBISRECARGO_ITM,
+      :t_recargo
+  DO
+  BEGIN
+  Select 
+     sum(round(t.DC_ITBIS_CLD,2)) + 
+     sum(round(t.TC_MONTOITBISRECARGO_GLB,2)) + 
+     sum(round(t.TC_MONTOITBISRECARGO_ITM,2)), sum(distinct t.DC_PROPINALEGAL)  
+     From POS_EXTRA_DET t 
+     Where t.NUMERO =:numero
+     Into
+     :total_itbis,
+     :DC_PROPINALEGAL;
+     if (TC_ITBIS is null) then
+     TC_ITBIS = 0;
+    SUSPEND;
+  END
+END^
+SET TERM ; ^
+
+
+GRANT EXECUTE
+ ON PROCEDURE PROC_GETSUMVTAEXTRA TO  DIVISON;
+
+GRANT EXECUTE
+ ON PROCEDURE PROC_GETSUMVTAEXTRA TO  SYSDBA;
+

@@ -1,0 +1,9 @@
+alter table INVENTARIO_PRODUCTO
+add PrecioVenta1 numeric(15,2),
+add PrecioVenta2 numeric(15,2),
+add PrecioVenta3 numeric(15,2),
+add PrecioVenta4 numeric(15,2),
+add PorcUtilidad1 numeric(15,2),
+add PorcUtilidad2 numeric(15,2),
+add PorcUtilidad3 numeric(15,2),
+add PorcUtilidad4 numeric(15,2)

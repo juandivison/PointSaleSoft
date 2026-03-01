@@ -1,0 +1,91 @@
+SET TERM ^ ;
+ALTER PROCEDURE PROC_INS_ORDEN_COMP_DET (
+    NUMERO integer,
+    COD_SERV_PROD integer,
+    DEPARTAMENTO integer,
+    OBSERVACION varchar(80),
+    CANTIDAD float,
+    VALOR numeric(15,2),
+    STATUS char(1),
+    IN_POR varchar(12),
+    FECHA_IN timestamp,
+    MOD_POR varchar(12),
+    FECHA_MOD timestamp,
+    NUMERO_DOCUMENTO integer,
+    NUMERO_FACTURA integer,
+    COD_CTA_CONCEPTO integer,
+    TIPOSERVICIO integer,
+    SUBTIPOSERV integer,
+    NO_SERIE_RES integer,
+    CODIGO_CONDUCTOR integer,
+    CODIGO_SERVCOSTO integer,
+    PRECIO numeric(15,2),
+    AREA_ORDEN integer,
+    ITBI_DET float,
+    PORC_DESC_DET float,
+    MONTO_DESCUENTO numeric(15,2) )
+AS
+DECLARE VARIABLE xSERIE INTEGER;
+BEGIN
+  Select Gen_id(GEN_NUM_ORDEN_DET,1) From rdb$database
+  Into :xSERIE;
+
+  INSERT INTO ORDEN_COMP_DET (
+    SERIE,
+    NUMERO,
+    COD_SERV_PROD,
+    DEPARTAMENTO,
+    OBSERVACION,
+    CANTIDAD,
+    VALOR,
+    STATUS,
+    IN_POR,
+    FECHA_IN,
+    MOD_POR,
+    FECHA_MOD,
+    NUMERO_DOCUMENTO,
+    NUMERO_FACTURA,
+    COD_CTA_CONCEPTO,
+    TIPOSERVICIO,
+    SUBTIPOSERV,
+    NO_SERIE_RES,
+    CODIGO_CONDUCTOR,
+    CODIGO_SERVCOSTO,
+    PRECIO,
+    AREA_ORDEN,
+    ITBI_DET,
+    PORC_DESC_DET,
+    MONTO_DESCUENTO)
+  VALUES (
+    :XSERIE,
+    :NUMERO,
+    :COD_SERV_PROD,
+    :DEPARTAMENTO,
+    :OBSERVACION,
+    :CANTIDAD,
+    :VALOR,
+    :STATUS,
+    :IN_POR,
+    :FECHA_IN,
+    :MOD_POR,
+    :FECHA_MOD,
+    :NUMERO_DOCUMENTO,
+    :NUMERO_FACTURA,
+    :COD_CTA_CONCEPTO,
+    :TIPOSERVICIO,
+    :SUBTIPOSERV,
+    :NO_SERIE_RES,
+    :CODIGO_CONDUCTOR,
+    :CODIGO_SERVCOSTO,
+    :PRECIO,
+    :AREA_ORDEN,
+    :ITBI_DET,
+    :PORC_DESC_DET,
+    :MONTO_DESCUENTO);
+END^
+SET TERM ; ^
+
+
+GRANT EXECUTE
+ ON PROCEDURE PROC_INS_ORDEN_COMP_DET TO  DIVISON;
+
