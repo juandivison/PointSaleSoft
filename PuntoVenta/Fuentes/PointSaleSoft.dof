@@ -90,7 +90,7 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
 UnitOutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 PackageDLLOutputDir=
 PackageDCPOutputDir=
@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/GLBRUTADB="ecfProsesur"
+RunParams=/GLBRUTADB="Expert"
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -139,14 +139,15 @@ c:\program files (x86)\borland\delphi7\Projects\Bpl\PerlRegExD7.bpl=TPerlRegEx -
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 [HistoryLists\hlUnitOutputDirectory]
-Count=1
+Count=2
 Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
+Item1=C:\Proyectos\IdesiSync\LoanProcess\VerificarLicencia\dcu
 [HistoryLists\hlOutputDirectorry]
-Count=7
-Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
-Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\ecfMariano
-Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Prosesur
-Item3=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
-Item4=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\ERPTapiceria
-Item5=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Tamayo
-Item6=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Taller
+Count=1
+Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+[HistoryLists\hlBPLOutput]
+Count=1
+Item0=C:\Proyectos\IdesiSync\LoanProcess\VerificarLicencia\Bin\
+[HistoryLists\hlDCPOutput]
+Count=1
+Item0=C:\Program Files (x86)\Borland\Delphi7\tpapro_5.00\tpapro_5.00\dcp

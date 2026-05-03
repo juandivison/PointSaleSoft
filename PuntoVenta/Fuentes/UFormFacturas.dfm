@@ -1,6 +1,6 @@
 object frmConsultaFacturas: TfrmConsultaFacturas
-  Left = 297
-  Top = 117
+  Left = 282
+  Top = 133
   Width = 1171
   Height = 715
   Caption = 'Facturas'
@@ -1242,6 +1242,19 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     Width = 80
     Height = 21
     TabOrder = 32
+  end
+  object BitBtn16: TBitBtn
+    Left = 1086
+    Top = 578
+    Width = 61
+    Height = 32
+    Hint = 'Imprimir Carta de Ruta'
+    Caption = 'CARTA'
+    ParentShowHint = False
+    ShowHint = True
+    TabOrder = 33
+    Visible = False
+    OnClick = BitBtn16Click
   end
   object SkinData1: TSkinData
     Active = True
@@ -2693,6 +2706,14 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     object ieneECF1: TMenuItem
       Caption = 'Tiene ECF?'
       OnClick = ieneECF1Click
+    end
+    object CartadeRuta1: TMenuItem
+      Caption = 'Carta de Ruta'
+      OnClick = BitBtn16Click
+    end
+    object CartadeSaldo1: TMenuItem
+      Caption = 'Carta de Saldo'
+      OnClick = CartadeSaldo1Click
     end
   end
   object tblDetallePagos: TIBDataSet

@@ -171,8 +171,11 @@ begin
     begin
       tRegistroSHOWPRICEWITHITBIS.Value:=0;
     end;
-    tRegistro.Post;
-    tRegistro.ApplyUpdates;
+    if tRegistro.state in [dsEdit, dsInsert] then
+    begin
+      tRegistro.Post;
+      tRegistro.ApplyUpdates;
+    end;
     if not tregistro.Transaction.InTransaction then
     tregistro.Transaction.StartTransaction;
     try
@@ -268,16 +271,20 @@ end;
 procedure TfrmTrgtr.BitBtn1Click(Sender: TObject);
 begin
   tRegistro.close;
-  tRegistro.Open;
-  
+  tRegistro.Open;  
 end;
 
 procedure TfrmTrgtr.chkFinanciamientoClick(Sender: TObject);
 begin
+  if tRegistro.state = dsInactive then
+  tRegistro.Open;
   if  chkFinanciamiento.Checked then
   begin
-    tRegistro.Edit;
-    tRegistroMOD_FINANC.Value := 1;
+    if tRegistro.State = dsBrowse then
+    begin
+      tRegistro.Edit;
+      tRegistroMOD_FINANC.Value := 1;
+    end;
   end else
   begin
     tRegistro.Edit;
@@ -522,7 +529,12 @@ procedure TfrmTrgtr.DBRadioGroup4Change(Sender: TObject);
 begin
   if (tRegistroTRANSP_ITBIS.Value=0) then
   begin
-    tRegistroSHOWPRICEWITHITBIS.Value:=0;
+    if tRegistro.state in [dsInactive] then
+    Exit else
+    begin
+      if tRegistro.state = dsEdit then
+      tRegistroSHOWPRICEWITHITBIS.Value:=0;
+    end;
   end;
 end;
 

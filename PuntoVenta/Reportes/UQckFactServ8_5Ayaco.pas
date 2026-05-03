@@ -126,6 +126,8 @@ type
     qrFechaFDigital: TQRLabel;
     QRDBText35: TQRDBText;
     qrlblItbisenPrecio: TQRLabel;
+    Antes_TOTAL_QRExpr8: TQRExpr;
+    QRImage3: TQRImage;
     procedure QuickRepBeforePrint(Sender: TCustomQuickRep;
       var PrintReport: Boolean);
     procedure QRLabel23Print(sender: TObject; var Value: String);
@@ -153,6 +155,8 @@ type
       var PrintBand: Boolean);
     procedure QRDBText32Print(sender: TObject; var Value: String);
     procedure QRLabel4Print(sender: TObject; var Value: String);
+    procedure QRLabel2Print(sender: TObject; var Value: String);
+    //procedure SetParameterValues;
   private
 
   public
@@ -214,14 +218,29 @@ procedure TqckFactServ8_5Ayaco.ColumnHeaderBand1BeforePrint(
   var
     _xImagen : String;
 begin
-  if SetLogoCia(_ximagen) then
-  if (_ximagen <> '') then
-  QRImage1.Picture.LoadFromFile(_ximagen);
-  if dmReportes.qryViewVentasMastDESC_TIPONCF.IsNull then
-  QRDBText23.Caption:='FACTURA';
+  if (GlBExpert = 1) then
+  begin
+    if SetLogoCia(_ximagen) then
+    if (_ximagen <> '') then
+    QRImage3.Picture.LoadFromFile(_ximagen);
+    if dmReportes.qryViewVentasMastDESC_TIPONCF.IsNull then
+    QRDBText23.Caption:='FACTURA';
     dmCompania.tblCompania.close;
-  dmCompania.tblcompania.open;
-  dmCompania.tblCompania.Locate('codigo', glbCia_Key, []);
+    dmCompania.tblcompania.open;
+    dmCompania.tblCompania.Locate('codigo', glbCia_Key, []);
+    QrImage1.Visible:=False;
+  end else
+  begin
+    QrImage3.Visible:=False;
+    if SetLogoCia(_ximagen) then
+    if (_ximagen <> '') then
+    QRImage1.Picture.LoadFromFile(_ximagen);
+    if dmReportes.qryViewVentasMastDESC_TIPONCF.IsNull then
+    QRDBText23.Caption:='FACTURA';
+    dmCompania.tblCompania.close;
+    dmCompania.tblcompania.open;
+    dmCompania.tblCompania.Locate('codigo', glbCia_Key, []);
+  end;
 end;
 
 procedure TqckFactServ8_5Ayaco.QRDBText9Print(sender: TObject;
@@ -346,16 +365,21 @@ begin
     rxValorDivisa.open;
     rxValorDivisa.Insert;
     tasaMoneda:=GlbMontoTasaByFecha('2',ExtraerFecha(dmReportes.qryViewVentasMastFecha.Value));//US
-    if tasaMoneda > 0 then
-    MontoDivisa:= dmReportes.qryViewVentasMastValor_Total_det.value /tasaMoneda
+    if (tasaMoneda > 0) then
+    MontoDivisa:= dmReportes.qryViewVentasMastValor_Total_det.value / tasaMoneda
     else
     MontoDivisa:= 0;
 
-    //qrValorDivisaExt.Caption:= InsertarComa(FloatToStr(MontoDivisa));
     xlbl:=QRLabel26.Caption;
     rxValorDivisaMontoTotal.Value:=MontoDivisa;
     rxValorDivisa.Post;
-    QRLabel26.Caption:=StringReplace(xlbl,'[valortasa]',InsertarComa(Format('%8.2f', [tasaMoneda])),[rfIgnoreCase]);
+    if (GlbMonedaBase = 1) then
+    QRLabel26.Caption := StringReplace(xlbl,'[valortasa]',InsertarComa(Format('%8.2f', [tasaMoneda])),[rfIgnoreCase])
+    else
+    begin
+      QRLabel26.Enabled := False;
+      QRDBText34.Enabled:= False;
+    end;
   except
   end;
 end;
@@ -475,4 +499,60 @@ begin
   Value:= Value+strCopia;
 end;
 
+procedure TqckFactServ8_5Ayaco.QRLabel2Print(sender: TObject;
+  var Value: String);
+begin
+   if (dmReportes.qryViewVentasMastMONEDA.Value <> '1') then
+   Value:=SimboloMoneda(dmReportes.qryViewVentasMastMONEDA.Value);
+end;
+ {
+procedure TqckFactServ8_5Ayaco.SetParameterValues;
+var
+   codseg,femision,rutaqr, urlimage: string;
+begin
+  if (dmFactura.qryVentaFacturaMONTO_CAMBIO.IsNull) Or
+     (dmFactura.qryVentaFacturaMONTO_CAMBIO.Value = 0) then
+  begin
+    ChildBand2.HasChild:=False;
+  end;
+  if GlbActivaECF = 0 then
+  begin
+    ChildBand4.Height:=0;
+    QRImage1.Visible:= False;
+    QRLabel30.Visible:= False;
+    QRLabel31.Visible:= False;
+    qrCodigoSegecf.Visible:= False;
+    qrFechaFDigital.Visible:= False;
+  end else
+  begin
+    urlimage:=GetUrlImageTimbre(dmFactura.qryVentaFacturaNUMERO.Value,codseg,femision);
+    if (urlimage <> '') then
+    begin
+       SetQrUrlAsJpgToQRImage(
+       urlImage,
+       QRImage1,
+       45,  // mm (ajústalo si quieres más grande/pequeño)
+       qckFactServ8_5Ayaco.PrinterSettings.PrinterIndex );
+       qrCodigoSegecf.Caption := codseg;
+       qrFechaFDigital.Caption:= femision;
+       ChildBand4.HasChild    := false;
+    end else
+    begin
+      rutaqr:=UUtilecftimbre.GetRutaTimbre(dmFactura.qryVentaFacturaNUMERO.Value,codseg,femision);
+      if FileExists(rutaqr) then
+      begin
+        QRImage1.Picture.LoadFromFile(rutaqr);
+        qrCodigoSegecf.Caption :=codseg;
+        qrFechaFDigital.Caption:=femision;
+        ChildBand4.HasChild:=False;
+        //t PrintBand:=True;
+      end else
+      begin
+        LogInformacionTxt('Ruta codigo QR, no existe ->'+rutaqr);
+        ChildBand4.Height:=0;
+      end;
+    end;
+  end;
+end;
+    }
 end.

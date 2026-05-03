@@ -1,6 +1,6 @@
 object frmCheckNCFSec: TfrmCheckNCFSec
-  Left = 240
-  Top = 138
+  Left = 350
+  Top = 209
   Width = 994
   Height = 462
   Caption = 'Chequear Secuencia NCF'

@@ -83,7 +83,7 @@ var
 
 implementation
   uses UDatModConectar, UUtilecf, Uglobal;
-  
+
 {$R *.dfm}
 
 procedure TfrmNCFAsignados.AplicarFiltrosNCF;
@@ -262,6 +262,7 @@ var
 begin
   _smg:='';
   if tblNCFAsignadosNUMERO_NCF.IsNull then exit;
+  if (tblNCFAsignadosNUMERO_NCF.Value = '') then exit;
   if not UUtilecf.EjecutarECF_DownQRXML(GlbRutaEcf, tblNCFAsignadosNUMERO_NCF.Value, _smg) then
        LogInformacionTxt(PChar(' -Rutina Descargar QR y XML Firmado- ' + _smg))
   else

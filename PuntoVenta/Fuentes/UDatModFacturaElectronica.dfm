@@ -1,9 +1,9 @@
 object dmFactElectronica: TdmFactElectronica
   OldCreateOrder = False
-  Left = 1132
-  Top = 312
-  Height = 404
-  Width = 608
+  Left = 812
+  Top = 195
+  Height = 372
+  Width = 509
   object tblEndPointseCF: TIBDataSet
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
@@ -163,14 +163,12 @@ object dmFactElectronica: TdmFactElectronica
       'left join NCF_ASIGNADOS n on n.SERIE = r.SERIE_NCF_ASIGNADO'
       'left join ECF_TIMBRE_LOG l on l.ENCF = n.NUMERO_NCF'
       'Where '
-      'r.status not in ('#39'C'#39') and'
-      'l.CODIGO_SEGURIDAD is null'
+      'r.status Not in ('#39'C'#39') and l.CODIGO_SEGURIDAD Is Null'
       'and n.NUMERO_NCF not in ('#39'<PLACEHOLDER>'#39')'
-      'and n.NUMERO_NCF like '#39'E32%'#39
+      'and (n.NUMERO_NCF like '#39'E32%'#39' or n.NUMERO_NCF like '#39'E31%'#39')'
       
         'and (UPPER(n.DGII_STATUS) <> '#39'ACEPTADO'#39' OR N.DGII_STATUS IS NULL' +
-        ')'
-      'order by r.NUMERO')
+        ') order by r.NUMERO')
     Left = 40
     Top = 144
     object qryEcfAconciliarNUMERO: TIntegerField
@@ -548,9 +546,16 @@ object dmFactElectronica: TdmFactElectronica
       'from NCF_ASIGNADOS r'
       'inner join VENTAS_MAST v on v.SERIE_NCF_ASIGNADO = r.SERIE'
       'Where r.numero_ncf like '#39'B%'#39
+      'and r.fecha=:fecha'
       'order by r.serie')
     Left = 136
     Top = 208
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'fecha'
+        ParamType = ptInput
+      end>
     object qryAsignarECFASerieBNUMERO: TIntegerField
       FieldName = 'NUMERO'
       Origin = 'VENTAS_MAST.NUMERO'

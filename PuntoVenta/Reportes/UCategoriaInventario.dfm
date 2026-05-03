@@ -1,6 +1,6 @@
 object frmCategoriaInv: TfrmCategoriaInv
-  Left = 374
-  Top = 149
+  Left = 391
+  Top = 145
   Width = 500
   Height = 414
   Caption = 'Categoria Inventario'

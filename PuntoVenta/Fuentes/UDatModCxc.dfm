@@ -2206,18 +2206,80 @@ object dmCxc: TdmCxc
     Database = dmConectar.IBDatabase1
     ParamCheck = True
     SQL.Strings = (
+      'SELECT'
+      '    q.NUMERO_TRN,'
+      '    q.tipo_documento,'
+      '    q.TIPO_DOCUMENTO_DEV,'
+      '    q.Tipo_doc,'
+      '    q.EsCxc,'
+      '    SUM(DISTINCT q.DEBITO + q.CREDITO) monto,'
+      '    SUM(DISTINCT q.monto_recibido) monto_recibido,'
+      '    SUM(q.MONTO_DESC_ITEM) MONTO_DESC_ITEM,'
+      '    COUNT(DISTINCT q.numero_documento) cantVta,'
+      '    SUM(DISTINCT q.montocobertura) montocobertura,'
+      '    COUNT(DISTINCT q.VENTAARS) cantVtaARS'
+      'FROM'
+      '('
+      '    SELECT'
+      '        p.*,'
+      '        CASE'
+      '            WHEN p.Tipo_doc = 6 THEN'
+      '                COALESCE('
+      '                    ('
       
-        'SELECT tipo_documento, Tipo_doc, EsCxc,SUM(DISTINCT DEBITO+CREDI' +
-        'TO) monto, sum(distinct monto_recibido)  monto_recibido, '
-      'sum(MONTO_DESC_ITEM) MONTO_DESC_ITEM,'
-      'Count(distinct numero_documento) cantVta'
-      ',sum(distinct montocobertura) montocobertura,'
-      'Count(distinct VENTAARS) cantVtaARS'
-      'FROM PROC_DATOS_VENTA_DIARIA_c (:fechaini,:fechafin,:ciakey)'
-      'Where '
-      '(CODIGO_EMPLEADO =:codempleado)'
-      'and moneda between :monedaini and :monedafin'
-      'Group by NUMERO_TRN, Tipo_doc, EsCxc, tipo_documento ')
+        '                        SELECT FIRST 1 UPPER(TRIM(tp.DESCRIPCION' +
+        '))'
+      '                        FROM VENTAS_MAST vmDev'
+      
+        '                        LEFT JOIN DETALLE_PAGOS dp ON dp.SERIE_T' +
+        'RN = vmDev.REF_TRN_ORIGEN'
+      
+        '                        LEFT JOIN TIPO_PAGO tp ON tp.CODIGO = dp' +
+        '.TIPO_PAGO'
+      '                        WHERE vmDev.NUMERO = p.NUMERO_TRN'
+      '                    ),'
+      '                    ('
+      '                        SELECT'
+      '                            CASE'
+      
+        '                                WHEN vmOrig.FORMA_PAGO = '#39'1'#39' THE' +
+        'N '#39'EFECTIVO'#39
+      
+        '                                WHEN vmOrig.FORMA_PAGO = '#39'2'#39' THE' +
+        'N '#39'TARJETA'#39
+      
+        '                                WHEN vmOrig.FORMA_PAGO IN ('#39'20'#39',' +
+        #39'21'#39') THEN '#39'TRANSFERENCIA'#39
+      
+        '                                ELSE UPPER(TRIM(p.tipo_documento' +
+        '))'
+      '                            END'
+      '                        FROM VENTAS_MAST vmDev'
+      
+        '                        LEFT JOIN VENTAS_MAST vmOrig ON vmOrig.N' +
+        'UMERO = vmDev.REF_TRN_ORIGEN'
+      '                        WHERE vmDev.NUMERO = p.NUMERO_TRN'
+      '                    ),'
+      '                    UPPER(TRIM(p.tipo_documento))'
+      '                )'
+      '            ELSE'
+      '                UPPER(TRIM(p.tipo_documento))'
+      '        END AS TIPO_DOCUMENTO_DEV'
+      
+        '    FROM PROC_DATOS_VENTA_DIARIA_C(:fechaini,:fechafin,:ciakey) ' +
+        'p'
+      '    WHERE'
+      '        p.CODIGO_EMPLEADO =:codempleado'
+      '        AND p.moneda BETWEEN :monedaini and :monedafin'
+      ') q'
+      'GROUP BY'
+      '    q.NUMERO_TRN,'
+      '    q.tipo_documento,'
+      '    q.TIPO_DOCUMENTO_DEV,'
+      '    q.Tipo_doc,'
+      '    q.EsCxc'
+      'ORDER BY'
+      '    q.NUMERO_TRN')
     Transaction = dmConectar.IBTransaction1
     Left = 56
     Top = 480

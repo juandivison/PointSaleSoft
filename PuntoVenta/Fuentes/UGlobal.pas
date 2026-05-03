@@ -100,7 +100,8 @@ interface
     GlbOrderBy  : String;
     glbValueFilterCte : String;
     GlbModeEdit : boolean;
-    GlBAyaco,GlBInveraf, Glbcolmado : smallint;
+    GlbInsertarEnLoan : Smallint;
+    GlBExpert, GlBAyaco,GlBInveraf, Glbcolmado : smallint;
     GlBTapiceria:Smallint;
     GLBMTEGroup :Smallint;
     GlBCuadros : smallint;
@@ -260,10 +261,11 @@ interface
     GLBRUTABDGIITXT : String;
     GlbUsaBalanza : integer;
     GLBRUTADBDGII : String;
+    GLBRUTADBLOAN : String;
     GlbAccessDBConn : String;
     GlbDBIIDBConn: string;
-    GLBRUTADB : String;
-    GlbRutaDBActual : String;
+    GLBRUTADB,GLBRUTADB2 : String;
+    GlbRutaDBActual,GlbRutaDBActual2 : String;
     GlbColegio : Integer;
     GLBIDAnioEscolar : Integer;
     GlbDiaFactMensualidad : TDateTime;
@@ -277,7 +279,7 @@ interface
     GlbPorcPropina : Real;
     GlbrangoFecha : String;
     GlbFactRecurrente, GLBEsFastFood, GlbPagaITbis : Boolean;
-    GlbRutaEcf, GlbRutaQREcf : string;
+    GlbRutaEcf,GlbRuta2Ecf, GlbRutaQREcf : string;
     GLBEsFastFoodString : string[1];
     GLBFORMATOFACTPREIMP : Smallint;
     GlbPuertoDisponible : Boolean;
@@ -289,7 +291,7 @@ interface
     GlbIFiscalError : String;
     GlbBaseUrlRNC, GlbBaseUrlRNCEndPoint:String;
     GlbActivaIFiscal, GlbComerEs1ro: Integer;
-    GlbActivaECF, GlbValidarECF:Integer;//Factura Electronica
+    GlbUsarFacturaTxtECF, GlbActivaECF, GlbValidarECF:Integer;//Factura Electronica
     GlbCajaeCF:String;
     GlbCodSucursal: String;
     GlbImpresoraFOnline: Boolean;
@@ -2822,8 +2824,8 @@ begin
   Decodetime(Horaf,Hora2,min2,sec2,mil2);
   DecodeDate(Horai, YearI, MonthI, DayI);
   DecodeDate(horaf, Year1, Month1, Day1);
-    if (MonthI = 12) and (Month1 = 1) then
-        Result := 24 - hora1+ hora2
+  if (MonthI = 12) and (Month1 = 1) then
+     Result := 24 - hora1+ hora2
     else if Month1 > MonthI then
     Result := 24 - hora1 + hora2
     else if (hora2 <= 12)  and (day1 > dayI) then

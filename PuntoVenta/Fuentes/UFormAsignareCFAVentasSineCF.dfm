@@ -16,27 +16,34 @@ object frmAsignareCFAVtasGen: TfrmAsignareCFAVtasGen
   PixelsPerInch = 96
   TextHeight = 13
   object lblTotalVtas: TLabel
-    Left = 208
-    Top = 32
+    Left = 304
+    Top = 53
     Width = 55
     Height = 13
     Caption = 'lblTotalVtas'
     Visible = False
   end
+  object Label1: TLabel
+    Left = 18
+    Top = 7
+    Width = 66
+    Height = 13
+    Caption = 'Fecha Ventas'
+  end
   object Memo1: TMemo
     Left = 520
-    Top = 56
+    Top = 72
     Width = 529
-    Height = 441
+    Height = 425
     Lines.Strings = (
       'Memo1')
     ScrollBars = ssBoth
     TabOrder = 0
   end
   object BitBtn1: TBitBtn
-    Left = 112
-    Top = 24
-    Width = 75
+    Left = 204
+    Top = 44
+    Width = 86
     Height = 25
     Caption = 'Procesar'
     Enabled = False
@@ -44,9 +51,9 @@ object frmAsignareCFAVtasGen: TfrmAsignareCFAVtasGen
     OnClick = BitBtn1Click
   end
   object BitBtn2: TBitBtn
-    Left = 16
-    Top = 24
-    Width = 75
+    Left = 23
+    Top = 46
+    Width = 101
     Height = 25
     Caption = 'Datos'
     TabOrder = 2
@@ -54,9 +61,9 @@ object frmAsignareCFAVtasGen: TfrmAsignareCFAVtasGen
   end
   object RxDBGrid1: TRxDBGrid
     Left = 16
-    Top = 64
+    Top = 76
     Width = 497
-    Height = 441
+    Height = 420
     DataSource = dsqryAsignarECFASerieB
     TabOrder = 3
     TitleFont.Charset = DEFAULT_CHARSET
@@ -102,6 +109,45 @@ object frmAsignareCFAVtasGen: TfrmAsignareCFAVtasGen
     Height = 17
     Step = 1
     TabOrder = 4
+  end
+  object DateTimePicker1: TDateTimePicker
+    Left = 17
+    Top = 23
+    Width = 116
+    Height = 21
+    Date = 46123.456370752310000000
+    Time = 46123.456370752310000000
+    TabOrder = 5
+  end
+  object Button1: TButton
+    Left = 133
+    Top = 44
+    Width = 25
+    Height = 25
+    Caption = '+'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -24
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 6
+    OnClick = Button1Click
+  end
+  object Button2: TButton
+    Left = 168
+    Top = 44
+    Width = 25
+    Height = 25
+    Caption = '-'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -24
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 7
+    OnClick = Button2Click
   end
   object dsqryAsignarECFASerieB: TDataSource
     DataSet = dmFactElectronica.qryAsignarECFASerieB

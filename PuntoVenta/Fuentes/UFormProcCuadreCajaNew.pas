@@ -304,6 +304,9 @@ type
     Label79: TLabel;
     DateTimePicker5: TDateTimePicker;
     BitBtn14: TBitBtn;
+    rxCuadreMontoDevolucionNoEfectivo: TCurrencyField;
+    Label80: TLabel;
+    DBEdit53: TDBEdit;
     procedure FormCreate(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -424,7 +427,7 @@ begin
   if rxCuadre.State = dsBrowse then
   begin
     rxCuadre.Insert;
-    rxCuadreMoneda.Value:='1';//pesos default;
+    rxCuadreMoneda.Value:=IntTostr(GlbMonedaBase);//'1';//pesos default;
     rxCuadreFECHA.Value := ExtraerFecha(GlbFechaTrnDiaria);
     if rxCuadreCOD_EMPLEADO.IsNull then
     rxCuadreCOD_EMPLEADO.Value := VarUsuarioGlb;
@@ -666,6 +669,7 @@ procedure TfrmCuadreCajaNew.ProcTotal;
 var
   Suma, Total : Extended;
   _MontoDescuento : Currency;
+  sTipoDev: string;
 begin
   if (rxCuadre.State in [dsBrowse, dsInactive]) then
   exit;
@@ -733,6 +737,7 @@ begin
   rxCuadreIngTarjeta.Value := 0;
   rxCuadreCantVtaContadoTarjeta.Value:=0;
   rxCuadreMontoDescuento.Value:=0;
+  rxCuadreMontoDevolucionNoEfectivo.Value := 0;
   rxNumeroTrnIng.close;
   rxNumeroTrnIng.Open;
 
@@ -849,7 +854,8 @@ begin
           rxCuadreCantIngCxc.Value:=rxCuadreCantIngCxc.Value + 1;
 
       end else
-      if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_doc').AsInteger = 6) then
+      //inicio codigo refactorizado
+      {if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_doc').AsInteger = 6) then
       begin
         if dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').Value > 0 then
         begin
@@ -888,11 +894,52 @@ begin
           begin
             rxCuadreMONTO_DEVOLUCION.Value:= rxCuadreMONTO_DEVOLUCION.Value + dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency * -1;
             Total:=dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency *-1;
-          end;          
+          end;
         end;
         rxCuadreCantDevolucion.Value:=rxCuadreCantDevolucion.Value + 1;
 
-      end else
+      end else }//fin codigo refactorizado
+      if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_doc').AsInteger = 6) then
+begin
+  sTipoDev := UpperCase(Trim(dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('TIPO_DOCUMENTO_DEV').AsString));
+
+  if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency = 0) then
+  begin
+    Total := dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').AsCurrency - _MontoDescuento;
+    if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').AsCurrency < 0) then
+      Total := Total * -1;
+  end
+  else
+  begin
+    Total := dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency;
+    if (Total > 0) then
+      Total := Total * -1;
+  end;
+
+  if (Pos('TARJ', sTipoDev) > 0) or
+     (Pos('TRANS', sTipoDev) > 0) or
+     (Pos('DEP', sTipoDev) > 0) then
+  begin
+    rxCuadreMontoDevolucionNoEfectivo.Value :=
+      rxCuadreMontoDevolucionNoEfectivo.Value + Total;
+
+    if (Pos('TARJ', sTipoDev) > 0) then
+      rxCuadreIngTarjeta.Value := rxCuadreIngTarjeta.Value + Total
+    else
+    if (Pos('TRANS', sTipoDev) > 0) or (Pos('DEP', sTipoDev) > 0) then
+      rxCuadreTransferencia.Value := rxCuadreTransferencia.Value + Total;
+
+    Total := 0;
+  end
+  else
+  begin
+    rxCuadreMONTO_DEVOLUCION.Value :=
+      rxCuadreMONTO_DEVOLUCION.Value + Total;
+  end;
+
+  rxCuadreCantDevolucion.Value := rxCuadreCantDevolucion.Value + 1;
+end
+      else
       if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_doc').AsInteger = 16) then
       begin
         rxCuadreMontoFinanciado.Value:= rxCuadreMontoFinanciado.Value +

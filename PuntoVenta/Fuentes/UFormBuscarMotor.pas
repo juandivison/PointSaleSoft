@@ -199,7 +199,7 @@ begin
     if dmVehiculo.qryVerificaVeh.RecordCount > 0 then
     begin
       MessageDlg('Vehículo/Motor ya está asignado en otra venta, verifique', mtinformation,[mbok],0);
-      CanClose:=False;
+      //CanClose:=False;
     end else CanClose:=True;
   end;
 end;

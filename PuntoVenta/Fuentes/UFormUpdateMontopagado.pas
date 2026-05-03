@@ -119,6 +119,9 @@ type
     SkinData1: TSkinData;
     DBStatusLabel1: TDBStatusLabel;
     SpeedButton3: TSpeedButton;
+    DBEdit21: TDBEdit;
+    tblVentasMastIDDGII_MOTIVO_NCR: TSmallintField;
+    Label21: TLabel;
     procedure RxSpeedButton1Click(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure SpeedButton3Click(Sender: TObject);

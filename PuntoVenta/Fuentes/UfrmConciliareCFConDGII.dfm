@@ -1,6 +1,6 @@
 object frmConciliareCFConDGII: TfrmConciliareCFConDGII
-  Left = 397
-  Top = 219
+  Left = 420
+  Top = 223
   Width = 768
   Height = 479
   Caption = 'Conciliar secuencia de eCF con DGII'

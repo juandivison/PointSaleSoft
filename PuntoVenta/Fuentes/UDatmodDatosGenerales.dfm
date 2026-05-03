@@ -1,7 +1,7 @@
 object dmDatos: TdmDatos
   OldCreateOrder = False
-  Left = 282
-  Top = 129
+  Left = 301
+  Top = 280
   Height = 618
   Width = 923
   object qryTasa: TIBQuery
@@ -4870,6 +4870,7 @@ object dmDatos: TdmDatos
   object qryMembrete: TIBQuery
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
+    Active = True
     BufferChunks = 1000
     CachedUpdates = False
     SQL.Strings = (

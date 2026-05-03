@@ -240,6 +240,13 @@ object frmUpdateMontopago: TfrmUpdateMontopago
     ParentFont = False
     OnClick = SpeedButton3Click
   end
+  object Label21: TLabel
+    Left = 16
+    Top = 344
+    Width = 94
+    Height = 13
+    Caption = 'Codigo Motivo NCR'
+  end
   object DBEdit1: TDBEdit
     Left = 16
     Top = 32
@@ -421,6 +428,16 @@ object frmUpdateMontopago: TfrmUpdateMontopago
     DataSource = DataSource1
     TabOrder = 19
   end
+  object DBEdit21: TDBEdit
+    Left = 16
+    Top = 360
+    Width = 97
+    Height = 21
+    AutoSize = False
+    DataField = 'IDDGII_MOTIVO_NCR'
+    DataSource = DataSource1
+    TabOrder = 20
+  end
   object tblVentasMast: TIBDataSet
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
@@ -471,7 +488,7 @@ object frmUpdateMontopago: TfrmUpdateMontopago
       
         '   COD_USR_CAJA, COD_SUBCLIENTE, VENTAARS, FECHAINICIAPOLIZA, TI' +
         'PO_AFILIADO, '
-      '   IDNUMERODVEH, COD_CAJA)'
+      '   IDNUMERODVEH, COD_CAJA, IDDGII_MOTIVO_NCR)'
       'values'
       
         '  (:NUMERO, :FECHA, :CIA_KEY, :CODIGO_CTE, :CODIGO_VENDEDOR, :FO' +
@@ -515,7 +532,7 @@ object frmUpdateMontopago: TfrmUpdateMontopago
       
         '   :COD_USR_CAJA, :COD_SUBCLIENTE, :VENTAARS, :FECHAINICIAPOLIZA' +
         ', :TIPO_AFILIADO, '
-      '   :IDNUMERODVEH, :COD_CAJA)')
+      '   :IDNUMERODVEH, :COD_CAJA, :IDDGII_MOTIVO_NCR)')
     RefreshSQL.Strings = (
       'Select '
       '  NUMERO,'
@@ -581,7 +598,14 @@ object frmUpdateMontopago: TfrmUpdateMontopago
       '  FECHAINICIAPOLIZA,'
       '  TIPO_AFILIADO,'
       '  IDNUMERODVEH,'
-      '  COD_CAJA'
+      '  COD_CAJA,'
+      '  TIPO_INGRESO,'
+      '  IDDGII_MOTIVO_NCR,'
+      '  ESTADO_VENTA,'
+      '  REF_TRN_ORIGEN,'
+      '  REF_NCF_ORIGEN,'
+      '  REF_FECHA_ORIGEN,'
+      '  REF_ESTADO_ORIGEN'
       'from VENTAS_MAST '
       'where'
       '  NUMERO = :NUMERO')
@@ -654,7 +678,8 @@ object frmUpdateMontopago: TfrmUpdateMontopago
       '  FECHAINICIAPOLIZA = :FECHAINICIAPOLIZA,'
       '  TIPO_AFILIADO = :TIPO_AFILIADO,'
       '  IDNUMERODVEH = :IDNUMERODVEH,'
-      '  COD_CAJA = :COD_CAJA'
+      '  COD_CAJA = :COD_CAJA,'
+      '  IDDGII_MOTIVO_NCR = :IDDGII_MOTIVO_NCR'
       'where'
       '  NUMERO = :OLD_NUMERO')
     Left = 224
@@ -928,6 +953,10 @@ object frmUpdateMontopago: TfrmUpdateMontopago
     object tblVentasMastCOD_CAJA: TIntegerField
       FieldName = 'COD_CAJA'
       Origin = 'VENTAS_MAST.COD_CAJA'
+    end
+    object tblVentasMastIDDGII_MOTIVO_NCR: TSmallintField
+      FieldName = 'IDDGII_MOTIVO_NCR'
+      Origin = 'VENTAS_MAST.IDDGII_MOTIVO_NCR'
     end
   end
   object DataSource1: TDataSource

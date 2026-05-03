@@ -30,7 +30,7 @@ type
       Por ejemplo, para E34 (Nota de Crédito Electrónica) solo se ofrecen
       los códigos 1, 2 y 3. }
     class function ExecuteForECF(const ATipoECF: string; var AMotivo: Integer;
-      ADefault: Integer = 3; const ACaption: string = ''): Boolean;
+      ADefault: Integer = 1; const ACaption: string = ''): Boolean;
   end;
 
 implementation

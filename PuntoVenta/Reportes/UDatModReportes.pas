@@ -1988,6 +1988,8 @@ type
     qryViewVentasDetPRECIOSINITBIS: TFloatField;
     qryViewVentasDetMONTOVENTASINITBIS: TFloatField;
     qryViewVentasMastSHOWPRECIOCONITBIS: TSmallintField;
+    qryViewVentasDetLEVEL_PRECIO_VENTA: TSmallintField;
+    qryViewVentasDetTRANSP_ITBIS: TIntegerField;
     procedure qryDatosRepVxCajasCalcFields(DataSet: TDataSet);
     procedure qryDatosRepVxCajasResumenCalcFields(DataSet: TDataSet);
     procedure qryDatosRepDifVendedoresCalcFields(DataSet: TDataSet);

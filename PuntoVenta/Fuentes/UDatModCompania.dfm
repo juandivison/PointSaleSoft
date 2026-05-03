@@ -13,6 +13,7 @@ object dmCompania: TdmCompania
     FieldDefs = <
       item
         Name = 'CODIGO'
+        Attributes = [faRequired]
         DataType = ftSmallint
       end
       item
@@ -75,46 +76,55 @@ object dmCompania: TdmCompania
       end
       item
         Name = 'CTA1_GYP_PERIODO'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 3
       end
       item
         Name = 'CTA2_GYP_PERIODO'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
       item
         Name = 'CTA3_GYP_PERIODO'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
       item
         Name = 'CTA1_SUPERAVIT_ACM'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 3
       end
       item
         Name = 'CTA2_SUPERAVIT_ACM'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
       item
         Name = 'CTA3_SUPERAVIT_ACM'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
       item
         Name = 'CTA1_RESUMEN_GYP'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 3
       end
       item
         Name = 'CTA2_RESUMEN_GYP'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
       item
         Name = 'CTA3_RESUMEN_GYP'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
@@ -125,6 +135,7 @@ object dmCompania: TdmCompania
       end
       item
         Name = 'STATUS'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 1
       end
@@ -135,31 +146,37 @@ object dmCompania: TdmCompania
       end
       item
         Name = 'CTA1_ULT_RETENIDA'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 3
       end
       item
         Name = 'CTA2_ULT_RETENIDA'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
       item
         Name = 'CTA3_ULT_RETENIDA'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
       item
         Name = 'CTA1_GYP_MES'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 3
       end
       item
         Name = 'CTA2_GYP_MES'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
       item
         Name = 'CTA3_GYP_MES'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 2
       end
@@ -192,6 +209,7 @@ object dmCompania: TdmCompania
       end
       item
         Name = 'NUM_SUCURSAL'
+        Attributes = [faFixed]
         DataType = ftString
         Size = 6
       end

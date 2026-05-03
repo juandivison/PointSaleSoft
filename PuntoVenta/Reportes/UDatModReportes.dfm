@@ -3907,6 +3907,16 @@ object dmReportes: TdmReportes
       FieldName = 'CODIGO_VENDEDOR'
       Origin = 'VIEW_VENTAS_DET.CODIGO_VENDEDOR'
     end
+    object qryViewVentasDetLEVEL_PRECIO_VENTA: TSmallintField
+      FieldName = 'LEVEL_PRECIO_VENTA'
+      Origin = 'VIEW_VENTAS_DET.LEVEL_PRECIO_VENTA'
+    end
+    object qryViewVentasDetTRANSP_ITBIS: TIntegerField
+      FieldKind = fkInternalCalc
+      FieldName = 'TRANSP_ITBIS'
+      Origin = 'VIEW_VENTAS_DET.TRANSP_ITBIS'
+      ReadOnly = True
+    end
   end
   object qryRepInvFisicoPan: TIBQuery
     Database = dmConectar.IBDatabase1

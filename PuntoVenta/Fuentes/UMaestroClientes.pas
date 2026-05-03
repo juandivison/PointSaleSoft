@@ -427,7 +427,7 @@ type
 
 var
   frmClientes: TfrmClientes;
-
+  cteInsertado : boolean;
   //procedure creaMensaje (cont : string); stdcall external 'IdesiWisProApiDll.dll';
 implementation
 
@@ -443,7 +443,8 @@ uses UDatModClientes, UDatModReportes, URepClientes, UDatModCompania,
   UFormConsultaCertificados, URepCumpleanioCte, DateUtils,
   UFormReportePolizas, UFormPolizasCXC, UFormContractWisPro,
   UFormCambiarCtePoliza, UFormConsultaCertificadosGM,UDgiiRncClient,
-  UFormConsultaGarantias, UGarantiasEliminadas, UFrmEditProvinciaMunicipio;
+  UFormConsultaGarantias, UGarantiasEliminadas, UFrmEditProvinciaMunicipio,
+  UClienteERPToLoanProcess, UDatModConectar;
 
 
 {$R *.dfm}
@@ -454,6 +455,7 @@ begin
   begin
     if dmClientes.tblClientes.State in [dsBrowse] then
     begin
+      cteInsertado:=False;
       dmClientes.tblClientes.Insert;
       dmClientes.tblClientesMONEDA_FACT.Value := '1';
       dmClientes.tblClientesCIUDAD.Value      := '';
@@ -483,6 +485,7 @@ procedure TfrmClientes.btnModificarClick(Sender: TObject);
 begin
   if Pagecontrol1.ActivePage = tabClientes then
   begin
+    cteInsertado:=False;
     if dmClientes.tblClientes.State in [dsBrowse] then
     dmClientes.tblClientes.Edit;
       if (GlBCuadros = 1) and (dmClientes.tblClientesPORC_BENEFICIO.IsNull) then
@@ -499,6 +502,7 @@ var
   ExecuteResult : Integer;
   Parametros : String;
   guardarRec : TBookmark;
+  Msg: string;
 begin
   esIns:=False;
   if Pagecontrol1.ActivePage = tabClientes then
@@ -569,7 +573,23 @@ begin
       end;
 
       GlbSalvarQuery(dmClientes.tblClientes);
-
+      //*****************INSERTAR/ACTUALIZAR CLIENTE EN DB LOANPROCESS
+      if GlbInsertarEnLoan = 1 then
+      begin
+      if not cteInsertado then
+      begin
+        if not SincronizarClienteERPALoanProcess(dmClientes.tblClientesCODIGO_CTE.Value, dmConectar.IBDatabase1, dmConectar.IBTransaction1, Msg) then
+        begin
+          ShowMessage(Msg);
+          cteInsertado:=false;
+        end else
+        begin
+          ShowMessage(Msg);
+          cteInsertado:=True;
+        end;
+      end;
+      end;
+      //********************FIN******************************
       guardarRec:= dmClientes.tblClientes.GetBookmark;
       if GlbActivaECF = 1 then
       begin
@@ -578,6 +598,14 @@ begin
           BitBtn54Click(Self);
         end;
       end;
+      //*****************INSERTAR/ACTUALIZAR CLIENTE EN DB LOANPROCESS
+      //if GlbInsertarEnLoan = 1 then
+      //begin
+       // if not SincronizarClienteERPALoanProcess(dmClientes.tblClientesCODIGO_CTE.Value, dmConectar.IBDatabase1, dmConectar.IBTransaction1, Msg) then
+        //  ShowMessage(Msg)
+        //else
+        //  ShowMessage(Msg);
+      //end;      
       //dmClientes.tblClientesID_MUNICIPIO.Value
       //test
       //esIns:= true;

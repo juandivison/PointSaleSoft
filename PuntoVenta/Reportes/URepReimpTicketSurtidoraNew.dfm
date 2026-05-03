@@ -1,6 +1,6 @@
 object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   Left = 0
-  Top = -25
+  Top = -368
   Width = 288
   Height = 960
   Frame.Color = clBlack
@@ -762,8 +762,9 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Transparent = False
       WordWrap = True
       Expression = 
-        'sum(qryVentaFacturaDet.VALOR_SERVICIO_DET) - sum(qryVentaFactura' +
-        'Det.ITBI_DET)'
+        'IF(qryVentaFacturaDet.TRANSP_ITBIS = 1,sum(qryVentaFacturaDet.VA' +
+        'LOR_SERVICIO_DET) - sum(qryVentaFacturaDet.ITBI_DET),sum(qryVent' +
+        'aFacturaDet.VALOR_SERVICIO_DET))'
       Mask = ',0.00'
       FontSize = 10
     end
@@ -861,8 +862,8 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       FontSize = 8
     end
     object QRExpr1: TQRExpr
-      Left = 152
-      Top = 12
+      Left = 153
+      Top = 10
       Width = 95
       Height = 17
       Enabled = False
@@ -873,8 +874,8 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawRight = False
       Size.Values = (
         44.979166666666670000
-        402.166666666666700000
-        31.750000000000000000
+        404.812500000000000000
+        26.458333333333330000
         251.354166666666700000)
       Alignment = taRightJustify
       AlignToBand = False

@@ -455,6 +455,20 @@ object frmInventarioProd: TfrmInventarioProd
         ParentShowHint = False
         ShowHint = True
       end
+      object lblReplicado: TLabel
+        Left = 752
+        Top = 37
+        Width = 48
+        Height = 13
+        Caption = 'Replicado'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = 16744448
+        Font.Height = -11
+        Font.Name = 'MS Sans Serif'
+        Font.Style = []
+        ParentFont = False
+        Visible = False
+      end
       object RxDBGrid4: TRxDBGrid
         Left = 8
         Top = 328
@@ -6783,8 +6797,8 @@ object frmInventarioProd: TfrmInventarioProd
   end
   object dsTblInvDup: TDataSource
     DataSet = tblInventarioDup
-    Left = 664
-    Top = 192
+    Left = 576
+    Top = 136
   end
   object qryCheckCodBarra: TIBQuery
     Database = dmConectar.IBDatabase1
@@ -6897,5 +6911,461 @@ object frmInventarioProd: TfrmInventarioProd
     DataSet = dmInventario.qryInvOtro
     Left = 800
     Top = 240
+  end
+  object tblInvComer1ro: TIBDataSet
+    Database = dmConectar.IBDatabase2
+    Transaction = dmConectar.IBTransaction2
+    BufferChunks = 1000
+    CachedUpdates = True
+    DeleteSQL.Strings = (
+      'delete from INVENTARIO_PRODUCTO'
+      'where'
+      '  CODIGO = :OLD_CODIGO')
+    InsertSQL.Strings = (
+      'insert into INVENTARIO_PRODUCTO'
+      
+        '  (CODIGO, CODIGO_TEXTO, FECHA, CODIGO_BARRA, TIPO, DESCRIPCION,' +
+        ' DESCRIPCIONADICIONAL, '
+      
+        '   CANTIDAD_REORDEN, PRECIO_ANT, CANTIDAD, PRECIO, BLCE_CANT_ENT' +
+        'RADA, BLCE_CANT_SALIDA, '
+      
+        '   FECHA_ULTIMA_TRN, STATUS, PORC_DESCUENTO, FOTO, PAGA_ITBI, CO' +
+        'DIGO_PRECIO, '
+      
+        '   UNIDAD, PRECIO_COMPRA, PRECIO_MINIMO, REFERENCIA, FECHA_VENCI' +
+        'MIENTO, '
+      
+        '   INVENTARIAR, PRECIO_TIPO_UNIDAD, TIPO_UNIDAD, ORIGEN, UBICACI' +
+        'ON, REFERENCIA_ALTERNA, '
+      
+        '   MARCA, MODELO, PRECIOVENTA1, PRECIOVENTA2, PRECIOVENTA3, PREC' +
+        'IOVENTA4, '
+      
+        '   PORCUTILIDAD1, PORCUTILIDAD2, PORCUTILIDAD3, PORCUTILIDAD4, U' +
+        'SARLEVELPRECIO, '
+      
+        '   CIA_KEY, SITUACIONPROD, APLICAIMPTOCOMPRA, CODFABRICANTE, CTA' +
+        'INVENTARIO, '
+      
+        '   CTAVENTA, CTACOMPRA, CODSUBCATEGORIA, CODCATEGORIA, PORCITBIS' +
+        ', COD_MONEDA, '
+      
+        '   KILOMETROS, RUTAIMAGEN, IDTASAITBIS, PRECIO_ALQUILER, PAGACOM' +
+        'ISION)'
+      'values'
+      
+        '  (:CODIGO, :CODIGO_TEXTO, :FECHA, :CODIGO_BARRA, :TIPO, :DESCRI' +
+        'PCION, '
+      
+        '   :DESCRIPCIONADICIONAL, :CANTIDAD_REORDEN, :PRECIO_ANT, :CANTI' +
+        'DAD, :PRECIO, '
+      
+        '   :BLCE_CANT_ENTRADA, :BLCE_CANT_SALIDA, :FECHA_ULTIMA_TRN, :ST' +
+        'ATUS, :PORC_DESCUENTO, '
+      
+        '   :FOTO, :PAGA_ITBI, :CODIGO_PRECIO, :UNIDAD, :PRECIO_COMPRA, :' +
+        'PRECIO_MINIMO, '
+      
+        '   :REFERENCIA, :FECHA_VENCIMIENTO, :INVENTARIAR, :PRECIO_TIPO_U' +
+        'NIDAD, '
+      
+        '   :TIPO_UNIDAD, :ORIGEN, :UBICACION, :REFERENCIA_ALTERNA, :MARC' +
+        'A, :MODELO, '
+      
+        '   :PRECIOVENTA1, :PRECIOVENTA2, :PRECIOVENTA3, :PRECIOVENTA4, :' +
+        'PORCUTILIDAD1, '
+      
+        '   :PORCUTILIDAD2, :PORCUTILIDAD3, :PORCUTILIDAD4, :USARLEVELPRE' +
+        'CIO, :CIA_KEY, '
+      
+        '   :SITUACIONPROD, :APLICAIMPTOCOMPRA, :CODFABRICANTE, :CTAINVEN' +
+        'TARIO, '
+      
+        '   :CTAVENTA, :CTACOMPRA, :CODSUBCATEGORIA, :CODCATEGORIA, :PORC' +
+        'ITBIS, '
+      
+        '   :COD_MONEDA, :KILOMETROS, :RUTAIMAGEN, :IDTASAITBIS, :PRECIO_' +
+        'ALQUILER, '
+      '   :PAGACOMISION)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  CODIGO,'
+      '  CODIGO_TEXTO,'
+      '  FECHA,'
+      '  CODIGO_BARRA,'
+      '  TIPO,'
+      '  DESCRIPCION,'
+      '  DESCRIPCIONADICIONAL,'
+      '  CANTIDAD_REORDEN,'
+      '  PRECIO_ANT,'
+      '  CANTIDAD,'
+      '  PRECIO,'
+      '  BLCE_CANT_ENTRADA,'
+      '  BLCE_CANT_SALIDA,'
+      '  FECHA_ULTIMA_TRN,'
+      '  STATUS,'
+      '  PORC_DESCUENTO,'
+      '  FOTO,'
+      '  PAGA_ITBI,'
+      '  CODIGO_PRECIO,'
+      '  UNIDAD,'
+      '  PRECIO_COMPRA,'
+      '  PRECIO_MINIMO,'
+      '  REFERENCIA,'
+      '  FECHA_VENCIMIENTO,'
+      '  INVENTARIAR,'
+      '  PRECIO_TIPO_UNIDAD,'
+      '  TIPO_UNIDAD,'
+      '  ORIGEN,'
+      '  UBICACION,'
+      '  REFERENCIA_ALTERNA,'
+      '  MARCA,'
+      '  MODELO,'
+      '  PRECIOVENTA1,'
+      '  PRECIOVENTA2,'
+      '  PRECIOVENTA3,'
+      '  PRECIOVENTA4,'
+      '  PORCUTILIDAD1,'
+      '  PORCUTILIDAD2,'
+      '  PORCUTILIDAD3,'
+      '  PORCUTILIDAD4,'
+      '  USARLEVELPRECIO,'
+      '  CIA_KEY,'
+      '  SITUACIONPROD,'
+      '  APLICAIMPTOCOMPRA,'
+      '  CODFABRICANTE,'
+      '  CTAINVENTARIO,'
+      '  CTAVENTA,'
+      '  CTACOMPRA,'
+      '  CODSUBCATEGORIA,'
+      '  CODCATEGORIA,'
+      '  PORCITBIS,'
+      '  COD_MONEDA,'
+      '  KILOMETROS,'
+      '  RUTAIMAGEN,'
+      '  IDTASAITBIS,'
+      '  PRECIO_ALQUILER,'
+      '  PAGACOMISION'
+      'from INVENTARIO_PRODUCTO '
+      'where'
+      '  CODIGO = :CODIGO')
+    SelectSQL.Strings = (
+      'Select * from INVENTARIO_PRODUCTO'
+      'Where codigo_barra=:codigobarra')
+    ModifySQL.Strings = (
+      'update INVENTARIO_PRODUCTO'
+      'set'
+      '  CODIGO = :CODIGO,'
+      '  CODIGO_TEXTO = :CODIGO_TEXTO,'
+      '  FECHA = :FECHA,'
+      '  CODIGO_BARRA = :CODIGO_BARRA,'
+      '  TIPO = :TIPO,'
+      '  DESCRIPCION = :DESCRIPCION,'
+      '  DESCRIPCIONADICIONAL = :DESCRIPCIONADICIONAL,'
+      '  CANTIDAD_REORDEN = :CANTIDAD_REORDEN,'
+      '  PRECIO_ANT = :PRECIO_ANT,'
+      '  CANTIDAD = :CANTIDAD,'
+      '  PRECIO = :PRECIO,'
+      '  BLCE_CANT_ENTRADA = :BLCE_CANT_ENTRADA,'
+      '  BLCE_CANT_SALIDA = :BLCE_CANT_SALIDA,'
+      '  FECHA_ULTIMA_TRN = :FECHA_ULTIMA_TRN,'
+      '  STATUS = :STATUS,'
+      '  PORC_DESCUENTO = :PORC_DESCUENTO,'
+      '  FOTO = :FOTO,'
+      '  PAGA_ITBI = :PAGA_ITBI,'
+      '  CODIGO_PRECIO = :CODIGO_PRECIO,'
+      '  UNIDAD = :UNIDAD,'
+      '  PRECIO_COMPRA = :PRECIO_COMPRA,'
+      '  PRECIO_MINIMO = :PRECIO_MINIMO,'
+      '  REFERENCIA = :REFERENCIA,'
+      '  FECHA_VENCIMIENTO = :FECHA_VENCIMIENTO,'
+      '  INVENTARIAR = :INVENTARIAR,'
+      '  PRECIO_TIPO_UNIDAD = :PRECIO_TIPO_UNIDAD,'
+      '  TIPO_UNIDAD = :TIPO_UNIDAD,'
+      '  ORIGEN = :ORIGEN,'
+      '  UBICACION = :UBICACION,'
+      '  REFERENCIA_ALTERNA = :REFERENCIA_ALTERNA,'
+      '  MARCA = :MARCA,'
+      '  MODELO = :MODELO,'
+      '  PRECIOVENTA1 = :PRECIOVENTA1,'
+      '  PRECIOVENTA2 = :PRECIOVENTA2,'
+      '  PRECIOVENTA3 = :PRECIOVENTA3,'
+      '  PRECIOVENTA4 = :PRECIOVENTA4,'
+      '  PORCUTILIDAD1 = :PORCUTILIDAD1,'
+      '  PORCUTILIDAD2 = :PORCUTILIDAD2,'
+      '  PORCUTILIDAD3 = :PORCUTILIDAD3,'
+      '  PORCUTILIDAD4 = :PORCUTILIDAD4,'
+      '  USARLEVELPRECIO = :USARLEVELPRECIO,'
+      '  CIA_KEY = :CIA_KEY,'
+      '  SITUACIONPROD = :SITUACIONPROD,'
+      '  APLICAIMPTOCOMPRA = :APLICAIMPTOCOMPRA,'
+      '  CODFABRICANTE = :CODFABRICANTE,'
+      '  CTAINVENTARIO = :CTAINVENTARIO,'
+      '  CTAVENTA = :CTAVENTA,'
+      '  CTACOMPRA = :CTACOMPRA,'
+      '  CODSUBCATEGORIA = :CODSUBCATEGORIA,'
+      '  CODCATEGORIA = :CODCATEGORIA,'
+      '  PORCITBIS = :PORCITBIS,'
+      '  COD_MONEDA = :COD_MONEDA,'
+      '  KILOMETROS = :KILOMETROS,'
+      '  RUTAIMAGEN = :RUTAIMAGEN,'
+      '  IDTASAITBIS = :IDTASAITBIS,'
+      '  PRECIO_ALQUILER = :PRECIO_ALQUILER,'
+      '  PAGACOMISION = :PAGACOMISION'
+      'where'
+      '  CODIGO = :OLD_CODIGO')
+    Left = 532
+    Top = 560
+    object tblInvComer1roCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'INVENTARIO_PRODUCTO.CODIGO'
+      Required = True
+    end
+    object tblInvComer1roCODIGO_TEXTO: TIBStringField
+      FieldName = 'CODIGO_TEXTO'
+      Origin = 'INVENTARIO_PRODUCTO.CODIGO_TEXTO'
+      Size = 40
+    end
+    object tblInvComer1roFECHA: TDateTimeField
+      FieldName = 'FECHA'
+      Origin = 'INVENTARIO_PRODUCTO.FECHA'
+    end
+    object tblInvComer1roCODIGO_BARRA: TIBStringField
+      FieldName = 'CODIGO_BARRA'
+      Origin = 'INVENTARIO_PRODUCTO.CODIGO_BARRA'
+      Size = 40
+    end
+    object tblInvComer1roTIPO: TIntegerField
+      FieldName = 'TIPO'
+      Origin = 'INVENTARIO_PRODUCTO.TIPO'
+    end
+    object tblInvComer1roDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'INVENTARIO_PRODUCTO.DESCRIPCION'
+      Size = 80
+    end
+    object tblInvComer1roDESCRIPCIONADICIONAL: TMemoField
+      FieldName = 'DESCRIPCIONADICIONAL'
+      Origin = 'INVENTARIO_PRODUCTO.DESCRIPCIONADICIONAL'
+      BlobType = ftMemo
+      Size = 8
+    end
+    object tblInvComer1roCANTIDAD_REORDEN: TIntegerField
+      FieldName = 'CANTIDAD_REORDEN'
+      Origin = 'INVENTARIO_PRODUCTO.CANTIDAD_REORDEN'
+    end
+    object tblInvComer1roPRECIO_ANT: TFloatField
+      FieldName = 'PRECIO_ANT'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIO_ANT'
+    end
+    object tblInvComer1roCANTIDAD: TFloatField
+      FieldName = 'CANTIDAD'
+      Origin = 'INVENTARIO_PRODUCTO.CANTIDAD'
+    end
+    object tblInvComer1roPRECIO: TFloatField
+      FieldName = 'PRECIO'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIO'
+    end
+    object tblInvComer1roBLCE_CANT_ENTRADA: TFloatField
+      FieldName = 'BLCE_CANT_ENTRADA'
+      Origin = 'INVENTARIO_PRODUCTO.BLCE_CANT_ENTRADA'
+    end
+    object tblInvComer1roBLCE_CANT_SALIDA: TFloatField
+      FieldName = 'BLCE_CANT_SALIDA'
+      Origin = 'INVENTARIO_PRODUCTO.BLCE_CANT_SALIDA'
+    end
+    object tblInvComer1roFECHA_ULTIMA_TRN: TDateTimeField
+      FieldName = 'FECHA_ULTIMA_TRN'
+      Origin = 'INVENTARIO_PRODUCTO.FECHA_ULTIMA_TRN'
+    end
+    object tblInvComer1roSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'INVENTARIO_PRODUCTO.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object tblInvComer1roPORC_DESCUENTO: TFloatField
+      FieldName = 'PORC_DESCUENTO'
+      Origin = 'INVENTARIO_PRODUCTO.PORC_DESCUENTO'
+    end
+    object tblInvComer1roFOTO: TBlobField
+      FieldName = 'FOTO'
+      Origin = 'INVENTARIO_PRODUCTO.FOTO'
+      Size = 8
+    end
+    object tblInvComer1roPAGA_ITBI: TSmallintField
+      FieldName = 'PAGA_ITBI'
+      Origin = 'INVENTARIO_PRODUCTO.PAGA_ITBI'
+    end
+    object tblInvComer1roCODIGO_PRECIO: TIBStringField
+      FieldName = 'CODIGO_PRECIO'
+      Origin = 'INVENTARIO_PRODUCTO.CODIGO_PRECIO'
+      FixedChar = True
+      Size = 6
+    end
+    object tblInvComer1roUNIDAD: TFloatField
+      FieldName = 'UNIDAD'
+      Origin = 'INVENTARIO_PRODUCTO.UNIDAD'
+    end
+    object tblInvComer1roPRECIO_COMPRA: TFloatField
+      FieldName = 'PRECIO_COMPRA'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIO_COMPRA'
+    end
+    object tblInvComer1roPRECIO_MINIMO: TFloatField
+      FieldName = 'PRECIO_MINIMO'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIO_MINIMO'
+    end
+    object tblInvComer1roREFERENCIA: TIBStringField
+      FieldName = 'REFERENCIA'
+      Origin = 'INVENTARIO_PRODUCTO.REFERENCIA'
+      Size = 50
+    end
+    object tblInvComer1roFECHA_VENCIMIENTO: TDateTimeField
+      FieldName = 'FECHA_VENCIMIENTO'
+      Origin = 'INVENTARIO_PRODUCTO.FECHA_VENCIMIENTO'
+    end
+    object tblInvComer1roINVENTARIAR: TSmallintField
+      FieldName = 'INVENTARIAR'
+      Origin = 'INVENTARIO_PRODUCTO.INVENTARIAR'
+    end
+    object tblInvComer1roPRECIO_TIPO_UNIDAD: TFloatField
+      FieldName = 'PRECIO_TIPO_UNIDAD'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIO_TIPO_UNIDAD'
+    end
+    object tblInvComer1roTIPO_UNIDAD: TIntegerField
+      FieldName = 'TIPO_UNIDAD'
+      Origin = 'INVENTARIO_PRODUCTO.TIPO_UNIDAD'
+    end
+    object tblInvComer1roORIGEN: TIntegerField
+      FieldName = 'ORIGEN'
+      Origin = 'INVENTARIO_PRODUCTO.ORIGEN'
+    end
+    object tblInvComer1roUBICACION: TIBStringField
+      FieldName = 'UBICACION'
+      Origin = 'INVENTARIO_PRODUCTO.UBICACION'
+      Size = 50
+    end
+    object tblInvComer1roREFERENCIA_ALTERNA: TIBStringField
+      FieldName = 'REFERENCIA_ALTERNA'
+      Origin = 'INVENTARIO_PRODUCTO.REFERENCIA_ALTERNA'
+      Size = 50
+    end
+    object tblInvComer1roMARCA: TIBStringField
+      FieldName = 'MARCA'
+      Origin = 'INVENTARIO_PRODUCTO.MARCA'
+      Size = 50
+    end
+    object tblInvComer1roMODELO: TIBStringField
+      FieldName = 'MODELO'
+      Origin = 'INVENTARIO_PRODUCTO.MODELO'
+      Size = 50
+    end
+    object tblInvComer1roPRECIOVENTA1: TFloatField
+      FieldName = 'PRECIOVENTA1'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIOVENTA1'
+    end
+    object tblInvComer1roPRECIOVENTA2: TFloatField
+      FieldName = 'PRECIOVENTA2'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIOVENTA2'
+    end
+    object tblInvComer1roPRECIOVENTA3: TFloatField
+      FieldName = 'PRECIOVENTA3'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIOVENTA3'
+    end
+    object tblInvComer1roPRECIOVENTA4: TFloatField
+      FieldName = 'PRECIOVENTA4'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIOVENTA4'
+    end
+    object tblInvComer1roPORCUTILIDAD1: TFloatField
+      FieldName = 'PORCUTILIDAD1'
+      Origin = 'INVENTARIO_PRODUCTO.PORCUTILIDAD1'
+    end
+    object tblInvComer1roPORCUTILIDAD2: TFloatField
+      FieldName = 'PORCUTILIDAD2'
+      Origin = 'INVENTARIO_PRODUCTO.PORCUTILIDAD2'
+    end
+    object tblInvComer1roPORCUTILIDAD3: TFloatField
+      FieldName = 'PORCUTILIDAD3'
+      Origin = 'INVENTARIO_PRODUCTO.PORCUTILIDAD3'
+    end
+    object tblInvComer1roPORCUTILIDAD4: TFloatField
+      FieldName = 'PORCUTILIDAD4'
+      Origin = 'INVENTARIO_PRODUCTO.PORCUTILIDAD4'
+    end
+    object tblInvComer1roUSARLEVELPRECIO: TSmallintField
+      FieldName = 'USARLEVELPRECIO'
+      Origin = 'INVENTARIO_PRODUCTO.USARLEVELPRECIO'
+    end
+    object tblInvComer1roCIA_KEY: TIntegerField
+      FieldName = 'CIA_KEY'
+      Origin = 'INVENTARIO_PRODUCTO.CIA_KEY'
+    end
+    object tblInvComer1roSITUACIONPROD: TSmallintField
+      FieldName = 'SITUACIONPROD'
+      Origin = 'INVENTARIO_PRODUCTO.SITUACIONPROD'
+    end
+    object tblInvComer1roAPLICAIMPTOCOMPRA: TSmallintField
+      FieldName = 'APLICAIMPTOCOMPRA'
+      Origin = 'INVENTARIO_PRODUCTO.APLICAIMPTOCOMPRA'
+    end
+    object tblInvComer1roCODFABRICANTE: TIntegerField
+      FieldName = 'CODFABRICANTE'
+      Origin = 'INVENTARIO_PRODUCTO.CODFABRICANTE'
+    end
+    object tblInvComer1roCTAINVENTARIO: TIBStringField
+      FieldName = 'CTAINVENTARIO'
+      Origin = 'INVENTARIO_PRODUCTO.CTAINVENTARIO'
+      Size = 7
+    end
+    object tblInvComer1roCTAVENTA: TIBStringField
+      FieldName = 'CTAVENTA'
+      Origin = 'INVENTARIO_PRODUCTO.CTAVENTA'
+      Size = 7
+    end
+    object tblInvComer1roCTACOMPRA: TIBStringField
+      FieldName = 'CTACOMPRA'
+      Origin = 'INVENTARIO_PRODUCTO.CTACOMPRA'
+      Size = 7
+    end
+    object tblInvComer1roCODSUBCATEGORIA: TIntegerField
+      FieldName = 'CODSUBCATEGORIA'
+      Origin = 'INVENTARIO_PRODUCTO.CODSUBCATEGORIA'
+    end
+    object tblInvComer1roCODCATEGORIA: TIntegerField
+      FieldName = 'CODCATEGORIA'
+      Origin = 'INVENTARIO_PRODUCTO.CODCATEGORIA'
+    end
+    object tblInvComer1roPORCITBIS: TFloatField
+      FieldName = 'PORCITBIS'
+      Origin = 'INVENTARIO_PRODUCTO.PORCITBIS'
+    end
+    object tblInvComer1roCOD_MONEDA: TIBStringField
+      FieldName = 'COD_MONEDA'
+      Origin = 'INVENTARIO_PRODUCTO.COD_MONEDA'
+      FixedChar = True
+      Size = 1
+    end
+    object tblInvComer1roKILOMETROS: TFloatField
+      FieldName = 'KILOMETROS'
+      Origin = 'INVENTARIO_PRODUCTO.KILOMETROS'
+    end
+    object tblInvComer1roRUTAIMAGEN: TIBStringField
+      FieldName = 'RUTAIMAGEN'
+      Origin = 'INVENTARIO_PRODUCTO.RUTAIMAGEN'
+      Size = 200
+    end
+    object tblInvComer1roIDTASAITBIS: TSmallintField
+      FieldName = 'IDTASAITBIS'
+      Origin = 'INVENTARIO_PRODUCTO.IDTASAITBIS'
+    end
+    object tblInvComer1roPRECIO_ALQUILER: TFloatField
+      FieldName = 'PRECIO_ALQUILER'
+      Origin = 'INVENTARIO_PRODUCTO.PRECIO_ALQUILER'
+    end
+    object tblInvComer1roPAGACOMISION: TSmallintField
+      FieldName = 'PAGACOMISION'
+      Origin = 'INVENTARIO_PRODUCTO.PAGACOMISION'
+    end
   end
 end

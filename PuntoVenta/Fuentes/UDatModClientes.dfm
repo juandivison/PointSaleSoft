@@ -1,8 +1,8 @@
 object dmClientes: TdmClientes
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Left = 677
-  Top = 130
+  Left = 651
+  Top = 197
   Height = 521
   Width = 884
   object dstblClientes: TDataSource
@@ -407,7 +407,7 @@ object dmClientes: TdmClientes
     AutoEdit = False
     DataSet = tblCteReferenciaDet
     Left = 424
-    Top = 336
+    Top = 320
   end
   object tblCteReferenciaMaster: TIBDataSet
     Database = dmConectar.IBDatabase1

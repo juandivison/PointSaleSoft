@@ -65,7 +65,7 @@ begin
   begin
     Image1.Picture.LoadFromFile(_ximagen);
   end else
-  begin
+  begin                      
     _xImagen:=FileToUse('Graficos','Logo.jpeg');
     if (_xImagen <> '') then
     Image1.Picture.LoadFromFile(_ximagen);

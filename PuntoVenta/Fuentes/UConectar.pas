@@ -25,6 +25,7 @@ type
     edtNumPC: TEdit;
     Label6: TLabel;
     SkinData1: TSkinData;
+    Label7: TLabel;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -70,6 +71,29 @@ begin
   begin
     MessageDlg('La conección a la base de datos falló, verifique', mtInformation, [mbOK], 0);
     Halt;
+  end;
+  try
+    StrRuta:='';
+    if (GLBRUTADB2 <> '') then
+    begin
+    StrRuta:=  FIniFile.ReadString(SECTION, GLBRUTADB2, '');
+    IF (StrRuta <> '') THEN
+    begin
+      dmConectar.IBDatabase2.Connected    := False;
+      dmConectar.IBDatabase2.DatabaseName := Trim(StrRuta);
+      GlbRutaDBActual2 :=dmConectar.IBDatabase1.DatabaseName;
+      if dmConectar.IBDatabase2.TestConnected = False then
+      begin
+        close;
+      end else
+      begin
+        MessageDlg('La conección a la base de datos falló, verifique', mtInformation, [mbOK], 0);
+        Halt;
+      end;
+    end;
+  end;
+  except
+    MessageDlg('No tienes acceso a la DB secundaria, verifique', mtInformation, [mbOK], 0);
   end;
 end;
 
@@ -143,7 +167,10 @@ begin
     LabelRuta.Caption := FIniFile.ReadString(SECTION, GLBRUTADB, '');
     edtNumPC.Text := FIniFile.ReadString(SECTION, 'QtyPc', '');
   end else
-  LabelRuta.Caption := StrRuta;
+  begin
+    LabelRuta.Caption := StrRuta;
+    Label7.Caption := FIniFile.ReadString(SECTION, GLBRUTADB2, '');
+  end;
 end;
 
 

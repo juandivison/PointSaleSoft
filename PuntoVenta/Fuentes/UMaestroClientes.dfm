@@ -1,6 +1,6 @@
 object frmClientes: TfrmClientes
-  Left = 268
-  Top = 154
+  Left = 275
+  Top = 211
   Width = 993
   Height = 558
   Caption = 'Maestro Clientes'
@@ -1788,6 +1788,7 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'TIPO_CLIENTE'
+            Width = 64
             Visible = True
           end
           item
@@ -1805,6 +1806,7 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'MONEDA_FACT'
+            Width = 64
             Visible = True
           end
           item
@@ -1816,37 +1818,44 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'CONTACTO'
+            Width = 64
             Visible = True
           end
           item
             Color = 8454016
             Expanded = False
             FieldName = 'COD_VENDEDOR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'DIRECCION_CONT'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'TELEF_CONTACTO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FAX_CONTACTO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FORMA_PAGO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODIGO_AGENCIA'
+            Width = 64
             Visible = True
           end
           item
@@ -1857,56 +1866,67 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'STATUS_CLIENTE'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'INSERTADO_POR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_INSERTADO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_MOD'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MODI_POR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'LIMITE_CREDITO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'EMAIL'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'WEBSITE'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PAIS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CIUDAD'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'RNC_NUMERO'
+            Width = 64
             Visible = True
           end
           item
@@ -1917,6 +1937,7 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'CANT_DIAS_CREDITO'
+            Width = 64
             Visible = True
           end
           item
@@ -1927,6 +1948,7 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'TIPO_CF'
+            Width = 64
             Visible = True
           end
           item
@@ -1937,81 +1959,97 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'CEDULA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'RNC'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'REFERENCIA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'TELEF_REFERENCIA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'OTRO_TELEFONO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'TIPO_NCF'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'OBSERVACION'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'LUGAR_DE_TRABAJO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'APODO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODIGO_USUARIO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'COMENTARIO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MOVIL1'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MOVIL2'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODIGO_TEXTO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'USARLEVELPRECIO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_NACIMIENTO'
+            Width = 64
             Visible = True
           end
           item
@@ -2033,21 +2071,25 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'COD_CIUDAD'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CALLE'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MANZANA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'EDIFICIO'
+            Width = 64
             Visible = True
           end
           item
@@ -2059,31 +2101,37 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'NSS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PLAN_ID'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORC_BENEFICIO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'ID_PROVINCIA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'ID_MUNICIPIO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'SHOWPRECIOCONITBIS'
+            Width = 64
             Visible = True
           end>
       end
@@ -2422,11 +2470,13 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'CASANUM'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'APTONUM'
+            Width = 64
             Visible = True
           end
           item
@@ -2821,6 +2871,7 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'NUM_CERTIFICADO'
+            Width = 64
             Visible = True
           end
           item
@@ -2838,11 +2889,13 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'CHASSIS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PLACA'
+            Width = 64
             Visible = True
           end
           item
@@ -2853,21 +2906,25 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'MODELO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_APERTURA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_VENCE_SEGURO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'TIPO_SEGURO'
+            Width = 64
             Visible = True
           end
           item
@@ -2885,31 +2942,37 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'CODIGO_DEALER'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODIGO_AGENCIA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'COLOR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_IN'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'IN_POR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'STATUSCXC'
+            Width = 64
             Visible = True
           end
           item
@@ -2922,16 +2985,19 @@ object frmClientes: TfrmClientes
             Expanded = False
             FieldName = 'POLIZA_ESPECIAL'
             ReadOnly = True
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'NOTIFY_EMAIL'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CON_CARENCIA'
+            Width = 64
             Visible = True
           end>
       end
@@ -3941,96 +4007,115 @@ object frmClientes: TfrmClientes
           item
             Expanded = False
             FieldName = 'CODIGO_DEALER'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'NOMBRES'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'APELLIDOS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CEDULA_PASSPORT'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'EMAIL'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'TELEFONO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MOVIL'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'DIRECCION'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PAIS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PROVINCIA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PRECIOVENTA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'DESCRIPCIONDELPRODUCTO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'TIEMPOGVENDEDOR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'VALORDELARTICULO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTOAPAGARPORMES'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTOTOTALAPAGAR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'STATUS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'NOTIFY_EMAIL'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'STATUSCXC'
+            Width = 64
             Visible = True
           end>
       end

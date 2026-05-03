@@ -1,8 +1,8 @@
 object dmFactura: TdmFactura
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Left = 745
-  Top = 142
+  Left = 488
+  Top = 125
   Height = 641
   Width = 1024
   object IBDataSetFacturas: TIBDataSet
@@ -2711,7 +2711,10 @@ object dmFactura: TdmFactura
       '   u.descripcion DescUnidadMedida, '
       
         ' SUBSTRING(u.DESCRIPCION from 1 for 1) LTIPO_UNIDAD, u.cantidad ' +
-        'cantXunidad '
+        'cantXunidad,'
+      
+        ' (Select First 1 coalesce(registro.TRANSP_ITBIS,1) From REGISTRO' +
+        ') TRANSP_ITBIS  '
       'FROM'
       '  VENTAS_MAST V'
       '  INNER JOIN VENTAS_DET D ON (V.NUMERO = D.NUMERO)'
@@ -2948,6 +2951,9 @@ object dmFactura: TdmFactura
     object qryVentaFacturaDetLEVEL_PRECIO_VENTA: TSmallintField
       FieldName = 'LEVEL_PRECIO_VENTA'
       Origin = 'VENTAS_DET.LEVEL_PRECIO_VENTA'
+    end
+    object qryVentaFacturaDetTRANSP_ITBIS: TIntegerField
+      FieldName = 'TRANSP_ITBIS'
     end
   end
   object dsqryVentaFactura: TDataSource
@@ -7551,8 +7557,8 @@ object dmFactura: TdmFactura
     SQL.Strings = (
       'SELECT '
       '  D.NUMERO,'
-      '  d.serie, '
-      '  i.referencia,'
+      '  D.SERIE, '
+      '  I.REFERENCIA,'
       '  F.DESCRIPCION AS DESC_TIPO_NCF,'
       '  D.CODIGO_PROD,'
       '  V.NUMERO_FACTURA,'
@@ -7560,57 +7566,62 @@ object dmFactura: TdmFactura
       '  V.SERIE_NCF_ASIGNADO,'
       '  N.NUMERO_NCF,'
       '  D.CODIGO_BARRA,'
-      '  D.NUM_FACTURA, D.CODIGO_VENDEDOR,'
-      
-        '  v.fecha  FECHA_IN, d.NUM_CONDUCE_CTE, d.NUM_IDENT, d.FICHA_VEH' +
-        ','
+      '  D.NUM_FACTURA,'
+      '  D.CODIGO_VENDEDOR,'
+      '  V.FECHA AS FECHA_IN,'
+      '  D.NUM_CONDUCE_CTE,'
+      '  D.NUM_IDENT,'
+      '  D.FICHA_VEH,'
       '  D.IN_POR,'
-      '  v.fecha FECHA_MOD,'
+      '  V.FECHA AS FECHA_MOD,'
       '  D.MOD_POR,'
       '  D.SERIE_PROD,'
       '  D.STATUS_CNT,'
       '  D.TIPO_UNIDAD,'
       '  D.ITBIS_EXENTO,'
-      '  D.TIPO_VENTA,  D.LEVEL_PRECIO_VENTA,'
+      '  D.TIPO_VENTA,'
+      '  D.LEVEL_PRECIO_VENTA,'
       '  D.DESCRIPCION,'
-      '  D.DESCRIPCIONPRODUCTO DescripcionAdicional,'
-      '  d.precio_compra,'
-      '  case  nullif( D.DESCRIPCIONPRODUCTO, '#39#39' ) when '#39#39'  then'
-      '    D.DESCRIPCION'
-      '  else '
-      '   D.DESCRIPCION ||'#39' '#39'|| D.DESCRIPCIONPRODUCTO'
-      '  end as DESCRIPCIONPRODUCTO,'
-      '  u.descripcion DescUnidadMedida,'
-      '  SUBSTRING(u.DESCRIPCION from 1 for 1) LTIPO_UNIDAD,'
-      '  Abs(D.PRECIO) Precio,'
-      '  u.cantidad cantXunidad,'
+      '  D.DESCRIPCIONPRODUCTO AS DescripcionAdicional,'
+      '  D.PRECIO_COMPRA,'
+      '  CASE'
+      
+        '    WHEN COALESCE(TRIM(D.DESCRIPCIONPRODUCTO), '#39#39') = '#39#39' THEN D.D' +
+        'ESCRIPCION'
+      '    ELSE D.DESCRIPCION || '#39' '#39' || D.DESCRIPCIONPRODUCTO'
+      '  END AS DESCRIPCIONPRODUCTO,'
+      '  U.DESCRIPCION AS DescUnidadMedida,'
+      '  SUBSTRING(U.DESCRIPCION FROM 1 FOR 1) AS LTIPO_UNIDAD,'
+      '  ABS(D.PRECIO) AS Precio,'
+      '  U.CANTIDAD AS cantXunidad,'
       '  D.PORC_DESC_DET,'
-      '  d.porc_desc_item,'
-      '  sum(d.cant_viajes) cant_viajes,'
-      '  sum(D.CANT_REGRESO) CANT_REGRESO,'
-      '  sum(D.CANT_PROMO) CANT_PROMO,'
-      '  sum(D.MONTO_DIETA) MONTO_DIETA,'
-      '  sum(D.MONTO_AJUSTE) MONTO_AJUSTE,'
-      '  sum(D.CANTIDAD) cantidad,'
-      '  sum(d.cant_conduce) cant_conduce, '
-      '  sum(Abs(D.ITBI_DET))  ITBI_DET,  '
-      '  sum(Abs(d.monto_desc_item))  monto_desc_item,'
-      '  sum(Abs(V.MONTO_DESCUENTO)) MONTO_DESCUENTO,'
-      '  sum(Abs(D.VALOR_SERVICIO_DET)) VALOR_SERVICIO_DET,'
-      '  sum(Abs(D.VALOR_TOTAL_DET)) VALOR_TOTAL_DET'
-      ' '
-      'FROM'
-      '  VENTAS_MAST V'
-      '  INNER JOIN VENTAS_DET D ON (V.NUMERO = D.NUMERO)'
+      '  D.PORC_DESC_ITEM,'
+      '  SUM(D.CANT_VIAJES) AS cant_viajes,'
+      '  SUM(D.CANT_REGRESO) AS CANT_REGRESO,'
+      '  SUM(D.CANT_PROMO) AS CANT_PROMO,'
+      '  SUM(D.MONTO_DIETA) AS MONTO_DIETA,'
+      '  SUM(D.MONTO_AJUSTE) AS MONTO_AJUSTE,'
+      '  SUM(D.CANTIDAD) AS cantidad,'
+      '  SUM(D.CANT_CONDUCE) AS cant_conduce, '
+      '  SUM(ABS(D.ITBI_DET)) AS ITBI_DET,  '
+      '  SUM(ABS(D.MONTO_DESC_ITEM)) AS monto_desc_item,'
+      '  SUM(ABS(V.MONTO_DESCUENTO)) AS MONTO_DESCUENTO,'
+      '  SUM(ABS(D.VALOR_SERVICIO_DET)) AS VALOR_SERVICIO_DET,'
+      '  SUM(ABS(D.VALOR_TOTAL_DET)) AS VALOR_TOTAL_DET,'
       
-        '  LEFT OUTER JOIN NCF_ASIGNADOS N ON (V.SERIE_NCF_ASIGNADO = N.S' +
-        'ERIE)'
-      '  LEFT OUTER JOIN TIPO_CF F ON (N.TIPO_NCF = F.TIPO_CF)'
-      '  Left Outer join UNIDADES u on (d.tipo_unidad = u.idunidad)'
+        '  (SELECT FIRST 1 COALESCE(REGISTRO.TRANSP_ITBIS, 1) FROM REGIST' +
+        'RO) AS TRANSP_ITBIS'
+      'FROM VENTAS_MAST V'
+      'INNER JOIN VENTAS_DET D ON V.NUMERO = D.NUMERO'
       
-        '  left outer join INVENTARIO_PRODUCTO i on i.codigo = d.CODIGO_P' +
-        'ROD'
-      'Where   v.NUMERO =:numero'
+        'LEFT OUTER JOIN NCF_ASIGNADOS N ON V.SERIE_NCF_ASIGNADO = N.SERI' +
+        'E'
+      'LEFT OUTER JOIN TIPO_CF F ON N.TIPO_NCF = F.TIPO_CF'
+      'LEFT OUTER JOIN UNIDADES U ON D.TIPO_UNIDAD = U.IDUNIDAD'
+      
+        'LEFT OUTER JOIN INVENTARIO_PRODUCTO I ON I.CODIGO = D.CODIGO_PRO' +
+        'D'
+      'WHERE V.NUMERO = :NUMERO'
       'GROUP BY '
       '  D.NUMERO,'
       '  D.SERIE,'
@@ -7620,6 +7631,32 @@ object dmFactura: TdmFactura
       '  V.NUMERO_FACTURA,'
       '  D.STATUS_DET,'
       '  V.SERIE_NCF_ASIGNADO,'
+      '  N.NUMERO_NCF,'
+      '  D.CODIGO_BARRA,'
+      '  D.NUM_FACTURA,'
+      '  D.CODIGO_VENDEDOR,'
+      '  V.FECHA,'
+      '  D.NUM_CONDUCE_CTE,'
+      '  D.NUM_IDENT,'
+      '  D.FICHA_VEH,'
+      '  D.IN_POR,'
+      '  D.MOD_POR,'
+      '  D.SERIE_PROD,'
+      '  D.STATUS_CNT,'
+      '  D.TIPO_UNIDAD,'
+      '  D.ITBIS_EXENTO,'
+      '  D.TIPO_VENTA,'
+      '  D.LEVEL_PRECIO_VENTA,'
+      '  D.DESCRIPCION,'
+      '  D.DESCRIPCIONPRODUCTO,'
+      '  D.PRECIO_COMPRA,'
+      '  D.PRECIO,'
+      '  U.DESCRIPCION,'
+      '  SUBSTRING(U.DESCRIPCION FROM 1 FOR 1),'
+      '  U.CANTIDAD,'
+      '  D.PORC_DESC_DET,'
+      '  D.PORC_DESC_ITEM'
+      'ORDER BY D.NUMERO;'
       '  N.NUMERO_NCF,'
       '  D.CODIGO_BARRA,'
       '  D.NUM_FACTURA,'
@@ -7706,7 +7743,10 @@ object dmFactura: TdmFactura
       '   u.descripcion DescUnidadMedida, D.CODIGO_VENDEDOR,'
       
         ' SUBSTRING(u.DESCRIPCION from 1 for 1) LTIPO_UNIDAD, u.cantidad ' +
-        'cantXunidad '
+        'cantXunidad'
+      
+        ',(Select First 1 coalesce(registro.TRANSP_ITBIS,1) From REGISTRO' +
+        ') TRANSP_ITBIS    '
       'FROM'
       '  VENTAS_MAST V'
       '  INNER JOIN VENTAS_DET D ON (V.NUMERO = D.NUMERO)'
@@ -8849,6 +8889,570 @@ object dmFactura: TdmFactura
       FieldName = 'FACT_DESCNUMCTA'
       Origin = 'BANCOS_DET.FACT_DESCNUMCTA'
       Size = 50
+    end
+  end
+  object tbltrnventasmastupd: TIBDataSet
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    DeleteSQL.Strings = (
+      'delete from ventas_mast'
+      'where'
+      '  NUMERO = :OLD_NUMERO')
+    InsertSQL.Strings = (
+      'insert into ventas_mast'
+      
+        '  (NUMERO, FECHA, CIA_KEY, CODIGO_CTE, CODIGO_VENDEDOR, FORMA_PA' +
+        'GO, OBSERVACION, '
+      
+        '   MONEDA, VALOR_TOTAL_DET, STATUS, FECHA_IN, IN_POR, FECHA_MOD,' +
+        ' MOD_POR, '
+      
+        '   NUMERO_FACTURA, NUMERO_DOC_PAGO, SERIE_NCF_ASIGNADO, MONTO_BR' +
+        'UTO, PORC_DESCUENTO, '
+      
+        '   MONTO_DESCUENTO, MONTO_INICIAL, NOMBRE_CLIENTE_GENERAL, MONTO' +
+        '_PAGADO, '
+      
+        '   MONTO_CAMBIO, MONTO_TOTAL_ITBIS, MONTODESCGASTOSADMIN, MONTOD' +
+        'ESCITBISGASTOSADMIN, '
+      
+        '   MONTODESCTRANSP, MONTODESCDIRTECNICA, MONTODESCITBISDIRTECNIC' +
+        'A, MONTODESCIMPREVISTO, '
+      
+        '   MONTODESCITBISIMPREVISTO, DESC_MONTO_COMBUSTIBLE, DESC_MONTO_' +
+        'PRESTAMO, '
+      
+        '   DESC_MONTO_SINDICATO, DESC_IMP_SOBRE_RENTA, DESC_OTROS, PORC_' +
+        'DESC_SINDICATO, '
+      
+        '   PORC_DESC_IMP_SOBRE_RENTA, DESC_RUTA, OTROS_DESCUENTOS_2, OTR' +
+        'OS_DESCUENTOS_3, '
+      
+        '   MONTO_DESC_CHOFER, TIPO_VENTA, COMENTARIO, COTIZACION_ORIGEN,' +
+        ' REFERENCIACTE, '
+      
+        '   MONTO_RECARGO, TIPONCFIFISCAL, MONTO_EXONERADO_ITBIS, NIF_IMP' +
+        'RESO, IDRETENCION, '
+      
+        '   PROPINALEGAL, PORCPROPINALEGAL, PROPINA, TICKET_ID, SUB_TOTAL' +
+        'ITBIS, '
+      
+        '   COD_USR_CAJA, COD_SUBCLIENTE, VENTAARS, FECHAINICIAPOLIZA, TI' +
+        'PO_AFILIADO, '
+      
+        '   IDNUMERODVEH, COD_CAJA, TIPO_INGRESO, IDDGII_MOTIVO_NCR, ESTA' +
+        'DO_VENTA, '
+      
+        '   REF_TRN_ORIGEN, REF_NCF_ORIGEN, REF_FECHA_ORIGEN, REF_ESTADO_' +
+        'ORIGEN)'
+      'values'
+      
+        '  (:NUMERO, :FECHA, :CIA_KEY, :CODIGO_CTE, :CODIGO_VENDEDOR, :FO' +
+        'RMA_PAGO, '
+      
+        '   :OBSERVACION, :MONEDA, :VALOR_TOTAL_DET, :STATUS, :FECHA_IN, ' +
+        ':IN_POR, '
+      
+        '   :FECHA_MOD, :MOD_POR, :NUMERO_FACTURA, :NUMERO_DOC_PAGO, :SER' +
+        'IE_NCF_ASIGNADO, '
+      
+        '   :MONTO_BRUTO, :PORC_DESCUENTO, :MONTO_DESCUENTO, :MONTO_INICI' +
+        'AL, :NOMBRE_CLIENTE_GENERAL, '
+      
+        '   :MONTO_PAGADO, :MONTO_CAMBIO, :MONTO_TOTAL_ITBIS, :MONTODESCG' +
+        'ASTOSADMIN, '
+      
+        '   :MONTODESCITBISGASTOSADMIN, :MONTODESCTRANSP, :MONTODESCDIRTE' +
+        'CNICA, '
+      
+        '   :MONTODESCITBISDIRTECNICA, :MONTODESCIMPREVISTO, :MONTODESCIT' +
+        'BISIMPREVISTO, '
+      
+        '   :DESC_MONTO_COMBUSTIBLE, :DESC_MONTO_PRESTAMO, :DESC_MONTO_SI' +
+        'NDICATO, '
+      
+        '   :DESC_IMP_SOBRE_RENTA, :DESC_OTROS, :PORC_DESC_SINDICATO, :PO' +
+        'RC_DESC_IMP_SOBRE_RENTA, '
+      
+        '   :DESC_RUTA, :OTROS_DESCUENTOS_2, :OTROS_DESCUENTOS_3, :MONTO_' +
+        'DESC_CHOFER, '
+      
+        '   :TIPO_VENTA, :COMENTARIO, :COTIZACION_ORIGEN, :REFERENCIACTE,' +
+        ' :MONTO_RECARGO, '
+      
+        '   :TIPONCFIFISCAL, :MONTO_EXONERADO_ITBIS, :NIF_IMPRESO, :IDRET' +
+        'ENCION, '
+      
+        '   :PROPINALEGAL, :PORCPROPINALEGAL, :PROPINA, :TICKET_ID, :SUB_' +
+        'TOTALITBIS, '
+      
+        '   :COD_USR_CAJA, :COD_SUBCLIENTE, :VENTAARS, :FECHAINICIAPOLIZA' +
+        ', :TIPO_AFILIADO, '
+      
+        '   :IDNUMERODVEH, :COD_CAJA, :TIPO_INGRESO, :IDDGII_MOTIVO_NCR, ' +
+        ':ESTADO_VENTA, '
+      
+        '   :REF_TRN_ORIGEN, :REF_NCF_ORIGEN, :REF_FECHA_ORIGEN, :REF_EST' +
+        'ADO_ORIGEN)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  NUMERO,'
+      '  FECHA,'
+      '  CIA_KEY,'
+      '  CODIGO_CTE,'
+      '  CODIGO_VENDEDOR,'
+      '  FORMA_PAGO,'
+      '  OBSERVACION,'
+      '  MONEDA,'
+      '  VALOR_TOTAL_DET,'
+      '  STATUS,'
+      '  FECHA_IN,'
+      '  IN_POR,'
+      '  FECHA_MOD,'
+      '  MOD_POR,'
+      '  NUMERO_FACTURA,'
+      '  NUMERO_DOC_PAGO,'
+      '  SERIE_NCF_ASIGNADO,'
+      '  MONTO_BRUTO,'
+      '  PORC_DESCUENTO,'
+      '  MONTO_DESCUENTO,'
+      '  MONTO_INICIAL,'
+      '  NOMBRE_CLIENTE_GENERAL,'
+      '  MONTO_PAGADO,'
+      '  MONTO_CAMBIO,'
+      '  MONTO_TOTAL_ITBIS,'
+      '  MONTODESCGASTOSADMIN,'
+      '  MONTODESCITBISGASTOSADMIN,'
+      '  MONTODESCTRANSP,'
+      '  MONTODESCDIRTECNICA,'
+      '  MONTODESCITBISDIRTECNICA,'
+      '  MONTODESCIMPREVISTO,'
+      '  MONTODESCITBISIMPREVISTO,'
+      '  DESC_MONTO_COMBUSTIBLE,'
+      '  DESC_MONTO_PRESTAMO,'
+      '  DESC_MONTO_SINDICATO,'
+      '  DESC_IMP_SOBRE_RENTA,'
+      '  DESC_OTROS,'
+      '  PORC_DESC_SINDICATO,'
+      '  PORC_DESC_IMP_SOBRE_RENTA,'
+      '  DESC_RUTA,'
+      '  OTROS_DESCUENTOS_2,'
+      '  OTROS_DESCUENTOS_3,'
+      '  MONTO_DESC_CHOFER,'
+      '  TIPO_VENTA,'
+      '  COMENTARIO,'
+      '  COTIZACION_ORIGEN,'
+      '  REFERENCIACTE,'
+      '  MONTO_RECARGO,'
+      '  TIPONCFIFISCAL,'
+      '  MONTO_EXONERADO_ITBIS,'
+      '  NIF_IMPRESO,'
+      '  IDRETENCION,'
+      '  PROPINALEGAL,'
+      '  PORCPROPINALEGAL,'
+      '  PROPINA,'
+      '  TICKET_ID,'
+      '  SUB_TOTALITBIS,'
+      '  COD_USR_CAJA,'
+      '  COD_SUBCLIENTE,'
+      '  VENTAARS,'
+      '  FECHAINICIAPOLIZA,'
+      '  TIPO_AFILIADO,'
+      '  IDNUMERODVEH,'
+      '  COD_CAJA,'
+      '  TIPO_INGRESO,'
+      '  IDDGII_MOTIVO_NCR,'
+      '  ESTADO_VENTA,'
+      '  REF_TRN_ORIGEN,'
+      '  REF_NCF_ORIGEN,'
+      '  REF_FECHA_ORIGEN,'
+      '  REF_ESTADO_ORIGEN'
+      'from ventas_mast '
+      'where'
+      '  NUMERO = :NUMERO')
+    SelectSQL.Strings = (
+      'Select * from ventas_mast r'
+      'where r.numero=:numero')
+    ModifySQL.Strings = (
+      'update ventas_mast'
+      'set'
+      '  NUMERO = :NUMERO,'
+      '  FECHA = :FECHA,'
+      '  CIA_KEY = :CIA_KEY,'
+      '  CODIGO_CTE = :CODIGO_CTE,'
+      '  CODIGO_VENDEDOR = :CODIGO_VENDEDOR,'
+      '  FORMA_PAGO = :FORMA_PAGO,'
+      '  OBSERVACION = :OBSERVACION,'
+      '  MONEDA = :MONEDA,'
+      '  VALOR_TOTAL_DET = :VALOR_TOTAL_DET,'
+      '  STATUS = :STATUS,'
+      '  FECHA_IN = :FECHA_IN,'
+      '  IN_POR = :IN_POR,'
+      '  FECHA_MOD = :FECHA_MOD,'
+      '  MOD_POR = :MOD_POR,'
+      '  NUMERO_FACTURA = :NUMERO_FACTURA,'
+      '  NUMERO_DOC_PAGO = :NUMERO_DOC_PAGO,'
+      '  SERIE_NCF_ASIGNADO = :SERIE_NCF_ASIGNADO,'
+      '  MONTO_BRUTO = :MONTO_BRUTO,'
+      '  PORC_DESCUENTO = :PORC_DESCUENTO,'
+      '  MONTO_DESCUENTO = :MONTO_DESCUENTO,'
+      '  MONTO_INICIAL = :MONTO_INICIAL,'
+      '  NOMBRE_CLIENTE_GENERAL = :NOMBRE_CLIENTE_GENERAL,'
+      '  MONTO_PAGADO = :MONTO_PAGADO,'
+      '  MONTO_CAMBIO = :MONTO_CAMBIO,'
+      '  MONTO_TOTAL_ITBIS = :MONTO_TOTAL_ITBIS,'
+      '  MONTODESCGASTOSADMIN = :MONTODESCGASTOSADMIN,'
+      '  MONTODESCITBISGASTOSADMIN = :MONTODESCITBISGASTOSADMIN,'
+      '  MONTODESCTRANSP = :MONTODESCTRANSP,'
+      '  MONTODESCDIRTECNICA = :MONTODESCDIRTECNICA,'
+      '  MONTODESCITBISDIRTECNICA = :MONTODESCITBISDIRTECNICA,'
+      '  MONTODESCIMPREVISTO = :MONTODESCIMPREVISTO,'
+      '  MONTODESCITBISIMPREVISTO = :MONTODESCITBISIMPREVISTO,'
+      '  DESC_MONTO_COMBUSTIBLE = :DESC_MONTO_COMBUSTIBLE,'
+      '  DESC_MONTO_PRESTAMO = :DESC_MONTO_PRESTAMO,'
+      '  DESC_MONTO_SINDICATO = :DESC_MONTO_SINDICATO,'
+      '  DESC_IMP_SOBRE_RENTA = :DESC_IMP_SOBRE_RENTA,'
+      '  DESC_OTROS = :DESC_OTROS,'
+      '  PORC_DESC_SINDICATO = :PORC_DESC_SINDICATO,'
+      '  PORC_DESC_IMP_SOBRE_RENTA = :PORC_DESC_IMP_SOBRE_RENTA,'
+      '  DESC_RUTA = :DESC_RUTA,'
+      '  OTROS_DESCUENTOS_2 = :OTROS_DESCUENTOS_2,'
+      '  OTROS_DESCUENTOS_3 = :OTROS_DESCUENTOS_3,'
+      '  MONTO_DESC_CHOFER = :MONTO_DESC_CHOFER,'
+      '  TIPO_VENTA = :TIPO_VENTA,'
+      '  COMENTARIO = :COMENTARIO,'
+      '  COTIZACION_ORIGEN = :COTIZACION_ORIGEN,'
+      '  REFERENCIACTE = :REFERENCIACTE,'
+      '  MONTO_RECARGO = :MONTO_RECARGO,'
+      '  TIPONCFIFISCAL = :TIPONCFIFISCAL,'
+      '  MONTO_EXONERADO_ITBIS = :MONTO_EXONERADO_ITBIS,'
+      '  NIF_IMPRESO = :NIF_IMPRESO,'
+      '  IDRETENCION = :IDRETENCION,'
+      '  PROPINALEGAL = :PROPINALEGAL,'
+      '  PORCPROPINALEGAL = :PORCPROPINALEGAL,'
+      '  PROPINA = :PROPINA,'
+      '  TICKET_ID = :TICKET_ID,'
+      '  SUB_TOTALITBIS = :SUB_TOTALITBIS,'
+      '  COD_USR_CAJA = :COD_USR_CAJA,'
+      '  COD_SUBCLIENTE = :COD_SUBCLIENTE,'
+      '  VENTAARS = :VENTAARS,'
+      '  FECHAINICIAPOLIZA = :FECHAINICIAPOLIZA,'
+      '  TIPO_AFILIADO = :TIPO_AFILIADO,'
+      '  IDNUMERODVEH = :IDNUMERODVEH,'
+      '  COD_CAJA = :COD_CAJA,'
+      '  TIPO_INGRESO = :TIPO_INGRESO,'
+      '  IDDGII_MOTIVO_NCR = :IDDGII_MOTIVO_NCR,'
+      '  ESTADO_VENTA = :ESTADO_VENTA,'
+      '  REF_TRN_ORIGEN = :REF_TRN_ORIGEN,'
+      '  REF_NCF_ORIGEN = :REF_NCF_ORIGEN,'
+      '  REF_FECHA_ORIGEN = :REF_FECHA_ORIGEN,'
+      '  REF_ESTADO_ORIGEN = :REF_ESTADO_ORIGEN'
+      'where'
+      '  NUMERO = :OLD_NUMERO')
+    Left = 880
+    Top = 400
+    object tbltrnventasmastupdNUMERO: TIntegerField
+      FieldName = 'NUMERO'
+      Origin = 'VENTAS_MAST.NUMERO'
+      Required = True
+    end
+    object tbltrnventasmastupdFECHA: TDateTimeField
+      FieldName = 'FECHA'
+      Origin = 'VENTAS_MAST.FECHA'
+    end
+    object tbltrnventasmastupdCIA_KEY: TIntegerField
+      FieldName = 'CIA_KEY'
+      Origin = 'VENTAS_MAST.CIA_KEY'
+    end
+    object tbltrnventasmastupdCODIGO_CTE: TIntegerField
+      FieldName = 'CODIGO_CTE'
+      Origin = 'VENTAS_MAST.CODIGO_CTE'
+    end
+    object tbltrnventasmastupdCODIGO_VENDEDOR: TIntegerField
+      FieldName = 'CODIGO_VENDEDOR'
+      Origin = 'VENTAS_MAST.CODIGO_VENDEDOR'
+    end
+    object tbltrnventasmastupdFORMA_PAGO: TSmallintField
+      FieldName = 'FORMA_PAGO'
+      Origin = 'VENTAS_MAST.FORMA_PAGO'
+    end
+    object tbltrnventasmastupdOBSERVACION: TIBStringField
+      FieldName = 'OBSERVACION'
+      Origin = 'VENTAS_MAST.OBSERVACION'
+      Size = 60
+    end
+    object tbltrnventasmastupdMONEDA: TIBStringField
+      FieldName = 'MONEDA'
+      Origin = 'VENTAS_MAST.MONEDA'
+      FixedChar = True
+      Size = 1
+    end
+    object tbltrnventasmastupdVALOR_TOTAL_DET: TFloatField
+      FieldName = 'VALOR_TOTAL_DET'
+      Origin = 'VENTAS_MAST.VALOR_TOTAL_DET'
+    end
+    object tbltrnventasmastupdSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'VENTAS_MAST.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object tbltrnventasmastupdFECHA_IN: TDateTimeField
+      FieldName = 'FECHA_IN'
+      Origin = 'VENTAS_MAST.FECHA_IN'
+    end
+    object tbltrnventasmastupdIN_POR: TIBStringField
+      FieldName = 'IN_POR'
+      Origin = 'VENTAS_MAST.IN_POR'
+      Size = 12
+    end
+    object tbltrnventasmastupdFECHA_MOD: TDateTimeField
+      FieldName = 'FECHA_MOD'
+      Origin = 'VENTAS_MAST.FECHA_MOD'
+    end
+    object tbltrnventasmastupdMOD_POR: TIBStringField
+      FieldName = 'MOD_POR'
+      Origin = 'VENTAS_MAST.MOD_POR'
+      Size = 12
+    end
+    object tbltrnventasmastupdNUMERO_FACTURA: TIntegerField
+      FieldName = 'NUMERO_FACTURA'
+      Origin = 'VENTAS_MAST.NUMERO_FACTURA'
+    end
+    object tbltrnventasmastupdNUMERO_DOC_PAGO: TIBStringField
+      FieldName = 'NUMERO_DOC_PAGO'
+      Origin = 'VENTAS_MAST.NUMERO_DOC_PAGO'
+    end
+    object tbltrnventasmastupdSERIE_NCF_ASIGNADO: TIntegerField
+      FieldName = 'SERIE_NCF_ASIGNADO'
+      Origin = 'VENTAS_MAST.SERIE_NCF_ASIGNADO'
+    end
+    object tbltrnventasmastupdMONTO_BRUTO: TFloatField
+      FieldName = 'MONTO_BRUTO'
+      Origin = 'VENTAS_MAST.MONTO_BRUTO'
+    end
+    object tbltrnventasmastupdPORC_DESCUENTO: TIntegerField
+      FieldName = 'PORC_DESCUENTO'
+      Origin = 'VENTAS_MAST.PORC_DESCUENTO'
+    end
+    object tbltrnventasmastupdMONTO_DESCUENTO: TFloatField
+      FieldName = 'MONTO_DESCUENTO'
+      Origin = 'VENTAS_MAST.MONTO_DESCUENTO'
+    end
+    object tbltrnventasmastupdMONTO_INICIAL: TFloatField
+      FieldName = 'MONTO_INICIAL'
+      Origin = 'VENTAS_MAST.MONTO_INICIAL'
+    end
+    object tbltrnventasmastupdNOMBRE_CLIENTE_GENERAL: TIBStringField
+      FieldName = 'NOMBRE_CLIENTE_GENERAL'
+      Origin = 'VENTAS_MAST.NOMBRE_CLIENTE_GENERAL'
+      Size = 60
+    end
+    object tbltrnventasmastupdMONTO_PAGADO: TFloatField
+      FieldName = 'MONTO_PAGADO'
+      Origin = 'VENTAS_MAST.MONTO_PAGADO'
+    end
+    object tbltrnventasmastupdMONTO_CAMBIO: TFloatField
+      FieldName = 'MONTO_CAMBIO'
+      Origin = 'VENTAS_MAST.MONTO_CAMBIO'
+    end
+    object tbltrnventasmastupdMONTO_TOTAL_ITBIS: TFloatField
+      FieldName = 'MONTO_TOTAL_ITBIS'
+      Origin = 'VENTAS_MAST.MONTO_TOTAL_ITBIS'
+    end
+    object tbltrnventasmastupdMONTODESCGASTOSADMIN: TFloatField
+      FieldName = 'MONTODESCGASTOSADMIN'
+      Origin = 'VENTAS_MAST.MONTODESCGASTOSADMIN'
+    end
+    object tbltrnventasmastupdMONTODESCITBISGASTOSADMIN: TFloatField
+      FieldName = 'MONTODESCITBISGASTOSADMIN'
+      Origin = 'VENTAS_MAST.MONTODESCITBISGASTOSADMIN'
+    end
+    object tbltrnventasmastupdMONTODESCTRANSP: TFloatField
+      FieldName = 'MONTODESCTRANSP'
+      Origin = 'VENTAS_MAST.MONTODESCTRANSP'
+    end
+    object tbltrnventasmastupdMONTODESCDIRTECNICA: TFloatField
+      FieldName = 'MONTODESCDIRTECNICA'
+      Origin = 'VENTAS_MAST.MONTODESCDIRTECNICA'
+    end
+    object tbltrnventasmastupdMONTODESCITBISDIRTECNICA: TFloatField
+      FieldName = 'MONTODESCITBISDIRTECNICA'
+      Origin = 'VENTAS_MAST.MONTODESCITBISDIRTECNICA'
+    end
+    object tbltrnventasmastupdMONTODESCIMPREVISTO: TFloatField
+      FieldName = 'MONTODESCIMPREVISTO'
+      Origin = 'VENTAS_MAST.MONTODESCIMPREVISTO'
+    end
+    object tbltrnventasmastupdMONTODESCITBISIMPREVISTO: TFloatField
+      FieldName = 'MONTODESCITBISIMPREVISTO'
+      Origin = 'VENTAS_MAST.MONTODESCITBISIMPREVISTO'
+    end
+    object tbltrnventasmastupdDESC_MONTO_COMBUSTIBLE: TFloatField
+      FieldName = 'DESC_MONTO_COMBUSTIBLE'
+      Origin = 'VENTAS_MAST.DESC_MONTO_COMBUSTIBLE'
+    end
+    object tbltrnventasmastupdDESC_MONTO_PRESTAMO: TFloatField
+      FieldName = 'DESC_MONTO_PRESTAMO'
+      Origin = 'VENTAS_MAST.DESC_MONTO_PRESTAMO'
+    end
+    object tbltrnventasmastupdDESC_MONTO_SINDICATO: TFloatField
+      FieldName = 'DESC_MONTO_SINDICATO'
+      Origin = 'VENTAS_MAST.DESC_MONTO_SINDICATO'
+    end
+    object tbltrnventasmastupdDESC_IMP_SOBRE_RENTA: TFloatField
+      FieldName = 'DESC_IMP_SOBRE_RENTA'
+      Origin = 'VENTAS_MAST.DESC_IMP_SOBRE_RENTA'
+    end
+    object tbltrnventasmastupdDESC_OTROS: TFloatField
+      FieldName = 'DESC_OTROS'
+      Origin = 'VENTAS_MAST.DESC_OTROS'
+    end
+    object tbltrnventasmastupdPORC_DESC_SINDICATO: TIBBCDField
+      FieldName = 'PORC_DESC_SINDICATO'
+      Origin = 'VENTAS_MAST.PORC_DESC_SINDICATO'
+      Precision = 9
+      Size = 2
+    end
+    object tbltrnventasmastupdPORC_DESC_IMP_SOBRE_RENTA: TIBBCDField
+      FieldName = 'PORC_DESC_IMP_SOBRE_RENTA'
+      Origin = 'VENTAS_MAST.PORC_DESC_IMP_SOBRE_RENTA'
+      Precision = 9
+      Size = 2
+    end
+    object tbltrnventasmastupdDESC_RUTA: TFloatField
+      FieldName = 'DESC_RUTA'
+      Origin = 'VENTAS_MAST.DESC_RUTA'
+    end
+    object tbltrnventasmastupdOTROS_DESCUENTOS_2: TFloatField
+      FieldName = 'OTROS_DESCUENTOS_2'
+      Origin = 'VENTAS_MAST.OTROS_DESCUENTOS_2'
+    end
+    object tbltrnventasmastupdOTROS_DESCUENTOS_3: TFloatField
+      FieldName = 'OTROS_DESCUENTOS_3'
+      Origin = 'VENTAS_MAST.OTROS_DESCUENTOS_3'
+    end
+    object tbltrnventasmastupdMONTO_DESC_CHOFER: TFloatField
+      FieldName = 'MONTO_DESC_CHOFER'
+      Origin = 'VENTAS_MAST.MONTO_DESC_CHOFER'
+    end
+    object tbltrnventasmastupdTIPO_VENTA: TSmallintField
+      FieldName = 'TIPO_VENTA'
+      Origin = 'VENTAS_MAST.TIPO_VENTA'
+    end
+    object tbltrnventasmastupdCOMENTARIO: TIBStringField
+      FieldName = 'COMENTARIO'
+      Origin = 'VENTAS_MAST.COMENTARIO'
+      Size = 80
+    end
+    object tbltrnventasmastupdCOTIZACION_ORIGEN: TIntegerField
+      FieldName = 'COTIZACION_ORIGEN'
+      Origin = 'VENTAS_MAST.COTIZACION_ORIGEN'
+    end
+    object tbltrnventasmastupdREFERENCIACTE: TIBStringField
+      FieldName = 'REFERENCIACTE'
+      Origin = 'VENTAS_MAST.REFERENCIACTE'
+    end
+    object tbltrnventasmastupdMONTO_RECARGO: TFloatField
+      FieldName = 'MONTO_RECARGO'
+      Origin = 'VENTAS_MAST.MONTO_RECARGO'
+    end
+    object tbltrnventasmastupdTIPONCFIFISCAL: TIntegerField
+      FieldName = 'TIPONCFIFISCAL'
+      Origin = 'VENTAS_MAST.TIPONCFIFISCAL'
+    end
+    object tbltrnventasmastupdMONTO_EXONERADO_ITBIS: TFloatField
+      FieldName = 'MONTO_EXONERADO_ITBIS'
+      Origin = 'VENTAS_MAST.MONTO_EXONERADO_ITBIS'
+    end
+    object tbltrnventasmastupdNIF_IMPRESO: TSmallintField
+      FieldName = 'NIF_IMPRESO'
+      Origin = 'VENTAS_MAST.NIF_IMPRESO'
+    end
+    object tbltrnventasmastupdIDRETENCION: TIntegerField
+      FieldName = 'IDRETENCION'
+      Origin = 'VENTAS_MAST.IDRETENCION'
+    end
+    object tbltrnventasmastupdPROPINALEGAL: TFloatField
+      FieldName = 'PROPINALEGAL'
+      Origin = 'VENTAS_MAST.PROPINALEGAL'
+    end
+    object tbltrnventasmastupdPORCPROPINALEGAL: TFloatField
+      FieldName = 'PORCPROPINALEGAL'
+      Origin = 'VENTAS_MAST.PORCPROPINALEGAL'
+    end
+    object tbltrnventasmastupdPROPINA: TFloatField
+      FieldName = 'PROPINA'
+      Origin = 'VENTAS_MAST.PROPINA'
+    end
+    object tbltrnventasmastupdTICKET_ID: TIntegerField
+      FieldName = 'TICKET_ID'
+      Origin = 'VENTAS_MAST.TICKET_ID'
+    end
+    object tbltrnventasmastupdSUB_TOTALITBIS: TFloatField
+      FieldName = 'SUB_TOTALITBIS'
+      Origin = 'VENTAS_MAST.SUB_TOTALITBIS'
+    end
+    object tbltrnventasmastupdCOD_USR_CAJA: TIntegerField
+      FieldName = 'COD_USR_CAJA'
+      Origin = 'VENTAS_MAST.COD_USR_CAJA'
+    end
+    object tbltrnventasmastupdCOD_SUBCLIENTE: TIntegerField
+      FieldName = 'COD_SUBCLIENTE'
+      Origin = 'VENTAS_MAST.COD_SUBCLIENTE'
+    end
+    object tbltrnventasmastupdVENTAARS: TSmallintField
+      FieldName = 'VENTAARS'
+      Origin = 'VENTAS_MAST.VENTAARS'
+    end
+    object tbltrnventasmastupdFECHAINICIAPOLIZA: TDateTimeField
+      FieldName = 'FECHAINICIAPOLIZA'
+      Origin = 'VENTAS_MAST.FECHAINICIAPOLIZA'
+    end
+    object tbltrnventasmastupdTIPO_AFILIADO: TSmallintField
+      FieldName = 'TIPO_AFILIADO'
+      Origin = 'VENTAS_MAST.TIPO_AFILIADO'
+    end
+    object tbltrnventasmastupdIDNUMERODVEH: TIntegerField
+      FieldName = 'IDNUMERODVEH'
+      Origin = 'VENTAS_MAST.IDNUMERODVEH'
+    end
+    object tbltrnventasmastupdCOD_CAJA: TIntegerField
+      FieldName = 'COD_CAJA'
+      Origin = 'VENTAS_MAST.COD_CAJA'
+    end
+    object tbltrnventasmastupdTIPO_INGRESO: TSmallintField
+      FieldName = 'TIPO_INGRESO'
+      Origin = 'VENTAS_MAST.TIPO_INGRESO'
+    end
+    object tbltrnventasmastupdIDDGII_MOTIVO_NCR: TSmallintField
+      FieldName = 'IDDGII_MOTIVO_NCR'
+      Origin = 'VENTAS_MAST.IDDGII_MOTIVO_NCR'
+    end
+    object tbltrnventasmastupdESTADO_VENTA: TIBStringField
+      FieldName = 'ESTADO_VENTA'
+      Origin = 'VENTAS_MAST.ESTADO_VENTA'
+      Size = 10
+    end
+    object tbltrnventasmastupdREF_TRN_ORIGEN: TIntegerField
+      FieldName = 'REF_TRN_ORIGEN'
+      Origin = 'VENTAS_MAST.REF_TRN_ORIGEN'
+    end
+    object tbltrnventasmastupdREF_NCF_ORIGEN: TIBStringField
+      FieldName = 'REF_NCF_ORIGEN'
+      Origin = 'VENTAS_MAST.REF_NCF_ORIGEN'
+      Size = 19
+    end
+    object tbltrnventasmastupdREF_FECHA_ORIGEN: TDateTimeField
+      FieldName = 'REF_FECHA_ORIGEN'
+      Origin = 'VENTAS_MAST.REF_FECHA_ORIGEN'
+    end
+    object tbltrnventasmastupdREF_ESTADO_ORIGEN: TIBStringField
+      FieldName = 'REF_ESTADO_ORIGEN'
+      Origin = 'VENTAS_MAST.REF_ESTADO_ORIGEN'
+      Size = 10
     end
   end
 end

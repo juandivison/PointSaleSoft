@@ -730,26 +730,26 @@ uses
   UFingerprintTaskAuth in 'DigPers\UFingerprintTaskAuth.pas',
   UFingerprintTypes in 'DigPers\UFingerprintTypes.pas',
   UFrmFpEnroll in 'DigPers\UFrmFpEnroll.pas' {FrmFpEnroll},
-  UVarBytes in 'DigPers\UVarBytes.pas';
-
-//qrOrdenLavanderia in 'qrOrdenLavanderia.pas';
+  UVarBytes in 'DigPers\UVarBytes.pas',
+  UFrmOrders2EcfRunner in 'UFrmOrders2EcfRunner.pas' {frmOrders2EcfRunner},
+  UFormSecFact in 'UFormSecFact.pas' {frmSecuenciaFct},
+  UFrmOrderFilePicker in 'UFrmOrderFilePicker.pas' {frmOrderFilePicker},
+  UFacturaTxtBuilder in 'UFacturaTxtBuilder.pas',
+  UFacturaTxtEcfFlow in 'UFacturaTxtEcfFlow.pas',
+  UQckRepCartaRutaVeh in 'UQckRepCartaRutaVeh.pas' {qckCartaRutaVeh: TQuickRep},
+  UQckRepCartaRutaVehTpl in 'UQckRepCartaRutaVehTpl.pas' {qckCartaRutaVehTpl: TQuickRep},
+  UFrmCartaRutaTemplate in 'UFrmCartaRutaTemplate.pas' {frmCartaRutaTemplate},
+  USincronizarTablaInv in 'USincronizarTablaInv.pas';
 
 {$E exe}
 
-{frmEstadoWisPro}
-
-
-{frmModificaCotiza}
-
-
-{$R *.res}
+{$R PointSaleSoft.res}
 
 begin
   Application.Initialize;
   frmPresentacion:=TfrmPresentacion.Create(nil);
   frmPresentacion.Show;
   frmPresentacion.Update;
-  Application.HelpFile := '';
   Application.Title := 'Punto de Ventas';
   Application.Title:='ERP Enterprise System';
   Application.CreateForm(TdmConectar, dmConectar);
@@ -796,6 +796,7 @@ begin
   Application.CreateForm(TdmLavanderia, dmLavanderia);
   Application.CreateForm(TdmFactElectronica, dmFactElectronica);
   Application.CreateForm(TfrmMenuPrincipal, frmMenuPrincipal);
+  Application.CreateForm(TqckCartaRutaVehTpl, qckCartaRutaVehTpl);
   Application.Title := 'ERP Enterprise System';
   frmPresentacion.Close;
   frmPresentacion.Free;

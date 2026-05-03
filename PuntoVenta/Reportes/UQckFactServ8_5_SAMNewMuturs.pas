@@ -118,6 +118,8 @@ type
     QRDBText39: TQRDBText;
     QRDBText40: TQRDBText;
     QRDBText41: TQRDBText;
+    QRShape19: TQRShape;
+    QRMemo2: TQRMemo;
     procedure QuickRepBeforePrint(Sender: TCustomQuickRep;
       var PrintReport: Boolean);
     procedure QRLabel23Print(sender: TObject; var Value: String);

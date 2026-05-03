@@ -7,7 +7,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   RxVerInf, ShellApi, TLHelp32, IniFiles, Menus, RxCalc, WinSkinData, RXCtrls, StdCtrls, Buttons, ComCtrls,
-  {gnugettext,} db,QRPrntr, RXDBCtrl, Dialogs, jpeg, ExtCtrls, dbCtrls, GetAnyDate,
+  db,QRPrntr, RXDBCtrl, Dialogs, jpeg, ExtCtrls, dbCtrls, GetAnyDate,
   UGetDateTipoM, Gradiente;
 
   const
@@ -431,6 +431,8 @@ type
     BitBtn9: TBitBtn;
     e1: TMenuItem;
     EdPointsFactElectronica1: TMenuItem;
+    BitBtn10: TBitBtn;
+    SecuenciaFacturas1: TMenuItem;
     procedure Salir1Click(Sender: TObject);
     
     procedure ransaccionesDiarias1Click(Sender: TObject);
@@ -722,6 +724,8 @@ type
     procedure Procesar1Click(Sender: TObject);
     procedure BitBtn9Click(Sender: TObject);
     procedure EdPointsFactElectronica1Click(Sender: TObject);
+    procedure BitBtn10Click(Sender: TObject);
+    procedure SecuenciaFacturas1Click(Sender: TObject);
   private
     { Private declarations }
      procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
@@ -861,7 +865,8 @@ UInventarioProd, UTipoInventario,UConfirmaLicencia,
   UFormfrmHistVentasInv, UformVerificarVntas, UFormAuditoriaBlcCxc,
   UFormCiudadesECF, URepVentaDiariaNuevoR, URepVentaDiaria,
   UFormProgressBarfRM, URepVentaDiariaResumen, UFormPagoComisionesXVta,
-  UFrmOrdenLavanderia, frmEntregaOrdenLavanderia,UnitFrmConfigEndpoints;//, UFormLoadDatosDGII;
+  UFrmOrdenLavanderia, frmEntregaOrdenLavanderia,UnitFrmConfigEndpoints,
+  UFrmOrders2EcfRunner, UFormSecFact;//, UFormLoadDatosDGII;
 
 {$R *.dfm}
 
@@ -1007,6 +1012,8 @@ begin
   try
     GlbCorriendo := Ini.ReadInteger('Aplicación', 'GlbCorriendo', 0);
     GLBRUTADBINI := Ini.ReadString('DataBase', 'GLBRUTADB', '');
+    GLBRUTADBLOAN:= Ini.ReadString('DataBase', 'GLBRUTADBLOAN', '');
+    GLBRUTADB2:= Ini.ReadString('DataBase', 'GLBRUTADB2', '');
     GLBRUTADBDGII:= Ini.ReadString('DataBase', 'GLBRUTADBDGII', '');
     GLBRUTABDGIITXT:= Ini.ReadString('DataBase', 'GLBRUTABDGIITXT', '');
     GlbUsaBalanza :=Ini.ReadInteger('Venta', 'GlbUsaBalanza', 0);
@@ -1014,9 +1021,10 @@ begin
   finally
   Ini.Free;
   end;
-  
+
   qtyCorr := 0;
   GLBRUTADB := GetCommandParam('/GLBRUTADB');
+
 
   if (GLBRUTADB = '') and (GLBRUTADBINI <> '') then
   GLBRUTADB:=GLBRUTADBINI
@@ -1513,14 +1521,14 @@ begin
   finally
   FreeAndNil(frmEncrypt);
   end;
-  
+
   AboutBox := TAboutBox.Create(nil);
   Try
     aboutbox.showmodal;
   finally
   aboutbox.free;
   aboutbox:=nil;
-  end;
+  end;              
 end;
 
 procedure TfrmMenuPrincipal.FormShow(Sender: TObject);
@@ -1552,6 +1560,7 @@ begin
 
   GlBBurgos:= 0;
   GlBAyaco := 0;
+  GlBExpert:= 0;
   //Para evitar que me copien la aplicacion
   strA:=StringReplace(dmCompania.tblCompaniarnc_numero.value,'-','',[rfIgnoreCase,rfReplaceAll]);
   {if ( strA <> '07900012779') then
@@ -1659,6 +1668,13 @@ begin
     //if (dmCompania.tblCompaniarnc_numero.value = '132960149') or
     //   (dmCompania.tblCompaniarnc_numero.value = '132-96014-9') then
     //GlbShowCtaBanco:=0;
+  end else  //GlBExpert
+  if (dmCompania.tblCompaniarnc_numero.value = '130-78793-1') or
+     (dmCompania.tblCompaniarnc_numero.value = '130787931')
+  then  
+  begin
+    GlBExpert:=1;
+    GlbShowCtaBanco:=0;
   end else
   if (dmCompania.tblCompaniarnc_numero.value = '101-61621-2') or
      (dmCompania.tblCompaniarnc_numero.value = '101616212')
@@ -1737,11 +1753,11 @@ begin
   begin
     TabSheet8.Visible:=True;
     TabSheet8.Caption:='Producción';
-  end;
+  end;                     
 
   PageControl1.ActivePageIndex:=1;
   PageControl1.ActivePageIndex:=0;
-  Application.ProcessMessages;
+  Application.ProcessMessages;          
   if not GlbRegistrado then
   begin
     rxLabel2.Caption:='Version NO REGISTRADA.';
@@ -1847,6 +1863,8 @@ begin
     MessageDlg('Configuración de usuario logueado esta incompleta, trate de nuevo.',mtError,[mbok],0);
     Application.Terminate;
   end;
+  if (GlBExpert = 1) and (GlbActivaECF = 1) then
+  BitBtn10.Enabled:=True else BitBtn10.Enabled:=False;
 end;
 
 
@@ -1861,7 +1879,7 @@ begin
   DiaAct:= StrToInt(FormatDateTime('dd', Date));
   MesAct:= StrToInt(FormatDateTime('mm', Date));
   MesTrn:= StrToInt(FormatDateTime('dd', GlbFechaTrnDiaria));
-  if (Abs(DiaAct-Diatrn) <> 1) And (MesAct = MesTrn) then
+  if (Abs(DiaAct-Diatrn) <= 1) And (MesAct = MesTrn) then
   begin
     MessageDlg('Imposible cerrar dia '+FormatDateTime('dd-mmm-yyyy', GlbFechaTrnDiaria)+', verifique ',mtError, [mbOK], 0);
     Exit;
@@ -2364,14 +2382,6 @@ procedure TfrmMenuPrincipal.Ventas1Click(Sender: TObject);
 begin
   BitBtn1Click(Self);
   exit;
-  //sustituida por frmProcVentaRapida
-{  frmProcesarVentas:=TfrmProcesarVentas.Create(nil);
-  try
-    frmProcesarVentas.showmodal;
-  finally
-  frmProcesarVentas.free;
-  frmProcesarVentas:=nil;
-  end;}
 end;
 
 procedure TfrmMenuPrincipal.Precios1Click(Sender: TObject);
@@ -8415,6 +8425,29 @@ begin
   finally
   FormConfigEndpoints.free;
   FormConfigEndpoints:=nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.BitBtn10Click(Sender: TObject);
+begin
+  ProcGlbSecuenciaNCF;//chequea disponibilidad de sec ncf
+  frmOrders2EcfRunner:=TfrmOrders2EcfRunner.Create(Nil);
+  try
+    frmOrders2EcfRunner.Showmodal;
+  finally
+  frmOrders2EcfRunner.Free;
+  frmOrders2EcfRunner:=Nil
+  end;
+end;
+
+procedure TfrmMenuPrincipal.SecuenciaFacturas1Click(Sender: TObject);
+begin
+  frmSecuenciaFct:=TfrmSecuenciaFct.Create(nil);
+  try
+    frmSecuenciaFct.ShowModal;
+  finally      
+  frmSecuenciaFct.free;
+  frmSecuenciaFct:=nil;
   end;
 end;
 

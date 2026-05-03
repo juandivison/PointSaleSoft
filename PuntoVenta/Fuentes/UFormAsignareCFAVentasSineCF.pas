@@ -18,9 +18,15 @@ type
     ibStpMaxNCF: TIBStoredProc;
     SkinData1: TSkinData;
     lblTotalVtas: TLabel;
+    DateTimePicker1: TDateTimePicker;
+    Label1: TLabel;
+    Button1: TButton;
+    Button2: TButton;
     procedure BitBtn1Click(Sender: TObject);
     procedure BitBtn2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
   private
     { Private declarations }
     function ProcesaNCF(tipoNCF: string): Boolean;
@@ -217,6 +223,7 @@ end;
 procedure TfrmAsignareCFAVtasGen.BitBtn2Click(Sender: TObject);
 begin
   dmFactElectronica.qryAsignarECFASerieB.Close;
+  dmFactElectronica.qryAsignarECFASerieB.params[0].Value:=DateTimePicker1.Date;
   dmFactElectronica.qryAsignarECFASerieB.Open;
   dmFactElectronica.qryAsignarECFASerieB.Last;
   lblTotalVtas.Caption:='Total Ventas:'+IntToStr(dmFactElectronica.qryAsignarECFASerieB.RecordCount);
@@ -230,6 +237,18 @@ end;
 procedure TfrmAsignareCFAVtasGen.FormCreate(Sender: TObject);
 begin
   Memo1.Lines.Clear;
+end;
+
+procedure TfrmAsignareCFAVtasGen.Button1Click(Sender: TObject);
+begin
+  DateTimePicker1.Date:=ExtraerFecha(DateTimePicker1.Date) + 1;
+  BitBtn2Click(self);
+end;
+
+procedure TfrmAsignareCFAVtasGen.Button2Click(Sender: TObject);
+begin
+  DateTimePicker1.Date:=ExtraerFecha(DateTimePicker1.Date) - 1;
+  BitBtn2Click(self);
 end;
 
 end.

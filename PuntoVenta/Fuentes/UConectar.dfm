@@ -3,8 +3,8 @@ object frmInciaConeccion: TfrmInciaConeccion
   Top = 190
   BorderStyle = bsDialog
   Caption = 'Ruta Base de Datos para coneccion'
-  ClientHeight = 203
-  ClientWidth = 434
+  ClientHeight = 236
+  ClientWidth = 585
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -86,10 +86,17 @@ object frmInciaConeccion: TfrmInciaConeccion
   end
   object Label6: TLabel
     Left = 8
-    Top = 128
+    Top = 168
     Width = 41
     Height = 13
     Caption = 'Num. Pc'
+  end
+  object Label7: TLabel
+    Left = 81
+    Top = 128
+    Width = 49
+    Height = 13
+    Caption = 'LabelRuta'
   end
   object edtServidor: TEdit
     Left = 8
@@ -109,7 +116,7 @@ object frmInciaConeccion: TfrmInciaConeccion
   end
   object BitBtn1: TBitBtn
     Left = 176
-    Top = 144
+    Top = 168
     Width = 97
     Height = 33
     Caption = 'Conectar'
@@ -132,7 +139,7 @@ object frmInciaConeccion: TfrmInciaConeccion
   end
   object BitBtn2: TBitBtn
     Left = 285
-    Top = 144
+    Top = 168
     Width = 92
     Height = 33
     Caption = '&Salir'
@@ -141,7 +148,7 @@ object frmInciaConeccion: TfrmInciaConeccion
   end
   object BitBtn3: TBitBtn
     Left = 64
-    Top = 144
+    Top = 168
     Width = 99
     Height = 33
     Caption = 'Cambiar Ruta'
@@ -164,7 +171,7 @@ object frmInciaConeccion: TfrmInciaConeccion
   end
   object edtNumPC: TEdit
     Left = 8
-    Top = 144
+    Top = 168
     Width = 49
     Height = 21
     TabOrder = 5

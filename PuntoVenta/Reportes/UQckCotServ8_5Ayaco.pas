@@ -135,6 +135,7 @@ type
       var PrintBand: Boolean);
     procedure QRDBText33Print(sender: TObject; var Value: String);
     procedure QRLabel4Print(sender: TObject; var Value: String);
+
   private
 
   public

@@ -1,8 +1,8 @@
 object frmConfReporte: TfrmConfReporte
   Left = 434
   Top = 139
-  Width = 949
-  Height = 731
+  Width = 947
+  Height = 744
   Caption = 'Configurar Reporte'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -40,7 +40,7 @@ object frmConfReporte: TfrmConfReporte
   end
   object Label4: TLabel
     Left = 490
-    Top = 435
+    Top = 436
     Width = 91
     Height = 13
     Caption = 'Cobro Mensualidad'
@@ -67,12 +67,15 @@ object frmConfReporte: TfrmConfReporte
     Width = 300
     Height = 16
     Caption = 'Indicar ruta herramienta para impresion ticket fiscal'
+    Color = clSilver
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
     Font.Name = 'MS Sans Serif'
     Font.Style = []
+    ParentColor = False
     ParentFont = False
+    Visible = False
   end
   object Label8: TLabel
     Left = 592
@@ -176,6 +179,13 @@ object frmConfReporte: TfrmConfReporte
     Width = 58
     Height = 13
     Caption = 'PC CajaECF'
+  end
+  object Label21: TLabel
+    Left = 17
+    Top = 482
+    Width = 70
+    Height = 13
+    Caption = 'Ruta Idesi2Ecf'
   end
   object rdgRecibo: TRadioGroup
     Left = 16
@@ -420,7 +430,7 @@ object frmConfReporte: TfrmConfReporte
   end
   object rdgImprimirReciboSinPreguntar: TRadioGroup
     Left = 16
-    Top = 250
+    Top = 253
     Width = 169
     Height = 36
     Caption = 'Imprimir recibo sin preguntar'
@@ -927,7 +937,7 @@ object frmConfReporte: TfrmConfReporte
   end
   object rdgConduceCte: TRadioGroup
     Left = 386
-    Top = 440
+    Top = 442
     Width = 89
     Height = 33
     Caption = '#Conduce Cte'
@@ -1196,7 +1206,7 @@ object frmConfReporte: TfrmConfReporte
     Width = 369
     Height = 21
     TabOrder = 88
-    Text = 'C:\Proyectos\IdesiToolECF\Release\IdesiToolECF.exe'
+    Text = 'C:\Proyectos\PuntoVenta\ecfIdesiTool\IdesiToolECF.exe'
     OnExit = edtEcfRutaExit
   end
   object edtrutaqrecf: TEdit
@@ -1220,9 +1230,9 @@ object frmConfReporte: TfrmConfReporte
   end
   object RadioGroup3: TRadioGroup
     Left = 480
-    Top = 632
+    Top = 629
     Width = 425
-    Height = 41
+    Height = 47
     Caption = 'Modo eCF Consumo a Cr'#233'dito'
     Items.Strings = (
       'Convertir la misma venta, E32 ? E31 (sin duplicar venta).'#10
@@ -1251,9 +1261,9 @@ object frmConfReporte: TfrmConfReporte
     TabOrder = 93
   end
   object chkActivaFinger: TCheckBox
-    Left = 390
-    Top = 484
-    Width = 97
+    Left = 370
+    Top = 479
+    Width = 83
     Height = 17
     Hint = 'Utiliza lector de huellas para clave maestra'
     Caption = 'Activa Finger'
@@ -1262,5 +1272,24 @@ object frmConfReporte: TfrmConfReporte
     ParentShowHint = False
     ShowHint = True
     TabOrder = 94
+  end
+  object edtrutaExeItesi2ToolEcf: TEdit
+    Left = 16
+    Top = 497
+    Width = 369
+    Height = 21
+    TabOrder = 95
+    Text = 'C:\Proyectos\IdesiToolECF\Release\IdesiToolECF.exe'
+  end
+  object chkFacturatxt: TCheckBox
+    Left = 389
+    Top = 560
+    Width = 74
+    Height = 17
+    Caption = 'Factura.txt'
+    Color = 10275957
+    ParentColor = False
+    TabOrder = 96
+    OnClick = chkFacturatxtClick
   end
 end

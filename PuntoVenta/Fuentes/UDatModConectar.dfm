@@ -3,11 +3,11 @@ object dmConectar: TdmConectar
   Left = 1562
   Top = 131
   Height = 348
-  Width = 218
+  Width = 262
   object IBDatabase1: TIBDatabase
     DatabaseName = 
-      'C:\Proyectos\Datos\Repositorio\PuntoVenta\ecfMariano\DBVETERINAR' +
-      'IA.FDB'
+      'C:\Proyectos\Datos\Repositorio\PuntoVenta\Expert_Ingenieria\DBER' +
+      'PEXPERT.FDB'
     Params.Strings = (
       'user_name=sysdba'
       'password=sup2005')
@@ -178,5 +178,29 @@ object dmConectar: TdmConectar
       FixedChar = True
       Size = 15
     end
+  end
+  object IBDatabase2: TIBDatabase
+    DatabaseName = 'C:\Proyectos\Datos\Repositorio\PuntoVenta\Tamayo\DBSUPERG_II.FDB'
+    Params.Strings = (
+      'user_name=sysdba'
+      'password=sup2005')
+    LoginPrompt = False
+    DefaultTransaction = IBTransaction2
+    IdleTimer = 0
+    SQLDialect = 1
+    TraceFlags = []
+    Left = 168
+    Top = 24
+  end
+  object IBTransaction2: TIBTransaction
+    Active = False
+    DefaultDatabase = IBDatabase2
+    Params.Strings = (
+      'read_committed'
+      'rec_version'
+      'nowait')
+    AutoStopAction = saNone
+    Left = 173
+    Top = 92
   end
 end

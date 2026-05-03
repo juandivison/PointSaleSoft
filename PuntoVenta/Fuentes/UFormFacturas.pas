@@ -112,6 +112,9 @@ type
     edtMonto: TEdit;
     Label11: TLabel;
     SpeedButton1: TSpeedButton;
+    BitBtn16: TBitBtn;
+    CartadeRuta1: TMenuItem;
+    CartadeSaldo1: TMenuItem;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure cboxClientesChange(Sender: TObject);
@@ -155,6 +158,8 @@ type
     procedure CambiarTipoECF1Click(Sender: TObject);
     procedure eNCFAsignados1Click(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
+    procedure BitBtn16Click(Sender: TObject);
+    procedure CartadeSaldo1Click(Sender: TObject);
   private
     { Private declarations }
     procedure VerificaVendedor;
@@ -196,7 +201,8 @@ USES UDatModFactura, uglobal, UDatModClientes, UFormCambiarCteFact,
   UFormAsignarNCFAVenta, UDatModCxc, UFormPagosCombinados,
   UDatModPagoTarjeta, UFormUpdateMontopagado, UUtilecf, UUtilecftimbre,
   UfrmlECF_TIMBRE_LOG, UFormAsignareCFAVentasSineCF, UModoConsumoToCredito,
-  UBuscarClientesPersonasP, UFormNCFAsignados, USetClaveMaestra;
+  UBuscarClientesPersonasP, UFormNCFAsignados, USetClaveMaestra,
+  UFrmCartaRutaTemplate, UFrmCartaSaldoTemplate;
 {$R *.dfm}
 
 procedure TfrmConsultaFacturas.BitBtn1Click(Sender: TObject);
@@ -693,7 +699,8 @@ begin
   else
   if (GlbActivaECF = 1) and dmfactura.qryVentaFacturaSERIE_NCF_ASIGNADO.IsNull then
   begin
-    BackGround:=$0080FFFF; //no tiene eCF-NCF
+    //$0080FFFF  ---Amarillo
+    BackGround:=$00CFAAA9;//gris //no tiene eCF-NCF
     Label10.Visible:=True;
   end
   else
@@ -878,8 +885,18 @@ end;
 procedure TfrmConsultaFacturas.FormShow(Sender: TObject);
 begin
   if GlbMutur = 1 then
-  BitBtn8.Visible:=True
-  else BitBtn8.Visible:=False;
+  begin
+    BitBtn16.Visible:=True;
+    CartadeRuta1.Visible:=True;
+    CartadeSaldo1.Visible:=True;
+    BitBtn8.Visible:=True
+  end else
+  begin
+    BitBtn16.Visible:=False;
+    CartadeRuta1.Visible:=False;
+    CartadeSaldo1.Visible:=False;
+    BitBtn8.Visible:=False;
+  end;
 end;
 
 procedure TfrmConsultaFacturas.BitBtn13Click(Sender: TObject);
@@ -1350,6 +1367,7 @@ begin
    exit;
   end;
   if numerotrn = 0 then exit;
+  if GlbValidarECF = 0 then exit;
   if UUtilecf.EjecutarECF_y_Mostrar(GlbRutaEcf, IntToStr(numerotrn),_smg) then
     MessageBox(0, Pchar(_smg), 'Facturación Electrónica', MB_ICONINFORMATION or MB_OK)
   else
@@ -1906,6 +1924,42 @@ procedure TfrmConsultaFacturas.SpeedButton1Click(Sender: TObject);
 begin
   FiltrarSoloMonto:=True;
   BitBtn1Click(Self);
+end;
+
+procedure TfrmConsultaFacturas.BitBtn16Click(Sender: TObject);
+begin
+  if dmDatos.qryMembrete.state = dsInactive then
+  dmDatos.qryMembrete.Open;
+with TfrmCartaRutaTemplate.Create(nil) do
+try
+  Database := dmConectar.IBDatabase1;
+  Transaction := dmConectar.IBTransaction1;
+  CIAKey := 1;
+  Usuario := strUserName;
+  _numtrn:=dmFactura.qryVentaFacturaNUMERO.Value;
+  edtNumeroTransaccion.Text:=dmFactura.qryVentaFacturaNUMERO.AsString;
+  ShowModal;
+finally
+  Free;
+end;
+end;
+//UQckRepCartaRutaVeh
+procedure TfrmConsultaFacturas.CartadeSaldo1Click(Sender: TObject);
+begin
+  if dmDatos.qryMembrete.state = dsInactive then
+  dmDatos.qryMembrete.Open;
+  with TfrmCartaSaldoTemplate.Create(nil) do
+  try
+    Database := dmConectar.IBDatabase1;
+    Transaction := dmConectar.IBTransaction1;
+    CIAKey := 1;
+    Usuario := strUserName;
+    _numtrn:=dmFactura.qryVentaFacturaNUMERO.Value;
+    edtNumeroTransaccion.Text:=dmFactura.qryVentaFacturaNUMERO.AsString;
+    ShowModal;
+  finally
+  Free;
+  end;
 end;
 
 end.

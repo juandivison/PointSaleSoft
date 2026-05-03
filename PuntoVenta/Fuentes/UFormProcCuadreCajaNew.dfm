@@ -1087,6 +1087,22 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         NumGlyphs = 2
         OnClick = SpeedButton1Click
       end
+      object Label80: TLabel
+        Left = 370
+        Top = 278
+        Width = 118
+        Height = 16
+        Hint = 'Transferencia Banco'
+        Caption = 'Otras Devoluciones'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'MS Sans Serif'
+        Font.Style = []
+        ParentFont = False
+        ParentShowHint = False
+        ShowHint = True
+      end
       object DBEdit5: TDBEdit
         Left = 225
         Top = 147
@@ -2118,7 +2134,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         Font.Name = 'MS Sans Serif'
         Font.Style = [fsBold]
         ParentFont = False
-        TabOrder = 57
+        TabOrder = 58
         OnClick = BitBtn11Click
       end
       object DBEdit45: TDBEdit
@@ -2183,7 +2199,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         Font.Style = [fsBold]
         ParentFont = False
         ReadOnly = True
-        TabOrder = 58
+        TabOrder = 59
       end
       object DBEdit49: TDBEdit
         Left = 471
@@ -2211,7 +2227,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         Font.Style = [fsBold]
         ParentFont = False
         ReadOnly = True
-        TabOrder = 59
+        TabOrder = 60
       end
       object DBEdit51: TDBEdit
         Left = 454
@@ -2241,7 +2257,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         Font.Name = 'MS Sans Serif'
         Font.Style = []
         ParentFont = False
-        TabOrder = 60
+        TabOrder = 61
       end
       object chkBoxRestarMontosTarj: TCheckBox
         Left = 372
@@ -2249,8 +2265,23 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         Width = 136
         Height = 17
         Caption = 'Restar Montos Tarjetas'
-        TabOrder = 61
+        TabOrder = 62
         OnClick = chkBoxRestarMontosTarjClick
+      end
+      object DBEdit53: TDBEdit
+        Left = 372
+        Top = 297
+        Width = 88
+        Height = 21
+        DataField = 'MontoDevolucionNoEfectivo'
+        DataSource = dsrxCuadre
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlue
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 57
       end
     end
     object TabSheet2: TTabSheet
@@ -3201,6 +3232,10 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
       item
         Name = 'MontoDescuento'
         DataType = ftCurrency
+      end
+      item
+        Name = 'MontoDevolucionNoEfectivo'
+        DataType = ftCurrency
       end>
     OnEditError = rxCuadreEditError
     Left = 31
@@ -3420,6 +3455,9 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
       FieldName = 'MontoDescuento'
       DisplayFormat = ',0.00'
     end
+    object rxCuadreMontoDevolucionNoEfectivo: TCurrencyField
+      FieldName = 'MontoDevolucionNoEfectivo'
+    end
   end
   object dsrxCuadre: TDataSource
     AutoEdit = False
@@ -3515,7 +3553,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
       end>
     OnCalcFields = rxTotalesCalcFields
     OnEditError = rxTotalesEditError
-    Left = 527
+    Left = 543
     Top = 292
     object rxTotalesC2000: TCurrencyField
       FieldName = 'C2000'
@@ -5590,8 +5628,8 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
   end
   object dsrxSubtotal_1: TDataSource
     DataSet = rxSubtotal_1
-    Left = 449
-    Top = 324
+    Left = 521
+    Top = 356
   end
   object tblMoneda: TIBTable
     Database = dmConectar.IBDatabase1
@@ -5599,8 +5637,8 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
     BufferChunks = 1000
     CachedUpdates = False
     TableName = 'MONEDA'
-    Left = 544
-    Top = 235
+    Left = 768
+    Top = 259
     object tblMonedaCODIGO: TIBStringField
       FieldName = 'CODIGO'
       Size = 1
@@ -5670,7 +5708,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
   end
   object dstblDistCashEnCaja: TDataSource
     DataSet = dmTransCnt.tblDistCashEnCaja
-    Left = 336
-    Top = 160
+    Left = 48
+    Top = 168
   end
 end

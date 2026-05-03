@@ -43,7 +43,10 @@ function EjecutarECF_DownQRXML(const ExePath, ENCF: string; var msg: string): Bo
 function EjecutarECF_Reenviar(const ExePath, TRN, ENCF: string; var msg: string): Boolean;
 function EjecutarECF_CheckCertOnly(const ExePath, TRN: string; var msg: string): Boolean;
 function EjecutarECF_RefreshCert(const ExePath, TRN: string; var msg: string): Boolean;
-
+function ExecAndCapture(const ACmdLine, AWorkDir: string;
+  out AOutput: string; out AExitCode: DWORD): Boolean;
+procedure DeleteIfExists(const AFileName: string);
+procedure PrepareFreshFacturaTxtArtifacts(const AArtifactDir: string);
 implementation
 
 uses
@@ -54,6 +57,248 @@ begin
   Result := StringReplace(S, '%7C', '|', [rfReplaceAll, rfIgnoreCase]);
 end;
 
+function ExecAndCapture(const ACmdLine, AWorkDir: string;
+  out AOutput: string; out AExitCode: DWORD): Boolean;
+var
+  SA: TSecurityAttributes;
+  hRead, hWrite: THandle;
+  SI: TStartupInfo;
+  PI: TProcessInformation;
+  Buffer: array[0..8191] of Byte;
+  BytesRead: DWORD;
+  AppRunning: DWORD;
+  Cmd: string;
+  MS: TMemoryStream;
+  TempAnsi: AnsiString;
+
+  procedure DrainPipeToStream;
+  begin
+    while PeekNamedPipe(hRead, nil, 0, nil, @BytesRead, nil) and (BytesRead > 0) do
+    begin
+      if BytesRead > SizeOf(Buffer) then
+        BytesRead := SizeOf(Buffer);
+
+      if ReadFile(hRead, Buffer, BytesRead, BytesRead, nil) and (BytesRead > 0) then
+        MS.WriteBuffer(Buffer[0], BytesRead)
+      else
+        Break;
+    end;
+  end;
+
+begin
+  Result := False;
+  AOutput := '';
+  AExitCode := DWORD(-1);
+  hRead := 0;
+  hWrite := 0;
+
+  FillChar(SA, SizeOf(SA), 0);
+  SA.nLength := SizeOf(SA);
+  SA.bInheritHandle := True;
+  SA.lpSecurityDescriptor := nil;
+
+  if not CreatePipe(hRead, hWrite, @SA, 0) then
+    Exit;
+
+  try
+    // El hijo NO debe heredar el extremo de lectura
+    if not SetHandleInformation(hRead, HANDLE_FLAG_INHERIT, 0) then
+      Exit;
+
+    FillChar(SI, SizeOf(SI), 0);
+    SI.cb := SizeOf(SI);
+    SI.dwFlags := STARTF_USESHOWWINDOW or STARTF_USESTDHANDLES;
+    SI.wShowWindow := SW_HIDE;
+    SI.hStdInput := GetStdHandle(STD_INPUT_HANDLE);
+    SI.hStdOutput := hWrite;
+    SI.hStdError := hWrite;
+
+    FillChar(PI, SizeOf(PI), 0);
+
+    Cmd := ACmdLine;
+
+    Result := CreateProcess(
+      nil,
+      PChar(Cmd),
+      nil,
+      nil,
+      True,
+      NORMAL_PRIORITY_CLASS or CREATE_NO_WINDOW,
+      nil,
+      PChar(AWorkDir),
+      SI,
+      PI
+    );
+
+    if not Result then
+      Exit;
+
+    // El padre ya no escribe al pipe
+    CloseHandle(hWrite);
+    hWrite := 0;
+
+    MS := TMemoryStream.Create;
+    try
+      repeat
+        AppRunning := WaitForSingleObject(PI.hProcess, 100);
+        DrainPipeToStream;
+      until AppRunning <> WAIT_TIMEOUT;
+
+      // Drenado final obligatorio
+      DrainPipeToStream;
+
+      // Espera final de seguridad
+      WaitForSingleObject(PI.hProcess, INFINITE);
+
+      if not GetExitCodeProcess(PI.hProcess, AExitCode) then
+        AExitCode := DWORD(-1);
+
+      if MS.Size > 0 then
+      begin
+        SetLength(TempAnsi, MS.Size);
+        MS.Position := 0;
+        MS.ReadBuffer(Pointer(TempAnsi)^, MS.Size);
+        AOutput := string(TempAnsi);
+      end
+      else
+        AOutput := '';
+
+      Result := True;
+    finally
+      MS.Free;
+      CloseHandle(PI.hThread);
+      CloseHandle(PI.hProcess);
+    end;
+
+  finally
+    if hWrite <> 0 then
+      CloseHandle(hWrite);
+    if hRead <> 0 then
+      CloseHandle(hRead);
+  end;
+end;
+
+procedure DeleteIfExists(const AFileName: string);
+begin
+  if FileExists(AFileName) then
+    SysUtils.DeleteFile(AFileName);
+end;
+
+procedure PrepareFreshFacturaTxtArtifacts(const AArtifactDir: string);
+begin
+  if Trim(AArtifactDir) = '' then
+    Exit;
+
+  if DirectoryExists(AArtifactDir) then
+  begin
+    DeleteIfExists(IncludeTrailingPathDelimiter(AArtifactDir) + 'tracking.txt');
+    DeleteIfExists(IncludeTrailingPathDelimiter(AArtifactDir) + 'factura_txt.log');
+  end;
+end;
+
+function RunAndCaptureStdOut(const ExePath, Params: string; out ExitCode: Cardinal): string;
+var
+  SA: TSecurityAttributes;
+  SI: TStartupInfo;
+  PI: TProcessInformation;
+  StdOutRead, StdOutWrite: THandle;
+  Buffer: array[0..16383] of AnsiChar;
+  BytesRead: DWORD;
+  Cmd: string;
+  Ok: BOOL;
+  MS: TMemoryStream;
+begin
+  Result := '';
+  ExitCode := Cardinal(-1);
+
+  ZeroMemory(@SA, SizeOf(SA));
+  SA.nLength := SizeOf(SA);
+  SA.bInheritHandle := True;
+  SA.lpSecurityDescriptor := nil;
+
+  StdOutRead := 0;
+  StdOutWrite := 0;
+
+  if not CreatePipe(StdOutRead, StdOutWrite, @SA, 0) then
+    RaiseLastOSError;
+
+  try
+    // El hijo NO debe heredar el extremo de lectura
+    if not SetHandleInformation(StdOutRead, HANDLE_FLAG_INHERIT, 0) then
+      RaiseLastOSError;
+
+    ZeroMemory(@SI, SizeOf(SI));
+    SI.cb := SizeOf(SI);
+    SI.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
+    SI.wShowWindow := SW_HIDE;
+    SI.hStdOutput := StdOutWrite;
+    SI.hStdError := StdOutWrite;
+    SI.hStdInput := GetStdHandle(STD_INPUT_HANDLE);
+
+    ZeroMemory(@PI, SizeOf(PI));
+
+    Cmd := '"' + ExePath + '"';
+    if Trim(Params) <> '' then
+      Cmd := Cmd + ' ' + Params;
+
+    if not CreateProcess(
+      nil,
+      PChar(Cmd),
+      nil,
+      nil,
+      True,
+      NORMAL_PRIORITY_CLASS or CREATE_NO_WINDOW,
+      nil,
+      PChar(ExtractFilePath(ExePath)),
+      SI,
+      PI
+    ) then
+      RaiseLastOSError;
+
+    // Este extremo ya no lo usa el padre
+    CloseHandle(StdOutWrite);
+    StdOutWrite := 0;
+
+    MS := TMemoryStream.Create;
+    try
+      repeat
+        BytesRead := 0;
+        Ok := ReadFile(StdOutRead, Buffer, SizeOf(Buffer), BytesRead, nil);
+
+        if (not Ok) or (BytesRead = 0) then
+          Break;
+
+        MS.WriteBuffer(Buffer, BytesRead);
+      until False;
+
+      WaitForSingleObject(PI.hProcess, INFINITE);
+
+      if not GetExitCodeProcess(PI.hProcess, ExitCode) then
+        ExitCode := Cardinal(-1);
+
+      if MS.Size > 0 then
+      begin
+        SetLength(Result, MS.Size);
+        MS.Position := 0;
+        MS.ReadBuffer(Pointer(Result)^, MS.Size);
+      end
+      else
+        Result := '';
+    finally
+      MS.Free;
+      CloseHandle(PI.hThread);
+      CloseHandle(PI.hProcess);
+    end;
+  finally
+    if StdOutRead <> 0 then
+      CloseHandle(StdOutRead);
+    if StdOutWrite <> 0 then
+      CloseHandle(StdOutWrite);
+  end;
+end;
+
+//revisar por lentitud -sustituido por anterior
+{
 function RunAndCaptureStdOut(const ExePath, Params: string; out ExitCode: Cardinal): string;
 var
   SA: TSecurityAttributes;
@@ -112,7 +357,7 @@ begin
     StdOutWrite := 0;
 
     try
-      repeat
+      repeat    //este repeat es muy lento
         BytesRead := 0;
         ok := ReadFile(StdOutRead, Buffer, SizeOf(Buffer), BytesRead, nil);
         if not ok or (BytesRead = 0) then
@@ -136,7 +381,7 @@ begin
       CloseHandle(StdOutWrite);
   end;
 end;
-
+}
 procedure SplitPipeLine(const Line: string; var Estado, Mensaje, TrackId, Encf: string);
 var
   P1, P2, P3, P4: Integer;

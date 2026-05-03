@@ -801,7 +801,8 @@ begin
         ChildBand4.Height:=0;
       end;
     end;
-  end; 
+  end;
+ 
   if length(GlbPiedePaginaFactura) < 37 then
   qckRepReciboReimpTicketSurtidoraNew.ChildBand10.height:= 22;
   qckRepReciboReimpTicketSurtidoraNew.qrLabel27.Caption:= GlbPiedePaginaFactura;

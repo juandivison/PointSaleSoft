@@ -9,7 +9,7 @@ uses
   Printers, DB, Mask, RxMemDS, EditNew, IBCustomDataSet, IBQuery, WinSkinData, Menus,
   ShellApi, RXCtrls, IBStoredProc, IBSQL, RxLookup, RXSpin, OleServer,
   RxVerInf, RxGIF, ExcelXP, comObj, rxToolEdit, RxDBComb, IBTable, ComCtrls,
-  QRPrntr;
+  IBDatabase, QRPrntr;
                                  
   const
   WM_SET_FOCUS_CBOX = WM_USER + 101;
@@ -930,6 +930,10 @@ type
     qryVerecfTerrCteID_PROVINCIA: TIntegerField;
     ConciliareCF1: TMenuItem;
     qryClienteRNC_CED_ACTIVO: TSmallintField;
+    ReEnviaFacturatxt1: TMenuItem;
+    qryClienteID_PROVINCIA: TIntegerField;
+    qryClienteID_MUNICIPIO: TIntegerField;
+    tblDatosVentaVehiculosID: TIntegerField;
 
     procedure BitBtn4Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -1175,6 +1179,12 @@ type
     procedure Label46Click(Sender: TObject);
     procedure DBEdit6Exit(Sender: TObject);
     procedure DBEdit2Click(Sender: TObject);
+    procedure RxDBLookupCombo3Click(Sender: TObject);
+    procedure TotalesMonedaChange(Sender: TField);
+    procedure ReEnviaFacturatxt1Click(Sender: TObject);
+    procedure RxDBLookupCombo4Click(Sender: TObject);
+    procedure RxDBLookupCombo4MouseUp(Sender: TObject;
+      Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
   private
     SheetEditRef: TEdit;
 
@@ -1182,7 +1192,7 @@ type
     Function GetPrecioNivelCuadros(codProd:Integer; t : smallint):Currency;
     Function GetNivelPrecioCuadros(codcte: integer):smallint;
     Function GetNivelPrecioStandar(codProd:Integer; t : smallint):currency;
-
+    procedure ProcAsignarProvMunc;
     function VerificaNIFTExiste: Boolean;
     procedure ProcAsignarClienteACert(codte : integer);
     function VerificaVentaExisteRX(serie:integer):boolean;
@@ -1264,7 +1274,7 @@ type
     procedure CrearNCreditoEnDevolucion;
     procedure ActualizaCotizacionMaster;
     procedure InsertarDetDevolucion(numero : Integer);
-    procedure ProcInsertarVtaMastEnDevolucion(Serie_asignadoncf : Integer);
+    procedure ProcInsertarVtaMastEnDevolucion(Serie_asignadoncf : Integer;numerotrnorigen:integer);
 
     procedure ProcInsertarVtaMastCashEnDev(var NumTrnGen : Integer; var NumOrden : Integer);
     procedure InsertarDetDevolucionCash(numero : Integer);
@@ -1368,6 +1378,9 @@ type
     function FSolicitarMotivoNCR: smallint;
     procedure ProcUpdateMotivo(numtrn: integer;motivo:smallint;ncfRef:string);
     procedure EjecutarCalculoTotales;
+    function TipoCFRequiereCliente(const ATipo: string): Boolean;
+    procedure MostrarTasa;
+
   public
     tempN : string;
     NoTieneDiasDeCredito, NoTieneCredito :  boolean;
@@ -1553,11 +1566,17 @@ UDatModClientes,UDatModFactura,UDlgMotivoNCR,
   UQckFactServ8_5Farmacia, UQckCotServ8_5StandarFarmacia, UDatModPanaderia,
   UFormPrepago, UfrmValidaFactura,  UImpresionVentas, TestMainUnit,
   UPrintDevolucion, UFrmEditProvinciaMunicipio, UfrmConciliareCFConDGII,
-  USetClaveMaestra,UFingerprintIBX;
+  USetClaveMaestra,UFingerprintIBX, UFacturaTxtBuilder, UFacturaTxtEcfFlow;
 
 
 {$R *.dfm}
 
+function TfrmProcVentaRapida.TipoCFRequiereCliente(const ATipo: string): Boolean;
+begin
+  Result :=
+    (ATipo = '01') or (ATipo = '14') or (ATipo = '15') or (ATipo = '31') or
+    (ATipo = '41') or (ATipo = '45') or (ATipo = '46') or (ATipo = '47');
+end;
 
 procedure TfrmProcVentaRapida.LogProcedure(const ProcName: string);
 var
@@ -1688,17 +1707,17 @@ var
   genNcf : Boolean;
     pulgadaInc : Real;
   flag : Boolean;
-  numeroTrnVta : integer;
+  numeroTrnVta : integer;           
   cantidadanterior:real;
   i, totalCopias: Integer;
 begin
-  dmDatos.qryImpresoras.Close;
+  dmDatos.qryImpresoras.Close;      
   dmDatos.qryImpresoras.Open;
   GlbEsCopia:=False;     
   if (GlbActivaIFiscal = 1) then
   begin
     if VerificaNIFTExiste then
-    begin
+    begin                                       
       if rxVenta.RecordCount > 0 then
       begin
         MessageDlg('TIENES UNA VENTA CON NIF EN T, NO PUEDES HACER MAS VENTAS.'+
@@ -1784,7 +1803,7 @@ begin
       Exit;
     end;
   end;
-  if (tablaPropietario.RecordCount = 0) or (tablaPropietarioCodigoPropietario.Value = 0) then
+  if (CheckBox1.Checked) and  ((tablaPropietario.RecordCount = 0) or (tablaPropietarioCodigoPropietario.Value = 0)) then
   begin
     if (TotalesTipoNCF.Value = '31') or
        (TotalesTipoNCF.Value = '41') or
@@ -1886,7 +1905,7 @@ begin
     Exit;
   end;
   AbortarPostServTaller:=False;
-  if (GlbActivaIFiscal = 1) or (GlbActivaECF = 1) then
+  if (((GlbActivaIFiscal = 1) or (GlbActivaECF = 1)) and CheckBox1.Checked) then
   begin
     if GlbEsDebugFiscal = 1 then
     WriteToLog('Verifica cliente');
@@ -1935,7 +1954,7 @@ begin
       frmPuertosLibres := Nil;
       if flag then exit;
     end;
-  end;
+  end;              
 
   sumarDatos:=False;
   valorNCF:='';
@@ -1965,7 +1984,7 @@ begin
     end;
   end;
 
-  if (GlbActivaECF = 1) and ((
+  if (GlbActivaECF = 1) and (CheckBox1.Checked) and ((
   TotalesTipoNCF.Value ='31') or (TotalesTipoNCF.Value ='33') or
   (TotalesTipoNCF.Value ='34') or (TotalesTipoNCF.Value ='45')) then
   begin
@@ -1975,18 +1994,15 @@ begin
     qryVerecfTerrCte.first;
     if qryVerecfTerrCteID_PROVINCIA.IsNull or qryVerecfTerrCteID_MUNICIPIO.IsNull then
     begin
+      if GlbActivaECF = 1 then
+      begin
       MessageDlg('Tienes que configurar la Provincia y el Municipio del Cliente.', mtError, [mbok], 0);
       dmClientes.tblClienteTerritorio.Close;
-      dmClientes.tblClienteTerritorio.Params[0].Value:= dmclientes.tblClientesCODIGO_CTE.Value;
+      dmClientes.tblClienteTerritorio.Params[0].Value:= tablaPropietarioCodigoPropietario.Value;
       dmClientes.tblClienteTerritorio.Open;
 
-      frmEditProvinciaMunicipio:=TfrmEditProvinciaMunicipio.Create(nil);
-      try
-        frmEditProvinciaMunicipio.ShowModal;
-      finally
-      frmEditProvinciaMunicipio.Free;
-      frmEditProvinciaMunicipio:=Nil;
-      end;
+      ProcAsignarProvMunc;
+
       qryVerecfTerrCte.close;
       qryVerecfTerrCte.Params[0].Value:= tablaPropietarioCodigoPropietario.Value;
       qryVerecfTerrCte.open;
@@ -1999,6 +2015,7 @@ begin
 
       BitBtn4.Enabled:= True;
       Exit;
+      end;
     end;
   end;
   if EsDevolucion then
@@ -2020,13 +2037,15 @@ begin
   DescargaNotaCredito;
   if (GlbEsDebugFiscal = 1) and not CheckBox1.Checked then
   WriteToLog('Opcion para Asignar NCF desactivada');
-  //if CheckBox1.Checked then
-  //begin
+
+  if CheckBox1.Checked then
+  begin
     try
       if Assigned(frmSelNCF) then
       frmSelNCF:=nil;
     except
     end;
+    
     frmSelNCF:=TfrmSelNCF.Create(Self);
     try
       if Not EsDevolucion then
@@ -2130,7 +2149,7 @@ begin
         showNcfwindows:= False;
       end;
 
-      if NoGenerarNCF1.Checked then  //no imprime NCF
+      if NoGenerarNCF1.Checked then  //No imprime NCF
       showNcfwindows := False;
 
       if (GlbNCFConfFinal = 1) and CheckBox1.Checked then
@@ -2147,7 +2166,7 @@ begin
       if not CheckBox1.Checked then genNcf := False;
 
       dmFactura.ibQryViewNCFTIPO_NCF_IFISCAL.Value;
-      if showNcfwindows and genNcf and not flag then
+      if showNcfwindows and genNcf and CheckBox1.checked and not flag then
       begin
         if dmFactura.ibQryViewNCF.Locate('TIPO_CF',TotalesTipoNCF.Value, []) then
         if (GlbNCFConfFinal = 0) And (TotalesTipoNCF.IsNull) then
@@ -2171,7 +2190,7 @@ begin
                 BitBtn4.Enabled:= True;
                 Exit;
               end;
-            end;            
+            end;
           end else
           begin
             genNcf:= False;
@@ -2231,7 +2250,7 @@ begin
        end;
      end;
 
-     if (GlbActivaIFiscal = 1) or (GlbActivaeCF = 1) then genNcf:=True;
+     if ((GlbActivaIFiscal = 1) or (GlbActivaeCF = 1)) and CheckBox1.checked then genNcf:=True;
      //Refactorizado tratar de evitar duplicidad en registro de venta
      if (GlbNumVtaPOSTmp = -1) then
      try
@@ -2240,7 +2259,7 @@ begin
        ShowMessage('No se puede guardar esta venta, comunicar a soporte.');
        exit;
      end;
-     if genNcf then
+     if genNcf and CheckBox1.checked then
      begin
        //GlbDescNCF := 'Fact. Consumidor Final';//dmFactura.ibQryViewNCFDESCRIPCION.Value;
        if Totales.State = dsBrowse then
@@ -2255,17 +2274,11 @@ begin
        GlbDescNCF   := dmFactura.ibQryViewNCFDESCRIPCION.Value
        else
        GlbDescNCF   := dmFactura.ibQryViewNCFDESCRIPCION_2018.Value;
-       if ((tablaPropietarioCodigoPropietario.Value = 0) or tablaPropietarioCodigoPropietario.IsNull)
-          and (dmFactura.ibQryViewNCFTIPO_CF.Value = '01') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '14') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '15') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '31') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '41') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '45') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '46') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '47') then
+
+       if CheckBox1.checked AND ((tablaPropietarioCodigoPropietario.IsNull) or (tablaPropietarioCodigoPropietario.Value = 0)) and
+       TipoCFRequiereCliente(dmFactura.ibQryViewNCFTIPO_CF.Value) then
        begin
-         MessageDlg('Necesitas seleccionar un cliente, verificar.', mtError, [mbok], 0);
+         MessageDlg('Necesitas seleccionar un cliente, verificar.', mtError, [mbOk], 0);
          Exit;
        end;
        frmAsignarNCFVenta  := tfrmAsignarNCFVenta.Create(self);
@@ -2327,7 +2340,7 @@ begin
      //t frmSelNCF.Free;
      // frmSelNCF:= Nil;
     end;
-  //end;
+  end;
   //if GlbEsDebugFiscal = 1 then
   //WriteToLog('Grabar venta en ventas_mast');
   //ibstpProcSecuencia.Params[0].Value := out
@@ -2473,7 +2486,7 @@ begin
   ProcInsertarDatosVtaSeguro(ipStpInsertVentMast.Params[0].Value);
 
   try
-  DatosVocado(numeroTrnVta,ipStpInsertVentMast.Params[5].Value);
+    DatosVocado(numeroTrnVta,ipStpInsertVentMast.Params[5].Value);
   except
   end;
   ProcUpdateNumDLinea(GlbNumVtaPOS,numeroTrnVta,1);
@@ -2491,7 +2504,6 @@ begin
   numeroTrnVta:= ipStpInsertVentMast.Params[0].Value;
   ProcGuardarDatosCoti(numeroTrnVta);
 
-  
   if GlbEsDebugFiscal = 1 then
   WriteToLog('Actualiza usuario caja: ActualizaCodUsrCaja(numeroTrnVta);');
 
@@ -2564,9 +2576,9 @@ begin
     tblDatosVentaVehiculos.Append;
     tblDatosVentaVehiculosMONTO_INICIAL.Value:= TotalesTotalNeto.Value;
     tblDatosVentaVehiculosNUM_SERIE.Value:=ipStpInsertVentMast.Params[0].Value;
-    tblDatosVentaVehiculosCHASSIS.Value:=qryDatosVhCHASSIS.Value;
-    tblDatosVentaVehiculosMARCA.Value:=qryDatosVhMARCA_VEHICULO.Value;
-    tblDatosVentaVehiculosMODELO.Value:=qryDatosVhMODELO.Value;
+    tblDatosVentaVehiculosCHASSIS.Value  :=qryDatosVhCHASSIS.Value;
+    tblDatosVentaVehiculosMARCA.Value    :=qryDatosVhMARCA_VEHICULO.Value;
+    tblDatosVentaVehiculosMODELO.Value   :=qryDatosVhMODELO.Value;
     GlbSalvarQuery(tblDatosVentaVehiculos);
     qryDatosVh.close;
     tblDatosVentaVehiculos.close;
@@ -2878,14 +2890,13 @@ begin
   dmReportes.qryViewVentasMast.Open;
 
   UImpresionVentas.ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
- 
+  //Debuguear proceso de impresion
   //Solicitar ecf a la DGII
-  if (GlbActivaECF = 1) and (5=5) then //Temporal
+  if (GlbActivaECF = 1) and (5=5) and CheckBox1.Checked then //Temporal
   begin
     if (ipStpInsertVentMast.Params[0].Value > 0) then
-    DgiiSolicitareCF(ipStpInsertVentMast.Params[0].Value);
+    DgiiSolicitareCF(ipStpInsertVentMast.Params[0].Value);//Enviar a DGII
   end;
-  
   if (GlbActivaIFiscal = 1) then
   begin
     try
@@ -3452,9 +3463,9 @@ begin
         qckRepRecibo8_5_11REsp:=Nil;
         end;
       end else
-    begin
+    begin               //Verifica flujo de impresion electronica -ayaco
     if (UpperCase(GLBFormatoFactura) = 'FORMAEXPLODISMAR') then
-      begin
+      begin                       
         UImpresionVentas.ImprimeFacturaEXDMAR(0,TipoVenta,valorNCF,'Facturas');
       end else
     if ((GlBAyaco= 1) or (GlBTapiceria = 1) or (GlBInveraf =1)) and (GlbRec3Pulg = 0) then
@@ -3501,7 +3512,7 @@ begin
             qckFactServ8_5Ayaco.Print;
           end else
           qckFactServ8_5Ayaco.Preview;
-
+                                                     
           if (GlbImpReciboSinPreg = 0) then
           if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
           begin
@@ -3541,33 +3552,33 @@ begin
       end;
     end else
     begin
-        qckRepReciboReimpTicketSurtidoraNew:=tqckRepReciboReimpTicketSurtidoraNew.Create(Nil);
-        try
-          if (GlbImpQREncuesta = 0) then
-          qckRepReciboReimpTicketSurtidoraNew.Height:=761;
+      qckRepReciboReimpTicketSurtidoraNew:=tqckRepReciboReimpTicketSurtidoraNew.Create(Nil);
+      try
+        if (GlbImpQREncuesta = 0) then
+        qckRepReciboReimpTicketSurtidoraNew.Height:=761;
 
-          if (dmFactura.qryVentaFacturaFORMA_PAGO.Value = 6) then
-          begin
-            dmreportes.qryNCFAfectado.Close;
-            dmreportes.qryNCFAfectado.Params[0].Value:= dmFactura.qryVentaFacturaSERIE_NCF_ASIGNADO.Value;
-            dmreportes.qryNCFAfectado.Open;
-            dmreportes.qryNCFAfectado.First;
-            if Not dmreportes.qryNCFAfectadoNUMERO_NCF.IsNull then
-            qckRepReciboReimpTicketSurtidoraNew.qrLablNCFAfectado.Caption:='NCF modificado:'+
-            dmreportes.qryNCFAfectadoNUMERO_NCF.Value;
-            qckRepReciboReimpTicketSurtidoraNew.qrLablNCFAfectado.Enabled:=True;
-            qckRepReciboReimpTicketSurtidoraNew.ColumnHeaderBand1.Height:=88;
-          end else
-          begin
-            qckRepReciboReimpTicketSurtidoraNew.qrLablNCFAfectado.Enabled:=False;
-            qckRepReciboReimpTicketSurtidoraNew.ColumnHeaderBand1.Height:=66;
-          end;
+        if (dmFactura.qryVentaFacturaFORMA_PAGO.Value = 6) then
+        begin
+          dmreportes.qryNCFAfectado.Close;
+          dmreportes.qryNCFAfectado.Params[0].Value:= dmFactura.qryVentaFacturaSERIE_NCF_ASIGNADO.Value;
+          dmreportes.qryNCFAfectado.Open;
+          dmreportes.qryNCFAfectado.First;
+          if Not dmreportes.qryNCFAfectadoNUMERO_NCF.IsNull then
+          qckRepReciboReimpTicketSurtidoraNew.qrLablNCFAfectado.Caption:='NCF modificado:'+
+          dmreportes.qryNCFAfectadoNUMERO_NCF.Value;
+          qckRepReciboReimpTicketSurtidoraNew.qrLablNCFAfectado.Enabled:=True;
+          qckRepReciboReimpTicketSurtidoraNew.ColumnHeaderBand1.Height:=88;
+        end else
+        begin
+          qckRepReciboReimpTicketSurtidoraNew.qrLablNCFAfectado.Enabled:=False;
+          qckRepReciboReimpTicketSurtidoraNew.ColumnHeaderBand1.Height:=66;
+        end;
         if GlbImpQREncuesta = 0 then
         begin
           qckRepReciboReimpTicketSurtidoraNew.Page.Length:=6.156; //sin encuesta
           qckRepReciboReimpTicketSurtidoraNew.ChildBand14.Height:=0;
         end;
-
+        qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
         if rxspinImpCantCopias.Decimal > 0 then
         qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(rxspinImpCantCopias.Text);
         qckRepReciboReimpTicketSurtidoraNew.strcopia :='';
@@ -4377,7 +4388,7 @@ begin
       //ANombreCteGenerico, AStrCopia: string): Boolean;
       dmDatos.qryImpresoras.Close;
   		dmDatos.qryImpresoras.Open;
-	  	if dmDatos.qryImpresoras.Locate('IDMODULO;IDREPORTE', VarArrayOf([1, 6]), []) then
+	  	if dmDatos.qryImpresoras.Locate('IDMODULO;IDREPORTE',VarArrayOf([1, 6]), []) then
       begin 
         if dmReportes.qryViewVentasMastCodigo_cte.Value > 0 then
 		    begin
@@ -4545,7 +4556,7 @@ begin
 		qckRepReciboReimpTicketSurtidoraNew := nil;
 	  end;
     end;//if GlbImprimeTicketCustom = 1
-	end else //final ticket colmado venta al contado
+	end else //final ticket colmado venta al contado    --imprimir ticket global Verificar
   begin
       dmreportes.qryViewVentasMast.Close;
       dmreportes.qryViewVentasMast.Params[0].Value:= ipStpInsertVentMast.Params[0].Value;
@@ -4605,7 +4616,7 @@ begin
           qckRepReciboReimpTicketSurtidoraNew.ChildBand14.Height:=0;
           qckRepReciboReimpTicketSurtidoraNew.ChildBand13.HasChild:=True;
         end;
-
+        qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
         if rxspinImpCantCopias.Decimal > 0 then
         qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(rxspinImpCantCopias.Text);      
         qckRepReciboReimpTicketSurtidoraNew.strcopia :='';
@@ -4848,8 +4859,9 @@ begin
 
   if (GlbIgI = 1) and (GlbActivaIFiscal = 0) and (GlbActivaECF = 0) then
   begin
-    CheckBox1.Checked:=True;
-    CheckBox1.Visible:=True;
+    Label21.Visible := True;
+    CheckBox1.Checked := True;
+    CheckBox1.Visible := True;
     NoGenerarNCF1.Checked:=False;
   end;
   if Not Assigned(frmLogError) then
@@ -4881,7 +4893,7 @@ begin
     cboxTipoUnidad.Visible :=True;
     cboxTipoUnidad.Enabled :=True;
     cboxTipoUnidad.BringToFront;
-    cboxTipoUnidad.TabOrder:=1;dmVentas.qryPrecioUnidadSurt.params[0].value
+    cboxTipoUnidad.TabOrder:=1;//dmVentas.qryPrecioUnidadSurt.params[0].value
   end else
   begin
     DSQryPrecios.DataSet := dmVentas.qryPrecioUnidadSurt;
@@ -5343,6 +5355,8 @@ procedure TfrmProcVentaRapida.ProcSetNCFCliente;
 var
   vtipo : string;
 begin
+  if dmFactura.ibQryViewNCF.State = dsInactive then
+  dmFactura.ibQryViewNCF.Open;
   if Not TotalesTipoNCFIFiscal.IsNull AND NCFCTeNotSetup then
   Exit;
   if (tablaPropietarioCodigoPropietario.Value > 0) then
@@ -5350,6 +5364,11 @@ begin
     qryCliente.DisableControls;
     if qryCliente.Locate('CODIGO_CTE', tablaPropietarioCodigoPropietario.Value, []) then
     begin
+      if qryClienteID_PROVINCIA.IsNull or qryClienteID_MUNICIPIO.IsNull then
+      begin
+        if GlbActivaECF = 1 then
+        ProcAsignarProvMunc;
+      end;
       if (qryClienteTIPO_CF.Value <> '') then
       begin
         NCFCTeNotSetup:=False;
@@ -5358,7 +5377,7 @@ begin
         else
         if (qryClienteTIPO_CF.Value = '02') and (GlbActivaEcf = 1) then
         vtipo:='32' else vtipo:=qryClienteTIPO_CF.Value;
-        
+
         if dmFactura.ibQryViewNCF.Locate('TIPO_CF', vtipo, []) then
         begin
           if (GlbUsaSecNCF2018 = 0) then
@@ -5787,7 +5806,7 @@ begin
         begin
           lblTasa.Caption:=Concat('1 = ',InsertarComa(FloatToStr(GlbMontoTasa(TotalesMoneda.Value))));
           //Label60.Caption:=SimboloMoneda('1')+InsertarComa(FloatToStr(rxVentaMontoBruto.Value * GlbMontoTasa(TotalesMoneda.Value)));
-          Label60.Caption:=SimboloMoneda('1')+InsertarComa(Format('%8.2f', [rxVentaMontoBruto.Value * GlbMontoTasa(TotalesMoneda.Value)]));
+          Label60.Caption:=SimboloMoneda('1')+InsertarComa(Format('%8.2f', [Totalestotalneto.Value * GlbMontoTasa(TotalesMoneda.Value)]));
         end else
         if (not rxVentaMonedaBase.IsNull and (rxVentaMonedaBase.Value <> '')) then
         begin
@@ -5803,7 +5822,7 @@ begin
       if (TotalesMoneda.Value <> '1') then
       begin
         lblTasa.Caption:=Concat('1 = ',InsertarComa(FloatToStr(GlbMontoTasa(TotalesMoneda.Value))));
-        Label60.Caption:=SimboloMoneda('1')+InsertarComa(Format('%8.2f', [rxVentaMontoBruto.Value * GlbMontoTasa(TotalesMoneda.Value)]));
+        Label60.Caption:=SimboloMoneda('1')+InsertarComa(Format('%8.2f', [Totalestotalneto.Value * GlbMontoTasa(TotalesMoneda.Value)]));
         if (Label60.Caption = '0.00') then Label60.Visible:= false;
       end;
       frmProcVentaRapida.lblTasa.Visible:=True;
@@ -6193,9 +6212,18 @@ begin
     RxSpeedButton1Click(Self);
     exit;
   end;
-  if (key = 123) and (GlbActivaIFiscal = 0 ) and (GlbActivaECF = 0) then //F12
+  if (key = 123) then
+  // and (GlbActivaIFiscal = 0 ) and (GlbActivaECF = 0))
+  //    or ((GlBExpert = 1) or (GLBAyaco = 1))  then //F12
   begin
-    NoGenerarNCF1Click(Self);
+    if (GlbFarmacia = 0) then
+    begin
+      //Label21.Visible:=True;
+      NoGenerarNCF1Click(Self);
+      if CheckBox1.Checked then
+      Label46.Font.Color:= clRed
+      else Label46.Font.Color:= clBlack;
+    end;
   end;
   if (key = 120) then
   BitBtn5Click(self);
@@ -6220,13 +6248,18 @@ begin
     begin
       CheckBox1.checked:= Not CheckBox1.checked;
       if not CheckBox1.Checked then
-      GlbIgI := 1 else
-      GlbIgI := 0;
+      GlbIgI := 1 else GlbIgI := 0;
+      
+      if (GlbActivaECF = 1) then GlbIgI := 1;
+
       if (GlbIgI = 1) and ((GlbActivaIFiscal = 0) or (GlbActivaECF = 0)) then
       CheckBox1.checked:=False;
       ProcSetBtnConduce;
-      end;
-    end;
+    end;                           
+    if CheckBox1.Checked then
+       Label46.Font.Color:= clRed
+    else Label46.Font.Color:= clBlack;
+  end;
   if (key = 113) then
   begin
     if isShowing then
@@ -6936,7 +6969,7 @@ procedure TfrmProcVentaRapida.BitBtn6Click(Sender: TObject);
      ShowNcfVentana:Boolean;
      flag,flagAbortar : Boolean;
 begin
-  dmDatos.qryImpresoras.Close;
+  dmDatos.qryImpresoras.Close; //GlbAyaco
   dmDatos.qryImpresoras.Open;
   GlbEsCopia:=False;
   if (rxVenta.recordcount = 0) then
@@ -6983,6 +7016,7 @@ begin
     BitBtn6.Enabled := True;
     Exit;
   end;
+  
   if not ValidaSubTotal then exit;
 
   if Not rxVentaNumeroCotiza.IsNull AND (Label36.VISIBLE)then
@@ -7008,7 +7042,7 @@ begin
   begin
     if MessageDlg('Cliente no asignado, desea crearlo?', mtInformation, [mbyes,mbno], 0)=mryes then
     begin
-      if ((GlbActivaIFiscal = 1) Or (GlbActivaECF= 1))And (tablaPropietarioCodigoPropietario.IsNull) then
+      if (CheckBox1.Checked) and ((GlbActivaIFiscal = 1) Or (GlbActivaECF= 1))And (tablaPropietarioCodigoPropietario.IsNull) then
       begin
         ProcEntradaCliente;
         if tablaPropietarioCodigoPropietario.IsNull then
@@ -7091,7 +7125,13 @@ begin
       begin
         if Totales.State = dsbrowse then Totales.Edit;
         TotalesCodCliente.Value:= xCodigoCte;
-
+        if qryCliente.State = dsinactive then
+        begin
+          MessageDlg('Se detectó una inconsistencia, verifica.', mtWarning, [mbOK], 0);
+          BitBtn6.Enabled:=True;
+          rxdbLookupCte.setfocus;
+          Exit;
+        end;
         qryCliente.Locate('CODIGO_CTE',xCodigoCte,[]);
         TotalesNombreCliente.Value := qryClienteNOMBRE_CTE.Value;
         TotalesDireccion.Value     := qryClienteDIRECCION_CONT.Value;
@@ -7143,8 +7183,8 @@ begin
           flagAbortar:=True;
           Exit;
         end;
-        if (GlbIgI = 1) and ((GlbActivaIFiscal = 0) or (GlbActivaECF = 0)) then
-        CheckBox1.Checked := False;
+        //if (GlbIgI = 1) and ((GlbActivaIFiscal = 0) or (GlbActivaECF = 0)) then
+        //CheckBox1.Checked := False; //Vuelve Aqui
         ValorNCF := '';
         Serie_Asignadoncf := -1;
 
@@ -7166,7 +7206,7 @@ begin
 
         if (EsConduce) and (GlbIgI = 1) and (GlbActivaIFiscal = 0 ) and (GlbActivaECF = 0) then
         ShowNcfVentana:=False;
-       if (GlbActivaIFiscal = 1 ) or (GlbActivaECF = 1) then
+       if (CheckBox1.Checked) and ((GlbActivaIFiscal = 1 ) or (GlbActivaECF = 1)) then
        begin
          if TotalesTipoNCF.IsNull then
          begin
@@ -7342,9 +7382,9 @@ begin
     //stpProc_InsertaVentaAuto.params[0].Value
 
       //Solicitar ecf a la DGII
-    if (GlbActivaECF = 1) and (5=5) then //Factura a credito ecf
+    if (GlbActivaECF = 1) and (5=5) and (CheckBox1.Checked) then //Factura a credito ecf
     begin
-      if (ipStpInsertVentMast.Params[0].Value > 0) then
+      if (CheckBox1.Checked) and (ipStpInsertVentMast.Params[0].Value > 0) then
       DgiiSolicitareCF(ipStpInsertVentMast.Params[0].Value);
     end;
 
@@ -7426,7 +7466,7 @@ var
   flag , trnExiste : boolean;
   numCtz:integer;
 begin
-  LogProcedure('TfrmProcVentaRapida.BitBtn8Click');
+  //LogProcedure('TfrmProcVentaRapida.BitBtn8Click');
   if EsModificandoFactura And Not EsModificandoCotiza then
   begin
     MessageDlg('No puede usar esta opción modificando transacción.',mtInformation,[mbok],0);
@@ -7438,7 +7478,7 @@ begin
     Exit;
   end;  
   trnExiste :=False;
-
+                                           
   dmDatos.qryMembrete.Close;
   dmDatos.qryMembrete.Params[0].Value:= glbCia_Key;
   dmDatos.qryMembrete.Open;
@@ -7557,7 +7597,7 @@ begin
         BitBtn17.Enabled:=False;
         repeat
           dmcotizafiscal.ProcInsCtrlImpCotiFiscal(numCtz);
-        Application.ProcessMessages;
+          Application.ProcessMessages;
         until not GlbImprimiendo;
         BitBtn1.Enabled   := True;
         BitBtn9.Enabled   := True;
@@ -8574,7 +8614,7 @@ begin
           end else
           qckCotServ8_5Ayaco.Preview;
         finally
-        qckCotServ8_5Ayaco.Free;
+        qckCotServ8_5Ayaco.Free;                                  
         qckCotServ8_5Ayaco:=Nil;
         end;
 
@@ -9435,23 +9475,16 @@ begin
   //Generar y Asignar Numero de Comprobante Fiscal
   valorNCF:='';
   serieDoc:= -1;//indica que no se generó el NCF
-
+  
   if CheckBox1.Checked then
   begin
-       if ((tablaPropietarioCodigoPropietario.Value = 0) or tablaPropietarioCodigoPropietario.IsNull)
-           and (dmFactura.ibQryViewNCFTIPO_CF.Value = '01') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '14') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '15') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '31') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '41') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '45') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '46') or
-               (dmFactura.ibQryViewNCFTIPO_CF.Value = '47') then
-       begin
-         MessageDlg('Necesitas seleccionar un cliente, verificar.', mtError, [mbok], 0);
-         Exit;
-       end;
-         
+    if ((tablaPropietarioCodigoPropietario.IsNull) or (tablaPropietarioCodigoPropietario.Value = 0)) and
+    TipoCFRequiereCliente(dmFactura.ibQryViewNCFTIPO_CF.Value) then
+    begin
+      MessageDlg('Necesitas seleccionar un cliente, verificar.', mtError, [mbOk], 0);
+      Exit;
+    end;
+
     frmAsignarNCFVenta:=tfrmAsignarNCFVenta.Create(nil);
     try
       frmAsignarNCFVenta.IBDataSet1.Close;
@@ -9540,6 +9573,8 @@ begin
   end;
   qryCliente.Close;
   qryCliente.Open;
+  if qryEmpleado.State = dsInactive then
+  qryEmpleado.Open;
 end;
 
 procedure TfrmProcVentaRapida.RxDBGrid2DblClick(Sender: TObject);
@@ -9846,7 +9881,7 @@ begin
     frmSelNCF:= Nil;
     end;
   //end;
-  if xGenNCf then
+  if xGenNCf and CheckBox1.checked then
   begin
     ProcVentaConNCF(dmFactura.ibQryViewNCFTIPO_CF.Value, ValorNCF, serieDoc, serie_asignadoncf);
   end else
@@ -9977,14 +10012,17 @@ end;
 procedure TfrmProcVentaRapida.edtReferenciaChange(Sender: TObject);
 begin
   //LogProcedure('TfrmProcVentaRapida.edtReferenciaChange');
+  if qryProductos.State = dsInactive then
+  AsignarSqlText('','','');
+
   if (edtReferencia.Text = '') then exit;
   qryProductos.DisableControls;
   if qryProductos.Locate('referencia', edtReferencia.Text, [loCaseInsensitive, loPartialKey]) then
   begin
     _UsarLevelPrecio:= qryProductosUSARLEVELPRECIO.Value;
-    panelTempPrecioLevels.Visible:=true;
+    panelTempPrecioLevels.Visible:=True;
     Prod_existe:= True;
-    edtCodigo.Text := qryProductosCODIGO.AsString;
+    //temporal edtCodigo.Text := qryProductosCODIGO.AsString;
     //panel2.Top := edtcodigo.Top+30;
     panel2.Left  := edtcodigo.Left;
     //RxDBGrid2.Align:= alClient;
@@ -10015,12 +10053,25 @@ begin
     exit;
   end else
   begin
-    edtCodigo.text:=qryProductosCodigo.AsString;
-    edtReferencia.Text:='';
-    panel2.Height:=87;
-    Panel2.Visible:=False;
-    if glbUsaescalaPrecio = 0 then
-    panelTempPrecioLevels.Visible:= False;
+    if qryProductos.Locate('referencia', edtReferencia.Text, [loCaseInsensitive]) then
+    begin
+      if imbBarcode.Visible then
+      edtCodigo.text:=qryProductosCODIGO_BARRA.AsString
+      else edtCodigo.text:=qryProductosCODIGO.AsString;
+      edtReferencia.Text:='';
+      panel2.Height:=87;
+      Panel2.Visible:=False;
+      if glbUsaescalaPrecio = 0 then
+      panelTempPrecioLevels.Visible:= False;
+    end else
+    begin
+      edtCodigo.text:='';
+      panel2.Height:=87;
+      Panel2.Visible:=False;
+      if glbUsaescalaPrecio = 0 then
+      panelTempPrecioLevels.Visible:= False;
+      exit;
+    end;
   end;
 
   if (qryProductos.State = dsInactive) then
@@ -10244,6 +10295,8 @@ begin
   else
   begin //chequear precio
     diff := rxVentaPrecio.Value - qryProductosPRECIO_MINIMO.Value;
+    if qryProductos.State = dsInactive then
+    AsignarSqlText('','','');
     qryProductos.DisableControls;
     qryProductos.Locate('CODIGO', qryInventariocODIGO.Value,[]);
     qryProductos.EnableControls;
@@ -11391,19 +11444,26 @@ end;
 
 procedure TfrmProcVentaRapida.NoGenerarNCF1Click(Sender: TObject);
 begin
-  //LogProcedure('TfrmProcVentaRapida.NoGenerarNCF1Click');
-  if (GlbActivaIFiscal = 1 ) or (GlbActivaECF = 1) then
-  begin
-    Label21.Visible:=False;
-    CheckBox1.Visible:=False;
-  end else
-  begin
-    NoGenerarNCF1.Checked := not NoGenerarNCF1.Checked;
-    if  NoGenerarNCF1.Checked then
-    Label21.Visible := True else
-    Label21.Visible := false;
-    CheckBox1.Visible := Not Label21.Visible;
+  LogProcedure('TfrmProcVentaRapida.NoGenerarNCF1Click. Usuario accionó NCF');
+
+// 1. Desvinculamos el evento para evitar que se llame a sí mismo
+  NoGenerarNCF1.OnClick := nil; 
+  try
+    // 2. Cambiamos la visibilidad del Label
+    Label21.Visible := not Label21.Visible;
+
+    // 3. Forzamos el estado del CheckBox
+    NoGenerarNCF1.Checked := Label21.Visible;
+
+    // 4. Ajustamos el otro control
+    CheckBox1.Visible := not Label21.Visible;
+    CheckBox1.Checked := not CheckBox1.Checked;
+  finally
+    // 5. Reasignamos el evento para que siga funcionando después
+    NoGenerarNCF1.OnClick := NoGenerarNCF1Click;
   end;
+  
+  CheckBox1Click(Self);
 end;
 
 procedure TfrmProcVentaRapida.BitBtn16Click(Sender: TObject);
@@ -13206,6 +13266,8 @@ begin
 
        if rxVentaTipoUnidad.IsNull then
        rxVentaTipoUnidad.Value:=1;
+       if GlBExpert = 0 then
+       begin
        xDesc := StringReplace(rxVentaDescripcionEspecial.Value, rxVentaDescripcion.Value, '',
                              [rfReplaceAll, rfIgnoreCase]);
        if (Length(xDesc) > 4) then
@@ -13214,7 +13276,7 @@ begin
          rxVentaDescripcionEspecial.Value := xDesc
        end  else
        rxVentaDescripcionEspecial.Value := '';
-
+       end;
        rxVentaItbisExento.Value:=Abs(dmfactura.qryVentaFacturaDetITBIS_EXENTO.Value);// qryProductosPAGA_ITBI.Value;
 
        rxVentaReferencia.Value := qryProductosREFERENCIA.Value;
@@ -13227,7 +13289,7 @@ begin
        if ABS(dmFactura.qryVentaFacturaPROPINALEGAL.Value) = 0 then
        chkNoLeyPropina.Checked:=True
        else chkNoLeyPropina.Checked:= False;
-
+           
        if Totales.State = dsBrowse then
        Totales.Edit;
        
@@ -13930,7 +13992,7 @@ procedure TfrmProcVentaRapida.BitBtn21Click(Sender: TObject);
 var
    LN : smallint;
 begin
-  LogProcedure('TfrmProcVentaRapida.BitBtn21Click');
+ // LogProcedure('TfrmProcVentaRapida.BitBtn21Click');
   if (rxVenta.recordcount = 0) then Exit;
   totales.Edit;
   if isShowing then
@@ -13988,7 +14050,7 @@ var
   tipoConduce : smallint;
   numTrnV : integer;
 begin
-  LogProcedure('TfrmProcVentaRapida.BitBtn22Click');
+  //LogProcedure('TfrmProcVentaRapida.BitBtn22Click');
   frmSeleccionarTipoConduce:=TfrmSeleccionarTipoConduce.Create(Nil);
   try
     nF := -1;
@@ -14185,7 +14247,7 @@ end;
 
 procedure TfrmProcVentaRapida.RxDBGrid1Enter(Sender: TObject);
 begin
-  LogProcedure('TfrmProcVentaRapida.RxDBGrid1Enter');
+  //LogProcedure('TfrmProcVentaRapida.RxDBGrid1Enter');
   ActiveControl := rxDBGrid1;
   GlbNumero:= rxVentaSerie.Value;
   rxVenta.EnableControls;
@@ -14393,7 +14455,7 @@ begin
   Totales.Edit;
 end;                  
 
-procedure TfrmProcVentaRapida.ProcInsertarVtaMastEnDevolucion(Serie_asignadoncf : Integer);
+procedure TfrmProcVentaRapida.ProcInsertarVtaMastEnDevolucion(Serie_asignadoncf : Integer;numerotrnorigen:integer);
 begin
   //LogProcedure('TfrmProcVentaRapida.ProcInsertarVtaMastEnDevolucion');
   if (GlbUsaFctMexico = 1) and (not TotalesFechaIniciaPoliza.IsNull) and (GLBSAM = 1) then
@@ -14504,10 +14566,26 @@ begin
   if (GlbActivaECF = 1) and (Totalestipodeingreso.IsNull or
   (Totalestipodeingreso.Value = '0') or (Totalestipodeingreso.Value = '')) then
   ipStpInsertVentMast.Params[47].Value:=1;
-  
+
   ipStpInsertVentMast.ExecProc; //3 devolucion
-  
+
   numeroTrnVta:= ipStpInsertVentMast.Params[0].Value;
+  if Not ipStpInsertVentMast.Transaction.InTransaction then
+  ipStpInsertVentMast.Transaction.StartTransaction;
+  try
+    ipStpInsertVentMast.Transaction.CommitRetaining;
+  except
+  ipStpInsertVentMast.Transaction.RollbackRetaining;
+  end;
+  dmfactura.tbltrnventasmastupd.Close;
+  dmfactura.tbltrnventasmastupd.Params[0].Value:=numeroTrnVta;
+  dmfactura.tbltrnventasmastupd.Open;
+  if not dmfactura.tbltrnventasmastupdNUMERO.IsNull then
+  begin
+    dmfactura.tbltrnventasmastupd.Edit;
+    dmfactura.tbltrnventasmastupdREF_TRN_ORIGEN.Value:= numerotrnorigen;
+    GlbSalvarQuery(dmfactura.tbltrnventasmastupd);
+  end;
   //t ProcUpdateCtrlNumVta(numeroTrnVta);
   ProcGuardarDatosCoti(numeroTrnVta);
 
@@ -15696,7 +15774,6 @@ begin
   if (TotalesTipoNCFIFiscal.Value In [1,4,5]) then
   ProcEntradaCliente;
 
-  ProcSetNCFCliente;
   if (tablaPropietarioCodigoPropietario.Value > 0) then
   begin
     if qryCliente.Locate('CODIGO_CTE', tablaPropietarioCodigoPropietario.Value, []) then
@@ -15731,6 +15808,8 @@ begin
   //t BitBtn27Click(Self);
   if not GlbCalculado then
     CalcularTotalesInterno;
+  if qryEmpleado.State = dsInactive then
+  qryEmpleado.Open;
 
   Refresh;
 end;
@@ -16308,67 +16387,6 @@ begin
   end;
 end;
 
-//Antes Ago-01-2025
-{
-procedure TfrmProcVentaRapida.BitBtn27Click(Sender: TObject);
-begin
-  try
-  if not EnProcesoCalculo then Exit;
-  if rxVenta.Modified then
-  LogInfoLoop('rxVenta.Modified=True');
-  if (rxVentaCant.Value = 0) and (rxVentaPrecio.Value = 0) and (rxVentaMontoBruto.Value = 0) then
-  Exit;
-
-  EsEditando:=True;
-  dmCalculos.DatCambio:=true;
-
-  if TotalesPreAbono.IsNull Or (TotalesPreAbono.Value = 0) then
-  ProcVerificaPreAbono;
-
-  if chkNoLeyPropina.Checked then
-  dmCalculos.CalcPropinaLegal := False
-  else
-  dmCalculos.CalcPropinaLegal:=True;
-
-  if EsEditando  and dmCalculos.DatCambio then
-  dmCalculos.Pos_UpdateTotales(GlbNumVtaPOS);
-  esEditando:=False;
-
-  if dmCalculos.qryConsultaPosExtraDet.Tag = 0 then
-  begin
-    if rxVenta.State in [dsEdit, dsInsert] then
-    begin
-      rxVenta.Tag:=27;
-      rxVenta.Post;
-    end;
-    if RxDBLookupCombo3.Tag = 0 then
-    begin
-      ProcItbisExonerado;
-      RxDBLookupCombo3.Tag := 77;
-    end;
-    if not GlbUsandoCotiza then
-    begin
-      if Totalestotalneto.Value = 0 then Glbcalculado:=False;
-      if not GlbCalculado then
-      dmCalculos.Pos_UpdateTotales(GlbNumVtaPOS);
-    end;
-    CalcYaEjecutado:=True;
-    procCalc := False;
-  end else
-  if PrecioCambio then
-  begin
-    if not GlbCalculado then
-    dmCalculos.Pos_UpdateTotales(GlbNumVtaPOS);
-    esEditando:=False;
-    CalcYaEjecutado:=True;
-  end;
-  finally
-  EnProcesoCalculo:=False;
-  end;
-end;
-}//antes Agos 01, 2025
-
-
 procedure TfrmProcVentaRapida.BitBtn28Click(Sender: TObject);
 begin
   LogProcedure('TfrmProcVentaRapida.BitBtn28Click');
@@ -16645,6 +16663,9 @@ begin
         LlenandoDatos :=False;
         Edit1Enter(Self);
         DBEdit10Exit(Self);
+        if rxVenta.State = dsBrowse then
+        rxVenta.Edit;
+        DBEdit1Exit(Self);
         //ActivarBotonesEnModifica;
       end;
     end else
@@ -16702,7 +16723,10 @@ end;
 
 procedure TfrmProcVentaRapida.CheckBox1Click(Sender: TObject);
 begin
-  LogProcedure('TfrmProcVentaRapida.CheckBox1Click');
+  //LogProcedure('TfrmProcVentaRapida.CheckBox1Click');
+  if CheckBox1.Checked then
+  Label46.Font.Color:= clRed
+  else Label46.Font.Color:= clBlack;
   if Totales.State = dsInactive then exit;
   if Not CheckBox1.Checked then
   begin
@@ -16713,15 +16737,16 @@ begin
     TotalesTipoNCF.AsVariant := Null;
     if (Totales.State In [dsEdit, dsInsert]) then
     Totales.Post;
-  end; ProcSetBtnConduce;
-
+  end;
+  ProcSetBtnConduce;
 end;
 
 procedure TfrmProcVentaRapida.ProcSetBtnConduce;
 begin
-  LogProcedure('TfrmProcVentaRapida.ProcSetBtnConduce');
+  //LogProcedure('TfrmProcVentaRapida.ProcSetBtnConduce');
   if checkBox1.Checked then
   begin
+    if GlbActivaECF = 0 then
     GlbIgI := 0;
     BitBtn13.Font.Style:= [];
     BitBtn13.Font.Color:=clblack;
@@ -16744,14 +16769,14 @@ end;}
 
 procedure TfrmProcVentaRapida.BitBtn15Click(Sender: TObject);
 begin
-  LogProcedure('TfrmProcVentaRapida.BitBtn15Click');
+  //LogProcedure('TfrmProcVentaRapida.BitBtn15Click');
   esContado:=False;
   ReimprimirFacturaNoFiscal(0);
 end;
 
 procedure TfrmProcVentaRapida.VerTipoComprobantes1Click(Sender: TObject);
 begin
-  LogProcedure('TfrmProcVentaRapida.VerTipoComprobantes1Click');
+  //LogProcedure('TfrmProcVentaRapida.VerTipoComprobantes1Click');
   if not Assigned(frmVerTipoComprobantes) then
   frmVerTipoComprobantes:=TfrmVerTipoComprobantes.Create(Nil);
   try
@@ -17911,6 +17936,7 @@ end;
 
 procedure TfrmProcVentaRapida.TotalesAfterPost(DataSet: TDataSet);
 begin
+  MostrarTasa;
   if rxVenta.recordcount = 0 then exit;
   if (GlbNumVtaPOS = -1) then exit;
   dmcalculos.ibstpProcPosUpdTExtDet.Params[0].Value:= GlbNumVtaPOS;
@@ -18904,6 +18930,7 @@ begin
   MontoItbisEnPrecio:=0;
   if (edtCodigo.Text = '') then Exit;
   Edit1.Text  := '';
+  edtReferencia.Text:='';
   PrecioCambio:= False;
   if reciboImpreso then
   Totales.EmptyTable;
@@ -20777,15 +20804,19 @@ procedure TfrmProcVentaRapida.DBEdit6DblClick(Sender: TObject);
 var
   guardarRec : TBookMark;
 begin
-  LogProcedure('TfrmProcVentaRapida.DBEdit6DblClick');
+//  LogProcedure('TfrmProcVentaRapida.DBEdit6DblClick');
   guardarRec := qryCliente.GetBookmark;
   qryCliente.Close;
+  qryCliente.EnableControls;
   qryCliente.Open;
   if Assigned(guardarRec) then
   begin
     qryCliente.GotoBookmark(guardarRec);
     qryCliente.FreeBookmark(guardarRec);
   end;
+  if tablapropietarioCodigoPropietario.IsNull or
+     (tablapropietarioCodigoPropietario.Value = 0) then
+     MaestroCliente1Click(Self);  
 end;
 
 Function TfrmProcVentaRapida.VerificaNIFTExiste : Boolean;
@@ -21207,7 +21238,10 @@ begin
     Totalestotalneto.Value:=0;
     Totalesmontorecibido.Value:=0;
     Totalesdevolucion.Value   :=0;
-    Totalesmoneda.Value:='1';
+    if (GlbMonedaBase > 0) then
+    TotalesMoneda.Value   := IntToStr(GlbMonedaBase)
+    else
+    TotalesMoneda.Value   := '1';
     Totales.Post;
     lblProcDev.Visible := False;
   end;
@@ -21335,7 +21369,7 @@ end;
 
 procedure TfrmProcVentaRapida.ProcGuardarDatosCoti(numeroTrnVta: integer);
 begin
-  LogProcedure('TfrmProcVentaRapida.ProcGuardarDatosCoti');
+  //LogProcedure('TfrmProcVentaRapida.ProcGuardarDatosCoti');
   if (GlbFactRecurrente) then
   begin
     if (numeroTrnVta = 0) then exit;
@@ -21479,7 +21513,7 @@ begin
     frmSelNCF.Free;
     frmSelNCF:= Nil;
     end;
-  if xGenNCf then
+  if xGenNCf and CheckBox1.checked then
   begin
     ProcVentaConNCF(dmFactura.ibQryViewNCFTIPO_CF.Value, ValorNCF, serieDoc, serie_asignadoncf);
   end else
@@ -21736,7 +21770,7 @@ begin
     rxVenta.EnableControls;
     rxdbgrid2.EnableScroll;
   end;
-
+                                                       
   ProcSetNCFCliente;
   Refresh;
 end;
@@ -21781,11 +21815,45 @@ begin
 
   ProcChequeaOtrasVtasCte;
   ProcSetNCFCliente;
+  if (GlbActivaECF = 1) and (rxVenta.RecordCount > 0) and ((
+  TotalesTipoNCF.Value ='31') or (TotalesTipoNCF.Value ='33') or
+  (TotalesTipoNCF.Value ='34') or (TotalesTipoNCF.Value ='45')) then
+  begin
+    qryVerecfTerrCte.close;
+    qryVerecfTerrCte.Params[0].Value:= tablaPropietarioCodigoPropietario.Value;
+    qryVerecfTerrCte.open;
+    qryVerecfTerrCte.first;
+    if qryVerecfTerrCteID_PROVINCIA.IsNull or qryVerecfTerrCteID_MUNICIPIO.IsNull then
+    begin
+      //MessageDlg('Tienes que configurar la Provincia y el Municipio del Cliente.', mtError, [mbok], 0);
+      dmClientes.tblClienteTerritorio.Close;
+      dmClientes.tblClienteTerritorio.Params[0].Value:= tablaPropietarioCodigoPropietario.Value;
+      dmClientes.tblClienteTerritorio.Open;
+
+      ProcAsignarProvMunc;
+
+      qryVerecfTerrCte.close;
+      qryVerecfTerrCte.Params[0].Value:= tablaPropietarioCodigoPropietario.Value;
+      qryVerecfTerrCte.open;
+      qryVerecfTerrCte.first;
+      if qryVerecfTerrCteID_MUNICIPIO.IsNull or
+      qryVerecfTerrCteID_PROVINCIA.IsNull then
+      begin
+        MessageDlg('Tienes que configurar la Provincia y el Municipio del Cliente.'#10#13'Actualice los campos desde la ventana de clientes.', mtError, [mbok], 0);
+      end;
+
+      BitBtn4.Enabled:= True;
+      if qryEmpleado.State = dsInactive then
+      qryEmpleado.Open;
+
+      Exit;
+    end;
+  end;
 end;
 
 procedure TfrmProcVentaRapida.ProcAsignaNumLote(codProd: string);
 begin
-  LogProcedure('TfrmProcVentaRapida.ProcAsignaNumLote');
+  //LogProcedure('TfrmProcVentaRapida.ProcAsignaNumLote');
   dmInventario.qryLote.Close;
   dmInventario.qryLote.Params[0].Value:= codProd;
   dmInventario.qryLote.Open;
@@ -22436,23 +22504,58 @@ begin
   end;
 end;
 
+
 procedure TfrmProcVentaRapida.DgiiSolicitareCF(numerotrn: integer);
 var
-  Json, Args: string; Code: Cardinal;
-var
-  _smg : string;                                       
+  _smg: string;
+  RunRes: TFacturaTxtEcfResult;
+  OutputDir: string;
 begin
-  _smg:='';
-  if GlbValidarECF = 0 then exit;
-  if not UUtilecf.EjecutarECF_y_Mostrar(GlbRutaEcf, IntToStr(numerotrn), _smg) then
-    MessageBox(0, PChar(_smg), 'Facturación Electrónica', MB_ICONERROR or MB_OK);
-  //else
-  //  MessageBox(0, PChar(LMsg), 'Facturación Electrónica', MB_ICONINFORMATION or MB_OK);
+  _smg := '';
 
-  //if not UUtilecf.EjecutarECF_y_Mostrar(GlbRutaEcf, IntToStr(numerotrn), _smg) then
-  //  MessageBox(0, Pchar(_smg), 'Facturación Electrónica', MB_ICONERROR or MB_OK)
+  if (GlbValidarECF = 0) or (not CheckBox1.Checked) then
+    Exit;
+
+  // Carpeta donde quieres generar Factura.txt
+  OutputDir := IncludeTrailingPathDelimiter('C:\Electronico')+'factura_txt';
+
+  if GlbUsarFacturaTxtECF = 1 then
+  begin
+    try
+      if not EjecutarFacturaTxtECF(
+      GlbRutaEcf,
+      numerotrn,
+      OutputDir,
+      dmConectar.IBDatabase1,
+      dmConectar.IBTransaction1,
+      RunRes) then
+      begin
+        if Trim(RunRes.OutputText) <> '' then
+          MessageBox(0, PChar(RunRes.OutputText), 'Facturación Electrónica', MB_ICONERROR or MB_OK)
+        else
+        MessageBox(0, 'El proceso de facturación electrónica terminó con error, pero no devolvió detalle.',
+        'Facturación Electrónica', MB_ICONERROR or MB_OK);
+        Exit;
+      end;
+
+      // opcional:
+      if GlbEsDebugFiscal = 1 then
+      begin
+       if Trim(RunRes.OutputText) <> '' then
+         MessageBox(0, PChar(RunRes.OutputText), 'Facturación Electrónica', MB_ICONINFORMATION or MB_OK);
+      end;
+    except             
+    on E: Exception do
+      MessageBox(0, PChar(E.Message), 'Facturación Electrónica', MB_ICONERROR or MB_OK);
+    end;
+   Exit;
 end;
 
+  // Ruta normal actual, intacta
+  if not CheckBox1.Checked then exit;
+  if not UUtilecf.EjecutarECF_y_Mostrar(GlbRutaEcf, IntToStr(numerotrn), _smg) then
+    MessageBox(0, PChar(_smg), 'Facturación Electrónica', MB_ICONERROR or MB_OK);
+end;
 
 function TfrmProcVentaRapida.FSolicitarMotivoNCR:smallint;
 var
@@ -22649,8 +22752,9 @@ begin
         Totales.Post;
       end;
     //Exit;//Temporal
-
-    UProcesarDevolucion.GeneraNCF := True;
+    if CheckBox1.Checked then
+    UProcesarDevolucion.GeneraNCF := True
+    else UProcesarDevolucion.GeneraNCF := False;
     //Crear Nota Credito
     if Not TotalesTipoNCF.IsNull then
     begin
@@ -22707,6 +22811,7 @@ begin
     if TotalesTipoNCFIFiscal.IsNull then
     UProcesarDevolucion.GeneraNCF:= False
     else
+    if CheckBox1.Checked then
     UProcesarDevolucion.GeneraNCF:= True;
 
     if dmFactura.qryVentaFacturaFORMA_PAGO.Value in [7,8,15] then
@@ -22736,7 +22841,7 @@ begin
     if rxVentaglbcodVendedor.Value > 0 then
     GlbcodVendedor:= rxVentaglbcodVendedor.Value;
     //ActualizaVentaMaster('6', UProcesarDevolucion.seriencfasignado);//Devolucion
-    ProcInsertarVtaMastEnDevolucion(UProcesarDevolucion.seriencfasignado);
+    ProcInsertarVtaMastEnDevolucion(UProcesarDevolucion.seriencfasignado,dmFactura.qryVentaFacturaNUMERO.Value);
     rxVenta.First;
     While Not rxVenta.Eof Do
     begin
@@ -22879,7 +22984,7 @@ begin
       dmreportes.qryNCFAfectado.Open;
 
       //Solicitar ecf a la DGII
-      if (GlbActivaECF = 1) and (5=5) then //temporal
+      if (GlbActivaECF = 1) and (5=5) and (CheckBox1.Checked) then //temporal
       begin
         if (ipStpInsertVentMast.Params[0].Value > 0) then
         DgiiSolicitareCF(ipStpInsertVentMast.Params[0].Value);
@@ -22973,7 +23078,7 @@ begin
     //Application.ProcessMessages;
     end else  //imprimir devolucion
     begin
-      if (GlbActivaECF = 1) and (5=5) then //Devoluciones
+      if (GlbActivaECF = 1) and (5=5) and (CheckBox1.Checked) then //Devoluciones
       begin
         if (dmFactura.qryVentaFacturaNUMERO.Value > 0) then
         DgiiSolicitareCF(dmFactura.qryVentaFacturaNUMERO.Value);
@@ -22991,7 +23096,7 @@ begin
     end;
    end else
     begin
-      if (GlbActivaECF = 1) and (5=5) then //temporal
+      if (GlbActivaECF = 1) and (5=5) and (CheckBox1.Checked) then //temporal
       begin
         if (dmfactura.qryFactReimpMasterNumero.Value > 0) then
         DgiiSolicitareCF(dmfactura.qryFactReimpMasterNumero.AsVariant);
@@ -23187,9 +23292,10 @@ begin
       UProcesarDevolucion.codigousuarioupd := VarUsuarioGlb;
       UProcesarDevolucion.tipodoc := 5; //Nota Credito
       UProcesarDevolucion.numeroFactura := rxVentaNumeroFactura.Value;
+      UProcesarDevolucion.GeneraNCF:= False;
       if TotalesTipoNCFIFiscal.IsNull then
       UProcesarDevolucion.GeneraNCF:= False
-      else
+      else if CheckBox1.Checked then
       UProcesarDevolucion.GeneraNCF:= True;
 
       if dmFactura.qryVentaFacturaFORMA_PAGO.Value in [7,8,15] then
@@ -23215,9 +23321,9 @@ begin
       //ActualizaVentaMaster('6', UProcesarDevolucion.seriencfasignado);//Devolucion
       if UProcesarDevolucion.CancelaProceso then
       exit;
-      ProcInsertarVtaMastEnDevolucion(UProcesarDevolucion.seriencfasignado);
+      ProcInsertarVtaMastEnDevolucion(UProcesarDevolucion.seriencfasignado,dmFactura.qryVentaFacturaNUMERO.Value);
       //Capturar motivo de la devolucon para eCF
-      if GlbActivaECF = 1 then
+      if (GlbActivaECF = 1) and CheckBox1.Checked then
       begin
         try
           if (ipStpInsertVentMast.Params[0].Value > 0) then
@@ -23265,6 +23371,26 @@ begin
       NumTrnGen := -1;
       NumOrden  := -1;
       ProcInsertarVtaMastCashEnDev(NumTrnGen,NumOrden);
+
+      if Not ipStpInsertVentMast.Transaction.InTransaction then
+      ipStpInsertVentMast.Transaction.StartTransaction;
+      try
+       ipStpInsertVentMast.Transaction.CommitRetaining;
+      except
+      ipStpInsertVentMast.Transaction.RollbackRetaining;
+      end;
+      if NumTrnGen > 0 then
+      begin
+      dmfactura.tbltrnventasmastupd.Close;
+      dmfactura.tbltrnventasmastupd.Params[0].Value:=NumTrnGen;
+      dmfactura.tbltrnventasmastupd.Open;
+      if not dmfactura.tbltrnventasmastupdNUMERO.IsNull then
+      begin
+        dmfactura.tbltrnventasmastupd.Edit;
+        dmfactura.tbltrnventasmastupdREF_TRN_ORIGEN.Value:= dmFactura.qryVentaFacturaNUMERO.Value;
+        GlbSalvarQuery(dmfactura.tbltrnventasmastupd);
+      end;
+      end;
       rxVenta.First;
       While Not rxVenta.Eof Do
       begin
@@ -23343,7 +23469,7 @@ begin
       qryInventario.Open;
       qryProductos.Close;
       qryProductos.Open;
-      numeroTrnVta:= 0;
+      numeroTrnVta  := 0;
       GlbcodVendedor:=-1;
 
       rxventa.EnableControls;
@@ -23467,7 +23593,7 @@ begin
       DescargarVehiculoDev(dmFactura.qryVentaFacturaNUMERO.Value);
 
       //ActualizaVentaMaster('6', UProcesarDevolucion.seriencfasignado);//Devolucion
-      ProcInsertarVtaMastEnDevolucion(UProcesarDevolucion.seriencfasignado);
+      ProcInsertarVtaMastEnDevolucion(UProcesarDevolucion.seriencfasignado,dmFactura.qryVentaFacturaNUMERO.Value);
       rxVenta.First;
       While Not rxVenta.Eof Do
       begin
@@ -23582,7 +23708,7 @@ begin
       end;  
     end else //No Fiscal
     begin
-      if (GlbActivaECF = 1) and (5=5) then //Validar Devoluciones
+      if (GlbActivaECF = 1) and (5=5) and (CheckBox1.Checked) then //Validar Devoluciones
       begin
         if (ipStpInsertVentMast.Params[0].Value > 0) then
         DgiiSolicitareCF(ipStpInsertVentMast.Params[0].Value);
@@ -23664,7 +23790,7 @@ begin
   qryInventario.Open;
   qryProductos.Close;
   qryProductos.Open;
-  numeroTrnVta:= 0;
+  numeroTrnVta:= 0;               
   GlbcodVendedor:=-1;
   rxventa.EnableControls;
   Refresh;
@@ -23803,13 +23929,17 @@ begin
     RxDBLookupCombo3.Visible:= True;
     if Not dmFactura.ibQryViewNCF.Prepared then
     dmFactura.ibQryViewNCF.Prepare;
-    dmFactura.ibQryViewNCF.Open;
+    dmFactura.ibQryViewNCF.Open;           
 end;
 
 procedure TfrmProcVentaRapida.DBEdit6Exit(Sender: TObject);
 begin
+  if qryCliente.State = dsInactive then
+  qryCliente.Open;
   if not tablaPropietarioCodigoPropietario.IsNull then
-  RxDBLookupCombo3Exit(Self);
+  ProcSetNCFCliente;
+  rxdbLookupCteExit(Self);
+  //RxDBLookupCombo3Exit(Self);
 end;
 
 procedure TfrmProcVentaRapida.DBEdit2Click(Sender: TObject);
@@ -23848,6 +23978,99 @@ begin
     LogInformacionTxt(e.Message);
   end;
   end;
+end;
+procedure TfrmProcVentaRapida.RxDBLookupCombo3Click(Sender: TObject);
+begin
+  if dmFactura.ibQryViewNCF.State = dsInactive then
+  begin
+    dmFactura.ibQryViewNCF.Open;
+    dmFactura.ibQryViewNCF.EnableControls;
+    if tbltipoDeIngresos.State = dsInactive then
+    tbltipoDeIngresos.Open;
+  end;
+end;
+
+procedure TfrmProcVentaRapida.TotalesMonedaChange(Sender: TField);
+begin
+  MostrarTasa;
+end;
+
+procedure TfrmProcVentaRapida.MostrarTasa;
+begin
+  try
+  if (TotalesMoneda.Value <> '1') then
+  begin
+    lblTasa.Caption:=Concat('1 = ',InsertarComa(FloatToStr(GlbMontoTasa(TotalesMoneda.Value))));
+    Label60.Caption:=SimboloMoneda('1')+InsertarComa(Format('%8.2f', [Totalestotalneto.Value * GlbMontoTasa(TotalesMoneda.Value)]));
+    if (lblTasa.Caption <> '') then lblTasa.Visible:=True;
+  end;  
+  except
+  end;
+end;
+
+procedure TfrmProcVentaRapida.ReEnviaFacturatxt1Click(Sender: TObject);
+begin
+   frmConsultaFacturas:=TfrmConsultaFacturas.Create(Nil);
+   frmConsultaFacturas.BitBtn2.Caption := '&Re-Imprimir';
+   if frmConsultaFacturas.Showmodal = mrOK then
+   begin
+     if frmConsultaFacturas.rdgContado.Checked then
+        frmProcVentaRapida.esContado:=True
+     else frmProcVentaRapida.esContado:=False;
+
+     frmProcVentaRapida.NumeroTrn := dmFactura.qryVentaFacturaNumero.AsInteger;
+     if (GlbActivaECF = 1) and (GlbValidarECF = 1) and (CheckBox1.Checked) then 
+     begin
+       DgiiSolicitareCF(frmProcVentaRapida.NumeroTrn);
+     end;
+   end else Exit;
+end;
+
+procedure TfrmProcVentaRapida.ProcAsignarProvMunc;
+begin
+  if tablaPropietarioCodigoPropietario.IsNull
+  or (tablaPropietarioCodigoPropietario.Value = 0) then exit;
+
+  qryVerecfTerrCte.close;
+  qryVerecfTerrCte.Params[0].Value:= tablaPropietarioCodigoPropietario.Value;
+  qryVerecfTerrCte.open;
+  qryVerecfTerrCte.first;
+  if Not qryVerecfTerrCteID_MUNICIPIO.IsNull and
+  not qryVerecfTerrCteID_PROVINCIA.IsNull then
+  exit;                          
+            
+  dmClientes.tblClienteTerritorio.Close;
+  dmClientes.tblClienteTerritorio.Params[0].Value:= tablaPropietarioCodigoPropietario.Value;
+  dmClientes.tblClienteTerritorio.Open;
+
+  frmEditProvinciaMunicipio:=TfrmEditProvinciaMunicipio.Create(nil);  
+  try
+    if dmClientes.tblClienteTerritorio.State = dsInactive then
+    begin
+      dmClientes.tblClienteTerritorio.Close;
+      dmClientes.tblClienteTerritorio.Params[0].Value:= tablaPropietarioCodigoPropietario.Value;
+      dmClientes.tblClienteTerritorio.Open;
+    end;
+    if not dmCompania.tblCompaniaID_PROVINCIA.IsNull then
+    frmEditProvinciaMunicipio.idProv:=
+     
+    frmEditProvinciaMunicipio.ShowModal;
+  finally
+  frmEditProvinciaMunicipio.Free;         
+  frmEditProvinciaMunicipio:=Nil;
+  end;
+end;              
+
+procedure TfrmProcVentaRapida.RxDBLookupCombo4Click(Sender: TObject);
+begin
+  if qryEmpleado.State = dsInactive then
+  qryEmpleado.Open;                           
+end;
+
+procedure TfrmProcVentaRapida.RxDBLookupCombo4MouseUp(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+   if qryEmpleado.state = dsInactive then qryEmpleado.Open;
 end;
 
 end.

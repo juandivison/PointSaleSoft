@@ -1,6 +1,6 @@
 object frmProcCierreOfc: TfrmProcCierreOfc
-  Left = 539
-  Top = 195
+  Left = 550
+  Top = 223
   Width = 379
   Height = 338
   Caption = 'Proceso Cierre de Oficina'

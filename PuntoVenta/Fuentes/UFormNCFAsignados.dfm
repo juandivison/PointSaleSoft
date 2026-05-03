@@ -376,12 +376,18 @@ object frmNCFAsignados: TfrmNCFAsignados
       'where'
       '  SERIE = :SERIE')
     SelectSQL.Strings = (
-      
-        'Select ecfLog.Trn Numero_trn, n.*, ecfLog.URL_IMAGE   from NCF_A' +
-        'SIGNADOS n'
-      
-        'left outer join ECF_TIMBRE_LOG ecfLog on ecfLog.ENCF = n.NUMERO_' +
-        'NCF')
+      'SELECT'
+      '    m.NUMERO,'
+      '    m.FECHA,'
+      '    m.SERIE_NCF_ASIGNADO,'
+      '    n.*,'
+      '    ecfLog.TRN AS NUMERO_TRN,'
+      '    ecfLog.URL_IMAGE'
+      'FROM VENTAS_MAST m'
+      'LEFT JOIN NCF_ASIGNADOS n'
+      '    ON m.SERIE_NCF_ASIGNADO = n.SERIE'
+      'LEFT JOIN ECF_TIMBRE_LOG ecfLog'
+      '    ON ecfLog.ENCF = n.NUMERO_NCF')
     ModifySQL.Strings = (
       'update NCF_ASIGNADOS'
       'set'

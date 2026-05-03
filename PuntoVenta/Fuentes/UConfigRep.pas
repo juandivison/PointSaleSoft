@@ -123,6 +123,9 @@ type
     edtcajaecf: TEdit;
     Label20: TLabel;
     chkActivaFinger: TCheckBox;
+    edtrutaExeItesi2ToolEcf: TEdit;
+    Label21: TLabel;
+    chkFacturatxt: TCheckBox;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -145,6 +148,7 @@ type
     procedure rdgDealerClick(Sender: TObject);
     procedure edtEcfRutaExit(Sender: TObject);
     procedure RadioGroup3Click(Sender: TObject);
+    procedure chkFacturatxtClick(Sender: TObject);
   private
     //procedure WMDisplayChange(var Message: TWMDisplayChange);
     { Private declarations }
@@ -174,6 +178,7 @@ uses uglobal, USelInventario;
 //  edtAlto.Text  := IntToStr(Message.Height);
   //Message.BitsPerPixe
 //end;
+
 procedure TfrmConfReporte.DatosConfiguracion;
 var
   Ini: TIniFile;
@@ -186,6 +191,11 @@ begin
   //0: MODO 0 – convertir la misma venta, E32 ? E31 (sin duplicar venta).
   //1: MODO 1 – nueva venta E31 copiando ítems, más una Nota de Crédito E34 que anula la E32.
 
+  GlbUsarFacturaTxtECF:=Ini.ReadInteger('Venta','GlbUsarFacturaTxtECF',0);
+  if GlbUsarFacturaTxtECF = 1 then
+  chkFacturatxt.Checked:=True
+  else chkFacturatxt.Checked:=False;
+  
   GlbCajaeCF:=UpperCase(Ini.ReadString('Recibo','GlbCajaeCF',''));
   edtcajaecf.Text := GlbCajaeCF;
   GlbUsaHuellas:= Ini.ReadInteger('Venta','GlbUsaHuellas',0);
@@ -204,7 +214,8 @@ begin
 
   GlbRutaEcf:= Ini.ReadString('IFiscal','GlbRutaEcf','');
   edtEcfRuta.Text:=GlbRutaEcf;
-
+  GlbRuta2Ecf:=  Ini.ReadString('IFiscal','GlbRuta2Ecf','');
+  edtrutaExeItesi2ToolEcf.Text:=GlbRuta2Ecf;
   GlbRutaQREcf:=Ini.ReadString('IFiscal','GlbRutaQREcf','');
   edtrutaqrecf.Text:= GlbRutaQREcf;
 
@@ -423,8 +434,8 @@ begin
 
    GlbActivaIFiscal :=  Ini.ReadInteger('Venta', 'GlbActivaIFiscal', 0);
 
-   if GlbActivaIFiscal = 1 then
-   GlbIgI:=0;
+   if (GlbActivaIFiscal = 1) or (GlbActivaECF = 1) then
+   GlbIgI:=1;
 
     GlbIDAlmacenProd := -1;
     GlbIDAlmacenProd := Ini.ReadInteger('Inventario', 'GlbIDAlmacenProd',0 );
@@ -543,6 +554,9 @@ begin
 
     GlbPermiteVentaInv0 := Ini.ReadInteger('Venta', 'GlbPermiteVentaInv0',0);
     GlbPermiteUnaInstancia := Ini.ReadInteger('Aplicacion', 'GlbPermiteUnaInstancia', 0);
+
+    GlbInsertarEnLoan := Ini.ReadInteger('Aplicacion', 'GlbInsertarEnLoan', 0);
+
     GlbEmailTool := Ini.ReadString('Aplicacion', 'GlbEmailTool', '');
     GLBUseCustomEmailServer :=Ini.ReadInteger('Aplicacion', 'GLBUseCustomEmailServer', 0);
     edtEmailTool.Text :=GlbEmailTool;
@@ -641,8 +655,6 @@ begin
 
     if (Trim(GLbDevoluciones) = '') then
     GLbDevoluciones:= GetRutaPrograma+'Devoluciones';
-
-
   finally
   Ini.Free;
   end;
@@ -791,6 +803,19 @@ begin
   else
   frgFormatoCuadre.ItemIndex := 1;
   }
+  //Pendiente de configurar en interfaz de usuario
+  //Permite insertar clientes en DB Prestamos
+  GlbInsertarEnLoan := 0;
+  if chkFacturatxt.Checked and chkboxeCF.Checked then
+  begin
+    GlbUsarFacturaTxtECF:=1;
+    Ini.WriteInteger('Venta','GlbUsarFacturaTxtECF',1);
+  end else
+  begin
+    GlbUsarFacturaTxtECF:=0;
+    chkFacturatxt.Checked:=False;
+    Ini.WriteInteger('Venta','GlbUsarFacturaTxtECF',0);
+  end;
 
   if chkActivaFinger.Checked then
   begin
@@ -836,6 +861,9 @@ begin
 
   Ini.WriteString('IFiscal','GlbRutaQREcf',edtrutaqrecf.Text);
   GlbRutaQREcf:=edtrutaqrecf.Text;
+
+  GlbRuta2Ecf:=edtrutaExeItesi2ToolEcf.Text;
+  Ini.WriteString('IFiscal','GlbRuta2Ecf',edtrutaExeItesi2ToolEcf.Text);
 
   Ini.WriteString('IFiscal','GlbRutaEcf',edtEcfRuta.Text);
   GlbRutaEcf:=edtEcfRuta.Text;
@@ -1389,6 +1417,7 @@ begin
 
     if (edtEmailTool.Text <> '') then
     Ini.WriteString('Aplicacion', 'GlbEmailTool', edtEmailTool.Text);
+    
   finally
   Ini.Free;
   end;
@@ -1612,6 +1641,14 @@ begin
   if RadioGroup3.ItemIndex = 0 then
   GlbModoConsumoToCredito:=0
   else GlbModoConsumoToCredito:=1;
+end;
+
+procedure TfrmConfReporte.chkFacturatxtClick(Sender: TObject);
+begin
+  if chkFacturatxt.Checked then
+  GlbUsarFacturaTxtECF:=1
+  else
+  GlbUsarFacturaTxtECF:=0;
 end;
 
 end.

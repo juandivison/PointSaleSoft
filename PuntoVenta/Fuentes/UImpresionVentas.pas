@@ -263,7 +263,130 @@ begin
           qckFactServ_8_5SAMNewMuturs:=Nil;
           end;
       end else
-      if (GlBAyaco = 1) or (GlbSizeFact8x11 = 1) or (GlBTapiceria = 1) or (GlBInveraf =1) then
+      if esContado and (GlBAyaco = 1) then
+      begin
+        qckRepReciboReimpTicketSurtidoraNew:=TqckRepReciboReimpTicketSurtidoraNew.Create(Nil);
+      try
+        if GlbImpQREncuesta = 0 then
+        begin
+          if (GlbImpQREncuesta = 0) then
+          qckRepReciboReimpTicketSurtidoraNew.Height:=761;
+
+          //qckRepReciboReimpTicketSurtidoraNew.Page.Length:=6.156; //sin encuesta
+          qckRepReciboReimpTicketSurtidoraNew.ChildBand14.Height:=0;
+          //qckRepReciboReimpTicketSurtidoraNew.ChildBand13.HasChild:=False;
+        end;
+        qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
+        if  frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
+        qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+        if GlbEsCopia then
+        qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)'
+        else
+        qckRepReciboReimpTicketSurtidoraNew.strcopia :='';
+
+        //qckRepReciboReimpTicketSurtidoraNew.ncfDesc := GlbDescNCF;
+        if Length(frmProcVentaRapida.edtObservacion.Text) > 0 then
+        qckRepReciboReimpTicketSurtidoraNew.nombreCteGenerico:=frmProcVentaRapida.edtObservacion.Text;
+        if (dmReportes.qryViewVentasMastCodigo_cte.value > 0) then
+        begin
+          qckRepReciboReimpTicketSurtidoraNew.qrLabelRNC.Caption:='RNC-' + frmProcVentaRapida.qryClienteRNC_NUMERO.Value;
+          qckRepReciboReimpTicketSurtidoraNew.nombreCteGenerico:= frmProcVentaRapida.qryClienteNOMBRE_CTE.Value;
+        end
+        else qckRepReciboReimpTicketSurtidoraNew.qrLabelRNC.Caption:='';
+        qckRepReciboReimpTicketSurtidoraNew.xtipoVenta := TipoVenta;
+        //qckRepReciboReimpTicketSurtidoraNew.valorNCF   := valorNCF;
+        qckRepReciboReimpTicketSurtidoraNew.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+        //pulgadaInc:=0.86;
+        dmFactura.qryVentaFacturaDet.Last;
+
+      if (glbQckUnaPagina = 1) then
+      begin
+        if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and
+           (qckRepReciboReimpTicketSurtidoraNew.Page.Length < 6.65)  then
+        qckRepReciboReimpTicketSurtidoraNew.Page.Length:=5.759
+        else
+        if dmFactura.qryVentaFacturaDet.RecordCount >= 2 then
+        qckRepReciboReimpTicketSurtidoraNew.Page.Length:= qckRepReciboReimpTicketSurtidoraNew.Page.Length +
+        (dmFactura.qryVentaFacturaDet.RecordCount - 1 ) * 0.25;
+
+        flag:=true;
+        dmFactura.qryVentaFacturaDet.First;
+        //dmFactura.qryVentaFacturaDet.Last;
+        if dmFactura.qryVentaFacturaDet.RecordCount > 25  then
+        qckRepReciboReimpTicketSurtidoraNew.Page.Length:=23
+        else
+        if dmFactura.qryVentaFacturaDet.RecordCount > 29  then
+        qckRepReciboReimpTicketSurtidoraNew.Page.Length:=26;
+
+        qckRepReciboReimpTicketSurtidoraNew.Prepare;
+
+        if ((dmFactura.qryVentaFacturaDet.RecordCount >= 1) and
+           ((dmFactura.qryVentaFacturaDet.RecordCount < 10)
+            or (qckRepReciboReimpTicketSurtidoraNew.PageNumber = 2))) then
+        begin
+          frmProcVentaRapida.ProgressBar1.Visible :=True;
+          frmProcVentaRapida.ProgressBar1.Position:=0;
+          frmProcVentaRapida.ProgressBar1.Max:=dmFactura.qryVentaFacturaDet.RecordCount;
+          if (GlbIncLargoPapel = 1) then
+          begin
+          repeat
+          begin
+            frmProcVentaRapida.ProgressBar1.StepIt;  //revisar proceso octubre 10 2024
+            //cRc:=cRc + 1;
+            if (qckRepReciboReimpTicketSurtidoraNew.PageNumber > 1) then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Page.Length:=qckRepReciboReimpTicketSurtidoraNew.Page.Length + 0.50;
+              qckRepReciboReimpTicketSurtidoraNew.Prepare;
+              flag:=False;
+            end else
+            if (qckRepReciboReimpTicketSurtidoraNew.PageNumber = 1) then
+                break;
+            if (qckRepReciboReimpTicketSurtidoraNew.PageNumber = 1) then
+                break;
+            end;
+            until flag = true;
+            end;
+          end;
+        end; //if (glbQckUnaPagina = 1) then
+        frmProcVentaRapida.ProgressBar1.Visible:=False;
+        dmFactura.qryVentaFacturaDet.last;
+        if (dmFactura.qryVentaFacturaDet.RecordCount >15) and (GlbImpFormatoPDF = 1) then
+        begin
+          frmProcVentaRapida.ImprimirEnFormatoPDF(1,6);
+        end else
+        begin
+          dmDatos.qryImpresoras.Close;
+          dmDatos.qryImpresoras.Open;
+          if dmDatos.qryImpresoras.Locate('IDMODULO;IDREPORTE',
+          VarArrayOf([1,6]),[]) then     //Factura/Recibo Punto Venta
+          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.PrinterIndex:=
+          GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
+
+          if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
+          qckRepReciboReimpTicketSurtidoraNew.Print
+          else
+          if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
+          begin
+            if (GlbImprimeReciboFact = 1) then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.PrinterSetup;
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end;
+          end else
+          qckRepReciboReimpTicketSurtidoraNew.Preview;
+          reciboImpreso:=True;
+        end;
+
+        reciboImpreso:=True;
+        //if GlbImpTicketVtaAgua = 1 then
+        //ImprimirTicketVtaAgua(ipStpInsertVentMast.Params[0].Value);
+      finally
+      qckRepReciboReimpTicketSurtidoraNew.Free;
+      qckRepReciboReimpTicketSurtidoraNew:=Nil;
+      end; 
+      exit;
+      end else
+      if (GlbSizeFact8x11 = 1) and ((GlBAyaco = 1) or (GlBTapiceria = 1) or (GlBInveraf =1) or (GlBExpert = 1)) then
           begin
             qckFactServ8_5Ayaco:=TqckFactServ8_5Ayaco.Create(Nil);
             try
@@ -5596,6 +5719,7 @@ var
   ctrlLoop:Integer;
   pl : real;
 begin
+  if not Assigned(frmProcVentaRapida) then exit;
   ctrlLoop :=0;
   pl:=7.27;
   GlbEsCopia:=True;

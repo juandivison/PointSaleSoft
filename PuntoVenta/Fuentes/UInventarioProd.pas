@@ -399,6 +399,65 @@ type
     Autitoria1: TMenuItem;
     FiltrarPagaItbis1: TMenuItem;
     FiltrarNoPagaItbis1: TMenuItem;
+    tblInvComer1ro: TIBDataSet;
+    tblInvComer1roCODIGO: TIntegerField;
+    tblInvComer1roCODIGO_TEXTO: TIBStringField;
+    tblInvComer1roFECHA: TDateTimeField;
+    tblInvComer1roCODIGO_BARRA: TIBStringField;
+    tblInvComer1roTIPO: TIntegerField;
+    tblInvComer1roDESCRIPCION: TIBStringField;
+    tblInvComer1roDESCRIPCIONADICIONAL: TMemoField;
+    tblInvComer1roCANTIDAD_REORDEN: TIntegerField;
+    tblInvComer1roPRECIO_ANT: TFloatField;
+    tblInvComer1roCANTIDAD: TFloatField;
+    tblInvComer1roPRECIO: TFloatField;
+    tblInvComer1roBLCE_CANT_ENTRADA: TFloatField;
+    tblInvComer1roBLCE_CANT_SALIDA: TFloatField;
+    tblInvComer1roFECHA_ULTIMA_TRN: TDateTimeField;
+    tblInvComer1roSTATUS: TIBStringField;
+    tblInvComer1roPORC_DESCUENTO: TFloatField;
+    tblInvComer1roFOTO: TBlobField;
+    tblInvComer1roPAGA_ITBI: TSmallintField;
+    tblInvComer1roCODIGO_PRECIO: TIBStringField;
+    tblInvComer1roUNIDAD: TFloatField;
+    tblInvComer1roPRECIO_COMPRA: TFloatField;
+    tblInvComer1roPRECIO_MINIMO: TFloatField;
+    tblInvComer1roREFERENCIA: TIBStringField;
+    tblInvComer1roFECHA_VENCIMIENTO: TDateTimeField;
+    tblInvComer1roINVENTARIAR: TSmallintField;
+    tblInvComer1roPRECIO_TIPO_UNIDAD: TFloatField;
+    tblInvComer1roTIPO_UNIDAD: TIntegerField;
+    tblInvComer1roORIGEN: TIntegerField;
+    tblInvComer1roUBICACION: TIBStringField;
+    tblInvComer1roREFERENCIA_ALTERNA: TIBStringField;
+    tblInvComer1roMARCA: TIBStringField;
+    tblInvComer1roMODELO: TIBStringField;
+    tblInvComer1roPRECIOVENTA1: TFloatField;
+    tblInvComer1roPRECIOVENTA2: TFloatField;
+    tblInvComer1roPRECIOVENTA3: TFloatField;
+    tblInvComer1roPRECIOVENTA4: TFloatField;
+    tblInvComer1roPORCUTILIDAD1: TFloatField;
+    tblInvComer1roPORCUTILIDAD2: TFloatField;
+    tblInvComer1roPORCUTILIDAD3: TFloatField;
+    tblInvComer1roPORCUTILIDAD4: TFloatField;
+    tblInvComer1roUSARLEVELPRECIO: TSmallintField;
+    tblInvComer1roCIA_KEY: TIntegerField;
+    tblInvComer1roSITUACIONPROD: TSmallintField;
+    tblInvComer1roAPLICAIMPTOCOMPRA: TSmallintField;
+    tblInvComer1roCODFABRICANTE: TIntegerField;
+    tblInvComer1roCTAINVENTARIO: TIBStringField;
+    tblInvComer1roCTAVENTA: TIBStringField;
+    tblInvComer1roCTACOMPRA: TIBStringField;
+    tblInvComer1roCODSUBCATEGORIA: TIntegerField;
+    tblInvComer1roCODCATEGORIA: TIntegerField;
+    tblInvComer1roPORCITBIS: TFloatField;
+    tblInvComer1roCOD_MONEDA: TIBStringField;
+    tblInvComer1roKILOMETROS: TFloatField;
+    tblInvComer1roRUTAIMAGEN: TIBStringField;
+    tblInvComer1roIDTASAITBIS: TSmallintField;
+    tblInvComer1roPRECIO_ALQUILER: TFloatField;
+    tblInvComer1roPAGACOMISION: TSmallintField;
+    lblReplicado: TLabel;
     procedure BitBtn1Click(Sender: TObject);
     procedure BitBtn2Click(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -514,6 +573,7 @@ type
     procedure CheckcodBarra;
     procedure AbrirDDup;
     Function GetPrecioMinimo(p1:currency;p2:currency;p3:currency;p4:currency):Currency;
+    Procedure SincronizarProductoActual;
   public
     { Public declarations }
   end;
@@ -532,7 +592,7 @@ uses UDatModInventario, uglobal, UTipoInventario, UCambiarPrecios,
   UInventarioSubCategoria, UFormPrecioXUnidadNivel, UFormOfertas,
   UFormFiltrarTasaItbis, URegistro, UFormLote, UFormDimensionProd,
   UDatModPanaderia, UfrmInvPrecioAudit, UFormAuditoriaInv,
-  ULabelImpCodBarra;
+  ULabelImpCodBarra, USincronizarTablaInv;
 
 {$R *.dfm}
 
@@ -759,6 +819,7 @@ begin
     _codProd:= dmInventario.tblInventarioProdCODIGO.Value;
     
     GlbSalvarQuery(dmInventario.tblInventarioProd);
+
     edtCodBarra.Clear;
     //update
     //IDTASAITBIS  =:idtasa
@@ -799,6 +860,19 @@ begin
       end;
       edtCodBarra.Clear; 
     end;
+
+    //sincronizar tabla inventario en DB destino
+    try
+      tblInvComer1ro.close;
+      tblInvComer1ro.params[0].Value:=dmInventario.tblInventarioProdCODIGO_BARRA.Value;
+      tblInvComer1ro.open;
+      if not tblInvComer1ro.FieldByName('Codigo').IsNull then
+      lblReplicado.Visible:=True;
+      SincronizarProductoActual;
+      lblReplicado.Visible:=False;
+    except
+    end;
+    
     edtCodBarra.SetFocus;
     edtCodBarra.SelectAll;
   end;
@@ -1215,6 +1289,7 @@ begin
   else
   if dmInventario.tblInventarioProdTIPO_UNIDAD.IsNull then
   Background:=clYellow;
+  lblReplicado.Visible:=False;
 end;
 
 procedure TfrmInventarioProd.tblTipoPrecioAfterScroll(DataSet: TDataSet);
@@ -2825,6 +2900,14 @@ begin
   RxDBLookupCombo5.Color:= clGreen;
   RxLabel3.Caption :='Filtro Aplicado';
   RxLabel3.Color:= clRed;
+end;
+
+procedure TfrmInventarioProd.SincronizarProductoActual;
+begin
+  USincronizarTablaInv.SincronizarInventarioProducto(
+    dmInventario.tblInventarioProd,
+    tblInvComer1ro
+  );
 end;
 
 end.

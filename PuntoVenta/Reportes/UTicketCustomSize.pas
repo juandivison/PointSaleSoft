@@ -637,10 +637,12 @@ begin
     // ---------------------------------------------------------------------------
   // 9. ECF / QR (texto + imagen ESC/POS)
   // ---------------------------------------------------------------------------
-  if GlbActivaECF = 1 then
+  if (GlbActivaECF = 1) then
   begin
+
     codSeg   := '';
     fEmision := '';
+    if GlbValidarECF = 1 then 
     rutaQR   := UUtilecftimbre.GetRutaTimbre(
                   GetIntField(dmFactura.qryVentaFactura, 'NUMERO'),
                   codSeg,

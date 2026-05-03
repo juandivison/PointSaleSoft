@@ -38,6 +38,7 @@ type
     procedure CargarMunicipiosParaProvincia(const CodProvInt: Integer);
   public
     { Public declarations }
+    idProv: integer;
   end;
 
 var
@@ -120,6 +121,10 @@ begin
     CargarMunicipiosParaProvincia(
       dmClientes.tblClienteTerritorio.FieldByName('ID_PROVINCIA').AsInteger
     );
+  if dmClientes.tblClienteTerritorio.State = dsInsert then
+  begin
+    dmClientes.tblClienteTerritorioID_PROVINCIA.Value:=idProv;
+  end;
 end;
 
 end.
