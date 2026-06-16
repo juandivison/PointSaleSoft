@@ -1,6 +1,6 @@
 object frmCargo: TfrmCargo
-  Left = 296
-  Top = 153
+  Left = 445
+  Top = 193
   Width = 608
   Height = 384
   Caption = 'Cargo Empleados'
@@ -11,6 +11,7 @@ object frmCargo: TfrmCargo
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  Position = poOwnerFormCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
@@ -88,21 +89,25 @@ object frmCargo: TfrmCargo
       item
         Expanded = False
         FieldName = 'IN_POR'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_IN'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MOD_POR'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_MOD'
+        Width = 64
         Visible = True
       end>
   end

@@ -14,7 +14,7 @@ type
     imgLogo: TQRImage;
     lblFecha: TQRLabel;
     qrmDestinatario: TQRMemo;
-    qrmCuerpo: TQRMemo;
+    qrmCuerpo: TQRRichText;
     lblTipoCap: TQRLabel;
     lblTipoVal: TQRLabel;
     lblMarcaCap: TQRLabel;
@@ -41,6 +41,7 @@ type
     QRDBText18: TQRDBText;
     QRDBText33: TQRDBText;
     lblTitulo: TQRLabel;
+    lblNombreFirma: TQRLabel;
     procedure bndHeaderBeforePrint(Sender: TQRCustomBand;
       var PrintBand: Boolean);
     procedure QuickRepBeforePrint(Sender: TCustomQuickRep;
@@ -67,8 +68,10 @@ type
     FTelefonosPie: string;
     FRutaLogo: string;
     FValoresAplicados: Boolean;
+    FNombreFirma: string;
     procedure InicializarValores;
     procedure AplicarValores;
+    procedure CargarRichText(AControl: TQRRichText; const ARtf: string);
   public
     constructor Create(AOwner: TComponent); override;
     property NumeroCarta: string read FNumeroCarta write FNumeroCarta;
@@ -92,6 +95,8 @@ type
     property TelefonosPie: string read FTelefonosPie write FTelefonosPie;
     property RutaLogo: string read FRutaLogo write FRutaLogo;
     procedure PrepararReporte;
+    property NombreFirma: string read FNombreFirma write FNombreFirma;
+
   end;                                          
 
 var
@@ -129,7 +134,8 @@ begin
   FAnio := '';
   FTextoDocumentos := '     Sus documentos están en la Direccion General de Impuestos Internos.';
   FTextoAgradecimiento := 'Agradecemos todas las colaboraciones y consideraciones posibles para esta persona hasta que sus documentos sean entregados.';
-  FCargoFirma := 'DTO. DE VENTAS';
+  FCargoFirma := '';
+  FNombreFirma := '';
   FDireccionPie := dmdatos.qryMembreteLINEA2.Value;
   FTelefonosPie := dmcompania.tblCompaniatelefono.value;
   FRutaLogo := '';
@@ -153,7 +159,8 @@ begin
 
   qrmDestinatario.Lines.Text := Trim(FDestinatario);
   //lblControl.Caption := Trim(FNumeroControl);
-  qrmCuerpo.Lines.Text := Trim(FCuerpoTexto);
+  //qrmCuerpo.Lines.Text := Trim(FCuerpoTexto);
+  CargarRichText(qrmCuerpo, Trim(FCuerpoTexto));
 
   lblTipoVal.Caption := UpperCase(Trim(FTipoVehiculo));
   lblMarcaVal.Caption := UpperCase(Trim(FMarca));
@@ -168,6 +175,7 @@ begin
   qrmNota.Lines.Add('');
   qrmNota.Lines.Add(Trim(FTextoAgradecimiento));
 
+  lblNombreFirma.Caption := Trim(FNombreFirma);
   lblCargoFirma.Caption := UpperCase(Trim(FCargoFirma));
   lblPieDireccion.Caption := Trim(FDireccionPie);
   lblPieTelefonos.Caption := Trim(FTelefonosPie);
@@ -194,6 +202,19 @@ procedure TqckCartaRutaVehTpl.QuickRepBeforePrint(Sender: TCustomQuickRep;
 begin
   //dmDatos.qryMembrete.Close;
   //dmDatos.qryMembrete.Open;
+end;
+
+procedure TqckCartaRutaVehTpl.CargarRichText(AControl: TQRRichText; const ARtf: string);
+var
+  SS: TStringStream;
+begin
+  SS := TStringStream.Create(ARtf);
+  try
+    AControl.Lines.Clear;
+    AControl.Lines.LoadFromStream(SS);
+  finally
+    SS.Free;
+  end;
 end;
 
 end.

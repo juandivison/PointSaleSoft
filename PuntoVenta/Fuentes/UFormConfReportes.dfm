@@ -234,6 +234,7 @@ object frmConfReportes: TfrmConfReportes
       item
         Expanded = False
         FieldName = 'CODIGO_PROD'
+        Width = 64
         Visible = True
       end
       item
@@ -257,36 +258,43 @@ object frmConfReportes: TfrmConfReportes
       item
         Expanded = False
         FieldName = 'CC_EMAIL'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'COD_USUARIO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_IN'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'IN_POR'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_UPD'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'UPD_POR'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'STATUS'
+        Width = 64
         Visible = True
       end>
   end

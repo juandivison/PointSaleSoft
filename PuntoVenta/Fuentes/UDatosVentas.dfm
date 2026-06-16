@@ -1,7 +1,7 @@
 object dmVentas: TdmVentas
   OldCreateOrder = False
-  Left = 435
-  Top = 179
+  Left = 619
+  Top = 163
   Height = 603
   Width = 852
   object tblVentasMast: TIBDataSet

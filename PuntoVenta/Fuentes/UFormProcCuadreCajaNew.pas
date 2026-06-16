@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, DB, StdCtrls, Mask, DBCtrls, RxMemDS, EditNew, WinSkinData,
   rxToolEdit, RXDBCtrl, Buttons, RXCtrls, ExtCtrls, RxLookup,
-  IBCustomDataSet, IBTable, UGetDateTipoM, ComCtrls, Grids, DBGrids;
+  IBCustomDataSet, IBTable, UGetDateTipoM, ComCtrls, Grids, DBGrids, Menus;
 
 type
   TfrmCuadreCajaNew = class(TForm)
@@ -307,6 +307,9 @@ type
     rxCuadreMontoDevolucionNoEfectivo: TCurrencyField;
     Label80: TLabel;
     DBEdit53: TDBEdit;
+    bitbtnEmailReorden: TBitBtn;
+    PopupMenu1: TPopupMenu;
+    SetEmailSent1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -365,6 +368,8 @@ type
     procedure Button6Click(Sender: TObject);
     procedure Panel4Enter(Sender: TObject);
     procedure BitBtn14Click(Sender: TObject);
+    procedure bitbtnEmailReordenClick(Sender: TObject);
+    procedure SetEmailSent1Click(Sender: TObject);
   private
     procedure ProcIniciaRxTotales;
     procedure ProcTotal;
@@ -373,6 +378,8 @@ type
     procedure ProcesaCobroVisaNetCardNet;
     procedure ProcDatosCuadres(accion:Integer);
     procedure FechasConVentas(accion:smallint);
+    procedure ProcEnviaInvEnReorden;
+    procedure ProcEnviaCambioPrecios;
 
   public
     { Public declarations }
@@ -386,12 +393,14 @@ implementation
 uses UDatModCuadrexRuta, uglobal, UDatModUsuarios, UDatModCxc,
   UFrmConsultaCuadreCaja, URepCuadreCaja, URepCuadreCajaPOS,
   UFormMantDepositos, UDatModTransCnt, UformVerificarVntasPagos,
-  UFormCuadraEfeFondoCaja, DateUtils;
+  UFormCuadraEfeFondoCaja, DateUtils, UDatModReportes;
 
 {$R *.dfm}
 
 procedure TfrmCuadreCajaNew.FormCreate(Sender: TObject);
 begin
+  if (GlbUsuarioLogueado = 'DIVISON') then
+  bitbtnEmailReorden.Visible:=True;
   tblMoneda.Close;
   tblMoneda.Open;
   dmUsuarios.qryUsuarios.Close;
@@ -1192,6 +1201,51 @@ begin
   rxTotales.Open;
   rxCuadre.Close;
   rxCuadre.Open;
+  try
+    ProcEnviaInvEnReorden;
+  except
+    LogInformacionTxt('Error procesando Reorden Inventario');
+  end;
+    try
+  ProcEnviaCambioPrecios
+  except
+    LogInformacionTxt('Error procesando email cambio precios en Inventario');
+  end;
+end;
+
+procedure TfrmCuadreCajaNew.ProcEnviaInvEnReorden;
+begin
+  dmReportes.qryRptInvReordenEmail.Close;
+  dmReportes.qryRptInvReordenEmail.sql.clear;
+
+  dmReportes.qryRptInvReordenEmail.SQL.Add('Select r.codigo, r.codigo_barra, r.DESCRIPCION,');
+  dmReportes.qryRptInvReordenEmail.SQL.Add('p.DESCRIPCION DescProveedor, p.TELEFONO telf_prov, p.EMAIL emailproveedor,');
+  dmReportes.qryRptInvReordenEmail.SQL.Add('FECHA_ULTIMA_TRN FechaUltVenta,');
+  dmReportes.qryRptInvReordenEmail.SQL.Add('r.PRECIO_COMPRA PrecioCosto, r.PRECIO PrecioVenta,');
+  dmReportes.qryRptInvReordenEmail.SQL.Add('r.CANTIDAD,');
+  dmReportes.qryRptInvReordenEmail.SQL.Add('r.CANTIDAD_REORDEN ');
+
+  if GlbVenderDesdeAlmacenP = 1 then
+  dmReportes.qryRptInvReordenEmail.SQL.Add('From PROC_DATOS_REP_INVENTARIO_P r')
+  else dmReportes.qryRptInvReordenEmail.SQL.Add('From PROC_DATOS_REP_INVENTARIO r');
+  
+  dmReportes.qryRptInvReordenEmail.SQL.Add('left outer join PROVEEDORES p on p.CODIGO_CTE = r.CODFABRICANTE');
+  dmReportes.qryRptInvReordenEmail.SQL.Add('Where ((r.Cantidad_reorden >= r.Cantidad) and (r.Cantidad_reorden >0))');
+  dmReportes.qryRptInvReordenEmail.SQL.Add('and r.FECHA_ULTIMA_TRN >= ''today''-200');
+  dmReportes.qryRptInvReordenEmail.SQL.Add('and cia_key ='+IntToStr(glbCia_Key));
+  dmReportes.qryRptInvReordenEmail.SQL.Add('order by p.CODIGO_CTE, p.DESCRIPCION');
+
+  dmReportes.qryRptInvReordenEmail.Open;
+  dmReportes.qryRptInvReordenEmail.first;
+  if dmReportes.qryRptInvReordenEmail.RecordCount = 0 then
+  exit;
+  GlbEnviaEmail:=True;
+  GlbIDTipoEmail:=4;//Reorden inventario
+  ExporToExcelInvReorden(
+  dmReportes.qryRptInvReordenEmail,
+  ExtractFilePath(Application.ExeName) +
+  'Informes\Reposicion' + GlbNombreCia + FormatDateTime('ddmmyyyy', Now),False);
+  GlbEnviaEmail:=False;
 end;
 
 procedure TfrmCuadreCajaNew.DBEdit34Exit(Sender: TObject);
@@ -1398,7 +1452,7 @@ begin
     frmDepositos.SpeedButton2Click2(Self);
     if dmTransCnt.tblDepositoMaster.state in [dsEdit, dsInsert] then
     dmTransCnt.tblDepositoMasterMONTO.Value:=
-    rxTotalesTotalGeneral.Value; 
+    rxTotalesTotalGeneral.Value;               
     //rxTotalesTotalCuadre.Value;
   finally
 
@@ -1575,6 +1629,48 @@ begin
   dmTransCnt.tblDistCashEnCaja.params[2].AsDateTime:=ExtraerFecha(DateTimePicker4.DateTime);
   dmTransCnt.tblDistCashEnCaja.params[3].AsDateTime:=ExtraerFecha(DateTimePicker5.DateTime);
   dmTransCnt.tblDistCashEnCaja.Open;
+end;
+
+procedure TfrmCuadreCajaNew.bitbtnEmailReordenClick(Sender: TObject);
+begin
+  if GlBAyaco = 1 then
+  begin
+    ProcEnviaInvEnReorden;
+  end;
+  try
+  ProcEnviaCambioPrecios
+  except
+  end;
+end;
+
+procedure TfrmCuadreCajaNew.ProcEnviaCambioPrecios;
+begin
+  dmReportes.qryCambioPreciosEmail.Close;
+  dmReportes.qryCambioPreciosEmail.ParamByName('FECHAINI').AsDateTime := GlbFechaTrnDiaria;
+  dmReportes.qryCambioPreciosEmail.ParamByName('FECHAFIN').AsDateTime := GlbFechaTrnDiaria+ 1;
+  dmReportes.qryCambioPreciosEmail.Open;
+  dmReportes.qryCambioPreciosEmail.Last;
+  if dmReportes.qryCambioPreciosEmail.IsEmpty then
+    Exit;
+
+  GlbEnviaEmail := True;
+  GlbIDTipoEmail := 5; // Cambios de precios
+
+  ExportToHTMLCambioPrecios(
+    dmReportes.qryCambioPreciosEmail,
+    ExtractFilePath(Application.ExeName) +
+    'Informes\CambioPrecios_' + GlbNombreCia + '_' +
+    FormatDateTime('ddmmyyyy', Now)
+  );
+
+  GlbEnviaEmail := False;
+  MarcarCambioPreciosEnviados(dmreportes.qryMarcarPComoEnviado,GlbFechaTrnDiaria,GlbFechaTrnDiaria);
+
+end;
+
+procedure TfrmCuadreCajaNew.SetEmailSent1Click(Sender: TObject);
+begin
+  MarcarCambioPreciosEnviados(dmreportes.qryMarcarPComoEnviado,GlbFechaTrnDiaria,GlbFechaTrnDiaria);
 end;
 
 end.

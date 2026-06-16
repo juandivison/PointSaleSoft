@@ -20,7 +20,7 @@ type
     qryMaxGeneradoresGENERADORSEC: TIntegerField;
     qryMaxGeneradoresNOMB_GENERADOR: TIBStringField;
     qryMaxGeneradoresCAMPO: TIBStringField;
-    IBDatabase2: TIBDatabase;
+    IBDatabase2: TIBDatabase;                                
     IBTransaction2: TIBTransaction;
     procedure IBDatabase1BeforeConnect(Sender: TObject);
     procedure IBDatabase1Login(Database: TIBDatabase;
@@ -76,7 +76,7 @@ begin
   if Not dmconectar.IBDatabase1.TestConnected then
   begin
     try
-      dmconectar.IBDatabase1.Close;
+      dmconectar.IBDatabase1.Close;                
     except                                                   
     end;
     if Not dmconectar.IBDatabase1.Connected then
@@ -97,7 +97,7 @@ procedure TdmConectar.IBEvents1EventAlert(Sender: TObject;
   var
     x : string;
 begin
-  x:= EventName;
+  x:= EventName; 
 end;
     
 end.

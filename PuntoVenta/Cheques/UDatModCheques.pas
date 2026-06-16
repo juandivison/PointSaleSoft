@@ -269,6 +269,15 @@ type
     qryTipoCtaBancoCODIGO: TIntegerField;
     qryTipoCtaBancoDESCRIPCION: TIBStringField;
     ibUpdateGenNumCks: TIBSQL;
+    tTipocheque: TIBDataSet;
+    tTipochequeCODIGO: TSmallintField;
+    tTipochequeDESCRIPCION: TIBStringField;
+    DataSource1: TDataSource;
+    QryCks_Clasif: TIBQuery;
+    QryCks_ClasifTIPO_CKS: TSmallintField;
+    QryCks_ClasifDESCRIPCION: TIBStringField;
+    QryCks_ClasifSTATUS: TIBStringField;
+    dtCks_Clasif: TDataSource;
     procedure qrybancosAfterScroll(DataSet: TDataSet);
     procedure qryChequesMAfterScroll(DataSet: TDataSet);
     procedure qryChequesMCalcFields(DataSet: TDataSet);

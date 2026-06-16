@@ -2,8 +2,8 @@ object dmEmpleados: TdmEmpleados
   OldCreateOrder = False
   Left = 783
   Top = 195
-  Height = 262
-  Width = 351
+  Height = 323
+  Width = 320
   object tblEmpleados: TIBDataSet
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
@@ -30,7 +30,10 @@ object dmEmpleados: TdmEmpleados
       
         '   SECCION, CARGO, PAGA_AFP, PAGA_TSS, STATUS, FECHA_IN, IN_POR,' +
         ' FECHA_MOD, '
-      '   MOD_POR)'
+      
+        '   MOD_POR, LICENCIA, FECHA_VENCE_LICENCIA, FECHAVACACIONES, PAT' +
+        'H_FOTO_EMP, '
+      '   FECHA_ULT_NOM, TIPO_ING)'
       'values'
       
         '  (:CODIGO, :CODIGO_CIA, :NOMBRE, :APELLIDO, :CEDULA, :FOTO, :PA' +
@@ -47,7 +50,13 @@ object dmEmpleados: TdmEmpleados
       
         '   :TIPO_NOMINA, :TIPO_EMPLEADO, :DEPTO_EMP, :SECCION, :CARGO, :' +
         'PAGA_AFP, '
-      '   :PAGA_TSS, :STATUS, :FECHA_IN, :IN_POR, :FECHA_MOD, :MOD_POR)')
+      
+        '   :PAGA_TSS, :STATUS, :FECHA_IN, :IN_POR, :FECHA_MOD, :MOD_POR,' +
+        ' :LICENCIA, '
+      
+        '   :FECHA_VENCE_LICENCIA, :FECHAVACACIONES, :PATH_FOTO_EMP, :FEC' +
+        'HA_ULT_NOM, '
+      '   :TIPO_ING)')
     RefreshSQL.Strings = (
       'Select '
       '  CODIGO,'
@@ -85,7 +94,13 @@ object dmEmpleados: TdmEmpleados
       '  FECHA_IN,'
       '  IN_POR,'
       '  FECHA_MOD,'
-      '  MOD_POR'
+      '  MOD_POR,'
+      '  LICENCIA,'
+      '  FECHA_VENCE_LICENCIA,'
+      '  FECHAVACACIONES,'
+      '  PATH_FOTO_EMP,'
+      '  FECHA_ULT_NOM,'
+      '  TIPO_ING'
       'from EMPLEADO '
       'where'
       '  CODIGO = :CODIGO')
@@ -130,12 +145,19 @@ object dmEmpleados: TdmEmpleados
       '  FECHA_IN = :FECHA_IN,'
       '  IN_POR = :IN_POR,'
       '  FECHA_MOD = :FECHA_MOD,'
-      '  MOD_POR = :MOD_POR'
+      '  MOD_POR = :MOD_POR,'
+      '  LICENCIA = :LICENCIA,'
+      '  FECHA_VENCE_LICENCIA = :FECHA_VENCE_LICENCIA,'
+      '  FECHAVACACIONES = :FECHAVACACIONES,'
+      '  PATH_FOTO_EMP = :PATH_FOTO_EMP,'
+      '  FECHA_ULT_NOM = :FECHA_ULT_NOM,'
+      '  TIPO_ING = :TIPO_ING'
       'where'
       '  CODIGO = :OLD_CODIGO')
     GeneratorField.Field = 'CODIGO'
     GeneratorField.Generator = 'GEN_CODIGO_EMPLEADOS'
     GeneratorField.ApplyEvent = gamOnPost
+    OnFilterRecord = tblEmpleadosFilterRecord
     Left = 32
     Top = 16
     object tblEmpleadosCODIGO: TIntegerField
@@ -308,6 +330,32 @@ object dmEmpleados: TdmEmpleados
       Origin = 'EMPLEADO.MOD_POR'
       Size = 12
     end
+    object tblEmpleadosLICENCIA: TIBStringField
+      FieldName = 'LICENCIA'
+      Origin = 'EMPLEADO.LICENCIA'
+      Size = 14
+    end
+    object tblEmpleadosFECHA_VENCE_LICENCIA: TDateTimeField
+      FieldName = 'FECHA_VENCE_LICENCIA'
+      Origin = 'EMPLEADO.FECHA_VENCE_LICENCIA'
+    end
+    object tblEmpleadosFECHAVACACIONES: TDateTimeField
+      FieldName = 'FECHAVACACIONES'
+      Origin = 'EMPLEADO.FECHAVACACIONES'
+    end
+    object tblEmpleadosPATH_FOTO_EMP: TIBStringField
+      FieldName = 'PATH_FOTO_EMP'
+      Origin = 'EMPLEADO.PATH_FOTO_EMP'
+      Size = 255
+    end
+    object tblEmpleadosFECHA_ULT_NOM: TDateTimeField
+      FieldName = 'FECHA_ULT_NOM'
+      Origin = 'EMPLEADO.FECHA_ULT_NOM'
+    end
+    object tblEmpleadosTIPO_ING: TIntegerField
+      FieldName = 'TIPO_ING'
+      Origin = 'EMPLEADO.TIPO_ING'
+    end
   end
   object tblRuta: TIBTable
     Database = dmConectar.IBDatabase1
@@ -316,8 +364,8 @@ object dmEmpleados: TdmEmpleados
     BufferChunks = 1000
     CachedUpdates = False
     TableName = 'RUTA'
-    Left = 112
-    Top = 40
+    Left = 120
+    Top = 48
     object tblRutaCODIGO: TIntegerField
       DisplayLabel = 'Codigo'
       FieldName = 'CODIGO'
@@ -341,5 +389,14 @@ object dmEmpleados: TdmEmpleados
     DataSet = tblEmpleados
     Left = 32
     Top = 80
+  end
+  object tblTipoIngEmp: TIBTable
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    TableName = 'EMP_TIPO_ING'
+    Left = 104
+    Top = 120
   end
 end

@@ -1054,6 +1054,14 @@ object frmCompania: TfrmCompania
     Font.Style = []
     ParentFont = False
   end
+  object Label21: TLabel
+    Left = 368
+    Top = 176
+    Width = 81
+    Height = 13
+    Caption = 'Tipo Riesgo ARL'
+    FocusControl = DBEdit19
+  end
   object DBEdit1: TDBEdit
     Left = 8
     Top = 64
@@ -1164,6 +1172,11 @@ object frmCompania: TfrmCompania
       item
         Expanded = False
         FieldName = 'RNC_NUMERO'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'TIPO_RIESGO_ARL'
         Visible = True
       end
       item
@@ -1793,8 +1806,8 @@ object frmCompania: TfrmCompania
     OnChange = RxDBLookupCombo1Change
   end
   object BitBtn8: TBitBtn
-    Left = 613
-    Top = 153
+    Left = 604
+    Top = 151
     Width = 29
     Height = 22
     Hint = 'Buscar n'#250'mero de cuenta'
@@ -1912,7 +1925,7 @@ object frmCompania: TfrmCompania
   object RxDBLookupCombo15: TRxDBLookupCombo
     Left = 671
     Top = 107
-    Width = 154
+    Width = 163
     Height = 23
     DropDownCount = 8
     DropDownWidth = 300
@@ -1928,6 +1941,27 @@ object frmCompania: TfrmCompania
     LookupSource = dsqryMunicipioseCF
     ParentFont = False
     TabOrder = 10
+    OnEnter = RxDBLookupCombo15Enter
+  end
+  object RxDBLookupCombo2: TRxDBLookupCombo
+    Left = 367
+    Top = 189
+    Width = 165
+    Height = 23
+    DropDownCount = 8
+    DropDownWidth = 300
+    DataField = 'TIPO_RIESGO_ARL'
+    DataSource = DataSource1
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    LookupField = 'TIPO'
+    LookupDisplay = 'TIPO;porciento'
+    LookupSource = dstbltiporiesgoarl
+    ParentFont = False
+    TabOrder = 43
     OnEnter = RxDBLookupCombo15Enter
   end
   object tblCompania: TIBTable
@@ -2132,6 +2166,11 @@ object frmCompania: TfrmCompania
       item
         Name = 'ID_MUNICIPIO'
         DataType = ftInteger
+      end
+      item
+        Name = 'TIPO_RIESGO_ARL'
+        DataType = ftString
+        Size = 12
       end>
     IndexDefs = <
       item
@@ -2313,6 +2352,10 @@ object frmCompania: TfrmCompania
     end
     object tblCompaniaID_MUNICIPIO: TIntegerField
       FieldName = 'ID_MUNICIPIO'
+    end
+    object tblCompaniaTIPO_RIESGO_ARL: TIBStringField
+      FieldName = 'TIPO_RIESGO_ARL'
+      Size = 12
     end
   end
   object DataSource1: TDataSource
@@ -3707,5 +3750,35 @@ object frmCompania: TfrmCompania
     DataSet = dmDatos.qryProvinciaseCF
     Left = 784
     Top = 184
+  end
+  object dstbltiporiesgoarl: TDataSource
+    DataSet = tbltipo_riesgo_arl
+    Left = 680
+    Top = 152
+  end
+  object tbltipo_riesgo_arl: TIBTable
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    TableName = 'RIESGO_ARL'
+    Left = 696
+    Top = 208
+    object tbltipo_riesgo_arlID: TIntegerField
+      FieldName = 'ID'
+    end
+    object tbltipo_riesgo_arlTIPO: TIBStringField
+      FieldName = 'TIPO'
+      Size = 12
+    end
+    object tbltipo_riesgo_arlFECHA_INI: TDateTimeField
+      FieldName = 'FECHA_INI'
+    end
+    object tbltipo_riesgo_arlFECHA_FIN: TDateTimeField
+      FieldName = 'FECHA_FIN'
+    end
+    object tbltipo_riesgo_arlPORCIENTO: TFloatField
+      FieldName = 'PORCIENTO'
+    end
   end
 end

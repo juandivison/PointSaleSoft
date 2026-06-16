@@ -48,6 +48,8 @@ type
     OpenDialog1: TOpenDialog;
     BitBtn1: TBitBtn;
     SkinData1: TSkinData;
+    lblNombreFirma: TLabel;
+    edtNombreFirma: TEdit;
     procedure FormShow(Sender: TObject);
     procedure btnCargarTemplateClick(Sender: TObject);
     procedure btnGuardarTemplateClick(Sender: TObject);
@@ -86,6 +88,60 @@ implementation
   UCompania;
 {$R *.dfm}
 
+function RtfEscape(const S: string): string;
+begin
+  Result := S;
+  Result := StringReplace(Result, '\', '\\', [rfReplaceAll]);
+  Result := StringReplace(Result, '{', '\{', [rfReplaceAll]);
+  Result := StringReplace(Result, '}', '\}', [rfReplaceAll]);
+  Result := StringReplace(Result, #13#10, '\par ' + #13#10, [rfReplaceAll]);
+  Result := StringReplace(Result, #10, '\par ' + #13#10, [rfReplaceAll]);
+end;
+     procedure ReplaceTokenBold(var S: string; const Token, Value: string);
+begin
+  S := StringReplace(
+    S,
+    Token,
+    '{\b ' + RtfEscape(Value) + '}',
+    [rfReplaceAll, rfIgnoreCase]
+  );
+end;
+
+procedure ReplaceTokenNormal(var S: string; const Token, Value: string);
+begin
+  S := StringReplace(
+    S,
+    Token,
+    RtfEscape(Value),
+    [rfReplaceAll, rfIgnoreCase]
+  );
+end;
+
+function ExpandTemplateRichCuerpoCartaRuta(
+  const ATemplate: string;
+  const ANombreCliente, ATipoDocumento, ADocumentoNo: string
+): string;
+var
+  S: string;
+begin
+  S := ATemplate;
+
+  S := StringReplace(S, '{RESPONSABLE_NOMBRE}', '<<RESPONSABLE_NOMBRE>>', [rfReplaceAll, rfIgnoreCase]);
+  S := StringReplace(S, '{TIPO_DOCUMENTO}', '<<TIPO_DOCUMENTO>>', [rfReplaceAll, rfIgnoreCase]);
+  S := StringReplace(S, '{DOCUMENTO_NO}', '<<DOCUMENTO_NO>>', [rfReplaceAll, rfIgnoreCase]);
+
+  S := RtfEscape(S);
+
+  ReplaceTokenBold(S, '<<RESPONSABLE_NOMBRE>>', ANombreCliente);
+  ReplaceTokenNormal(S, '<<TIPO_DOCUMENTO>>', ATipoDocumento);
+  ReplaceTokenBold(S, '<<DOCUMENTO_NO>>', ADocumentoNo);
+
+  Result :=
+    '{\rtf1\ansi\deff0' +
+    '{\fonttbl{\f0 Times New Roman;}}' +
+    '\fs28 ' + S + '}';
+end;
+
 procedure TfrmCartaRutaTemplate.AplicarTemplatePorDefecto;
 begin
   edtNumeroCartaTemplate.Text := 'TIEMBRE/{YYYY}';
@@ -93,6 +149,7 @@ begin
   edtTituloDocumento.Text := 'CARTA DE RUTA';
   edtTipoVehiculoDefecto.Text := 'MOTOCICLETA';
   edtCargoFirma.Text := 'DTO. DE VENTAS';
+  edtNombreFirma.Text := 'Amaurys García de la Paz';
   edtDireccionPie.Text := 'C/ Altagracia No.10';
   edtTelefonosPie.Text := 'Telefono: 809-554-9226  Cel: 829-452-7407';
   edtRutaLogo.Text := '';
@@ -102,14 +159,16 @@ begin
     '(DIGESETT) Y/O POLICIA NACIONAL.';
 
   memCuerpoTemplate.Lines.Text :=
-    'Hacemos la certificacion y al mismo tiempo hacemos constar que el o la Senor/a {RESPONSABLE_NOMBRE} ' +
-    'con {DOCUMENTO_LABEL} {DOCUMENTO_NO} es responsable del vehiculo descrito a continuacion:';
+    'Hacemos la certificación y al mismo tiempo hacemos constar que el o la Senor/a {RESPONSABLE_NOMBRE} ' +
+    'con {DOCUMENTO_LABEL} {DOCUMENTO_NO} es responsable del vehículo descrito a continuación:';
 
   memTextoDocumentos.Lines.Text :=
-    '     Sus documentos están en la Direccion General de Impuestos Internos.';
+    '  Sus documentos están en la Dirección General de Impuestos Internos, agradecemos '+
+    'todas las colaboraciones y consideraciones posibles para esta persona '+
+    'hasta que sus documentos sean entregados.';
 
   memTextoAgradecimiento.Lines.Text :=
-    'Agradecemos todas las colaboraciones y consideraciones posibles para esta persona hasta que sus documentos sean entregados.';
+    '';
 end;
 
 function TfrmCartaRutaTemplate.ValidarConexion: Boolean;
@@ -226,7 +285,9 @@ begin
         edtCiudadEmision.Text := GetFieldText(Q, 'CIUDAD_EMISION', 'HIGUEY, RD');
         edtTituloDocumento.Text := GetFieldText(Q, 'TITULO_DOCUMENTO', 'CARTA DE RUTA');
         edtTipoVehiculoDefecto.Text := GetFieldText(Q, 'TIPO_VEHICULO_DEFECTO', 'MOTOCICLETA');
-        edtCargoFirma.Text := GetFieldText(Q, 'CARGO_FIRMA', 'DTO. DE VENTAS');
+        edtNombreFirma.Text := GetFieldText(Q, 'NOMBRE_FIRMA', '');
+        edtCargoFirma.Text := GetFieldText(Q, 'CARGO_FIRMA', '');
+
         edtDireccionPie.Text := GetFieldText(Q, 'DIRECCION_PIE', '');
         edtTelefonosPie.Text := GetFieldText(Q, 'TELEFONOS_PIE', '');
         edtRutaLogo.Text := GetFieldText(Q, 'RUTA_LOGO', '');
@@ -271,12 +332,12 @@ begin
       'update or insert into CFG_CARTA_RUTA_TEMPLATE (' +
       'CIA_KEY, NUMERO_CARTA_TEMPLATE, CIUDAD_EMISION, DESTINATARIO_TEMPLATE, ' +
       'CUERPO_TEMPLATE, TEXTO_DOCUMENTOS, TEXTO_AGRADECIMIENTO, TITULO_DOCUMENTO, ' +
-      'CARGO_FIRMA, DIRECCION_PIE, TELEFONOS_PIE, TIPO_VEHICULO_DEFECTO, RUTA_LOGO, ' +
+      'NOMBRE_FIRMA, CARGO_FIRMA, DIRECCION_PIE, TELEFONOS_PIE, TIPO_VEHICULO_DEFECTO, RUTA_LOGO, ' +
       'FECHA_MOD, MOD_POR) ' +
       'values (' +
       ':CIA_KEY, :NUMERO_CARTA_TEMPLATE, :CIUDAD_EMISION, :DESTINATARIO_TEMPLATE, ' +
       ':CUERPO_TEMPLATE, :TEXTO_DOCUMENTOS, :TEXTO_AGRADECIMIENTO, :TITULO_DOCUMENTO, ' +
-      ':CARGO_FIRMA, :DIRECCION_PIE, :TELEFONOS_PIE, :TIPO_VEHICULO_DEFECTO, :RUTA_LOGO, ' +
+      ':NOMBRE_FIRMA, :CARGO_FIRMA, :DIRECCION_PIE, :TELEFONOS_PIE, :TIPO_VEHICULO_DEFECTO, :RUTA_LOGO, ' +
       'current_timestamp, :MOD_POR) ' +
       'matching (CIA_KEY)';
 
@@ -288,6 +349,7 @@ begin
     Q.ParamByName('TEXTO_DOCUMENTOS').AsString := memTextoDocumentos.Lines.Text;
     Q.ParamByName('TEXTO_AGRADECIMIENTO').AsString := memTextoAgradecimiento.Lines.Text;
     Q.ParamByName('TITULO_DOCUMENTO').AsString := Trim(edtTituloDocumento.Text);
+    Q.ParamByName('NOMBRE_FIRMA').AsString := Trim(edtNombreFirma.Text);
     Q.ParamByName('CARGO_FIRMA').AsString := Trim(edtCargoFirma.Text);
     Q.ParamByName('DIRECCION_PIE').AsString := Trim(edtDireccionPie.Text);
     Q.ParamByName('TELEFONOS_PIE').AsString := Trim(edtTelefonosPie.Text);
@@ -375,6 +437,9 @@ var
   Q: TIBQuery;
   R: TqckCartaRutaVehTpl;
   OwnTr: Boolean;
+  NombreCliente: string;
+  DocumentoLabel: string;
+  DocumentoNo: string;  
 begin
   if not ValidarConexion then
     Exit;
@@ -405,6 +470,11 @@ begin
         ShowMessage('No se encontraron datos para la transaccion indicada.');
         Exit;
       end;
+
+      NombreCliente := GetFieldText(Q, 'RESPONSABLE_NOMBRE', '');
+      DocumentoLabel := GetFieldText(Q, 'DOCUMENTO_LABEL', 'Cédula No.');
+      DocumentoNo := GetFieldText(Q, 'DOCUMENTO_NO', '');
+
       if Assigned(qckCartaRutaVehTpl) then
       freeAndNil(qckCartaRutaVehTpl);
       R := TqckCartaRutaVehTpl.Create(nil);
@@ -420,7 +490,14 @@ begin
         R.TituloDocumento := Trim(edtTituloDocumento.Text);
         R.Destinatario := ExpandTemplate(memDestinatario.Lines.Text, Q);
         R.NumeroControl := 'C/' + GetFieldText(Q, 'NUMERO', '');
-        R.CuerpoTexto := ExpandTemplate(memCuerpoTemplate.Lines.Text, Q);
+        R.CuerpoTexto := ExpandTemplateRichCuerpoCartaRuta(
+          memCuerpoTemplate.Lines.Text,
+          NombreCliente,
+          DocumentoLabel,
+          DocumentoNo
+        );
+        R.NombreFirma := Trim(edtNombreFirma.Text);
+        R.CargoFirma := Trim(edtCargoFirma.Text);          
         R.TipoVehiculo := ValorTipoVehiculo(Q);
         R.Marca := GetFieldText(Q, 'MARCA', '');
         R.Modelo := GetFieldText(Q, 'MODELO', '');
@@ -430,7 +507,6 @@ begin
         R.Anio := GetFieldText(Q, 'ANIO', '');
         R.TextoDocumentos := ExpandTemplate(memTextoDocumentos.Lines.Text, Q);
         R.TextoAgradecimiento := ExpandTemplate(memTextoAgradecimiento.Lines.Text, Q);
-        R.CargoFirma := Trim(edtCargoFirma.Text);
         R.DireccionPie := Trim(edtDireccionPie.Text);
         R.TelefonosPie := Trim(edtTelefonosPie.Text);
         R.RutaLogo := Trim(edtRutaLogo.Text);

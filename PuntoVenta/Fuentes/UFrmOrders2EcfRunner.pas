@@ -70,6 +70,7 @@ type
     MainMenu1: TMainMenu;
     Mantenimiento1: TMenuItem;
     ablas1: TMenuItem;
+    chkNcrFinalize: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnBrowseExeClick(Sender: TObject);
@@ -91,6 +92,7 @@ type
     procedure rgProcessTypeClick(Sender: TObject);
     procedure btnCreateNcrClick(Sender: TObject);
     procedure ablas1Click(Sender: TObject);
+    procedure chkNcrFinalizeClick(Sender: TObject);
   private
     FIniPath: string;
     FUpdatingUi: Boolean;
@@ -118,7 +120,9 @@ type
    	function IsModeRecoverTimbre: Boolean;
     function IsModeReportOnly: Boolean;
     procedure EnsureReportOnlyModeItem;
+
     function GetReportOnlyModeIndex: Integer;
+
     procedure LoadSettings;
     procedure SaveSettings;
     function GetDefaultIniPath: string;
@@ -151,6 +155,7 @@ type
     function SelectFacturaForNcr(out ANumeroVenta, ANumeroFactura: Integer; out ANcf: string): Boolean;
     function ExecuteCurrentProcess: Boolean;
     function IsNcrDummy: Boolean;
+    function IsNcrFinalize: Boolean;
     function IsValidNcrReferenceNcf(const ANcf: string): Boolean;
     procedure EnsureValidNcrReferenceNcf(const ANcf: string);
     function LoadTextFileSafe(const AFileName: string): string;
@@ -219,6 +224,9 @@ begin
   FNcrSummaryText := '';
   if Assigned(chkNcrDummy) then
     chkNcrDummy.Checked := True;
+
+  if Assigned(chkNcrFinalize) then
+  chkNcrFinalize.Checked := False;
 
   EnsureReportOnlyModeItem;
 
@@ -329,6 +337,10 @@ begin
     chkShowTotalDop.Checked := Ini.ReadBool(INI_SECTION_MAIN, 'ShowTotalDop', True);
     if Assigned(chkNcrDummy) then
       chkNcrDummy.Checked := Ini.ReadBool(INI_SECTION_MAIN, 'NcrDummy', True);
+
+    if Assigned(chkNcrFinalize) then
+    chkNcrFinalize.Checked := Ini.ReadBool(INI_SECTION_MAIN, 'NcrFinalize', False);
+
     edtExtraArgs.Text := Ini.ReadString(INI_SECTION_MAIN, 'ExtraArgs', '');
     rgProcessType.ItemIndex := Ini.ReadInteger(INI_SECTION_MAIN, 'ProcessTypeIndex', rgProcessType.ItemIndex);
     edtNcrNcfRef.Text := Ini.ReadString(INI_SECTION_MAIN, 'NcrNcfRef', '');
@@ -389,6 +401,10 @@ begin
     Ini.WriteBool(INI_SECTION_MAIN, 'ShowTotalDop', chkShowTotalDop.Checked);
     if Assigned(chkNcrDummy) then
       Ini.WriteBool(INI_SECTION_MAIN, 'NcrDummy', chkNcrDummy.Checked);
+
+    if Assigned(chkNcrFinalize) then
+      Ini.WriteBool(INI_SECTION_MAIN, 'NcrFinalize', chkNcrFinalize.Checked);
+
     Ini.WriteString(INI_SECTION_MAIN, 'ExtraArgs', Trim(edtExtraArgs.Text));
     Ini.WriteInteger(INI_SECTION_MAIN, 'ProcessTypeIndex', rgProcessType.ItemIndex);
     Ini.WriteString(INI_SECTION_MAIN, 'NcrNcfRef', Trim(edtNcrNcfRef.Text));
@@ -468,7 +484,11 @@ end;
 
 function TfrmOrders2EcfRunner.IsNcrDummy: Boolean;
 begin
-  Result := IsProcessingNcr and Assigned(chkNcrDummy) and chkNcrDummy.Checked;
+  Result :=
+    IsProcessingNcr and
+    Assigned(chkNcrDummy) and
+    chkNcrDummy.Checked and
+    not IsNcrFinalize;
 end;
 
 function TfrmOrders2EcfRunner.IsValidNcrReferenceNcf(const ANcf: string): Boolean;
@@ -825,27 +845,38 @@ begin
   cbNcrReason.Enabled := IsNcr;
   btnCreateNcr.Enabled := IsNcr;
 
-  if Assigned(chkNcrDummy) then
-  begin
-    chkNcrDummy.Visible := IsNcr;
-    chkNcrDummy.Enabled := IsNcr;
-    if IsNcr then
-    begin
-      if Trim(FNcrRequestJsonPath) = '' then
-        chkNcrDummy.Checked := True;
-    end
-    else
-      chkNcrDummy.Checked := False;
-  end;
+if Assigned(chkNcrFinalize) then
+begin
+  chkNcrFinalize.Visible := IsNcr;
+  chkNcrFinalize.Enabled := IsNcr;
+
+  if not IsNcr then
+    chkNcrFinalize.Checked := False;
+end;
+
+if Assigned(chkNcrDummy) then
+begin
+  chkNcrDummy.Visible := IsNcr;
+  chkNcrDummy.Enabled := IsNcr and (not IsNcrFinalize);
+
+  if not IsNcr then
+    chkNcrDummy.Checked := False
+  else if IsNcrFinalize then
+    chkNcrDummy.Checked := False
+  else if Trim(FNcrRequestJsonPath) = '' then
+    chkNcrDummy.Checked := True;
+end;
 
   rgMode.Enabled := not IsNcr;
-  btnRun.Enabled := not IsNcr;
+  //btnRun.Enabled := not IsNcr;
+  btnRun.Enabled := (not IsNcr) or IsNcrFinalize;
   gbFolders.Enabled := not IsNcr;
   btnAddFolder.Enabled := not IsNcr;
   btnRemoveFolder.Enabled := not IsNcr;
   btnClearFolders.Enabled := not IsNcr;
 
   cbEcfType.Enabled := not IsNcr;
+
   cbOutputCurrency.Enabled := not IsNcr;
   cbSaleCondition.Enabled := not IsNcr;
   cbPaymentMethod.Enabled := (not IsNcr) and SameText(GetSelectedSaleCondition, 'contado');
@@ -854,26 +885,40 @@ begin
   chkLegacyNumbering.Enabled := (not IsNcr) and (not (IsModeReprint or IsModeRecoverTimbre));
   chkShowTotalDop.Enabled := not IsNcr;
 
-  if IsNcr then
-  begin
+if IsNcr then
+begin
+  if IsNcrFinalize then
+    lblModeHelp.Caption := 'NCR Finalize: repara/finaliza legacy de una E34 ya aceptada. No envia DGII ni reserva secuencia.'
+  else
     lblModeHelp.Caption := 'NCR: crea Nota de Crédito Electrónica E34 para anulación total del e-NCF indicado.';
-    StatusBar1.SimpleText := 'Modo: Procesar NCR';
-  end
+
+  StatusBar1.SimpleText := 'Modo: Procesar NCR';
+end
   else
     SyncModeControls;
+  edtNcf.Enabled := IsNcr and IsNcrFinalize;
+lblNcf.Enabled := IsNcr and IsNcrFinalize;
+
+if IsNcr and IsNcrFinalize then
+  lblNcf.Caption := 'E34 a finalizar:'
+else
+  lblNcf.Caption := 'NCF / e-NCF:';
                                                    
   UpdateCommandPreview;
 end;
+
 function TfrmOrders2EcfRunner.BuildNcrCommandLine: string;
 begin
   if (edtNcrNcfRef.Text = '') then Exit;
-  
+
   EnsureValidNcrReferenceNcf(edtNcrNcfRef.Text);
 
   if Trim(FNcrRequestJsonPath) <> '' then
     EnsureNcrJsonReferenceMatchesEdit(FNcrRequestJsonPath, edtNcrNcfRef.Text);
 
-  if IsNcrDummy then
+  if IsNcrFinalize then
+    Result := '--mode=ncr-finalize'
+  else if IsNcrDummy then
     Result := '--mode=ncr-dummy'
   else
     Result := '--mode=ncr';
@@ -882,12 +927,19 @@ begin
             ' --ecf-type=E34 --ncf-ref=' + Trim(edtNcrNcfRef.Text) +
             ' --ncr-reason=' + IntToStr(ExtractLeadingInt(cbNcrReason.Text));
 
+  if IsNcrFinalize then
+    Result := Result + ' --ncf=' + Trim(edtNcf.Text);
+
   if Trim(FNcrRequestJsonPath) <> '' then
     Result := Result + ' --ncr-request-json=' + QuoteArg(FNcrRequestJsonPath);
+
+  if IsNcrFinalize then
+    Result := Result + ' --legacy-import';
 
   if Trim(edtExtraArgs.Text) <> '' then
     Result := Result + ' ' + Trim(edtExtraArgs.Text);
 end;
+
 
 function TfrmOrders2EcfRunner.BuildConfirmationText: string;
 var
@@ -900,10 +952,15 @@ begin
       Lines.Add('Confirme los parámetros de la Nota de Crédito:');
       Lines.Add('');
 
-      if IsNcrDummy then
-        Lines.Add('Proceso: NCR DUMMY / VISTA PREVIA - NO ENVÍA A DGII')
-      else
-        Lines.Add('Proceso: NCR REAL - ENVÍA A DGII');
+if IsNcrFinalize then
+  Lines.Add('Proceso: NCR FINALIZE - SOLO REPARA LEGACY, NO ENVÍA A DGII')
+else if IsNcrDummy then
+  Lines.Add('Proceso: NCR DUMMY / VISTA PREVIA - NO ENVÍA A DGII')
+else
+  Lines.Add('Proceso: NCR REAL - ENVÍA A DGII');
+
+if IsNcrFinalize then
+  Lines.Add('E34 a finalizar: ' + Trim(edtNcf.Text));
 
       Lines.Add('--fecha-factura=' + FormatDateTime('yyyy-MM-dd', dtpkFechaTrnDiaria.Date));
       Lines.Add('Tipo e-CF: E34 - Nota de Crédito Electrónica');
@@ -980,6 +1037,18 @@ begin
     if Trim(FNcrRequestJsonPath) <> '' then
       EnsureNcrJsonReferenceMatchesEdit(FNcrRequestJsonPath, edtNcrNcfRef.Text);
 
+    if IsNcrFinalize then
+begin
+  if Trim(edtNcf.Text) = '' then
+    raise Exception.Create('Para finalizar legacy de una NCR debe indicar el e-NCF E34 en el campo NCF/e-NCF.');
+
+  if Copy(UpperCase(Trim(edtNcf.Text)), 1, 3) <> 'E34' then
+    raise Exception.Create('El e-NCF a finalizar debe ser una Nota de Crédito E34.');
+
+  if Trim(FNcrRequestJsonPath) = '' then
+    raise Exception.Create('Para ncr-finalize debe existir el JSON NCR usado para construir la nota.');
+end;
+
     Exit;
   end;
 
@@ -1034,6 +1103,10 @@ begin
     if SameText(GetSelectedSaleCondition, 'contado') and (PayCode = 4) then
       raise Exception.Create('Cuando la condicion de venta es contado, la forma de pago no puede ser 4 - Venta a credito.');
   end;
+
+  if IsNcrFinalize and IsNcrDummy then
+  raise Exception.Create('No se puede combinar NCR Dummy con NCR Finalize.');
+  
 end;
 
 function TfrmOrders2EcfRunner.BuildCommandPreview: string;
@@ -1047,10 +1120,16 @@ begin
 
     if IsProcessingNcr then
     begin
-      if IsNcrDummy then
-        Parts.Add('--mode=ncr-dummy')
-      else
-        Parts.Add('--mode=ncr');
+if IsNcrFinalize then
+begin
+  Parts.Add('--mode=ncr-finalize');
+  Parts.Add('--ncf=' + Trim(edtNcf.Text));
+end
+else if IsNcrDummy then
+  Parts.Add('--mode=ncr-dummy')
+else
+  Parts.Add('--mode=ncr');
+
       Parts.Add('--ecf-type=E34');
       Parts.Add('--ncf-ref=' + Trim(edtNcrNcfRef.Text));
       Parts.Add('--ncr-reason=' + IntToStr(ExtractLeadingInt(cbNcrReason.Text)));
@@ -1227,10 +1306,24 @@ end;
 procedure TfrmOrders2EcfRunner.AnyParamControlChange(Sender: TObject);
 begin
   if FUpdatingUi then Exit;
-  if IsProcessingNcr then
+
+  if Sender = chkNcrDummy then
+  begin
+    if Assigned(chkNcrDummy) and chkNcrDummy.Checked and Assigned(chkNcrFinalize) then
+      chkNcrFinalize.Checked := False;
+  end
+  else if Sender = chkNcrFinalize then
+  begin
+    if Assigned(chkNcrFinalize) and chkNcrFinalize.Checked and Assigned(chkNcrDummy) then
+      chkNcrDummy.Checked := False;
+  end
+  else if IsProcessingNcr then
     ResetNcrPayload;
+
+  SyncProcessTypeControls;
   UpdateCommandPreview;
 end;
+
 
 procedure TfrmOrders2EcfRunner.cbEcfTypeChange(Sender: TObject);
 begin
@@ -1892,6 +1985,7 @@ procedure TfrmOrders2EcfRunner.rgProcessTypeClick(Sender: TObject);
 begin
   ResetNcrPayload;
   SyncProcessTypeControls;
+
 end;
 
 procedure TfrmOrders2EcfRunner.chkLegacyReplayClick(Sender: TObject);
@@ -2132,6 +2226,25 @@ begin
   finally
   frmEcfLegacyAdmin.Free;
   end;
+end;
+
+function TfrmOrders2EcfRunner.IsNcrFinalize: Boolean;
+begin
+  Result := IsProcessingNcr and Assigned(chkNcrFinalize) and chkNcrFinalize.Checked;
+end;
+
+procedure TfrmOrders2EcfRunner.chkNcrFinalizeClick(Sender: TObject);
+begin
+  if FUpdatingUi then Exit;
+
+  if IsNcrFinalize then
+  begin
+    if Assigned(chkNcrDummy) then
+      chkNcrDummy.Checked := False;
+  end;
+
+  SyncProcessTypeControls;
+  UpdateCommandPreview;
 end;
 
 end.

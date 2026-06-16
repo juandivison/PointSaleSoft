@@ -1,7 +1,7 @@
 object dmInventario: TdmInventario
   OldCreateOrder = False
-  Left = 698
-  Top = 108
+  Left = 696
+  Top = 145
   Height = 627
   Width = 865
   object tblInventarioProd: TIBDataSet
@@ -47,7 +47,8 @@ object dmInventario: TdmInventario
         ', COD_MONEDA, '
       
         '   KILOMETROS, RUTAIMAGEN, IDTASAITBIS, PRECIO_ALQUILER, PAGACOM' +
-        'ISION)'
+        'ISION, '
+      '   AUD_COD_USUARIO, AUD_APP_USER, AUD_PC_NAME)'
       'values'
       
         '  (:CODIGO, :CODIGO_TEXTO, :FECHA, :CODIGO_BARRA, :TIPO, :DESCRI' +
@@ -82,7 +83,7 @@ object dmInventario: TdmInventario
       
         '   :COD_MONEDA, :KILOMETROS, :RUTAIMAGEN, :IDTASAITBIS, :PRECIO_' +
         'ALQUILER, '
-      '   :PAGACOMISION)')
+      '   :PAGACOMISION, :AUD_COD_USUARIO, :AUD_APP_USER, :AUD_PC_NAME)')
     RefreshSQL.Strings = (
       'Select '
       '  CODIGO,'
@@ -141,7 +142,10 @@ object dmInventario: TdmInventario
       '  RUTAIMAGEN,'
       '  IDTASAITBIS,'
       '  PRECIO_ALQUILER,'
-      '  PAGACOMISION'
+      '  PAGACOMISION,'
+      '  AUD_COD_USUARIO,'
+      '  AUD_APP_USER,'
+      '  AUD_PC_NAME'
       'from INVENTARIO_PRODUCTO '
       'where'
       '  CODIGO = :CODIGO')
@@ -208,7 +212,10 @@ object dmInventario: TdmInventario
       '  RUTAIMAGEN = :RUTAIMAGEN,'
       '  IDTASAITBIS = :IDTASAITBIS,'
       '  PRECIO_ALQUILER = :PRECIO_ALQUILER,'
-      '  PAGACOMISION = :PAGACOMISION'
+      '  PAGACOMISION = :PAGACOMISION,'
+      '  AUD_COD_USUARIO = :AUD_COD_USUARIO,'
+      '  AUD_APP_USER = :AUD_APP_USER,'
+      '  AUD_PC_NAME = :AUD_PC_NAME'
       'where'
       '  CODIGO = :OLD_CODIGO')
     GeneratorField.Field = 'CODIGO'
@@ -488,6 +495,20 @@ object dmInventario: TdmInventario
       DisplayFormat = '%,0.00'
       Calculated = True
     end
+    object tblInventarioProdAUD_COD_USUARIO: TIntegerField
+      FieldName = 'AUD_COD_USUARIO'
+      Origin = 'INVENTARIO_PRODUCTO.AUD_COD_USUARIO'
+    end
+    object tblInventarioProdAUD_APP_USER: TIBStringField
+      FieldName = 'AUD_APP_USER'
+      Origin = 'INVENTARIO_PRODUCTO.AUD_APP_USER'
+      Size = 50
+    end
+    object tblInventarioProdAUD_PC_NAME: TIBStringField
+      FieldName = 'AUD_PC_NAME'
+      Origin = 'INVENTARIO_PRODUCTO.AUD_PC_NAME'
+      Size = 80
+    end
   end
   object dsInventarioProd: TDataSource
     AutoEdit = False
@@ -737,7 +758,6 @@ object dmInventario: TdmInventario
   object tblTipoInventario: TIBQuery
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
-    Active = True
     BufferChunks = 1000
     CachedUpdates = True
     SQL.Strings = (
@@ -4023,7 +4043,7 @@ object dmInventario: TdmInventario
       
         '   PORCUTILIDAD4, COD_USUARIO_IN, COD_USUARIO_UPD, FECHA_IN, IN_' +
         'POR, FECHA_MOD, '
-      '   MOD_POR)'
+      '   MOD_POR, AUD_COD_USUARIO, AUD_APP_USER, AUD_PC_NAME)'
       'values'
       
         '  (:IDUNIDAD, :DESCRIPCION, :COD_PRODUCTO, :CANTIDAD, :PRECIOVEN' +
@@ -4034,7 +4054,9 @@ object dmInventario: TdmInventario
       
         '   :PORCUTILIDAD4, :COD_USUARIO_IN, :COD_USUARIO_UPD, :FECHA_IN,' +
         ' :IN_POR, '
-      '   :FECHA_MOD, :MOD_POR)')
+      
+        '   :FECHA_MOD, :MOD_POR, :AUD_COD_USUARIO, :AUD_APP_USER, :AUD_P' +
+        'C_NAME)')
     RefreshSQL.Strings = (
       'Select '
       '  IDUNIDAD,'
@@ -4054,7 +4076,10 @@ object dmInventario: TdmInventario
       '  FECHA_IN,'
       '  IN_POR,'
       '  FECHA_MOD,'
-      '  MOD_POR'
+      '  MOD_POR,'
+      '  AUD_COD_USUARIO,'
+      '  AUD_APP_USER,'
+      '  AUD_PC_NAME'
       'from PRECIO_UNIDADSURTIDORA '
       'where'
       '  IDUNIDAD = :IDUNIDAD and'
@@ -4087,7 +4112,10 @@ object dmInventario: TdmInventario
       '  FECHA_IN = :FECHA_IN,'
       '  IN_POR = :IN_POR,'
       '  FECHA_MOD = :FECHA_MOD,'
-      '  MOD_POR = :MOD_POR'
+      '  MOD_POR = :MOD_POR,'
+      '  AUD_COD_USUARIO = :AUD_COD_USUARIO,'
+      '  AUD_APP_USER = :AUD_APP_USER,'
+      '  AUD_PC_NAME = :AUD_PC_NAME'
       'where'
       '  IDUNIDAD = :OLD_IDUNIDAD and'
       '  COD_PRODUCTO = :OLD_COD_PRODUCTO')

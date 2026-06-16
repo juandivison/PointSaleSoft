@@ -1292,4 +1292,23 @@ object frmConfReporte: TfrmConfReporte
     TabOrder = 96
     OnClick = chkFacturatxtClick
   end
+  object CheckBox2: TCheckBox
+    Left = 799
+    Top = 36
+    Width = 130
+    Height = 17
+    Caption = 'Activa Solo Payroll'
+    TabOrder = 97
+  end
+  object CheckBox3: TCheckBox
+    Left = 799
+    Top = 17
+    Width = 97
+    Height = 17
+    Hint = 'Insertar cliente en DB Loan'
+    Caption = 'Insert Cte Loan'
+    ParentShowHint = False
+    ShowHint = True
+    TabOrder = 98
+  end
 end

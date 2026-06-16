@@ -120,6 +120,8 @@ type
     QRDBText41: TQRDBText;
     QRShape19: TQRShape;
     QRMemo2: TQRMemo;
+    qrPreparadoPorMutur: TQRMemo;
+    qrShapeLinePreparadoMutur: TQRShape;
     procedure QuickRepBeforePrint(Sender: TCustomQuickRep;
       var PrintReport: Boolean);
     procedure QRLabel23Print(sender: TObject; var Value: String);
@@ -163,6 +165,23 @@ uses UDatModCompania, UDatModClientes, UGlobal,
 procedure TqckFactServ_8_5SAMNewMuturs.QuickRepBeforePrint(
   Sender: TCustomQuickRep; var PrintReport: Boolean);
 begin
+  if (GLBMutur = 1) and (GLBMotor = 0) then
+  begin
+    qrShapeLinePreparadoMutur.Enabled:=True;
+    qrPreparadoPorMutur.Enabled:=True;
+    QRShape17.Enabled:=False;
+    QRMemo2.Enabled:=False;
+    QRMemo4.Enabled:=False;
+    QRShape19.Enabled:=False;
+  end else
+  begin
+    qrShapeLinePreparadoMutur.Enabled:=False;
+    qrPreparadoPorMutur.Enabled:=False;
+    QRShape17.Enabled:=True;
+    QRMemo2.Enabled:=True;
+    QRMemo4.Enabled:=True;
+    QRShape19.Enabled:=True;
+  end;
   dmReportes.qryRepDatosPoliza.close;//dmReportes.qryRepDatosPoliza.sql.text
   dmReportes.qryRepDatosPoliza.params[0].Value:=dmReportes.qryViewVentasMastCodigo_cte.Value;
   dmReportes.qryRepDatosPoliza.params[1].Value:=-1;

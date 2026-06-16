@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, Buttons, DBCtrls, WinSkinData;
+  Dialogs, StdCtrls, ComCtrls, Buttons, DBCtrls, WinSkinData, EditNew;
 
 type
   TfrmSelDatosIntegrarNom = class(TForm)
@@ -17,6 +17,8 @@ type
     Label1: TLabel;
     ComboBox1: TComboBox;
     SkinData1: TSkinData;
+    edtAnioBono: TEditN;
+    lblAnioBono: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
     procedure dtpkFechaNomExit(Sender: TObject);

@@ -2283,6 +2283,20 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         ParentFont = False
         TabOrder = 57
       end
+      object bitbtnEmailReorden: TBitBtn
+        Left = 661
+        Top = 599
+        Width = 88
+        Height = 28
+        Hint = 'Enviar email con listado productos en re-orden'
+        Caption = 'Email Reorden'
+        ParentShowHint = False
+        PopupMenu = PopupMenu1
+        ShowHint = True
+        TabOrder = 63
+        Visible = False
+        OnClick = bitbtnEmailReordenClick
+      end
     end
     object TabSheet2: TTabSheet
       Caption = 'Cuadres'
@@ -5710,5 +5724,13 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
     DataSet = dmTransCnt.tblDistCashEnCaja
     Left = 48
     Top = 168
+  end
+  object PopupMenu1: TPopupMenu
+    Left = 676
+    Top = 544
+    object SetEmailSent1: TMenuItem
+      Caption = 'Set Email Sent'
+      OnClick = SetEmailSent1Click
+    end
   end
 end

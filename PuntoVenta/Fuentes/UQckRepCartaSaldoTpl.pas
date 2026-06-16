@@ -17,10 +17,8 @@ type
     lblTitulo: TQRLabel;
     qrmCierre: TQRMemo;
     lblAtentamente: TQRLabel;
-    shpFirma: TQRShape;
     lblNombreGerente: TQRLabel;
     lblCargoGerente: TQRLabel;
-    lblEmpresaFirma: TQRLabel;
     lblPieDireccion: TQRLabel;
     lblPieTelefonos: TQRLabel;
     QRDBText13: TQRDBText;
@@ -124,14 +122,14 @@ begin
 
   lblNombreGerente.Caption := Trim(FNombreGerente);
   lblCargoGerente.Caption := Trim(FCargoGerente);
-  lblEmpresaFirma.Caption := 'de ' + Trim(FNombreEmpresaFirma);
+  //lblEmpresaFirma.Caption := 'de ' + Trim(FNombreEmpresaFirma);
 
   //lblPieEmpresa.Caption := Trim(FPieEmpresa);
   lblPieDireccion.Caption := Trim(FPieDireccion);
   lblPieTelefonos.Caption := Trim(FPieTelefonos);
 
   FValoresAplicados := True;
-end;
+end;                                                 
 
 procedure TqckCartaSaldoTpl.PrepararReporte;
 begin

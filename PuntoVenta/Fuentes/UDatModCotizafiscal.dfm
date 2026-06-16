@@ -22,8 +22,8 @@ object dmcotizafiscal: Tdmcotizafiscal
       'Where m.numero =:numerotrn'
       ''
       '')
-    Left = 168
-    Top = 112
+    Left = 192
+    Top = 120
     ParamData = <
       item
         DataType = ftInteger

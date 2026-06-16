@@ -458,6 +458,25 @@ type
     tblInvComer1roPRECIO_ALQUILER: TFloatField;
     tblInvComer1roPAGACOMISION: TSmallintField;
     lblReplicado: TLabel;
+    tblPrecioUnidadXNivelComer1ro: TIBDataSet;
+    tblPrecioUnidadXNivelComer1roIDUNIDAD: TIntegerField;
+    tblPrecioUnidadXNivelComer1roDESCRIPCION: TIBStringField;
+    tblPrecioUnidadXNivelComer1roCOD_PRODUCTO: TIntegerField;
+    tblPrecioUnidadXNivelComer1roCANTIDAD: TFloatField;
+    tblPrecioUnidadXNivelComer1roPRECIOVENTA1: TFloatField;
+    tblPrecioUnidadXNivelComer1roPRECIOVENTA2: TFloatField;
+    tblPrecioUnidadXNivelComer1roPRECIOVENTA3: TFloatField;
+    tblPrecioUnidadXNivelComer1roPRECIOVENTA4: TFloatField;
+    tblPrecioUnidadXNivelComer1roPORCUTILIDAD1: TFloatField;
+    tblPrecioUnidadXNivelComer1roPORCUTILIDAD2: TFloatField;
+    tblPrecioUnidadXNivelComer1roPORCUTILIDAD3: TFloatField;
+    tblPrecioUnidadXNivelComer1roPORCUTILIDAD4: TFloatField;
+    tblPrecioUnidadXNivelComer1roCOD_USUARIO_IN: TIntegerField;
+    tblPrecioUnidadXNivelComer1roCOD_USUARIO_UPD: TIntegerField;
+    tblPrecioUnidadXNivelComer1roFECHA_IN: TDateTimeField;
+    tblPrecioUnidadXNivelComer1roIN_POR: TIBStringField;
+    tblPrecioUnidadXNivelComer1roFECHA_MOD: TDateTimeField;
+    tblPrecioUnidadXNivelComer1roMOD_POR: TIBStringField;
     procedure BitBtn1Click(Sender: TObject);
     procedure BitBtn2Click(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -563,6 +582,7 @@ type
     procedure Autitoria1Click(Sender: TObject);
     procedure FiltrarPagaItbis1Click(Sender: TObject);
     procedure FiltrarNoPagaItbis1Click(Sender: TObject);
+    procedure DBEdit3Enter(Sender: TObject);
   private
     { Private declarations }
     Procedure CalcularPrecio(idx:smallint;porcValue:Extended);
@@ -574,6 +594,9 @@ type
     procedure AbrirDDup;
     Function GetPrecioMinimo(p1:currency;p2:currency;p3:currency;p4:currency):Currency;
     Procedure SincronizarProductoActual;
+    procedure GuardarProducto;
+    procedure ConfigurarDatasetsSincronizacion;
+    function VerificaClave: Boolean;
   public
     { Public declarations }
   end;
@@ -581,7 +604,9 @@ type
 var
   frmInventarioProd: TfrmInventarioProd;
   AplicandoPorc, SalirEscape : boolean;
-
+  clave : String;
+  PrecioAnterior:Real;
+  
 implementation
 
 uses UDatModInventario, uglobal, UTipoInventario, UCambiarPrecios,
@@ -592,7 +617,8 @@ uses UDatModInventario, uglobal, UTipoInventario, UCambiarPrecios,
   UInventarioSubCategoria, UFormPrecioXUnidadNivel, UFormOfertas,
   UFormFiltrarTasaItbis, URegistro, UFormLote, UFormDimensionProd,
   UDatModPanaderia, UfrmInvPrecioAudit, UFormAuditoriaInv,
-  ULabelImpCodBarra, USincronizarTablaInv;
+  ULabelImpCodBarra, USincronizarTablaInv,USincronizarPrecioUnidadSurtidora,
+  UFormEntreClave, USetClaveMaestra;
 
 {$R *.dfm}
 
@@ -711,6 +737,19 @@ var
   _codProd, _idTasa : integer;
 begin
   _codProd:=-1;
+
+  if (dmInventario.tblInventarioProd.State in [dsEdit]) and (PrecioAnterior > 0.01) then
+  begin
+    if dmInventario.tblInventarioProd.FindField('AUD_COD_USUARIO') <> nil then
+       dmInventario.tblInventarioProd.FieldByName('AUD_COD_USUARIO').AsInteger := VarUsuarioGlb;
+
+    if dmInventario.tblInventarioProd.FindField('AUD_APP_USER') <> nil then
+       dmInventario.tblInventarioProd.FieldByName('AUD_APP_USER').AsString := GlbUsuarioLogueado;
+
+    if dmInventario.tblInventarioProd.FindField('AUD_PC_NAME') <> nil then
+       dmInventario.tblInventarioProd.FieldByName('AUD_PC_NAME').AsString := GetComputerNameStr;
+      
+  end;
   if dmInventario.tblInventarioProd.State in [dsEdit,dsInsert] then
   begin
     if not ValidaPorcUtilidad then exit;
@@ -720,6 +759,12 @@ begin
       RxDBLookupCombo5.SetFocus;
       Exit;
     end;
+    if dmInventario.tblInventarioProdPRECIO.IsNull then
+    begin
+      MessageDlg('Favor indicar precio', mtInformation, [mbOK], 0);
+      exit;
+    end;
+
     if (dmInventario.tblInventarioProdPRECIO_COMPRA.Value <= 0) or
        (dmInventario.tblInventarioProdPRECIO_COMPRA.IsNull) then
     begin
@@ -771,24 +816,21 @@ begin
      dmInventario.tblInventarioProdPRECIOVENTA2.Value,
      dmInventario.tblInventarioProdPRECIOVENTA3.Value,
      dmInventario.tblInventarioProdPRECIOVENTA4.Value);
-
-    if (dmInventario.tblInventarioProdPRECIO.Value <=
-        dmInventario.tblInventarioProdPRECIO_COMPRA.Value) and (dmInventario.tblInventarioProdTIPO.Value <> 2) then
-    begin
-      MessageDlg('Precio Detalle no puede ser menor o igual a precio compra, verifique.', mtInformation, [mbOK], 0);
-      Exit;
-    end;
-    if (dmInventario.tblInventarioProdPRECIO_MINIMO.Value <=
-        dmInventario.tblInventarioProdPRECIO_COMPRA.Value) and (dmInventario.tblInventarioProdTIPO.Value <> 2) then
-    begin
-      MessageDlg('Precio Detalle no puede ser menor o igual a precio compra, verifique.', mtInformation, [mbOK], 0);
-      Exit;
-    end;
-    if dmInventario.tblInventarioProdPRECIO.IsNull then
-    begin
-      MessageDlg('Favor indicar precio', mtInformation, [mbOK], 0);
-      exit;
-    end;
+    //if (GLBMutur = 0) or (GLBMotor = 0) then
+    //begin
+      if (dmInventario.tblInventarioProdPRECIO.Value <=
+          dmInventario.tblInventarioProdPRECIO_COMPRA.Value) then
+      begin
+        MessageDlg('Precio Detalle no puede ser menor o igual a precio compra, verifique.', mtInformation, [mbOK], 0);
+        Exit;
+      end;
+      if (dmInventario.tblInventarioProdPRECIO_MINIMO.Value <=
+          dmInventario.tblInventarioProdPRECIO_COMPRA.Value)  then
+      begin
+        MessageDlg('Precio Minimo no puede ser menor igual a precio compra, verifique.', mtInformation, [mbOK], 0);
+        Exit;
+      end;
+    //end;
 
     if ((dmInventario.tblInventarioProdPRECIOVENTA1.Value > 0) and
         (dmInventario.tblInventarioProdPRECIOVENTA2.Value > 0) ) then
@@ -806,14 +848,6 @@ begin
       exit;
     end;
 
-    {if (dmInventario.tblInventarioProdPRECIOVENTA1.Value > 0) and
-       (dmInventario.tblInventarioProdPRECIOVENTA4.Value > 0) then
-    begin
-      dmInventario.tblInventarioProdPRECIO_MINIMO.Value:=
-      dmInventario.tblInventarioProdPRECIOVENTA1.Value;
-      dmInventario.tblInventarioProdPRECIO.Value:=
-      dmInventario.tblInventarioProdPRECIOVENTA4.Value;
-    end;}
     _idTasa:=dmInventario.tblInventarioProdIDTASAITBIS.Value;
     if dmInventario.tblInventarioProd.state = dsEdit then
     _codProd:= dmInventario.tblInventarioProdCODIGO.Value;
@@ -863,16 +897,29 @@ begin
 
     //sincronizar tabla inventario en DB destino
     try
-      tblInvComer1ro.close;
-      tblInvComer1ro.params[0].Value:=dmInventario.tblInventarioProdCODIGO_BARRA.Value;
-      tblInvComer1ro.open;
-      if not tblInvComer1ro.FieldByName('Codigo').IsNull then
-      lblReplicado.Visible:=True;
-      SincronizarProductoActual;
-      lblReplicado.Visible:=False;
-    except
-    end;
-    
+  if GlbProsesur = 1 then
+  begin
+    ConfigurarDatasetsSincronizacion;
+
+    tblInvComer1ro.Close;
+    tblInvComer1ro.Params[0].Value := dmInventario.tblInventarioProdCODIGO.Value;
+    tblInvComer1ro.Open;
+
+    lblReplicado.Visible := not tblInvComer1ro.IsEmpty;
+
+    SincronizarProductoActual;
+
+    lblReplicado.Visible := False;
+  end;
+except
+  on E: Exception do
+  begin
+    lblReplicado.Visible := True;
+    LogInformacionTxt('Error sincronizando INVENTARIO_PRODUCTO hacia DB destino: ' + E.Message);
+    raise;
+  end;
+end;
+
     edtCodBarra.SetFocus;
     edtCodBarra.SelectAll;
   end;
@@ -1116,7 +1163,7 @@ begin
   dbedit13.Color:= clWindow;
   if dmInventario.tblInventarioProd.State In [dsEdit, dsInsert] then
   begin
-    if Not dmInventario.tblInventarioProdcodigo_precio.IsNull then
+    if (Not dmInventario.tblInventarioProdcodigo_precio.IsNull) and (Trim(dmInventario.tblInventarioProdcodigo_precio.Value)<>'') then
     dmInventario.tblInventarioProdPRECIO.Value :=
     PrecioCodigo(Trim(dmInventario.tblInventarioProdcodigo_precio.Value), dmInventario.QryValorLetras);
   end;
@@ -1266,7 +1313,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit7Change(Sender: TObject);
 begin
-  if dmInventario.tblInventarioProdCODIGO_TEXTO.Value = '' then exit;
+  if Trim(dmInventario.tblInventarioProdCODIGO_TEXTO.Value) = '' then exit;
   dmInventario.qryPrecioCompraArti.Close;
   dmInventario.qryPrecioCompraArti.Params[0].Value:= dmInventario.tblInventarioProdcodigo.Value;//tblInventarioProdCODIGO_TEXTO.Value;
   dmInventario.qryPrecioCompraArti.Open;
@@ -1349,6 +1396,32 @@ begin
     qryClasifPrecio.Transaction.RollbackRetaining;
     end;
   end;
+end;
+
+procedure TfrmInventarioProd.ConfigurarDatasetsSincronizacion;
+begin
+  // DESTINO
+  tblInvComer1ro.Database := dmConectar.IBDatabase2;
+  tblInvComer1ro.Transaction := dmConectar.IBTransaction2;
+
+  tblPrecioUnidadXNivelComer1ro.Database := dmConectar.IBDatabase2;
+  tblPrecioUnidadXNivelComer1ro.Transaction := dmConectar.IBTransaction2;
+
+  // Asegurar conexión origen
+  if not dmConectar.IBDatabase1.Connected then
+    dmConectar.IBDatabase1.Connected := True;
+
+  // Asegurar conexión destino
+  if not dmConectar.IBDatabase2.Connected then
+    dmConectar.IBDatabase2.Connected := True;
+
+  // Asegurar transacción origen
+  if not dmConectar.IBTransaction1.InTransaction then
+    dmConectar.IBTransaction1.StartTransaction;
+
+  // Asegurar transacción destino
+  if not dmConectar.IBTransaction2.InTransaction then
+    dmConectar.IBTransaction2.StartTransaction;
 end;
 
 procedure TfrmInventarioProd.qryClasifPrecioCalcFields(DataSet: TDataSet);
@@ -2599,6 +2672,20 @@ procedure TfrmInventarioProd.DBEdit3Exit(Sender: TObject);
 begin
   if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
   begin
+    if ((GlbClavePrecios <> '') And (PrecioAnterior > 0.01)) and 
+        (dmInventario.tblInventarioProd.State in [dsEdit]) then
+    begin
+      if (PrecioAnterior > dmInventario.tblInventarioProdPrecio.Value) then
+      begin
+        if (GlbClavePrecios <> '') and not VerificaClave then
+        begin
+          MessageDlg('Precio no será cambiado, verifique',mtinformation,[mbok],0);
+          dmInventario.tblInventarioProdPRECIO.Value:=PrecioAnterior;
+          exit;
+        end;
+      end;
+    end;
+
     if GlbUsaescalaPrecio = 1 then
      dmInventario.tblInventarioProdPrecio_Minimo.Value:= AsignarValorMinimo;
 
@@ -2606,6 +2693,7 @@ begin
       (dmInventario.tblInventarioProdPrecio_Minimo.IsNull) then
        dmInventario.tblInventarioProdPrecio_Minimo.Value:=
        dmInventario.tblInventarioProdPrecio.Value;
+
   end;
 end;
 
@@ -2747,6 +2835,36 @@ begin
   frmDimensionProd.free;
   frmDimensionProd:=Nil;
   end;
+end;
+                 
+function TfrmInventarioProd.VerificaClave: Boolean;
+var
+ valorE:String;
+begin
+  frmEntrreClave:=TfrmentrreClave.Create(nil);
+  frmEntrreClave.Caption:='Clave para Cambiar Precios';
+  
+  if frmEntrreClave.Showmodal=mrOk then
+  Clave:= frmEntrreClave.Edit1.Text
+  else Result := False;
+  
+  frmentrreClave.Free;
+  frmentrreClave:=Nil;
+  frmConfClaveMaestra:=TfrmConfClaveMaestra.Create(nil);
+   try
+     frmConfClaveMaestra.Edit1.Text:=clave;
+     frmConfClaveMaestra.Button1Click(self);
+     valorE :=frmConfClaveMaestra.Edit2.Text;
+   finally
+   freeAndNil(frmConfClaveMaestra);
+   end;
+
+  if (GlbClavePrecios <> valorE) then
+  begin
+    MessageDlg('Clave incorrecta, verifique', mtError, [mbOK], 0);
+    //LogInformacionTxt('Clave incorrecta: GlbClaveSup='+GlbClaveSup+'Input Clave='+Encriptar(Trim(clave), 2005));
+    Result := False;
+  end else Result := True;
 end;
 
 procedure TfrmInventarioProd.BitBtn41Click(Sender: TObject);
@@ -2908,6 +3026,40 @@ begin
     dmInventario.tblInventarioProd,
     tblInvComer1ro
   );
+  GlbSalvarQuery(tblInvComer1ro);
+end;
+
+procedure TfrmInventarioProd.GuardarProducto;
+var
+  CodProductoOrigen: Integer;
+  CantPrecios: Integer;
+begin
+  if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
+    dmInventario.tblInventarioProd.Post;
+
+  ConfigurarDatasetsSincronizacion;
+  SincronizarInventarioProducto(
+    dmInventario.tblInventarioProd,
+    tblInvComer1ro
+  );
+
+  CodProductoOrigen := dmInventario.tblInventarioProd.FieldByName('CODIGO').AsInteger;
+
+  CantPrecios := SincronizarTodosPreciosUnidadSurtidoraDeProducto(
+    dmInventario.tblPrecioUnidadXNivel,
+    tblPrecioUnidadXNivelComer1ro,
+    dmInventario.tblInventarioProd,
+    tblInvComer1ro,
+    CodProductoOrigen
+  );
+end;
+
+procedure TfrmInventarioProd.DBEdit3Enter(Sender: TObject);
+begin
+  if (dmInventario.tblInventarioProd.State = dsEdit) then
+  PrecioAnterior:=dmInventario.tblInventarioProdPrecio.Value
+  else
+  PrecioAnterior:=-1;
 end;
 
 end.

@@ -400,9 +400,9 @@ begin
 
     dmCalculos.EsProcCalc:=True;
 
-    frmLogError.Marca:=11; frmLogError.CurrenLN:=384; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Antes dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
+    //frmLogError.Marca:=11; frmLogError.CurrenLN:=384; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Antes dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
     dmCalculos.ProcesaCalculos;
-    frmLogError.Marca:=22; frmLogError.CurrenLN:=384; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Despues dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
+    //frmLogError.Marca:=22; frmLogError.CurrenLN:=384; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Despues dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
 
      frmLogError.LogSteps(GlbNumVtaPOS,serierxVenta,now,now,
     'Antes frmProcVentaRapida.rxVenta.Post;',
@@ -495,16 +495,10 @@ begin
     frmProcVentaRapida.rxVentaIDTasaITBIS.Value := 1;
 
     dmCalculos.EsProcCalc:=True;
-
     frmLogError.Marca:=11; frmLogError.CurrenLN:=384;
-    //frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Antes dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
+
     dmCalculos.ProcesaCalculos;
     frmLogError.Marca:=22; frmLogError.CurrenLN:=384;
-    //frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Despues dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
-
-    //frmLogError.LogSteps(GlbNumVtaPOS,serierxVenta,now,now,
-    //'Antes frmProcVentaRapida.rxVenta.Post;',
-    //'UFormPosExtraDET');
 
     if frmProcVentaRapida.rxVenta.State in [dsEdit, dsInsert] then
     frmProcVentaRapida.rxVenta.Post;
@@ -515,9 +509,6 @@ begin
     frmProcVentaRapida.ProgressBar1.StepIt;
     Application.ProcessMessages;
     dmCalculos.EsProcCalc:=True;
-
-    //frmLogError.LogSteps(GlbNumVtaPOS,serierxVenta,now,now,'','UFormPosExtraDet');
-  //end;
 end;
 
 //Terminar esto en usa cotiza
@@ -612,16 +603,15 @@ begin
     and (GlbCalcItbis = 0) then
     frmProcVentaRapida.rxVentaIDTasaITBIS.Value := 1;
 
+    frmProcVentaRapida.rxVentaDescripcionEspecial.Value:= dmcalculos.qryDatosCotiPosExtraDESCRIPCION_ESPECIAL.Value;
+    frmProcVentaRapida.rxVentaLevelPrecio.Value:=dmcalculos.qryDatosCotiPosExtraLEVEL_PRECIO_VENT.Value;
+
     dmCalculos.EsProcCalc:=True;
     frmLogError.Marca:=11; frmLogError.CurrenLN:=478; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Antes dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
     dmCalculos.ProcesaCalculos;
     frmLogError.Marca:=22; frmLogError.CurrenLN:=478; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Despues dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
 
-    frmProcVentaRapida.rxVentaDescripcionEspecial.Value:= dmcalculos.qryDatosCotiPosExtraDESCRIPCION_ESPECIAL.Value;
-    frmProcVentaRapida.rxVentaLevelPrecio.Value:=dmcalculos.qryDatosCotiPosExtraLEVEL_PRECIO_VENT.Value;
-    //ver si el total se actualiza
     GlbCalculado:=False;
-    //dmCalculos.ProcesaCalculos();
 
     if frmProcVentaRapida.rxVenta.State in [dsEdit, dsInsert] then
     frmProcVentaRapida.rxVenta.Post;
@@ -730,19 +720,14 @@ begin
 
     FGlbPorcItbi(ExtraerFecha(frmProcVentaRapida.rxVentaFecha.Value), frmProcVentaRapida.rxVentaCodArticulo.Value);
     frmProcVentaRapida.rxVentaIDTasaITBIS.Value := GlbIDTasa;
-  if (GlbIgI = 1) and (UpperCase(GLBFormatoFactura) = 'FORMAFACOCO')
-  and (GlbCalcItbis = 0) then
-  frmProcVentaRapida.rxVentaIDTasaITBIS.Value := 1;
+    if (GlbIgI = 1) and (UpperCase(GLBFormatoFactura) = 'FORMAFACOCO')
+    and (GlbCalcItbis = 0) then
+    frmProcVentaRapida.rxVentaIDTasaITBIS.Value := 1;
     dmCalculos.EsProcCalc:=True;
     frmLogError.Marca:=11; frmLogError.CurrenLN:=478; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Antes dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
+    frmProcVentaRapida.rxVentaDescripcionEspecial.Value:= dmcalculos.qryDatosCotiPosExtraDESCRIPCION_ESPECIAL.Value;
     dmCalculos.ProcesaCalculos;
     frmLogError.Marca:=22; frmLogError.CurrenLN:=478; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Despues dmCalculos.ProcesaCalculos;','UFormPosExtraDET');
-
-
-    frmProcVentaRapida.rxVentaDescripcionEspecial.Value:= dmcalculos.qryDatosCotiPosExtraDESCRIPCION_ESPECIAL.Value;
-    //ver si el total se actualiza
-    //temporal, verificar si no se actualizan los valores
-    //dmCalculos.ProcesaCalculos();
 
     if frmProcVentaRapida.rxVenta.State in [dsEdit, dsInsert] then
     frmProcVentaRapida.rxVenta.Post;

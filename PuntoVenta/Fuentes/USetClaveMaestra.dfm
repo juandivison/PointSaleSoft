@@ -1,6 +1,6 @@
 object frmConfClaveMaestra: TfrmConfClaveMaestra
-  Left = 829
-  Top = 216
+  Left = 770
+  Top = 245
   Width = 333
   Height = 238
   Caption = 'Setup Password'

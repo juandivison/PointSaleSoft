@@ -5,7 +5,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   db,Dialogs, DBCtrls, StdCtrls, Mask, RXCtrls, RXDBCtrl, Buttons, Grids,
-  DBGrids, dbnavE, WinSkinData, Menus, EditNew, ExtCtrls;
+  DBGrids, dbnavE, WinSkinData, Menus, EditNew, ExtCtrls, IBCustomDataSet,
+  IBQuery, ComCtrls, DBTables;
 
 type
   TfrmNominaEmpleado = class(TForm)
@@ -76,6 +77,32 @@ type
     Label15: TLabel;
     ActualizarComisiones1: TMenuItem;
     AplicarComisiones1: TMenuItem;
+    SpeedButton2: TSpeedButton;
+    ProgressBar1: TProgressBar;
+    qryEscalaIsr: TIBQuery;
+    qryEscalaIsrCODIGO_ESCALA: TIntegerField;
+    qryEscalaIsrESCALA_RETENCION: TFloatField;
+    qryEscalaIsrTASA_EXENTO: TFloatField;
+    qryEscalaIsrFECHA_INI: TDateTimeField;
+    qryEscalaIsrFECHA_FIN: TDateTimeField;
+    qryNomantIsr: TIBQuery;
+    qryNomantIsrSALARIO_BRUTO: TFloatField;
+    qryNomantIsrCODIGO: TIntegerField;
+    edtBuscarxNombre: TEdit;
+    Label16: TLabel;
+    Button1: TButton;
+    Label17: TLabel;
+    DBEdit11: TDBEdit;
+    Label18: TLabel;
+    DBEdit12: TDBEdit;
+    Label19: TLabel;
+    DBEdit13: TDBEdit;
+    SpeedButton1: TSpeedButton;
+    qryVaca: TIBQuery;
+    qryVacaCODIGO: TIntegerField;
+    qryVacaVALOR_TRANS: TFloatField;
+    qryVacaFECHAVACACIONES: TDateTimeField;
+    BrowseNomina1: TMenuItem;
     procedure BitBtn2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BitBtn4Click(Sender: TObject);
@@ -100,6 +127,10 @@ type
     procedure ActualizarComisiones1Click(Sender: TObject);
     procedure AplicarComisiones1Click(Sender: TObject);
     procedure btnRefrescarClick(Sender: TObject);
+    procedure SpeedButton2Click(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure SpeedButton1Click(Sender: TObject);
+    procedure BrowseNomina1Click(Sender: TObject);
   private
     { Private declarations }
     procedure ProcCalcularDeducciones;
@@ -109,6 +140,10 @@ type
     Procedure BuscarFechaComision(Var fechaIni,fechaFin:TDateTime);
     procedure ProcIntegrarComision;
     procedure RepComisionXVta(tipo:smallint);
+    procedure CalculoIsrNuevo;
+    procedure CalculoIsrNormal;
+    procedure CalculoIsrProyectado;
+    procedure PrestamosEmp;
   public
     { Public declarations }
   end;
@@ -125,10 +160,410 @@ uses UFormSelFecha, UDatModNomina, UGlobal, UDatModCompania,
   UDatosComision, UReporteNomina, UReporteSobreNominaEmp, UDatModReportes,
   URepComResVendedor, UFormTipoNomina, UDatModPanaderia, URepNominaGral,
   UEmpleados, UFormParamsRepComTrab, URepComisionTrab, UDatModComisiones,
-  URepComisionTrabXVta, URepComisionTrabXVtaRes, UFormPagoComisionesXVta;
+  URepComisionTrabXVta, URepComisionTrabXVtaRes, UFormPagoComisionesXVta,
+  UDatmodDatosGenerales, UDatModConectar, UFrmbrowseDatosNomina;
   //, URepComision;
 
 {$R *.dfm}
+procedure TfrmNominaEmpleado.CalculoIsrNuevo;
+var
+  MontoSalarioDed : Real;
+  SalarioPeriodoISR : Real;
+  SalarioMensualISR : Real;
+  SalarioAnualISR   : Real;
+  SalarioQuincena15 : Real;
+  ValorVacaciones   : Real;
+
+  PorcAFP      : Real;
+  PorcTSS      : Real;
+  PorcTotalTSS : Real;
+
+  BaseISRAnual : Real;
+  ISRAnual     : Real;
+  ISRPeriodo   : Real;
+
+  FechaQuincena15 : TDateTime;
+  Y, M, D : Word;
+
+  function ObtenerPorcLey8701(CodigoDescuento: Integer): Real;
+  begin
+    Result := 0;
+
+    dmNomina.qryLey8701.Close;
+    dmNomina.qryLey8701.Params[0].Value := CodigoDescuento;
+    dmNomina.qryLey8701.Params[1].Value := ExtraerFecha(GlbFechaNomina);
+    dmNomina.qryLey8701.Open;
+
+    if not dmNomina.qryLey8701.IsEmpty then
+      Result := dmNomina.qryLey8701PORC_EMPLEADO.Value;
+
+    {
+      Fallback de seguridad según tabla vigente:
+      CODIGO_DESCUENTO = 2 -> AFP
+      CODIGO_DESCUENTO = 3 -> TSS/SFS
+    }
+    if Result = 0 then
+    begin
+      if CodigoDescuento = 2 then
+        Result := 2.87
+      else if CodigoDescuento = 3 then
+        Result := 3.04;
+    end;
+  end;
+
+  procedure LogISR(const Linea: string);
+  var
+    F: TextFile;
+    RutaLog: string;
+  begin
+    RutaLog := ExtractFilePath(Application.ExeName) + 'log_isr_nomina.txt';
+
+    AssignFile(F, RutaLog);
+
+    if FileExists(RutaLog) then
+      Append(F)
+    else
+      Rewrite(F);
+
+    try
+      Writeln(F, FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) + ' | ' + Linea);
+    finally
+      CloseFile(F);
+    end;
+  end;
+
+begin
+  {
+    Escala ISR vigente según fecha de nómina.
+  }
+  dmdatos.qryEscalaIsr.Close;
+  dmdatos.qryEscalaIsr.Params[0].Value := ExtraerFecha(GlbFechaNomina);
+  dmdatos.qryEscalaIsr.Open;
+
+  {
+    Porcentajes del empleado:
+    AFP = 2
+    TSS/SFS = 3
+  }
+  PorcAFP := ObtenerPorcLey8701(2);
+  PorcTSS := ObtenerPorcLey8701(3);
+  PorcTotalTSS := PorcAFP + PorcTSS;
+
+  {
+    Vacaciones del período actual.
+  }
+  dmNomina.qVaca.Close;
+  dmNomina.qVaca.Params[0].Value := ExtraerFecha(GlbFechaNomina);
+  dmNomina.qVaca.Open;
+
+  DecodeDate(ExtraerFecha(GlbFechaNomina), Y, M, D);
+
+  {
+    Si la nómina es del 30, abrimos qryNomantIsr solo para buscar
+    la nómina pagada del día 15 del mismo mes.
+
+    Query esperado:
+      SELECT CODIGO_emp, sum(SALARIO_BRUTO) SALARIO_BRUTO
+      FROM NOMINA
+      WHERE fecha_nomina between :fechaini and :fechafin
+        AND Status_Nomina = 'P'
+      GROUP BY CODIGO_emp
+  }
+  if D > 15 then
+  begin
+    FechaQuincena15 := EncodeDate(Y, M, 15);
+
+    qryNomantIsr.Close;
+    qryNomantIsr.Params[0].Value := FechaQuincena15;
+    qryNomantIsr.Params[1].Value := FechaQuincena15;
+    qryNomantIsr.Open;
+
+    LogISR(
+      'QRY_QUINCENA_15' +
+      ' | FECHA=' + FormatDateTime('dd/mm/yyyy', FechaQuincena15) +
+      ' | RECORDS=' + IntToStr(qryNomantIsr.RecordCount)
+    );
+  end
+  else
+  begin
+    qryNomantIsr.Close;
+  end;
+
+  dmNomina.tblNomina.First;
+
+  ProgressBar1.Visible := True;
+  ProgressBar1.BringToFront;
+  ProgressBar1.Max := dmNomina.tblNomina.RecordCount;
+  ProgressBar1.Position := 0;
+
+  while not dmNomina.tblNomina.Eof do
+  begin
+    dmNomina.qryEmpleados.Locate(
+      'Codigo;CODIGO_CIA',
+      VarArrayOf([
+        dmNomina.tblNominaCODIGO_EMP.Value,
+        dmNomina.tblNominaCIA_KEY.Value
+      ]),
+      []
+    );
+
+    MontoSalarioDed := 0;
+    ValorVacaciones := 0;
+    SalarioQuincena15 := 0;
+
+    {
+      Por defecto, el ingreso ISR del período actual es el salario bruto
+      de la nómina actual.
+    }
+    SalarioPeriodoISR := dmNomina.tblNominaSALARIO_BRUTO.Value;
+
+    {
+      Si el empleado tiene vacaciones con valor, usamos ese valor como
+      ingreso del período actual para ISR.
+    }
+    if dmNomina.qVaca.Locate('CODIGO', dmNomina.tblNominaCODIGO_EMP.Value, []) then
+    begin
+      if dmNomina.qVacaVALOR_TRANS.Value > 0 then
+      begin
+        ValorVacaciones := dmNomina.qVacaVALOR_TRANS.Value;
+        SalarioPeriodoISR := ValorVacaciones;
+      end;
+    end;
+
+    {
+      Nueva regla sin histórico anual:
+
+      Día 15:
+        salario mensual = período actual * 2
+
+      Día 30:
+        si existe nómina pagada del día 15:
+          salario mensual = quincena 15 + período actual
+        si no:
+          salario mensual = período actual * 2
+    }
+    if D > 15 then
+    begin
+      if qryNomantIsr.Active then
+      begin
+        if qryNomantIsr.Locate('CODIGO_EMP', dmNomina.tblNominaCODIGO_EMP.Value, []) then
+          SalarioQuincena15 := qryNomantIsrSALARIO_BRUTO.Value;
+      end;
+
+      if SalarioQuincena15 > 0 then
+        SalarioMensualISR := SalarioQuincena15 + SalarioPeriodoISR
+      else
+        SalarioMensualISR := SalarioPeriodoISR * 2;
+    end
+    else
+    begin
+      SalarioMensualISR := SalarioPeriodoISR * 2;
+    end;
+
+    SalarioAnualISR := SalarioMensualISR * 12;
+
+    MontoSalarioDed := SalarioAnualISR * PorcTotalTSS / 100;
+    BaseISRAnual := SalarioAnualISR - MontoSalarioDed;
+    ISRAnual := MontoIsrADeducir(BaseISRAnual);
+
+    {
+      Quincenal.
+      Si en algún momento usas este procedimiento para otro tipo de nómina,
+      aquí podemos abrir el divisor según TIPO_NOMINA.
+    }
+    ISRPeriodo := ISRAnual / 24;
+    if (dmNomina.tblNominaCODIGO_EMP.Value = 13) then
+    LogISR(
+      'EMP=' + IntToStr(dmNomina.tblNominaCODIGO_EMP.Value) +
+      ' | FECHA_NOM=' + FormatDateTime('dd/mm/yyyy', GlbFechaNomina) +
+      ' | DIA_NOM=' + IntToStr(D) +
+      ' | SALARIO_EMPLEADO_MENSUAL_FICHA=' + FormatFloat('#,##0.00', dmNomina.qryEmpleadosSALARIO.Value) +
+      ' | SALARIO_BRUTO_NOMINA=' + FormatFloat('#,##0.00', dmNomina.tblNominaSALARIO_BRUTO.Value) +
+      ' | VACACIONES=' + FormatFloat('#,##0.00', ValorVacaciones) +
+      ' | SALARIO_PERIODO_ISR=' + FormatFloat('#,##0.00', SalarioPeriodoISR) +
+      ' | SALARIO_QUINCENA_15=' + FormatFloat('#,##0.00', SalarioQuincena15) +
+      ' | SALARIO_MENSUAL_ISR=' + FormatFloat('#,##0.00', SalarioMensualISR) +
+      ' | PORC_AFP=' + FormatFloat('#,##0.0000', PorcAFP) +
+      ' | PORC_TSS=' + FormatFloat('#,##0.0000', PorcTSS) +
+      ' | PORC_TOTAL_TSS=' + FormatFloat('#,##0.0000', PorcTotalTSS) +
+      ' | SALARIO_ANUAL_ISR=' + FormatFloat('#,##0.00', SalarioAnualISR) +
+      ' | MONTO_SALARIO_DED=' + FormatFloat('#,##0.00', MontoSalarioDed) +
+      ' | BASE_ISR_ANUAL=' + FormatFloat('#,##0.00', BaseISRAnual) +
+      ' | ISR_ANUAL=' + FormatFloat('#,##0.00', ISRAnual) +
+      ' | ISR_PERIODO=' + FormatFloat('#,##0.00', ISRPeriodo)
+    );
+
+    dmNomina.tblNomina.Edit;
+    dmNomina.tblNominaISR.Value := ISRPeriodo;
+
+    if dmNomina.tblNomina.State in [dsEdit] then
+    begin
+      if not dmNomina.tblNomina.Transaction.InTransaction then
+        dmNomina.tblNomina.Transaction.StartTransaction;
+
+      dmNomina.tblNomina.Post;
+      dmNomina.tblNomina.ApplyUpdates;
+
+      try
+        dmNomina.tblNomina.Transaction.CommitRetaining;
+      except
+        dmNomina.tblNomina.Transaction.RollbackRetaining;
+      end;
+    end;
+
+    ProgressBar1.StepIt;
+    dmNomina.tblNomina.Next;
+  end;
+
+  ProgressBar1.Visible := False;
+  ProgressBar1.SendToBack;
+
+  dmNomina.StpCalTotalN.Close;
+  dmNomina.StpCalTotalN.Params[0].Value := glbTipoNom;
+  dmNomina.StpCalTotalN.Params[1].Value := glbCia_Key;
+  dmNomina.StpCalTotalN.Params[2].Value := ExtraerFecha(GlbFechaNomina);
+  dmNomina.StpCalTotalN.ExecProc;
+
+  if not dmNomina.StpCalTotalN.Transaction.InTransaction then
+    dmNomina.StpCalTotalN.Transaction.StartTransaction;
+
+  try
+    dmNomina.StpCalTotalN.Transaction.CommitRetaining;
+  except
+    dmNomina.StpCalTotalN.Transaction.RollbackRetaining;
+  end;
+
+  dmNomina.tblNomina.Close;
+  dmNomina.tblNomina.Params[0].Value := glbCia_Key;
+  dmNomina.tblNomina.Params[1].Value := glbTipoNom;
+  dmNomina.tblNomina.Params[2].Value := GlbFechaNomina;
+  dmNomina.tblNomina.Open;
+
+  ProgressBar1.Visible := False;
+  ProgressBar1.SendToBack;
+end;
+
+{
+procedure TfrmNominaEmpleado.CalculoIsrNuevo;
+var
+  MontoSalarioDed : Real;
+  a1,M1,D1,a2,m2,d2 : Word;
+  aT,mT,dT : Integer;
+  fechaN : TDatetime;  
+  Function ValorEscala(Indice:Integer):Real;
+  begin
+    if qryEscalaIsr.Locate('CODIGO_ESCALA',Indice,[]) then
+    Result:=qryEscalaIsrESCALA_RETENCION.Value else Result:=0;
+  end;
+begin
+  dmdatos.qryEscalaIsr.Close;
+  dmdatos.qryEscalaIsr.Params[0].Value:=ExtraerFecha(GlbFechaNom);
+  dmdatos.qryEscalaIsr.Open;
+
+  qryNomantIsr.Close;
+  qryNomantIsr.Params[0].Value:=
+               EncodeDate(StrToInt(FormatDatetime('yyyy',GlbFechaNom)),01,01);
+
+  qryNomantIsr.Params[1].Value:=
+  EncodeDate(StrToInt(FormatDatetime('yyyy',GlbFechaNom)),
+  StrToInt(FormatDatetime('mm', GlbFechaNom)),15);
+  qryNomantIsr.Open;
+  DecodeDate(qryNomantIsr.Params[1].AsDateTime,a1,m1,d1);
+  fechaN := ExtraerFecha(StrToDate('12'+DateSeparator+'31'+DateSeparator+IntToStr(a1)));
+  DecodeDate(fechaN, a2, m2, d2);
+
+  CalculaTiempoT(a1,m1,d1,a2,m2,d2,aT,mt,dT);
+
+  dmNomina.qryLey8701.Close;
+  dmNomina.qryLey8701.Params[0].Value := 1;//Afp
+  dmNomina.qryLey8701.Params[1].Value := ExtraerFecha(glbFechaNom);
+  dmNomina.qryLey8701.Open;
+  dmNomina.qryLey8701PORC_EMPLEADO.Value;//Afp
+
+  dmNomina.qVaca.close;
+  dmNomina.qVaca.Params[0].Value := ExtraerFEcha(GlbFechaNom);
+  dmNomina.qVaca.Open;
+  dmNomina.tblNomina.First;
+  ProgressBar1.Visible:=True;
+  ProgressBar1.BringToFront;
+  ProgressBar1.Max:=dmNomina.tblNomina.RecordCount;
+  ProgressBar1.Position:=0;
+  While Not dmNomina.tblNomina.Eof do
+  begin                //ValorEscala(
+    dmNomina.qryEmpleados.Locate('Codigo;CODIGO_CIA',
+    VarArrayOf([dmNomina.tblNominaCODIGO_EMP.Value,
+                dmNomina.tblNominaCIA_KEY.Value]),[]);
+    ProgressBar1.visible:=False;
+    ProgressBar1.SendToBack;
+    qryNomantIsr.Locate('CODIGO',dmNomina.tblNominaCODIGO_EMP.value,[]);
+    MontoSalarioDed:=0;
+    dmNomina.tblNomina.Edit;
+    if dmNomina.qVaca.Locate('CODIGO',dmNomina.tblNominaCODIGO_EMP.value,[]) then
+    begin
+      if dmNomina.qVacaVALOR_TRANS.Value > 0 then
+      MontoSalarioDed:=
+             (( dmNomina.qryEmpleadosSALARIO.Value * mT ) +
+               qryNomantIsrSALARIO_BRUTO.Value +
+               dmNomina.qVacaVALOR_TRANS.Value
+              ) * dmNomina.qryLey8701PORC_EMPLEADO.Value / 100
+      else MontoSalarioDed :=
+           (( dmNomina.qryEmpleadosSALARIO.Value * mT ) +
+                  qryNomantIsrSALARIO_BRUTO.Value +
+                  dmNomina.tblNominaSALARIO_BRUTO.Value
+            ) * dmNomina.qryLey8701PORC_EMPLEADO.Value / 100;
+    end
+    else MontoSalarioDed:=
+    (( dmNomina.qryEmpleadosSALARIO.Value * mt )+
+    (qryNomantIsrSALARIO_BRUTO.Value + dmNomina.tblNominaSALARIO_BRUTO.Value))
+     * dmNomina.qryLey8701PORC_EMPLEADO.Value/100;
+
+     dmNomina.tblNominaISR.Value :=
+     MontoIsrADeducir(
+            ( dmNomina.qryEmpleadosSALARIO.Value * mt )+
+              ( qryNomantIsrSALARIO_BRUTO.Value + dmNomina.qVacaVALOR_TRANS.Value +
+                dmNomina.tblNominaSALARIO_BRUTO.Value
+              ) - MontoSalarioDed
+            )/12;
+     if dmNomina.tblNomina.State in [dsEdit] Then
+     begin//1
+       if not dmNomina.tblNomina.Transaction.InTransaction then
+       dmNomina.tblNomina.Transaction.StartTransaction;
+
+       dmNomina.tblNomina.Post;
+       dmNomina.tblNomina.Applyupdates;
+       try
+         dmNomina.tblNomina.Transaction.CommitRetaining;
+       except
+         dmNomina.tblNomina.Transaction.RollbackRetaining;
+       end;
+     end;//1
+     ProgressBar1.StepIt;
+     dmNomina.tblNomina.Next;
+  end;
+  ProgressBar1.Visible:=False;
+  ProgressBar1.SendToBack;
+
+  dmNomina.StpCalTotalN.Close;
+  dmNomina.StpCalTotalN.Params[0].Value := glbTipoNom;
+  dmNomina.StpCalTotalN.Params[1].Value := glbCia_Key;
+  dmNomina.StpCalTotalN.Params[2].Value := ExtraerFecha(glbFechaNom);
+  dmNomina.StpCalTotalN.ExecProc;
+  if not dmNomina.StpCalTotalN.Transaction.InTransaction then
+  dmNomina.StpCalTotalN.Transaction.StartTransaction;
+  try
+    dmNomina.StpCalTotalN.Transaction.CommitRetaining;
+  except
+  dmNomina.StpCalTotalN.Transaction.RollbackRetaining;
+  end;
+  dmNomina.tblNomina.Close;
+  dmNomina.tblNomina.Params[0].Value := glbCia_Key;
+  dmNomina.tblNomina.Params[1].Value := glbTipoNom;
+  dmNomina.tblNomina.Params[2].Value := glbFechaNom;
+  dmNomina.tblNomina.Open;
+  ProgressBar1.Visible:=False;
+  ProgressBar1.SendToBack;
+end;
+}
 
 procedure TfrmNominaEmpleado.BitBtn2Click(Sender: TObject);
 var
@@ -138,11 +573,7 @@ begin
   dmNomina.qryEmpleados.Close;
   dmNomina.qryEmpleados.Open;
   dmNomina.qryEmpleados.First;
-  //if dmNomina.tblNomina.RecordCount > 0 then
-  //begin
-  //  MessageDlg('Nómina ya fue integrada, verifique', mtInformation, [mbOK], 0);
-  //  Exit;
-  //end;
+  
 
   flag:=false;
   frmTipoNomina:=TfrmTipoNomina.Create(nil);
@@ -155,7 +586,7 @@ begin
   frmTipoNomina:=nil;
   end;
 
-  if flag then exit; 
+  if flag then exit;
 
   While Not dmNomina.qryEmpleados.Eof Do
   begin
@@ -330,14 +761,150 @@ begin
 end;
 
 procedure TfrmNominaEmpleado.ProcCalcularDeducciones;
+var
+  ValorVacaciones: Double;
+  BaseDeduccionTSS: Double;
+  FechaIniMes: TDateTime;
+  FechaFinMes: TDateTime;
+  Y, M, D: Word;
+  entra:string;
 begin
 {
-2	AFP
-3	SFS
-4	ARL
-5	INFOTEP
+  CODIGO_DESCUENTO:
+  2 = AFP
+  3 = SFS
+  4 = ARL
+  5 = INFOTEP
 
+  Regla:
+  - El monto de vacaciones se suma a la base de deducción TSS.
+  - BaseDeduccionTSS = SALARIO_BRUTO + VALOR_TRANS vacaciones.
 }
+
+  ValorVacaciones := 0;
+
+  DecodeDate(ExtraerFecha(GlbFechaNomina), Y, M, D);
+
+  FechaIniMes := EncodeDate(Y, M, 1);      
+  FechaFinMes := EncodeDate(Y, M, DiasEnElMes(Y, M));
+
+  {
+    Se abre qryVaca para el mes de la nómina.
+    Parámetros según SpeedButton9Click:
+      Params[0] = inicio de mes
+      Params[1] = fin de mes
+      Params[2] = fecha de nómina
+  }
+  if not qryVaca.Active then
+  begin
+    qryVaca.Close;
+    qryVaca.Params[0].Value := ExtraerFecha(GlbFechaNomina);
+    qryVaca.Open;
+  end;
+
+  if qryVaca.Locate('CODIGO', dmNomina.tblNominaCODIGO_EMP.Value, []) then
+  begin
+    if (ExtraerFecha(qryVacaFECHAVACACIONES.Value) =
+        ExtraerFecha(GlbFechaNomina)) then
+    begin                                 
+    if qryVacaVALOR_TRANS.Value > 0 then
+      ValorVacaciones := qryVacaVALOR_TRANS.Value;
+    end;
+  end;
+ {Debug if ValorVacaciones > 0 then
+  entra:='S' else entra:='';
+  if (entra = 'S') then
+  begin
+    entra:='';
+  end;    }
+
+  BaseDeduccionTSS := dmNomina.tblNominaSALARIO_BRUTO.Value + ValorVacaciones;
+  dmNomina.tblNominaVacaciones.Value:=ValorVacaciones;
+
+  {
+    AFP
+  }
+  if dmNomina.qryDeducciones.Locate('CODIGO_DESCUENTO', 2, []) then
+  begin
+    if dmNomina.qryEmpleadosPAGA_AFP.Value = 1 then
+    begin
+      PorcAFP := dmNomina.qryDeduccionesPORCIENTO_EMP.Value;
+
+      dmNomina.tblNominaMONTO_AFP.Value :=
+        BaseDeduccionTSS * dmNomina.qryDeduccionesPORCIENTO_EMP.Value / 100;
+    end
+    else
+      dmNomina.tblNominaMONTO_AFP.Value := 0;
+  end
+  else
+    dmNomina.tblNominaMONTO_AFP.Value := 0;
+
+  {
+    SFS / TSS
+  }
+  if dmNomina.qryDeducciones.Locate('CODIGO_DESCUENTO', 3, []) then
+  begin
+    if dmNomina.qryEmpleadosPAGA_TSS.Value = 1 then
+    begin
+      PorcTSS := dmNomina.qryDeduccionesPORCIENTO_EMP.Value;
+
+      dmNomina.qryListaDependienteEmp.Close;
+      dmNomina.qryListaDependienteEmp.Params[0].Value := ExtraerFecha(GlbFechaNomina);
+      dmNomina.qryListaDependienteEmp.Params[1].Value := dmNomina.tblNominaCODIGO_EMP.Value;
+      dmNomina.qryListaDependienteEmp.Open;
+
+      dmNomina.tblNominaTSS.Value :=
+        BaseDeduccionTSS * dmNomina.qryDeduccionesPORCIENTO_EMP.Value / 100;
+
+      dmNomina.qryListaDependienteEmp.First;
+
+      dmNomina.tblNominaSFS_DEPENDIENTES.Value := 0;
+      dmNomina.tblNominaSFS_COMPLEMENTARIO.Value := 0;
+
+      while not dmNomina.qryListaDependienteEmp.Eof do
+      begin
+        if dmNomina.qryListaDependienteEmpMONTO_DEPENDIENTE.Value > 0 then
+          dmNomina.tblNominaSFS_DEPENDIENTES.Value :=
+            dmNomina.tblNominaSFS_DEPENDIENTES.Value +
+            dmNomina.qryListaDependienteEmpMONTO_DEPENDIENTE.Value;
+
+        dmNomina.tblNominaSFS_COMPLEMENTARIO.Value :=
+          dmNomina.tblNominaSFS_COMPLEMENTARIO.Value +
+          dmNomina.qryListaDependienteEmpMONTO_COMPLEMENTARIOASEGURADO.Value +
+          dmNomina.qryListaDependienteEmpMONTO_COMPLEMENTARIODEPENDIENTE.Value;
+
+        dmNomina.qryListaDependienteEmp.Next;
+      end;
+
+      dmNomina.tblNominaTSS.Value :=
+        dmNomina.tblNominaTSS.Value +
+        dmNomina.tblNominaSFS_DEPENDIENTES.Value +
+        dmNomina.tblNominaSFS_COMPLEMENTARIO.Value;
+    end
+    else
+    begin
+      dmNomina.tblNominaTSS.Value := 0;
+      dmNomina.tblNominaSFS_DEPENDIENTES.Value := 0;
+      dmNomina.tblNominaSFS_COMPLEMENTARIO.Value := 0;
+    end;
+  end
+  else
+  begin
+    dmNomina.tblNominaTSS.Value := 0;
+    dmNomina.tblNominaSFS_DEPENDIENTES.Value := 0;
+    dmNomina.tblNominaSFS_COMPLEMENTARIO.Value := 0;
+  end;
+end;
+{
+procedure TfrmNominaEmpleado.ProcCalcularDeducciones;
+begin
+//
+//2	AFP
+//3	SFS
+//4	ARL
+//5	INFOTEP
+
+//
   if dmNomina.qryDeducciones.Locate('CODIGO_DESCUENTO', 2, []) then //Afp
   if dmNomina.qryEmpleadosPAGA_AFP.Value = 1 then
   begin
@@ -376,9 +943,11 @@ begin
 
   end;
 end;
+}
 
 procedure TfrmNominaEmpleado.FormCreate(Sender: TObject);
 begin
+  ProgressBar1.Visible:=False;
   dmCompania.tblCompania.Close;
   dmCompania.tblCompania.Open;
   dmCompania.tblCompania.Locate('CODIGO',GlbCodigoCia,[]);
@@ -386,8 +955,14 @@ begin
   dmNomina.tblNomina.Params[0].Value := GlbCia_Key;
   dmNomina.tblNomina.Params[1].Value := GlbTipoNom;
   dmNomina.tblNomina.Params[2].Value := ExtraerFecha(GlbFechaNomina);
-  dmNomina.tblNomina.Open;
+  dmNomina.tblNomina.Open;          
   
+  DmNomina.QryIntNomina.Close;         
+  DmNomina.QryIntNomina.Params[0].Value := glbCia_Key;
+  DmNomina.QryIntNomina.Params[1].Value := glbTipoNom;
+  DmNomina.QryIntNomina.Params[2].Value := ExtraerFecha(GlbFechaNomina);
+  DmNomina.QryIntNomina.Open;
+                                     
   dmNomina.qryDeducciones.Close;
   dmNomina.qryDeducciones.Params[0].Value:= ExtraerFecha(GlbFechaNomina);
   dmNomina.qryDeducciones.Open;
@@ -396,13 +971,13 @@ begin
     MessageDlg('Debe configurar opciones de descuento para nómina.', mtWarning,[mbok],0);
   end;
   dmNomina.tblPrestamo.Close;
-  dmNomina.tblPrestamo.Open;
   dmNomina.qryEmpleados.Close;
   dmNomina.qryEmpleados.Open;
 end;
 
 procedure TfrmNominaEmpleado.ProcPrestamo;
 begin
+  if dmNomina.tblPrestamo.state = dsInactive then dmNomina.tblPrestamo.Open;
   if dmNomina.tblPrestamo.Locate('CODIGO_EMP', dmNomina.tblNominaCODIGO_EMP.Value,[]) then
   begin
     if dmNomina.tblPrestamoMONTO_PAGADO.Value < dmNomina.tblPrestamoMONTO_PRESTAMO.Value then
@@ -429,10 +1004,12 @@ end;
 
 procedure TfrmNominaEmpleado.BitBtn3Click(Sender: TObject);
 begin
+  dmNomina.tblPrestamo.close;
+  dmNomina.tblPrestamo.open;
   dmnomina.qryEscalaISR.Close;// ibstpAplicaISR
   dmnomina.qryEscalaISR.Params[0].Value:=ExtraerFecha(GlbFechaTrnDiaria);
   dmnomina.qryEscalaISR.Open;
-
+  PrestamosEmp;
   dmNomina.tblNomina.First;
   While Not dmNomina.tblNomina.Eof Do
   begin
@@ -445,7 +1022,7 @@ begin
       ProcFaltante(dmNomina.tblNominaCODIGO_EMP.Value);
 
       BitBtn4Click(Self);
-    end;
+    end;                             
     dmNomina.tblNomina.Next;
   end;
   dmNomina.qryDeducciones.Close;
@@ -484,6 +1061,7 @@ begin
   except
   dmnomina.ibstpProcActNomTotales.Transaction.RollbackRetaining;
   end;
+  btnRefrescarClick(Self);
 end;
 
 procedure TfrmNominaEmpleado.BuscarFechaComision(var FechaIni,  FechaFin: TDateTime);
@@ -526,7 +1104,7 @@ begin
  dmNomina.QryRepNomGral.Close;
  dmNomina.QryRepNomGral.Params[0].value := glbCia_Key;
  dmNomina.QryRepNomGral.Params[1].value := glbTipoNom;
- dmNomina.QryRepNomGral.Params[2].value := glbFechaNom;
+ dmNomina.QryRepNomGral.Params[2].value := GlbFechaNomina;
  dmNomina.QryRepNomGral.Open;
  if dmNomina.QryRepNomGral.recordcount = 0 then
  raise Exception.Create('No hay datos');
@@ -643,7 +1221,7 @@ begin
     qckSobrePagoNomina.QRLabel11.caption       := 'Definitiva' else
     qckSobrePagoNomina.QRLabel11.caption       := 'Status nómina sin definir';
     qckSobrePagoNomina.Preview;
-  finally
+  finally                        
   qckSobrePagoNomina.Free;
   qckSobrePagoNomina:=Nil;
   end;
@@ -735,6 +1313,7 @@ end;
 
 procedure TfrmNominaEmpleado.ProcActBlcPrestamo;
 begin
+  if dmNomina.tblPrestamo.state = dsInactive then dmNomina.tblPrestamo.Open;
   dmNomina.tblNomina.First;
   While Not dmNomina.tblNomina.Eof do
   begin
@@ -839,9 +1418,12 @@ begin
   if CheckExcluir = false Then
      Begin
        btnModificarClick(sender);
+       if dmNomina.tblNomina.state = dsBrowse then
+       dmNomina.tblNomina.Edit;
        dmNomina.tblNominaSALARIO_BRUTO.Value := dmNomina.tblNominaDiasTrab.Value;
-       //dmNomina.tblNominaSALARIO_NETO.Value := (dmNomina.tblNominaSALARIO_BRUTO.Value + dmNomina.tblNominaOtros_Ingresos.Value) -
-       //(dmNomina.tblNominaOtras_Deducciones.Value + dmNomina.tblNominaCooperativa.Value + dmNomina.tblNominaBMI.Value + dmNomina.tblNominaISR.Value + dmNomina.tblNominaIDSS.Value);
+       dmNomina.tblNominaSALARIO_NETO.Value := (dmNomina.tblNominaSALARIO_BRUTO.Value + dmNomina.tblNominaOtros_Ingresos.Value) -
+      (dmNomina.tblNominaOtras_Deducciones.Value + dmNomina.tblNominaCooperativa.Value +  dmNomina.tblNominaISR.Value + dmNomina.tblNominaIDSS.Value);
+
        ProcCalcularDeducciones;
        BitBtn4Click(sender);
      End
@@ -849,6 +1431,8 @@ begin
   if CheckExcluir = True Then
      Begin
        btnModificarClick(Sender);
+       if dmNomina.tblNomina.state = dsBrowse then
+       dmNomina.tblNomina.Edit;
        if dmNomina.tblNominaSTATUS_NOMINA.Value = 'A' Then
           dmNomina.tblNominaSTATUS_NOMINA.Value := 'E'
        Else dmNomina.tblNominaSTATUS_NOMINA.Value := 'A';
@@ -1012,6 +1596,176 @@ procedure TfrmNominaEmpleado.btnRefrescarClick(Sender: TObject);
 begin
   dmNomina.tblNomina.Close;
   dmNomina.tblNomina.Open;
+end;
+
+procedure TfrmNominaEmpleado.SpeedButton2Click(Sender: TObject);
+var
+  respuesta: Word;
+begin
+  {temporal divison}
+  if StrToInt(FormatDateTime('mm',Date)) >= 10 then
+  Begin
+    Respuesta:= MessageDlg('Asignar descuento ISR Proyectado?',mtinformation,[mbyes,mbno,mbCancel],0);
+    if Respuesta = 7 then
+    begin
+      CalculoIsrNuevo;
+      //Temporal Ok Divison CalculoIsrNormal;
+    end else
+    if Respuesta = 6 then
+    begin
+       //Ejecutar Store procedure StpIsrProyectado solo en dic y ene'01
+       CalculoIsrProyectado;
+    end else Exit;
+  end else CalculoIsrNuevo;//temporal ok divison Junio 28 CalculoIsrNormal;
+  
+  if not DmNomina.QryIntNomina.Transaction.InTransaction then
+  DmNomina.QryIntNomina.Transaction.StartTransaction;
+
+  if DmNomina.QryIntNomina.State in [dsInsert, dsEdit] then
+  DmNomina.QryIntNomina.Post;
+  DmNomina.QryIntNomina.ApplyUpdates;
+  try
+    DmNomina.QryIntNomina.Transaction.CommitRetaining;
+  except
+  DmNomina.QryIntNomina.Transaction.RollbackRetaining;
+  end;
+  //********** Refrescar datos nomina ******
+  DmNomina.QryIntNomina.Close;
+  DmNomina.QryIntNomina.Params[0].Value := glbCia_Key;
+  DmNomina.QryIntNomina.Params[1].Value := glbTipoNom;
+  DmNomina.QryIntNomina.Params[2].Value := ExtraerFecha(GlbFechaNomina);
+  DmNomina.QryIntNomina.Open;
+  dmNomina.tblNomina.Close;
+  dmNomina.tblNomina.Params[0].Value := GlbCia_Key;
+  dmNomina.tblNomina.Params[1].Value := GlbTipoNom;
+  dmNomina.tblNomina.Params[2].Value := ExtraerFecha(GlbFechaNomina);
+  dmNomina.tblNomina.Open;
+end;
+
+procedure TfrmNominaEmpleado.CalculoIsrProyectado;
+begin
+  dmnomina.StpIsrProyectado.Params[0].Value := GlbFechaNomina;
+  dmnomina.StpIsrProyectado.ExecProc;
+end;
+
+procedure TfrmNominaEmpleado.CalculoIsrNormal;
+  Function ValorEscala(Indice:Integer):Real;
+  begin
+    if qryEscalaIsr.Locate('CODIGO_ESCALA',Indice,[]) then
+    Result:=qryEscalaIsrESCALA_RETENCION.Value else Result:=0;
+  end;
+begin
+  //dmNomina.StpIntIsr.close;          //***** ISR *******
+  qryEscalaIsr.Close;
+  qryEscalaIsr.Params[0].Value := ExtraerFecha(GlbFechaNomina);
+  qryEscalaIsr.Open;
+  DmNomina.StpIntIsr.Params[0].Value := glbCia_Key;
+  DmNomina.StpIntIsr.Params[1].Value := glbTipoNom;
+  DmNomina.StpIntIsr.Params[2].Value := ExtraerFecha(GlbFechaNomina);   //2002 2001
+  DmNomina.StpIntIsr.Params[3].Value := ValorEscala(1);//138420.01;//125256.01;//120000.00;
+  DmNomina.StpIntIsr.Params[4].Value := ValorEscala(2);//230701.01;//208760.01;//200000.00;
+  DmNomina.StpIntIsr.Params[5].Value := ValorEscala(3);//346051.01;//313140.01;//300000.00;
+  DmNomina.qryLey8701.Close;
+  DmNomina.qryLey8701.Params[0].Value := 1;//Afp
+  DmNomina.qryLey8701.Params[1].Value := ExtraerFecha(GlbFechaNomina);
+  DmNomina.qryLey8701.Open;
+  DmNomina.StpIntIsr.Params[6].Value := DmNomina.qryLey8701PORC_EMPLEADO.Value;//Afp
+
+  DmNomina.qryLey8701.Close;
+  DmNomina.qryLey8701.Params[0].Value := 2;//Salud;
+  DmNomina.qryLey8701.Params[1].Value := ExtraerFecha(GlbFechaNomina);
+  DmNomina.qryLey8701.Open;
+  DmNomina.StpIntIsr.Params[7].Value := DmNomina.qryLey8701PORC_EMPLEADO.Value;//Salud
+  DmNomina.StpIntIsr.ExecProc;
+  //************ Calcular Total **************
+  DmNomina.StpCalTotalN.Close;
+  DmNomina.StpCalTotalN.Params[0].Value := glbTipoNom;
+  DmNomina.StpCalTotalN.Params[1].Value := glbCia_Key;
+  DmNomina.StpCalTotalN.Params[2].Value := GlbFechaNomina;
+  DmNomina.StpCalTotalN.ExecProc;
+end;
+
+procedure TfrmNominaEmpleado.Button1Click(Sender: TObject);
+begin
+  if dmnomina.qryEmpleados.state = dsInactive then
+  dmnomina.qryEmpleados.Open;
+  if dmnomina.qryEmpleados.Locate('NOMBRECOMPLETO',edtBuscarxNombre.Text,[]) then
+  dmnomina.tblNomina.Locate('CODIGO_EMP',dmnomina.qryEmpleadosCODIGO.Value,[]);
+end;
+
+procedure TfrmNominaEmpleado.SpeedButton1Click(Sender: TObject);
+begin
+  dmnomina.StpIntDeduc.close;                //**** Cooperativa *****
+  dmnomina.StpIntDeduc.Params[0].Value := 10;
+  dmnomina.StpIntDeduc.Params[1].Value := glbTipoNom;
+  dmnomina.StpIntDeduc.Params[2].Value := glbCia_Key;
+  dmnomina.StpIntDeduc.Params[3].Value := GlbFechaNomina;
+  dmnomina.StpIntDeduc.ExecProc;
+  //********************* Calcular Total **************
+  dmnomina.StpCalTotalN.Close;
+  dmnomina.StpCalTotalN.Params[0].Value := glbTipoNom;
+  dmnomina.StpCalTotalN.Params[1].Value := glbCia_Key;
+  dmnomina.StpCalTotalN.Params[2].Value := GlbFechaNomina;
+  dmnomina.StpCalTotalN.ExecProc;
+  if not dmnomina.StpCalTotalN.Transaction.InTransaction then
+     dmnomina.StpCalTotalN.Transaction.StartTransaction;
+
+  dmnomina.QryIntNomina.ApplyUpdates;
+  if not dmnomina.StpCalTotalN.Transaction.InTransaction  then
+     dmnomina.StpCalTotalN.Transaction.StartTransaction;
+  try
+    dmnomina.StpCalTotalN.Transaction.CommitRetaining;
+  except
+  dmnomina.StpCalTotalN.Transaction.RollbackRetaining;
+  end;
+  //********** Refrescar datos nomina ******
+  dmnomina.QryIntNomina.Close;
+  dmnomina.QryIntNomina.Params[0].Value := glbCia_Key;
+  dmnomina.QryIntNomina.Params[1].Value := glbTipoNom;
+  dmnomina.QryIntNomina.Params[2].Value := GlbFechaNomina;
+  dmnomina.QryIntNomina.Open;
+  btnRefrescarClick(Self);
+end;
+
+procedure TfrmNominaEmpleado.PrestamosEmp;
+begin
+  dmNomina.StpIntDeduc.close;      //**** Prestamos ******
+       dmNomina.StpIntDeduc.Params[0].Value := 14;
+       dmNomina.StpIntDeduc.Params[1].Value := glbTipoNom;
+       dmNomina.StpIntDeduc.Params[2].Value := glbCia_Key;
+       dmNomina.StpIntDeduc.Params[3].Value := ExtraerFecha(GlbFechaNomina);
+       dmNomina.StpIntDeduc.ExecProc;
+       //*************** Calcular Total *****************
+       dmNomina.StpCalTotalN.Close;
+       dmNomina.StpCalTotalN.Params[0].Value := glbTipoNom;
+       dmNomina.StpCalTotalN.Params[1].Value := glbCia_Key;
+       dmNomina.StpCalTotalN.Params[2].Value := ExtraerFecha(GlbFechaNomina);
+       dmNomina.StpCalTotalN.ExecProc;
+       if not dmNomina.StpCalTotalN.Transaction.InTransaction then
+       dmNomina.StpCalTotalN.Transaction.StartTransaction;
+       //dmNomina.StpCalTotalN.ApplyUpdates;
+       try
+       dmNomina.QryIntNomina.Transaction.CommitRetaining;
+       except
+       dmNomina.QryIntNomina.Transaction.RollbackRetaining;
+       end;
+       //********** Refrescar datos nomina ******
+       dmNomina.QryIntNomina.Close;
+       dmNomina.QryIntNomina.Params[0].Value := glbCia_Key;
+       dmNomina.QryIntNomina.Params[1].Value := glbTipoNom;
+       dmNomina.QryIntNomina.Params[2].Value := ExtraerFecha(GlbFechaNomina);
+       dmNomina.QryIntNomina.Open;
+end;
+
+procedure TfrmNominaEmpleado.BrowseNomina1Click(Sender: TObject);
+begin
+  frmDatosNomina:=TfrmDatosNomina.Create(nil);
+  try
+    frmDatosNomina.Showmodal;
+  finally
+  frmDatosNomina.free;
+  frmDatosNomina:=nil;
+  end;
 end;
 
 end.

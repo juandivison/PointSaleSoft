@@ -225,6 +225,11 @@ object dmCompania: TdmCompania
       item
         Name = 'ID_MUNICIPIO'
         DataType = ftInteger
+      end
+      item
+        Name = 'TIPO_RIESGO_ARL'
+        DataType = ftString
+        Size = 12
       end>
     IndexDefs = <
       item
@@ -397,6 +402,10 @@ object dmCompania: TdmCompania
     end
     object tblCompaniaID_MUNICIPIO: TIntegerField
       FieldName = 'ID_MUNICIPIO'
+    end
+    object tblCompaniaTIPO_RIESGO_ARL: TIBStringField
+      FieldName = 'TIPO_RIESGO_ARL'
+      Size = 12
     end
   end
   object dstblCompania: TDataSource
@@ -758,6 +767,31 @@ object dmCompania: TdmCompania
       Origin = 'EMAILPROCESO.STATUS'
       FixedChar = True
       Size = 1
+    end
+  end
+  object tbltipo_riesgo_arl: TIBTable
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    TableName = 'RIESGO_ARL'
+    Left = 152
+    Top = 80
+    object tbltipo_riesgo_arlID: TIntegerField
+      FieldName = 'ID'
+    end
+    object tbltipo_riesgo_arlTIPO: TIBStringField
+      FieldName = 'TIPO'
+      Size = 12
+    end
+    object tbltipo_riesgo_arlFECHA_INI: TDateTimeField
+      FieldName = 'FECHA_INI'
+    end
+    object tbltipo_riesgo_arlFECHA_FIN: TDateTimeField
+      FieldName = 'FECHA_FIN'
+    end
+    object tbltipo_riesgo_arlPORCIENTO: TFloatField
+      FieldName = 'PORCIENTO'
     end
   end
 end

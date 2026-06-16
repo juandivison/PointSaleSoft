@@ -1,6 +1,6 @@
 object frmSelDatosIntegrarNom: TfrmSelDatosIntegrarNom
-  Left = 414
-  Top = 179
+  Left = 467
+  Top = 231
   BorderStyle = bsDialog
   Caption = 'Integrar N'#243'mina'
   ClientHeight = 158
@@ -13,7 +13,7 @@ object frmSelDatosIntegrarNom: TfrmSelDatosIntegrarNom
   Font.Style = []
   KeyPreview = True
   OldCreateOrder = False
-  Position = poScreenCenter
+  Position = poOwnerFormCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
@@ -37,6 +37,20 @@ object frmSelDatosIntegrarNom: TfrmSelDatosIntegrarNom
     Width = 60
     Height = 13
     Caption = 'Tipo Nomina'
+  end
+  object lblAnioBono: TLabel
+    Left = 6
+    Top = 134
+    Width = 80
+    Height = 13
+    Caption = 'A'#241'o Bonificaci'#243'n'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
+    Visible = False
   end
   object dtpkFechaNom: TDateTimePicker
     Left = 11
@@ -103,6 +117,35 @@ object frmSelDatosIntegrarNom: TfrmSelDatosIntegrarNom
     TabOrder = 1
     OnChange = ComboBox1Change
     OnExit = ComboBox1Exit
+  end
+  object edtAnioBono: TEditN
+    Left = 96
+    Top = 128
+    Width = 65
+    Height = 21
+    Color = clSilver
+    TabOrder = 5
+    Text = '2026'
+    Visible = False
+    ColorOnFocus = clWhite
+    ColorOnNotFocus = clSilver
+    FontColorOnFocus = clRed
+    FontColorOnNotFocus = clBlack
+    FontColorOnOverWrite = clBlue
+    EditType = etInteger
+    EditKeyByTab = #9
+    EditAlign = etAlignNone
+    EditLengthAlign = 0
+    EditPrecision = 0
+    ValueFloat = 2003.000000000000000000
+    ValueInteger = 2003
+    ValueDate = 38063.000000000000000000
+    ValueTime = 0.479065972222222200
+    TimeSeconds = False
+    FirstCharUpper = False
+    FirstCharUpList = ' ('
+    WidthOnFocus = 0
+    TextHint = True
   end
   object SkinData1: TSkinData
     Active = True

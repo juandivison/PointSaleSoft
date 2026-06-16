@@ -1,6 +1,6 @@
 object frmProcDescDependientes: TfrmProcDescDependientes
-  Left = 163
-  Top = 124
+  Left = 213
+  Top = 142
   Width = 1034
   Height = 434
   Caption = 'Descuento N'#243'mina a Dependiente empleados'
@@ -11,15 +11,15 @@ object frmProcDescDependientes: TfrmProcDescDependientes
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poOwnerFormCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object PageControl1: TPageControl
     Left = 0
     Top = 0
-    Width = 1018
-    Height = 396
+    Width = 1026
+    Height = 403
     ActivePage = TabSheet1
     Align = alClient
     TabOrder = 0
@@ -457,6 +457,7 @@ object frmProcDescDependientes: TfrmProcDescDependientes
         TitleFont.Height = -11
         TitleFont.Name = 'MS Sans Serif'
         TitleFont.Style = []
+        RowColor2 = 16776176
         Columns = <
           item
             Expanded = False
@@ -483,6 +484,7 @@ object frmProcDescDependientes: TfrmProcDescDependientes
           item
             Expanded = False
             FieldName = 'CEDULA'
+            Width = 64
             Visible = True
           end
           item
@@ -500,6 +502,7 @@ object frmProcDescDependientes: TfrmProcDescDependientes
           item
             Expanded = False
             FieldName = 'MONTO_COMPLEMENTARIO'
+            Width = 64
             Visible = True
           end
           item
@@ -511,11 +514,13 @@ object frmProcDescDependientes: TfrmProcDescDependientes
           item
             Expanded = False
             FieldName = 'STATUS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'COD_USUARIO'
+            Width = 64
             Visible = True
           end
           item
@@ -527,6 +532,7 @@ object frmProcDescDependientes: TfrmProcDescDependientes
           item
             Expanded = False
             FieldName = 'IN_POR'
+            Width = 64
             Visible = True
           end
           item
@@ -538,6 +544,7 @@ object frmProcDescDependientes: TfrmProcDescDependientes
           item
             Expanded = False
             FieldName = 'MOD_POR'
+            Width = 64
             Visible = True
           end>
       end
@@ -799,6 +806,7 @@ object frmProcDescDependientes: TfrmProcDescDependientes
         TitleFont.Height = -11
         TitleFont.Name = 'MS Sans Serif'
         TitleFont.Style = []
+        RowColor2 = 16776176
         Columns = <
           item
             Expanded = False
@@ -808,56 +816,67 @@ object frmProcDescDependientes: TfrmProcDescDependientes
           item
             Expanded = False
             FieldName = 'TIPO_DESCUENTO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_INI'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_FIN'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'OBSERVACION'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTO_COMPLENTARIO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'STATUS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'COD_USUARIO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_IN'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'IN_POR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_MOD'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MOD_POR'
+            Width = 64
             Visible = True
           end>
       end

@@ -1,0 +1,241 @@
+unit UCalculoBonificaciones;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  Db, DBTables, ExtCtrls, DBCtrls, Grids, DBGrids, RxMemDS, StdCtrls,
+  Variants, EditNew, Buttons, RXDBCtrl, ComCtrls, IBCustomDataSet, IBQuery,
+  IBUpdateSQL;
+
+type
+  TfrmCalculoBonificaciones = class(TForm)
+    DataSource1: TDataSource;
+    DataSource2: TDataSource;
+    TSalarioA: TRxMemoryData;
+    TSalarioATotal: TFloatField;
+    dtqryDatosBoni: TDataSource;
+    PageControl1: TPageControl;
+    TabSheet1: TTabSheet;
+    Label1: TLabel;
+    DBGrid1: TDBGrid;
+    DBNavigator1: TDBNavigator;
+    ValorUtilidad: TEditN;
+    BitBtn2: TBitBtn;
+    TabSheet2: TTabSheet;
+    RxDBGrid1: TRxDBGrid;
+    BitBtn1: TBitBtn;
+    Button1: TButton;
+    edtAnio: TEditN;
+    Label2: TLabel;
+    BitBtn3: TBitBtn;
+    qryBoni: TIBQuery;
+    qryBoniFechaSalidaCld: TDateTimeField;
+    qryBoniSXDIA: TFloatField;
+    qryBoniTOTALANIOS: TFloatField;
+    qryBoniTOTALDIAS: TFloatField;
+    qryBoniSDIARIOACUM: TFloatField;
+    qryBoniFACTOR: TFloatField;
+    qryBoniTBONO: TFloatField;
+    qryBoniUTILIDAD: TFloatField;
+    qryBoniBonificacionNeta: TFloatField;
+    qryBoniCODIGO: TIntegerField;
+    qryBoniCIA_KEY: TIntegerField;
+    qryBoniNOMBRE: TIBStringField;
+    qryBoniAPELLIDO: TIBStringField;
+    qryBoniFECHA_LLEGADA: TDateTimeField;
+    qryBoniFECHA_SALIDA: TDateTimeField;
+    qryBoniSALARIO: TFloatField;
+    qryBoniCEDULA_NUEVA: TIBStringField;
+    qryBoniSTATUS_EMP: TIBStringField;
+    qryBoniTIPO_EMPLEADO: TSmallintField;
+    qryBoniDEPTO_EMP: TSmallintField;
+    qryBoniSECCION_EMP: TSmallintField;
+    qryBoniCARGO_EMP: TSmallintField;
+    qryBoniDESCDEPTO: TIBStringField;
+    qryBoniISR: TFloatField;
+    qryBoniMONTO_BONIFIACION: TFloatField;
+    qryDatosBoni: TIBQuery;
+    IBUpdateSQL1: TIBUpdateSQL;
+    qryDatosBoniCIA_KEY: TSmallintField;
+    qryDatosBoniCODIGO: TIntegerField;
+    qryDatosBoniFECHA: TDateTimeField;
+    qryDatosBoniMONTO_BONIFIACION: TFloatField;
+    qryDatosBoniISR: TFloatField;
+    qryDatosBoniFECHAIN: TDateTimeField;
+    qryDatosBoniNUMERO_CKS: TIntegerField;
+    qryDatosBoniSTATUS: TIBStringField;
+    procedure BitBtn1Click(Sender: TObject);
+    procedure BitBtn2Click(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure BitBtn3Click(Sender: TObject);
+    procedure qryBoniCalcFields(DataSet: TDataSet);
+  private
+    { Private declarations }
+    procedure CalculaTotalSalarios;
+  public
+    { Public declarations }
+  end;
+
+var
+  frmCalculoBonificaciones: TfrmCalculoBonificaciones;
+implementation
+
+uses URepBonifica, UDatModConectar, UGlobal;
+
+{$R *.DFM}
+
+procedure TfrmCalculoBonificaciones.CalculaTotalSalarios;
+begin
+  if TSalarioA.RecordCount = 0 then
+  TSalarioA.Insert else
+  TSalarioA.Edit;
+  TSalarioATOTAL.Value := 0;
+  qryBoni.First;
+  while not qryBoni.Eof do
+  begin
+    TSalarioATOTAL.Value := TSalarioATOTAL.Value +
+    (qryBoniSXDIA.Value * qryBoniTOTALDIAS.Value);
+    qryBoni.Next;
+  end;
+end;
+
+procedure TfrmCalculoBonificaciones.BitBtn1Click(Sender: TObject);
+begin
+  qckboni:=Tqckboni.Create(Nil);
+  try
+    qckboni.Preview;
+  finally
+  qckboni.Free;
+  qckboni:=Nil;
+  end;
+end;
+
+procedure TfrmCalculoBonificaciones.BitBtn2Click(Sender: TObject);
+begin
+  qryDatosBoni.Close;
+  qryDatosBoni.Params[0].Value := edtAnio.ValueInteger;
+  qryDatosBoni.Open;
+  qryBoni.First;
+  While Not qryBoni.Eof do
+  begin
+    if qryDatosBoni.Locate('CIA_KEY;CODIGO',
+       VarArrayof([qryBonicia_key.Value,qryBoniCodigo.Value]),[]) then
+    begin
+       if qryDatosBoniNUMERO_CKS.IsNull then
+       begin
+         qryDatosBoni.Edit;
+         qryDatosBoniMONTO_BONIFIACION.Value:= qryBoniTBONO.Value;
+         qryDatosBoni.Post;
+         qryDatosBoni.ApplyUpdates;
+       end;                                     
+    end else
+    begin
+      with qryboni do
+      qrydatosboni.InsertRecord([
+                   FieldByName('Cia_key').Value,
+                   FieldByName('Codigo').Value,
+                   ExtraerFecha(qryBoni.Params[1].Value),
+                   FieldByName('tbono').Value,
+                   0,
+                   Date,//FieldByName('fecha_in').Value,
+                   Null,//numero_cks
+                   'A']);
+      qryDatosBoni.ApplyUpdates;
+    end;
+    qryboni.next;
+  end;
+  if not qryboni.Transaction.InTransaction then
+  qryboni.Transaction.StartTransaction;
+  try
+    qryboni.Transaction.CommitRetaining;
+  except
+  qryboni.Transaction.RollbackRetaining;
+  end;
+end;
+
+procedure TfrmCalculoBonificaciones.Button1Click(Sender: TObject);
+var
+  fI, Ff:TDateTime;
+begin
+  Fi:= EncodeDate(edtAnio.ValueInteger,01,01);
+  Ff:= EncodeDate(edtAnio.ValueInteger,12,31);
+  qryBoni.Close;
+  qryBoni.Params[0].Value := Fi;
+  qryBoni.Params[1].Value := Ff;
+  qryBoni.Open;
+  TSalarioA.Close;
+  TSalarioA.EmptyTable;
+  TSalarioA.Open;
+  CalculaTotalSalarios;    
+end;
+
+procedure TfrmCalculoBonificaciones.BitBtn3Click(Sender: TObject);
+var
+  Ff:TDateTime;
+begin
+  Ff:= EncodeDate(edtAnio.ValueInteger,12,31);
+  qryDatosBoni.Close;
+  qryDatosBoni.Params[0].Value := ExtraerFecha(Ff);
+  qryDatosBoni.Open;
+end;
+
+procedure TfrmCalculoBonificaciones.qryBoniCalcFields(DataSet: TDataSet);
+var
+  anoA, mesA, diaA : Word;
+  anoI, mesI, diaI : Word;
+  tMes : Smallint;
+  fecha : TDatetime;
+begin
+  if qryBoniSTATUS_EMP.Value = 'I' then
+  qryBoniFechaSalidaCld.Value:=qryBoniFECHA_SALIDA.Value;
+  if qryBoniSTATUS_EMP.Value = 'A' then
+  Fecha:=EncodeDate(2003,12,31) else   //1999
+  Fecha:=qryBoniFechaSalidaCld.Value;
+
+  qryBoniUTILIDAD.Value := ValorUtilidad.ValueFloat;
+  DecodeDate(fecha,anoA,mesA,diaA);
+  DecodeDAte(qrybonifecha_Llegada.Value,AnoI, MesI, DiaI);
+  qryBoniTOTALANIOS.Value:=0;
+//  AnoA  MesA DiaA
+//  2004  -01  -15
+//  AnoI  MesI DiaI
+//  2003  -12  -01
+//       0-01  -14
+  tmes := 0;
+  if (MesA > MesI) then
+  tMes:=MesA - MesI
+  else if (MesI > MesA) then
+  begin
+    MesA:=MesA + 12;
+    tMes:=MesA - MesI;
+    Dec(AnoA);
+  end;
+  if anoA > AnoI then
+  Begin
+    qryBoniTOTALANIOS.Value:= anoA - AnoI;
+  end;
+  if mesA > MesI then
+    qryBoniTOTALANIOS.Value:= qryBoniTOTALANIOS.Value+
+    tmes/12;
+    //hoy (mesA - MesI)/12;
+
+  if qryBoniTOTALANIOS.Value > 3 then
+     qryBoniTOTALDIAS.Value := 60
+  else if qryBoniTOTALANIOS.Value > 1 then
+  qryBoniTOTALDIAS.Value := 45
+  else  qryBoniTOTALDIAS.Value := ((qryBoniTOTALANIOS.Value * 12)*30*45)/365;
+
+
+  qryBoniSXDIA.Value :=qryBoniSALARIO.Value / 23.83;
+//  if qryBoniTOTALANIOS.Value > 1 then
+  qryBoniFACTOR.Value := qryBoniTOTALDIAS.Value * qryBoniSXDIA.Value;
+
+  qryBoniSDIARIOACUM.Value := TSalarioATOTAL.Value;
+  if (qryBoniFACTOR.Value > 0 ) and (TSalarioATOTAL.Value > 0) then
+  qryBoniTBONO.Value:=
+    (qryBoniFACTOR.Value / TSalarioATOTAL.Value)* qryBoniUTILIDAD.Value;
+  qryBoniBonificacionNeta.Value := qryBoniTBONO.Value - qryBoniISR.Value;
+end;
+
+end.

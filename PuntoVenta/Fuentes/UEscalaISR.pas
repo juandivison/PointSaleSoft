@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   IBCustomDataSet, Db, Grids, DBGrids, RXDBCtrl, RXCtrls, StdCtrls, Buttons,
   ExtCtrls, rxToolEdit, Mask, DBCtrls, USelCntCta, RxMemDS, Placemnt,
-  IBUpdateSQL, IBQuery, GetAnyDate, WinSkinData;
+  IBUpdateSQL, IBQuery, GetAnyDate, WinSkinData, RxPlacemnt;
 
 type
   TfrmEscalaIsr = class(TForm)
@@ -71,6 +71,7 @@ type
     procedure BitBtn10Click(Sender: TObject);
     procedure BitBtn11Click(Sender: TObject);
     procedure BitBtn12Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
   public
@@ -87,11 +88,11 @@ implementation
 
 procedure TfrmEscalaIsr.BitBtn4Click(Sender: TObject);
 begin
-  GetAnyDate1.FechaCierre := ExtraerFecha(now);
+  GetAnyDate1.FechaCierre := ExtraerFecha(GlbFechaTrnDiaria);
   if GetAnyDate1.Execute then
   begin
     qryEscalaISR.Close;
-    qryEscalaISR.Params[0].Value := ExtraerFecha(GetAnyDate1.Fecha );
+    qryEscalaISR.Params[0].Value := ExtraerFecha(GetAnyDate1.Fecha);
     qryEscalaISR.Open;
   end;
 end;
@@ -229,6 +230,13 @@ procedure TfrmEscalaIsr.BitBtn12Click(Sender: TObject);
 begin
   if qryEscalaISR.State In [dsBrowse] then
   qryEscalaISR.Last;
+end;
+
+procedure TfrmEscalaIsr.FormCreate(Sender: TObject);
+begin
+  qryEscalaISR.Close;
+  qryEscalaISR.Params[0].Value := ExtraerFecha(GlbFechaTrnDiaria);
+  qryEscalaISR.Open;
 end;
 
 end.

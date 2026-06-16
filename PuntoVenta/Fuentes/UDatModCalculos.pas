@@ -257,6 +257,11 @@ type
     qryDatosCotiPosExtraLEVEL_PRECIO_VENT: TSmallintField;
     qryConsultaPosExtraDetLEVEL_PRECIO_VENT: TSmallintField;
     qryPosExtraDetLEVEL_PRECIO_VENT: TSmallintField;
+    qryVerCotiConVta: TIBQuery;
+    qryVerCotiConVtaNUMERO_TRN: TIntegerField;
+    qryVerCotiConVtaNUMERO: TIntegerField;
+    qryVerCotiConVtaFECHA: TDateTimeField;
+    qryVerCotiConVtaSTATUS: TIBStringField;
     procedure DataModuleCreate(Sender: TObject);
     procedure Totales_xxxAfterPost(DataSet: TDataSet);
     procedure qryPosExtraDetBeforePost(DataSet: TDataSet);
@@ -266,6 +271,8 @@ type
     procedure qryVentasAfterScroll(DataSet: TDataSet);
   private
     { Private declarations }
+    FProcesandoCalculos: Boolean;
+    FRecalculoPendiente: Boolean;
   public
     { Public declarations }
     serierxVenta : integer;
@@ -331,10 +338,10 @@ procedure TdmCalculos.LogProcedureCalc(const ProcName: string);
 var
   F: TextFile;
 begin
-  //LogProcedure('TfrmProcVentaRapida.LogProcedure');
-  try
-  AssignFile(F, 'C:\temp\erp\debugCalclog.txt');
-  if not FileExists('C:\temp\erp\debugCalclog.txt') then
+  if GlbEsDebugFiscal = 1 then exit;
+  
+  try  AssignFile(F, 'C:\temp\erp\ventas_eventos.txt');
+  if not FileExists('C:\temp\erp\ventas_eventos..txt') then
     Rewrite(F)
   else
     Append(F);
@@ -487,35 +494,80 @@ procedure TdmCalculos.ProcesaCalculos;
 var
   x, porItbi: Real;
   TC_MONTOITBISRECARGO_GLB : Real;
+
+  Intentos: Integer;
 begin
-  if (GlbNumVtaPOS < 0) then exit;
+  FProcesandoCalculos:=frmProcVentaRapida.EnProcesoCalculo;
+  if FProcesandoCalculos then
+  Exit;
+     FProcesandoCalculos := True;
+
+  frmProcVentaRapida.EnProcesoCalculo := True;
+  if (GlbNumVtaPOS < 0) then
+  begin
+    FProcesandoCalculos := False;
+    exit;
+  end;
+  try
+  LogProcedureCalc(
+  Format(
+    'Articulo=%d Cant=%.2f Precio=%.2f PorcDesc=%.2f MontoDesc=%.2f',
+    [
+      frmProcVentaRapida.rxVentaCodArticulo.Value,
+      frmProcVentaRapida.rxVentaCant.Value,
+      frmProcVentaRapida.rxVentaPrecio.Value,
+      frmProcVentaRapida.rxVentaPorcDescItem.Value,
+      frmProcVentaRapida.rxVentaMontoDescItem.Value
+    ]
+  )
+);
+  LogProcedureCalc('TdmCalculos.ProcesaCalculos INICIO');
+
+  FProcesandoCalculos := True;
+  frmProcVentaRapida.EnProcesoCalculo:= True;
+  Intentos := 0;
+
+
+    //repeat
+      Inc(Intentos);
+      FRecalculoPendiente := False;
+
+      LogProcedureCalc('TdmCalculos.ProcesaCalculos INICIO PASADA ' + IntToStr(Intentos));
+
 
   if frmProcVentaRapida.ExistePosextraDetParaVenta(GlbNumVtaPOS) then
   begin
     dmcalculos.qryDatosItbPosExtra.Close;
     dmcalculos.qryDatosItbPosExtra.Params[0].Value := GlbNumVtaPOS;
-    dmcalculos.qryDatosItbPosExtra.Open;
-  end else exit;
+    dmcalculos.qryDatosItbPosExtra.Open;dmcalculos.qryDatosItbPosExtra.sql.text
+  end else
+  begin
+    FProcesandoCalculos := False;
+    exit;
+  end;
 
   rxError.Append;
   rxErrorNota.Value:= 'ProcesaCalculos;';
   rxError.Post;
   if rxErrorCont.Value = 11 then
   x:=0;
-  //if GlbCalculado then exit;//nuevo hoy jun 17, 2018
-  LogProcedureCalc('TdmCalculos.ProcesaCalculos;');
+
   if frmProcVentaRapida.qryInventario.state =dsInactive then
   frmProcVentaRapida.qryInventario.Open;
 
   begin
   with frmProcVentaRapida do
   begin
-     if (rxVentaStatus.Value = 'C') then Exit;
+     if (rxVentaStatus.Value = 'C') then
+     begin
+       FProcesandoCalculos := False;
+       Exit;
+     end;
      if dmcalculos.qryDatosItbPosExtra.Locate('serie',frmProcVentaRapida.rxVentaSerie.value,[]) then
      TC_MONTOITBISRECARGO_GLB:=dmcalculos.qryDatosItbPosExtraTC_MONTOITBISRECARGO_GLB.Value
      else
      TC_MONTOITBISRECARGO_GLB:=0;
-    if (rxVentaStatus.Value = 'C') then Exit;
+    //if (rxVentaStatus.Value = 'C') then Exit;
     rxVenta.AutoCalcFields:=False;
 
     if (frmProcVentaRapida.rxVentaCodArticulo.Value <> frmProcVentaRapida.qryInventarioCodigo.Value) then
@@ -565,6 +617,23 @@ begin
 
     porItbi := FGlbPorcItbi(ExtraerFecha(rxVentaFecha.Value), rxVentaCodArticulo.Value);
     rxVentaIDTasaITBIS.Value := GlbIDTasa;
+
+    if GlbIgI = 0 then
+    begin
+      porItbi := 0;
+      PORC_TRANSP_ITBIS := 0;
+
+      rxVentaitbi.Value := 0;
+      rxVentaMontoItbisRecargo.Value := 0;
+      rxVentaMontoItbRecItmConDesc.Value := 0;
+      rxVentaDC_ITBIS_CLD.Value := 0;
+      rxVentaTC_MONTOITBISRECARGO_GLB.Value := 0;
+      rxVentaTC_MONTOITBISRECARGO_ITM.Value := 0;
+    end else
+    begin
+      //se calcula en otro lugar?
+      //t frmProcVentaRapida.rxVentaitbi.Value := frmProcVentaRapida.rxVentaMontoNeto.Value * porItbi / 100;
+    end;
 
     if (GlbIgI = 1) and ((UpperCase(GLBFormatoFactura) = 'FORMAFACOCO') //or (CheckBox1.Checked = false)
     )
@@ -693,10 +762,6 @@ begin
         frmProcVentaRapida.rxVentaMontoItbisRecargo.Value:= ((frmProcVentaRapida.rxVentaMontoBruto.Value / precioSum) * (frmProcVentaRapida.TotalesRecargo.Value)) * porItbi / 100;
         frmProcVentaRapida.rxVentaRecargo.Value := (frmProcVentaRapida.rxVentaPrecio.Value / precioSum) * frmProcVentaRapida.TotalesRecargo.Value;
 
-        //if (TotalesPorcDesAdicional.Value > 0) And (TotalesMontoDescAdicional.Value > 0) then
-        //rxVentaMontoDescGlbDist.Value:= ((rxVentaMontoBruto.Value / precioSum) * (TotalesMontoDescAdicional.Value)) * porItbi / 100
-        //else
-        //rxVentaMontoDescGlbDist.Value:= 0;
       end;
     end;
 
@@ -738,7 +803,8 @@ begin
 
   if frmProcVentaRapida.TotalesMoneda.IsNull then
   frmProcVentaRapida.TotalesMoneda.Value   := '1';
-  
+
+
   if not TotalesTipoNCFIFiscal.IsNull then
   if Pos('EXONERA',UpperCase(dmFactura.ibQryViewNCFDESCRIPCION.Value)) > 0 then
   begin
@@ -788,7 +854,34 @@ begin
   frmProcVentaRapida.RxDBGrid1.EnableScroll;
   frmProcVentaRapida.RxDBGrid2.EnableScroll;
   end;
-  //frmProcVentaRapida.rxVenta.Post;
+  LogProcedureCalc('TdmCalculos.ProcesaCalculos FIN PASADA ' + IntToStr(Intentos));
+
+      {
+        Protección anti-loop.
+        Si durante el cálculo se dispararon 20 eventos, no corremos 20 veces.
+        Solo hacemos una pasada adicional.
+      }
+
+    //until (not FRecalculoPendiente) or (Intentos >= 2);
+
+    if FRecalculoPendiente then
+    begin
+      LogProcedureCalc('TdmCalculos.ProcesaCalculos QUEDO PENDIENTE PERO SE CORTA POR SEGURIDAD');
+      FRecalculoPendiente := False;
+    end;
+    //Persistir espejo de detalle.
+    ProcInsertUpdatePosExtraDet(GlbNumVtaPOS);
+
+    //Actualizar totales.
+    Pos_UpdateTotales(GlbNumVtaPOS);
+
+  finally
+    FProcesandoCalculos := False;
+    frmProcVentaRapida.EnProcesoCalculo:=False;
+    LogProcedureCalc('TdmCalculos.ProcesaCalculos FIN');
+    if frmProcVentaRapida.rxVenta.State in [dsEdit, dsInsert] then
+    frmProcVentaRapida.rxVenta.Post;
+  end;
 end;
 
 procedure TdmCalculos.ProcesarSumaTotal;
@@ -798,7 +891,7 @@ var
   puerto, linea1, linea2 : String;
   montoRecItbis, precioSum, MontoDescItem : Currency;
   montoRecItbisConDesc,MontoDescGlbDist : Currency;
-  guardarRec : TBookMark;
+
 begin
 
 end;
@@ -806,7 +899,7 @@ end;
 procedure TdmCalculos.SetDataVenta(var rxVentaTarget: TRxMemoryData);
 var
   x : Integer;
-  guardarRec : TBookMark;
+
 begin
 
 end;
@@ -857,7 +950,6 @@ end;
 
 function TdmCalculos.GettotalMontoDescuentoItem: Currency;
 var
-    guardarRec : TBookMark;
     resultado : Currency;
 begin
   result:=0;
@@ -1045,10 +1137,16 @@ procedure TdmCalculos.ProcInsertUpdatePosExtraDet(numstr: integer);
   end;
 
 begin
-  frmLogError.Marca:=11; frmLogError.CurrenLN:=713; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Antes dmCalculos.ProcesaCalculos;','UDatModCalculos');
+  frmLogError.Marca:=11; frmLogError.CurrenLN:=713;
+  frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Antes dmCalculos.ProcesaCalculos;','UDatModCalculos');
   if not GlbCalculado then
-  dmCalculos.ProcesaCalculos;
-  frmLogError.Marca:=22; frmLogError.CurrenLN:=713; frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Despues dmCalculos.ProcesaCalculos;','UDatModCalculos');
+  begin
+    LogProcedureCalc('CALL ProcesaCalculos TdmCalculos.ProcInsertUpdatePosExtraDet(numstr: integer);');
+    frmProcVentaRapida.EnProcesoCalculo:=False;
+    dmCalculos.ProcesaCalculos;
+  end;
+  frmLogError.Marca:=22; frmLogError.CurrenLN:=713;
+  frmLogError.LogSteps(GlbNumVtaPOS,0,now,now,'Despues dmCalculos.ProcesaCalculos;','UDatModCalculos');
 
 
   if (frmProcVentaRapida.rxVentaStatus.Value = 'C') and
@@ -1321,7 +1419,7 @@ begin
   try
     qryGetSumVtaExtra.Transaction.CommitRetaining;
   except
-  qryGetSumVtaExtra.Transaction.Rollback;
+  qryGetSumVtaExtra.Transaction.Rollback;                    
   end;    
   if frmProcVentaRapida.Totales.State in [dsBrowse] then
   begin
@@ -1436,7 +1534,7 @@ begin
   Abs(qryGetSumVtaExtraTC_MONTODESCADICIONAL.Value);
   frmProcVentaRapida.TotalesMontoDescItems.Value :=
   Abs(qryGetSumVtaExtraTC_FMONTODESCNIVELITEM.Value);
-   if (GlbIgI = 0) then
+   if (GlbIgI = 1) then
   frmProcVentaRapida.Totalesitbis.Value :=
   Abs(qryGetSumVtaExtraTOTAL_ITBIS.Value);
 
@@ -1514,7 +1612,9 @@ begin
   if frmProcVentaRapida.Totales.State In [dsEdit, dsInsert] then
   frmProcVentaRapida.Totales.Post;
   DatCambio:=False;
-
+  EsEditando:=False;
+  CalculoPendiente:=False;//Es Valido?
+  GlbCalculado:=True;
 end;
 
 function TdmCalculos.VtaExiste(num, serie, coduser: integer): Boolean;
@@ -1553,6 +1653,7 @@ begin
   qryPosExtRrdDesc.Last;
   if frmProcVentaRapida.rxVenta.RecordCount > 1 then
   guardarRec:= frmProcVentaRapida.rxVenta.GetBookmark;
+  try
   qryPosExtRrdDesc.First;
   While not qryPosExtRrdDesc.Eof do
   begin
@@ -1565,12 +1666,11 @@ begin
     end;
     qryPosExtRrdDesc.Next;
   end;
-  if frmProcVentaRapida.rxVenta.RecordCount > 1 then
-  begin
+  finally
     if Assigned(guardarRec) then
     begin
-    frmProcVentaRapida.rxVenta.GotoBookmark(guardarRec);
-    frmProcVentaRapida.rxVenta.FreeBookmark(guardarRec);
+      frmProcVentaRapida.rxVenta.GotoBookmark(guardarRec);
+      frmProcVentaRapida.rxVenta.FreeBookmark(guardarRec);
     end;
   end;
 end;

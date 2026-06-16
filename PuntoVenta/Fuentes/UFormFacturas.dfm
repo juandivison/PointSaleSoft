@@ -1,8 +1,8 @@
 object frmConsultaFacturas: TfrmConsultaFacturas
-  Left = 282
-  Top = 133
+  Left = 248
+  Top = 123
   Width = 1171
-  Height = 715
+  Height = 764
   Caption = 'Facturas'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -19,7 +19,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   OnShow = FormShow
   DesignSize = (
     1163
-    664)
+    713)
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -118,7 +118,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object lblDetPago: TLabel
     Left = 8
-    Top = 536
+    Top = 579
     Width = 79
     Height = 13
     Anchors = [akLeft, akBottom]
@@ -129,7 +129,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object Label9: TLabel
     Left = 552
-    Top = 536
+    Top = 579
     Width = 75
     Height = 13
     Anchors = [akLeft, akBottom]
@@ -139,7 +139,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object Label10: TLabel
     Left = 8
-    Top = 552
+    Top = 595
     Width = 132
     Height = 13
     Anchors = [akLeft, akBottom]
@@ -156,7 +156,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object DBText4: TDBText
     Left = 445
-    Top = 536
+    Top = 579
     Width = 97
     Height = 16
     Alignment = taRightJustify
@@ -199,7 +199,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     Left = 0
     Top = 96
     Width = 545
-    Height = 433
+    Height = 473
     Anchors = [akLeft, akTop, akBottom]
     DataSource = dmFactura.dsqryVentaFactura
     TabOrder = 0
@@ -510,7 +510,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     Left = 544
     Top = 96
     Width = 823
-    Height = 433
+    Height = 473
     Anchors = [akLeft, akTop, akRight, akBottom]
     DataSource = dmFactura.dsqryVentaFacturaDet
     Options = [dgEditing, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgConfirmDelete, dgCancelOnExit, dgMultiSelect]
@@ -770,7 +770,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   object BitBtn2: TBitBtn
     Tag = 3177
     Left = 279
-    Top = 578
+    Top = 618
     Width = 99
     Height = 33
     Anchors = [akLeft, akBottom]
@@ -780,7 +780,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object BitBtn3: TBitBtn
     Left = 741
-    Top = 578
+    Top = 618
     Width = 89
     Height = 33
     Anchors = [akLeft, akBottom]
@@ -854,8 +854,8 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object BitBtn4: TBitBtn
     Tag = 3175
-    Left = 503
-    Top = 578
+    Left = 502
+    Top = 618
     Width = 101
     Height = 33
     Anchors = [akLeft, akBottom]
@@ -875,8 +875,8 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object BitBtn5: TBitBtn
     Tag = 3176
-    Left = 395
-    Top = 578
+    Left = 391
+    Top = 618
     Width = 99
     Height = 33
     Anchors = [akLeft, akBottom]
@@ -988,7 +988,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object btnCrearNCR: TBitBtn
     Left = 841
-    Top = 578
+    Top = 618
     Width = 99
     Height = 33
     Anchors = [akLeft, akBottom]
@@ -1077,7 +1077,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     TextHint = True
   end
   object CheckBox2: TCheckBox
-    Left = 968
+    Left = 976
     Top = 72
     Width = 109
     Height = 17
@@ -1088,7 +1088,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   object BitBtn8: TBitBtn
     Tag = 3174
     Left = 945
-    Top = 578
+    Top = 618
     Width = 134
     Height = 33
     Anchors = [akLeft, akBottom]
@@ -1163,8 +1163,8 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object BitBtn13: TBitBtn
     Tag = 3173
-    Left = 616
-    Top = 578
+    Left = 615
+    Top = 618
     Width = 113
     Height = 33
     Anchors = [akLeft, akBottom]
@@ -1195,7 +1195,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   object BitBtn14: TBitBtn
     Tag = 3177
     Left = 150
-    Top = 578
+    Top = 618
     Width = 122
     Height = 33
     Anchors = [akLeft, akBottom]
@@ -1245,7 +1245,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   end
   object BitBtn16: TBitBtn
     Left = 1086
-    Top = 578
+    Top = 572
     Width = 61
     Height = 32
     Hint = 'Imprimir Carta de Ruta'
@@ -1255,6 +1255,24 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     TabOrder = 33
     Visible = False
     OnClick = BitBtn16Click
+  end
+  object CheckBox3: TCheckBox
+    Left = 280
+    Top = 664
+    Width = 145
+    Height = 17
+    Anchors = [akLeft, akBottom]
+    Caption = 'Imprime NCR en 8.5 x 11'
+    TabOrder = 34
+  end
+  object chkImpenPDF: TCheckBox
+    Left = 280
+    Top = 681
+    Width = 108
+    Height = 17
+    Anchors = [akLeft, akBottom]
+    Caption = 'Envia Fact a PDF'
+    TabOrder = 35
   end
   object SkinData1: TSkinData
     Active = True
@@ -2701,6 +2719,10 @@ object frmConsultaFacturas: TfrmConsultaFacturas
       object CambiarTipoECF1: TMenuItem
         Caption = 'Cambiar Tipo_ECF'
         OnClick = CambiarTipoECF1Click
+      end
+      object VerificarMontos1: TMenuItem
+        Caption = 'Verificar Montos'
+        OnClick = VerificarMontos1Click
       end
     end
     object ieneECF1: TMenuItem

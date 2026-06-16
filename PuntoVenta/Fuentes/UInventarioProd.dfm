@@ -1,6 +1,6 @@
 object frmInventarioProd: TfrmInventarioProd
-  Left = 386
-  Top = 122
+  Left = 364
+  Top = 141
   Width = 995
   Height = 636
   Caption = 'Inventario de Producto'
@@ -583,43 +583,36 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'PRECIOVENTA2'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PRECIOVENTA3'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PRECIOVENTA4'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORCUTILIDAD1'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORCUTILIDAD2'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORCUTILIDAD3'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORCUTILIDAD4'
-            Width = 64
             Visible = True
           end
           item
@@ -632,7 +625,6 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'PRECIO_ALQUILER'
-            Width = 64
             Visible = True
           end
           item
@@ -652,7 +644,6 @@ object frmInventarioProd: TfrmInventarioProd
             Expanded = False
             FieldName = 'STATUS'
             Title.Caption = 'Status'
-            Width = 64
             Visible = True
           end
           item
@@ -665,7 +656,6 @@ object frmInventarioProd: TfrmInventarioProd
             Expanded = False
             FieldName = 'CODIGO_PRECIO'
             Title.Caption = 'CodPrecio'
-            Width = 64
             Visible = True
           end
           item
@@ -687,25 +677,21 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'CODFABRICANTE'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODCATEGORIA'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODSUBCATEGORIA'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'APLICAIMPTOCOMPRA'
-            Width = 64
             Visible = True
           end
           item
@@ -717,13 +703,11 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'SITUACIONPROD'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PAGACOMISION'
-            Width = 64
             Visible = True
           end>
       end
@@ -803,7 +787,7 @@ object frmInventarioProd: TfrmInventarioProd
         Tag = 4058
         Left = 856
         Top = 313
-        Width = 100
+        Width = 96
         Height = 33
         Caption = '&Guardar'
         TabOrder = 41
@@ -901,6 +885,7 @@ object frmInventarioProd: TfrmInventarioProd
         DataField = 'PRECIO'
         DataSource = dmInventario.dsInventarioProd
         TabOrder = 16
+        OnEnter = DBEdit3Enter
         OnExit = DBEdit3Exit
       end
       object DBEdit4: TDBEdit
@@ -1982,7 +1967,6 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'CODIGO_CTE'
-            Width = 64
             Visible = True
           end
           item
@@ -6542,8 +6526,8 @@ object frmInventarioProd: TfrmInventarioProd
       '  FECHA_VENCIMIENTO = :FECHA_VENCIMIENTO'
       'where'
       '  CODIGO = :OLD_CODIGO')
-    Left = 652
-    Top = 264
+    Left = 628
+    Top = 272
     object tblInventarioDupCODIGO: TIntegerField
       FieldName = 'CODIGO'
       Origin = 'INVENTARIO_PRODUCTO.CODIGO'
@@ -7052,7 +7036,7 @@ object frmInventarioProd: TfrmInventarioProd
       '  CODIGO = :CODIGO')
     SelectSQL.Strings = (
       'Select * from INVENTARIO_PRODUCTO'
-      'Where codigo_barra=:codigobarra')
+      'Where CODIGO = :CODIGO')
     ModifySQL.Strings = (
       'update INVENTARIO_PRODUCTO'
       'set'
@@ -7366,6 +7350,191 @@ object frmInventarioProd: TfrmInventarioProd
     object tblInvComer1roPAGACOMISION: TSmallintField
       FieldName = 'PAGACOMISION'
       Origin = 'INVENTARIO_PRODUCTO.PAGACOMISION'
+    end
+  end
+  object tblPrecioUnidadXNivelComer1ro: TIBDataSet
+    Database = dmConectar.IBDatabase2
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    DeleteSQL.Strings = (
+      'delete from PRECIO_UNIDADSURTIDORA'
+      'where'
+      '  IDUNIDAD = :OLD_IDUNIDAD and'
+      '  COD_PRODUCTO = :OLD_COD_PRODUCTO')
+    InsertSQL.Strings = (
+      'insert into PRECIO_UNIDADSURTIDORA'
+      
+        '  (IDUNIDAD, DESCRIPCION, COD_PRODUCTO, CANTIDAD, PRECIOVENTA1, ' +
+        'PRECIOVENTA2, '
+      
+        '   PRECIOVENTA3, PRECIOVENTA4, PORCUTILIDAD1, PORCUTILIDAD2, POR' +
+        'CUTILIDAD3, '
+      
+        '   PORCUTILIDAD4, COD_USUARIO_IN, COD_USUARIO_UPD, FECHA_IN, IN_' +
+        'POR, FECHA_MOD, '
+      '   MOD_POR)'
+      'values'
+      
+        '  (:IDUNIDAD, :DESCRIPCION, :COD_PRODUCTO, :CANTIDAD, :PRECIOVEN' +
+        'TA1, :PRECIOVENTA2, '
+      
+        '   :PRECIOVENTA3, :PRECIOVENTA4, :PORCUTILIDAD1, :PORCUTILIDAD2,' +
+        ' :PORCUTILIDAD3, '
+      
+        '   :PORCUTILIDAD4, :COD_USUARIO_IN, :COD_USUARIO_UPD, :FECHA_IN,' +
+        ' :IN_POR, '
+      '   :FECHA_MOD, :MOD_POR)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  IDUNIDAD,'
+      '  DESCRIPCION,'
+      '  COD_PRODUCTO,'
+      '  CANTIDAD,'
+      '  PRECIOVENTA1,'
+      '  PRECIOVENTA2,'
+      '  PRECIOVENTA3,'
+      '  PRECIOVENTA4,'
+      '  PORCUTILIDAD1,'
+      '  PORCUTILIDAD2,'
+      '  PORCUTILIDAD3,'
+      '  PORCUTILIDAD4,'
+      '  COD_USUARIO_IN,'
+      '  COD_USUARIO_UPD,'
+      '  FECHA_IN,'
+      '  IN_POR,'
+      '  FECHA_MOD,'
+      '  MOD_POR'
+      'from PRECIO_UNIDADSURTIDORA '
+      'where'
+      '  IDUNIDAD = :IDUNIDAD and'
+      '  COD_PRODUCTO = :COD_PRODUCTO')
+    SelectSQL.Strings = (
+      
+        'Select  PRECIO_UNIDADSURTIDORA.*, unidades.descripcion desc_unid' +
+        'ad  From PRECIO_UNIDADSURTIDORA'
+      
+        'left outer join UNIDADES on unidades.idunidad = PRECIO_UNIDADSUR' +
+        'TIDORA.idunidad'
+      'Where PRECIO_UNIDADSURTIDORA.cod_producto=:codigoprod')
+    ModifySQL.Strings = (
+      'update PRECIO_UNIDADSURTIDORA'
+      'set'
+      '  IDUNIDAD = :IDUNIDAD,'
+      '  DESCRIPCION = :DESCRIPCION,'
+      '  COD_PRODUCTO = :COD_PRODUCTO,'
+      '  CANTIDAD = :CANTIDAD,'
+      '  PRECIOVENTA1 = :PRECIOVENTA1,'
+      '  PRECIOVENTA2 = :PRECIOVENTA2,'
+      '  PRECIOVENTA3 = :PRECIOVENTA3,'
+      '  PRECIOVENTA4 = :PRECIOVENTA4,'
+      '  PORCUTILIDAD1 = :PORCUTILIDAD1,'
+      '  PORCUTILIDAD2 = :PORCUTILIDAD2,'
+      '  PORCUTILIDAD3 = :PORCUTILIDAD3,'
+      '  PORCUTILIDAD4 = :PORCUTILIDAD4,'
+      '  COD_USUARIO_IN = :COD_USUARIO_IN,'
+      '  COD_USUARIO_UPD = :COD_USUARIO_UPD,'
+      '  FECHA_IN = :FECHA_IN,'
+      '  IN_POR = :IN_POR,'
+      '  FECHA_MOD = :FECHA_MOD,'
+      '  MOD_POR = :MOD_POR'
+      'where'
+      '  IDUNIDAD = :OLD_IDUNIDAD and'
+      '  COD_PRODUCTO = :OLD_COD_PRODUCTO')
+    Left = 416
+    Top = 544
+    object tblPrecioUnidadXNivelComer1roIDUNIDAD: TIntegerField
+      FieldName = 'IDUNIDAD'
+      Origin = 'PRECIO_UNIDADSURTIDORA.IDUNIDAD'
+      Required = True
+    end
+    object tblPrecioUnidadXNivelComer1roDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'PRECIO_UNIDADSURTIDORA.DESCRIPCION'
+      Size = 50
+    end
+    object tblPrecioUnidadXNivelComer1roCOD_PRODUCTO: TIntegerField
+      FieldName = 'COD_PRODUCTO'
+      Origin = 'PRECIO_UNIDADSURTIDORA.COD_PRODUCTO'
+      Required = True
+    end
+    object tblPrecioUnidadXNivelComer1roCANTIDAD: TFloatField
+      FieldName = 'CANTIDAD'
+      Origin = 'PRECIO_UNIDADSURTIDORA.CANTIDAD'
+    end
+    object tblPrecioUnidadXNivelComer1roPRECIOVENTA1: TFloatField
+      FieldName = 'PRECIOVENTA1'
+      Origin = 'PRECIO_UNIDADSURTIDORA.PRECIOVENTA1'
+      DisplayFormat = ',0.0000'
+    end
+    object tblPrecioUnidadXNivelComer1roPRECIOVENTA2: TFloatField
+      FieldName = 'PRECIOVENTA2'
+      Origin = 'PRECIO_UNIDADSURTIDORA.PRECIOVENTA2'
+      DisplayFormat = ',0.0000'
+    end
+    object tblPrecioUnidadXNivelComer1roPRECIOVENTA3: TFloatField
+      FieldName = 'PRECIOVENTA3'
+      Origin = 'PRECIO_UNIDADSURTIDORA.PRECIOVENTA3'
+      DisplayFormat = ',0.0000'
+    end
+    object tblPrecioUnidadXNivelComer1roPRECIOVENTA4: TFloatField
+      FieldName = 'PRECIOVENTA4'
+      Origin = 'PRECIO_UNIDADSURTIDORA.PRECIOVENTA4'
+      DisplayFormat = ',0.0000'
+    end
+    object tblPrecioUnidadXNivelComer1roPORCUTILIDAD1: TFloatField
+      FieldName = 'PORCUTILIDAD1'
+      Origin = 'PRECIO_UNIDADSURTIDORA.PORCUTILIDAD1'
+      DisplayFormat = ',0.0000'
+      MaxValue = 1000.000000000000000000
+      MinValue = 0.050000000000000000
+    end
+    object tblPrecioUnidadXNivelComer1roPORCUTILIDAD2: TFloatField
+      FieldName = 'PORCUTILIDAD2'
+      Origin = 'PRECIO_UNIDADSURTIDORA.PORCUTILIDAD2'
+      DisplayFormat = ',0.0000'
+      MaxValue = 1000.000000000000000000
+      MinValue = 0.050000000000000000
+    end
+    object tblPrecioUnidadXNivelComer1roPORCUTILIDAD3: TFloatField
+      FieldName = 'PORCUTILIDAD3'
+      Origin = 'PRECIO_UNIDADSURTIDORA.PORCUTILIDAD3'
+      DisplayFormat = ',0.0000'
+      MaxValue = 1000.000000000000000000
+      MinValue = 0.050000000000000000
+    end
+    object tblPrecioUnidadXNivelComer1roPORCUTILIDAD4: TFloatField
+      FieldName = 'PORCUTILIDAD4'
+      Origin = 'PRECIO_UNIDADSURTIDORA.PORCUTILIDAD4'
+      DisplayFormat = ',0.0000'
+      MaxValue = 1000.000000000000000000
+      MinValue = 0.050000000000000000
+    end
+    object tblPrecioUnidadXNivelComer1roCOD_USUARIO_IN: TIntegerField
+      FieldName = 'COD_USUARIO_IN'
+      Origin = 'PRECIO_UNIDADSURTIDORA.COD_USUARIO_IN'
+    end
+    object tblPrecioUnidadXNivelComer1roCOD_USUARIO_UPD: TIntegerField
+      FieldName = 'COD_USUARIO_UPD'
+      Origin = 'PRECIO_UNIDADSURTIDORA.COD_USUARIO_UPD'
+    end
+    object tblPrecioUnidadXNivelComer1roFECHA_IN: TDateTimeField
+      FieldName = 'FECHA_IN'
+      Origin = 'PRECIO_UNIDADSURTIDORA.FECHA_IN'
+    end
+    object tblPrecioUnidadXNivelComer1roIN_POR: TIBStringField
+      FieldName = 'IN_POR'
+      Origin = 'PRECIO_UNIDADSURTIDORA.IN_POR'
+      Size = 12
+    end
+    object tblPrecioUnidadXNivelComer1roFECHA_MOD: TDateTimeField
+      FieldName = 'FECHA_MOD'
+      Origin = 'PRECIO_UNIDADSURTIDORA.FECHA_MOD'
+    end
+    object tblPrecioUnidadXNivelComer1roMOD_POR: TIBStringField
+      FieldName = 'MOD_POR'
+      Origin = 'PRECIO_UNIDADSURTIDORA.MOD_POR'
+      Size = 12
     end
   end
 end

@@ -36,6 +36,8 @@ interface
     GlbNumVtaPOSTmp : Integer;
     GLBMuestraInfoProv, GlbCantCorridas : Integer;
     GlbMuestraPDF : Boolean;
+    GlbCerrandoSistema: Boolean;
+    glbContImpCks:Boolean;
     GlbMuestraMensajeEmail : Boolean;
     GlbImpPDF : Boolean;
     GlbImpFormatoPDF : Smallint;
@@ -52,13 +54,14 @@ interface
     GlbEncabezadoIFiscal: string[40];
     vUserName   : String[12];
     GlbClaveSup : String;
+    GlbClavePrecios : String;
     GlbIgI, GlbCalcItbis : smallint;
     GlbAvisoProdVence : smallint;
     GlbFormatoConduce : integer;
     NCFCTeNotSetup : Boolean;
     GlbFOrdDespAlmcenPOS : smallint;
     GlbDocStandar : smallint;
-    GlbEsPrecuenta : Boolean;
+    GlbEsPrecuenta,glbStatusCksNormal : Boolean;
     GlbShowCtaBanco: smallint;
     GlbClaveSupEncrypted : String;
     strUsuarioID: String;
@@ -72,8 +75,11 @@ interface
     GlbCodCiudad : Integer;
     GlbRutaLogoDoc: string;
     glbCia_Key : Integer;
+    glbSubTipo, glbTipocks : Smallint;
     GLBCodigoCteFct : Integer;
-    glbFechaNom : TDateTime;
+    //glbFechaNom : TDateTime;
+    GlbCantMesProy  : Real;
+    GlbFechaPagoCks : TDatetime;
     GlbFechaInicial : TDatetime;
     GlbTipoComision : smallint = 2;
     glbFechaFinal   : TDatetime;
@@ -103,6 +109,7 @@ interface
     GlbInsertarEnLoan : Smallint;
     GlBExpert, GlBAyaco,GlBInveraf, Glbcolmado : smallint;
     GlBTapiceria:Smallint;
+    GLBProsesur:Smallint;
     GLBMTEGroup :Smallint;
     GlBCuadros : smallint;
     GLBImpComAdic : smallint;
@@ -112,6 +119,7 @@ interface
     GLBECOM : smallint;
     GLBMotor : smallint;
     GLBRecCxcPOS : smallint;
+    glbNumcks, glbnumfact:LongInt;
     GLBShowLineaVta : smallint;
     GlbToolWisPro : string;
     //GlbUsuarioPassword : string;
@@ -253,6 +261,7 @@ interface
     GlbImprimeReciboFact : Integer;
     GlbActivaPanificadora: Integer;
     GlbActivaLavanderia: Integer;
+    GlbActivaNomina:smallint;
     GlbActivaCafeteria   : Integer;
     GlbActivaProduccion : Integer;
     GlbRegistrado : Boolean;
@@ -497,7 +506,11 @@ interface
    function Encriptar(const S: String; Key: Int64): String;
    function Desencriptar(const S: String; Key: Int64): String;
    procedure PatchINT3;
+   function generanumerocks: LongInt;
+   function generaproxnumcks: LongInt;
    function GetRandomNumber(pref_num:integer):integer;
+   Function glbProcActNumcks(nombproc:string;tipo:smallint):LongInt;//ultimo numero de cheque
+   Function glbProcGetNumcks(nombproc:string;tipo:smallint;codbanco:integer):LongInt;//ultimo numero de cheque
    procedure GlbSalvarQuery(Tabla:TIBDataSet);
    Function  sqlConsulta(tabla:string;campo:string;condicion:string;valor:String): Boolean;
    Function sqlUpdate(tabla:string;campo:string;condicion:string;valorOld:String;nuevoValor:string): Boolean;
@@ -531,6 +544,11 @@ interface
    Function ProcZipFile(_path : String;var targetFile:string) : Boolean;
    procedure GenerarQRCode(OrdenID: Integer; Fecha: TDateTime; Image: TImage);
    Procedure ExporToExcelFCTCuadre(mTabla : TIBQuery; NombreArchivo : String);
+   //Formato HTMl
+   Procedure ExporToExcelInvReorden(mTabla : TIBQuery; NombreArchivo : String; ZipFile:boolean);
+
+   //En revision -Necesita excel intalado
+   Procedure ExporToExcelInvReordenEXCEL(mTabla : TIBQuery; NombreArchivo : String);
    function SetMergeCells (sheet:variant;cel1:variant;cel2:variant;
     MergeCells:boolean):boolean;
 
@@ -561,6 +579,11 @@ interface
    function GLBObtenerCodigoProdEAN13(txtEAN13:String; var pesoProd:string):String;
    function GetOSVersion:string;
    procedure ProcCopiarFolder(pfrom:string;pTo:string);
+   function CantDiasDom(AnioAct : Word; mes2 : word; dia2 : word; dias : integer): integer;
+   Function MontoIsrADeducir(Salario:Real):Real;
+Procedure CalculaTiempoT(AnioIn:Integer;MesIn:Integer;DiaIn:Integer;
+AnioOut:Integer;MesOut:Integer;DiaOut:Integer;
+var TAnio:Integer;Var TMes:Integer;Var TDia:Integer);
 
    Procedure GlbRemoveDirectory(const Dir: String);
    Function Split(Delimiter: Char;enumeracion : string): TStringList;
@@ -568,13 +591,16 @@ interface
    function GlbRutaMisDocumentos : String;
    function GetRutaPrograma: String;
    function GetPersonalFolder(H: HWND): string;
+   function HtmlEncode(const S: string): string;
    Function GetImpresora(Impre:String):Integer;
    Function GetImpresoraRpt(id:smallint;tiporpt:smallint):Integer;
    function MesEsFolder(const dt: TDateTime): string;
    function GetPCName: string;
    function GetComputerNameStr: string;
+   Procedure ExportToHTMLCambioPrecios(mTabla: TIBQuery; NombreArchivo: String);
    function CheckRNCEdActivoenDGII(iddoc:string):boolean;
    function CheckInternetWithRetries: Boolean;
+   procedure MarcarCambioPreciosEnviados(AQuery: TIBDataSet; AFechaIni, AFechaFin: TDateTime);
    //procedure EjecutarFormatearExcelYEsperar(fechaini:string;fechafin:string;ciakey:integer;const NombreArchivoExcel: string;nombreExe: string);
    function EjecutarFormatearExcelYEsperar(
    const FormatearExcelExe, FechaIni, FechaFin, CiaKey, NombreArchivo: string;
@@ -582,8 +608,593 @@ interface
 
 implementation
 
-uses UDatModConectar, UDatosVentas, UDatModCompania, UDatModControl,UcheckSecNCF,DelphiZXingQRCode, UDgiiRncClient,
+uses UDatModConectar, UDatModCheques,UDatosVentas, UDatModCompania, UDatModControl,UcheckSecNCF,DelphiZXingQRCode, UDgiiRncClient,
 specialfolders, UDatModFactura, UDatmodPerm, UDatModReportes, UDatamodulocnt, UDatModInventario, UDatmodDatosGenerales, SynPdf, UDatModNomina;
+
+
+procedure MarcarCambioPreciosEnviados(AQuery: TIBDataSet; AFechaIni, AFechaFin: TDateTime);
+begin
+  AQuery.Close;
+  {AQuery.SQL.Clear;
+  AQuery.SQL.Add('UPDATE AUD_CAMBIO_PRECIO');
+  AQuery.SQL.Add('SET ENVIADO = 1, FECHA_ENVIO = CURRENT_TIMESTAMP');
+  AQuery.SQL.Add('WHERE FECHA_CAMBIO >= :FECHAINI');
+  AQuery.SQL.Add('  AND FECHA_CAMBIO < :FECHAFIN');
+  AQuery.SQL.Add('  AND COALESCE(ENVIADO, 0) = 0');}
+  AQuery.ParamByName('FECHAINI').AsDate:= AFechaIni;
+  AQuery.ParamByName('FECHAFIN').AsDate := AFechaFin+1;
+  AQuery.ParamByName('STATUS').AsInteger:= 0;
+  AQuery.Open;
+  AQuery.first;
+  while not AQuery.Eof do
+  begin
+    AQuery.Edit;
+    AQuery.FieldByName('Enviado').AsInteger:=1;
+    AQuery.Post;
+    AQuery.Next;
+  end;
+  try
+    AQuery.ApplyUpdates;
+    if not AQuery.Transaction.InTransaction then
+    AQuery.Transaction.StartTransaction;
+    AQuery.Transaction.CommitRetaining;
+  except
+  AQuery.Transaction.RollbackRetaining;
+  end;
+  AQuery.Close;
+end;
+
+function HtmlEncode(const S: string): string;
+begin
+  Result := Trim(S);
+
+  Result := StringReplace(Result, '&', '&amp;', [rfReplaceAll]);
+  Result := StringReplace(Result, '<', '&lt;', [rfReplaceAll]);
+  Result := StringReplace(Result, '>', '&gt;', [rfReplaceAll]);
+  Result := StringReplace(Result, '"', '&quot;', [rfReplaceAll]);
+
+  { Caracteres comunes del español }
+  Result := StringReplace(Result, 'á', '&aacute;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'é', '&eacute;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'í', '&iacute;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'ó', '&oacute;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'ú', '&uacute;', [rfReplaceAll]);
+
+  Result := StringReplace(Result, 'Á', '&Aacute;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'É', '&Eacute;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'Í', '&Iacute;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'Ó', '&Oacute;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'Ú', '&Uacute;', [rfReplaceAll]);
+
+  Result := StringReplace(Result, 'ñ', '&ntilde;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'Ñ', '&Ntilde;', [rfReplaceAll]);
+
+  Result := StringReplace(Result, 'ü', '&uuml;', [rfReplaceAll]);
+  Result := StringReplace(Result, 'Ü', '&Uuml;', [rfReplaceAll]);
+
+  Result := StringReplace(Result, '¿', '&iquest;', [rfReplaceAll]);
+  Result := StringReplace(Result, '¡', '&iexcl;', [rfReplaceAll]);
+end;
+
+function GetTablaOrigenDisplay(const AValue: string): string;
+begin
+  if SameText(Trim(AValue), 'INVENTARIO_PRODUCTO') then
+    Result := 'INVENTARIO'
+  else if SameText(Trim(AValue), 'PRECIO_UNIDADSURTIDORA') then
+    Result := 'PRECIO X UNIDAD'
+  else
+    Result := Trim(AValue);
+end;
+
+function GetClaseFilaPrecio(ATabla: TDataSet): string;
+var
+  PrecioAnterior: Double;
+  PrecioNuevo: Double;
+begin
+  Result := '';
+
+  PrecioAnterior := 0;
+  PrecioNuevo := 0;
+
+  if ATabla.FindField('PRECIO_ANTERIOR') <> nil then
+    PrecioAnterior := ATabla.FieldByName('PRECIO_ANTERIOR').AsFloat;
+
+  if ATabla.FindField('PRECIO_NUEVO') <> nil then
+    PrecioNuevo := ATabla.FieldByName('PRECIO_NUEVO').AsFloat;
+
+  if PrecioNuevo < PrecioAnterior then
+    Result := ' class="price-down"';
+end;
+
+function GetUsuariosResumen(ATabla: TDataSet): string;
+var
+  Bmk: TBookmark;
+  Lista: TStringList;
+  Item: string;
+  I: Integer;
+begin
+  Result := '';
+
+  if (ATabla = nil) or (not ATabla.Active) or ATabla.IsEmpty then
+    Exit;
+
+  Lista := TStringList.Create;
+  try
+    Lista.Sorted := True;
+    Lista.Duplicates := dupIgnore;
+
+    Bmk := ATabla.GetBookmark;
+    try
+      ATabla.DisableControls;
+      try
+        ATabla.First;
+        while not ATabla.Eof do
+        begin
+          Item := Trim(ATabla.FieldByName('nombre_usuario').AsString);
+
+          if Trim(ATabla.FieldByName('nombre_pc').AsString) <> '' then
+            Item := Item + ' / ' + Trim(ATabla.FieldByName('nombre_pc').AsString);
+
+          if Trim(Item) <> '' then
+            Lista.Add(Item);
+
+          ATabla.Next;
+        end;
+      finally
+        ATabla.EnableControls;
+      end;
+
+      ATabla.GotoBookmark(Bmk);
+    finally
+      ATabla.FreeBookmark(Bmk);
+    end;
+
+    for I := 0 to Lista.Count - 1 do
+    begin
+      if Result <> '' then
+        Result := Result + ' | ';
+
+      Result := Result + HtmlEncode(Lista[I]);
+    end;
+  finally
+    Lista.Free;
+  end;
+end;
+
+Procedure ExportToHTMLCambioPrecios(mTabla: TIBQuery; NombreArchivo: String);
+var
+  SL: TStringList;
+  HtmlBody: string;
+  HtmlFile: string;
+  DirOut: string;
+  UsuariosResumen: string;
+
+
+  function FieldStr(const AFieldName: string): string;
+  begin
+    if mTabla.FindField(AFieldName) = nil then
+      Result := ''
+    else if mTabla.FieldByName(AFieldName).IsNull then
+      Result := ''
+    else
+      Result := HtmlEncode(mTabla.FieldByName(AFieldName).AsString);
+  end;
+
+  function FieldFloatStr(const AFieldName: string): string;
+  begin
+    if mTabla.FindField(AFieldName) = nil then
+      Result := ''
+    else if mTabla.FieldByName(AFieldName).IsNull then
+      Result := ''
+    else
+      Result := FormatFloat('#,##0.00', mTabla.FieldByName(AFieldName).AsFloat);
+  end;
+
+  function FieldPercentStr(const AFieldName: string): string;
+  begin
+    if mTabla.FindField(AFieldName) = nil then
+      Result := 'N/A'
+    else if mTabla.FieldByName(AFieldName).IsNull then
+      Result := 'N/A'
+    else
+      Result := FormatFloat('#,##0.00', mTabla.FieldByName(AFieldName).AsFloat) + '%';
+  end;
+
+  function FieldDateTimeStr(const AFieldName: string): string;
+  begin
+    if mTabla.FindField(AFieldName) = nil then
+      Result := ''
+    else if mTabla.FieldByName(AFieldName).IsNull then
+      Result := ''
+    else
+      Result := FormatDateTime('dd/mm/yyyy hh:mm a/p', mTabla.FieldByName(AFieldName).AsDateTime);
+  end;
+
+  function BuildHtmlFileName(const ABaseName: string): string;
+  begin
+    Result := Trim(ABaseName);
+    Result := StringReplace(Result, '\\', '\', [rfReplaceAll]);
+
+    if ExtractFileExt(Result) = '' then
+      Result := Result + '.html'
+    else if UpperCase(ExtractFileExt(Result)) <> '.HTML' then
+      Result := ChangeFileExt(Result, '.html');
+  end;
+  function GetTablaOrigenDisplay(const AValue: string): string;
+begin
+  if SameText(Trim(AValue), 'INVENTARIO_PRODUCTO') then
+    Result := 'INVENTARIO'
+  else if SameText(Trim(AValue), 'PRECIO_UNIDADSURTIDORA') then
+    Result := 'PRECIO X UNIDAD'
+  else
+    Result := Trim(AValue);
+end;
+
+begin
+  NombreArchivo := StringReplace(NombreArchivo, '\\', '\', [rfReplaceAll]);
+  HtmlFile := BuildHtmlFileName(NombreArchivo);
+
+  DirOut := ExtractFileDir(HtmlFile);
+  if (DirOut <> '') and (not DirectoryExists(DirOut)) then
+    ForceDirectories(DirOut);
+
+  if (mTabla = nil) or (not mTabla.Active) or mTabla.IsEmpty then
+    Exit;
+
+  SL := TStringList.Create;
+  try
+    UsuariosResumen := GetUsuariosResumen(mTabla);
+
+    SL.Add('<!DOCTYPE html>');
+    SL.Add('<html>');
+    SL.Add('<head>');
+    SL.Add('<meta http-equiv="Content-Type" content="text/html; charset=utf-8">');
+    SL.Add('<meta charset="utf-8">');
+    SL.Add('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+
+    SL.Add('<style>');
+    SL.Add('body{margin:0;padding:0;background:#edf2f7;font-family:Arial,Helvetica,sans-serif;color:#1f2933;}');
+    SL.Add('.wrapper{width:100%;background:#edf2f7;padding:10px 0;}');
+
+    SL.Add('.container{width:100%;max-width:1200px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #cbd5e1;box-shadow:0 8px 22px rgba(15,61,94,.10);}');
+
+    SL.Add('.header{background:#0f3d5e;color:#ffffff;padding:18px 18px;text-align:center;}');
+    SL.Add('.header h1{margin:0;font-size:21px;line-height:25px;font-weight:bold;letter-spacing:.4px;}');
+    SL.Add('.header p{margin:6px 0 0 0;font-size:13px;line-height:17px;color:#e0f2fe;}');
+
+    SL.Add('.summary{padding:14px 18px;font-size:13px;line-height:18px;background:#f0f9ff;border-bottom:1px solid #cbd5e1;}');
+    SL.Add('.summary b{color:#0f3d5e;}');
+    SL.Add('.usuarios{margin-top:9px;padding:9px 11px;background:#e0f2fe;border:1px solid #bae6fd;border-radius:8px;font-size:12px;color:#0c4a6e;}');
+    SL.Add('.legend{margin-top:8px;font-size:11px;color:#64748b;}');
+    SL.Add('.legend span{display:inline-block;width:10px;height:10px;background:#fee2e2;border:1px solid #fca5a5;border-radius:2px;margin-right:5px;vertical-align:-1px;}');
+
+    SL.Add('table{width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #cbd5e1;}');
+    SL.Add('th{background:#d9eaf7;color:#102a43;font-size:12px;text-align:left;padding:8px 7px;border:1px solid #b6c7d6;line-height:14px;}');
+    SL.Add('td{font-size:12px;padding:8px 7px;border:1px solid #d7e0ea;vertical-align:top;line-height:15px;background:#ffffff;}');
+    SL.Add('tbody tr:nth-child(even) td{background:#f8fafc;}');
+    SL.Add('tbody tr:hover td{background:#eef6ff;}');
+
+    SL.Add('tr.price-up td{background:#fee2e2 !important;border-color:#fca5a5;color:#7f1d1d;}');
+    SL.Add('tr.price-up td.num{font-weight:bold;}');
+
+    SL.Add('.fecha{width:88px;white-space:normal;}');
+    SL.Add('.codigo{width:92px;white-space:normal;}');
+    SL.Add('.producto{width:235px;word-break:normal;overflow-wrap:break-word;}');
+    SL.Add('.campo{width:175px;word-break:normal;overflow-wrap:break-word;}');
+    SL.Add('.num{text-align:right;white-space:nowrap;}');
+    SL.Add('.colnum{width:58px;}');
+    SL.Add('.colbenef{width:74px;}');
+
+    SL.Add('.tag{display:inline-block;padding:2px 6px;border-radius:10px;background:#e0f2fe;color:#075985;font-size:11px;line-height:13px;margin-top:3px;border:1px solid #bae6fd;}');
+    SL.Add('.field-name{font-weight:bold;color:#0f172a;}');
+    SL.Add('.footer{font-size:11px;color:#52606d;padding:12px 18px;line-height:16px;background:#f8fafc;border-top:1px solid #e2e8f0;}');
+
+    SL.Add('.m-label{display:none;}');
+
+SL.Add('@media only screen and (max-width:700px){');
+SL.Add('  .wrapper{padding:0;background:#ffffff;}');
+SL.Add('  .container{width:100%;max-width:100%;border-radius:0;border-left:0;border-right:0;box-shadow:none;}');
+SL.Add('  .header{padding:15px 12px;}');
+SL.Add('  .header h1{font-size:18px;line-height:22px;}');
+SL.Add('  .header p{font-size:12px;line-height:16px;}');
+SL.Add('  .summary{padding:12px;font-size:12px;line-height:16px;}');
+SL.Add('  .usuarios{font-size:11px;line-height:15px;padding:8px;margin-top:8px;}');
+SL.Add('  .legend{font-size:11px;line-height:15px;}');
+
+SL.Add('  table,thead,tbody,tr,th,td{display:block;width:auto;}');
+SL.Add('  table{border:0;background:#ffffff;}');
+SL.Add('  thead{display:none;}');
+
+SL.Add('  tr{border:1px solid #cbd5e1;border-radius:10px;margin:10px 8px;padding:0;background:#ffffff;overflow:hidden;box-shadow:0 2px 8px rgba(15,61,94,.08);}');
+SL.Add('  td{border:0;border-bottom:1px solid #e2e8f0;padding:7px 12px;font-size:12px;line-height:16px;background:#ffffff;}');
+SL.Add('  td:last-child{border-bottom:0;}');
+
+SL.Add('  .m-label{display:block;font-size:11px;line-height:14px;font-weight:bold;color:#0f3d5e;margin-bottom:2px;text-transform:uppercase;letter-spacing:.2px;}');
+SL.Add('  .m-value{display:block;color:#1f2933;}');
+
+SL.Add('  .fecha,.codigo,.producto,.campo,.num{text-align:left;white-space:normal;width:auto;}');
+SL.Add('  .producto{font-size:13px;font-weight:bold;color:#0f172a;}');
+SL.Add('  .campo{color:#334155;}');
+SL.Add('  .num{font-weight:bold;}');
+
+SL.Add('  .c1{background:#f0f9ff !important;}');
+SL.Add('  .c3{background:#f8fafc !important;}');
+SL.Add('  .tag{font-size:11px;line-height:13px;margin-top:3px;}');
+
+SL.Add('  tr.price-up{background:#fee2e2;border-color:#fca5a5;}');
+SL.Add('  tr.price-up td{background:#fee2e2 !important;}');
+SL.Add('  tr.price-up .m-label{color:#991b1b;}');
+SL.Add('}');
+
+SL.Add('@media print{');
+SL.Add('  body{background:#ffffff;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}');
+SL.Add('  .wrapper{padding:0;background:#ffffff;}');
+SL.Add('  .container{width:100%;max-width:none;border:0;border-radius:0;box-shadow:none;}');
+SL.Add('  .header{padding:8px 10px;}');
+SL.Add('  .header h1{font-size:16px;line-height:19px;}');
+SL.Add('  .header p{font-size:11px;line-height:14px;}');
+SL.Add('  .summary{padding:7px 8px;font-size:10px;line-height:13px;}');
+SL.Add('  .usuarios{font-size:10px;padding:5px 7px;margin-top:5px;}');
+SL.Add('  table{width:100%;table-layout:fixed;border-collapse:collapse;}');
+SL.Add('  th{font-size:9px;padding:4px 3px;line-height:11px;}');
+SL.Add('  td{font-size:9px;padding:4px 3px;line-height:11px;}');
+SL.Add('.fecha{width:92px;white-space:normal;}');
+SL.Add('.codigo{width:96px;white-space:normal;}');
+SL.Add('.producto{width:270px;word-break:normal;overflow-wrap:break-word;}');
+SL.Add('.campo{width:190px;word-break:normal;overflow-wrap:break-word;}');
+SL.Add('.num{text-align:right;white-space:nowrap;}');
+SL.Add('.colnum{width:64px;}');
+SL.Add('.colbenef{width:82px;}');
+SL.Add('  .colnum{width:52px;}');
+SL.Add('  .colbenef{width:64px;}');
+SL.Add('  .tag{font-size:8px;line-height:10px;padding:1px 3px;}');
+SL.Add('  .footer{font-size:9px;padding:7px 8px;}');
+SL.Add('  tr{page-break-inside:avoid;}');
+SL.Add('}');
+    SL.Add('@page{');
+    SL.Add('  size:landscape;');
+    SL.Add('  margin:8mm;');
+    SL.Add('}');
+    SL.Add('</style>');
+                                        
+    SL.Add('</head>');
+    SL.Add('<body>');
+    SL.Add('<div class="wrapper">');
+    SL.Add('<div class="container">');
+
+    SL.Add('<div class="header">');
+    SL.Add('<h1>' + HtmlEncode(dmCompania.tblCompaniaNombre.Value) + '</h1>');
+    SL.Add('<p>Reporte diario de cambios de precios</p>');
+    SL.Add('</div>');
+
+    SL.Add('<div class="summary">');
+    SL.Add('<b>Fecha de generaci&oacute;n:</b> ' + FormatDateTime('dd/mm/yyyy hh:mm a/p', Now) + '<br>');
+    SL.Add('<b>Nota:</b> Este reporte muestra cada modificaci&oacute;n de precio registrada durante el d&iacute;a.');
+
+    if Trim(UsuariosResumen) <> '' then
+      SL.Add('<div class="usuarios"><b>Usuario(s) / PC:</b> ' + UsuariosResumen + '</div>');
+
+    SL.Add('<div class="legend"><span></span>Las filas resaltadas en rojo indican disminuci&oacute;n de precio.</div>');
+    SL.Add('</div>');
+
+    SL.Add('<table>');
+    SL.Add('<thead>');
+    SL.Add('<tr>');
+    SL.Add('<th class="fecha">Fecha/Hora</th>');
+    SL.Add('<th class="codigo">C&oacute;digo</th>');
+    SL.Add('<th class="producto">Producto</th>');
+    SL.Add('<th class="campo">Campo</th>');
+    SL.Add('<th class="num colnum">Anterior</th>');
+    SL.Add('<th class="num colnum">Nuevo</th>');
+    SL.Add('<th class="num colnum">Dif.</th>');
+    SL.Add('<th class="num colnum">%Dif.</th>');
+    SL.Add('<th class="num colbenef">%Bfcio</th>');
+    SL.Add('</tr>');
+    SL.Add('</thead>');
+    SL.Add('<tbody>');
+
+    mTabla.First;
+    while not mTabla.Eof do
+    begin
+      SL.Add('<tr' + GetClaseFilaPrecio(mTabla) + '>');
+
+      SL.Add('<td class="c1 fecha">' +
+        FieldDateTimeStr('FECHA_CAMBIO') +
+        '</td>');
+
+      SL.Add('<td class="c2 codigo">' +
+        FieldStr('COD_PRODUCTO') +
+        '<br><span class="tag">' + FieldStr('CODIGO_BARRA') + '</span>' +
+        '</td>');
+
+      SL.Add('<td class="c3 producto">' +
+        FieldStr('DESCRIPCION') +
+        '</td>');
+
+      SL.Add('<td class="c4 campo">' +
+        HtmlEncode(GetTablaOrigenDisplay(mTabla.FieldByName('TABLA_ORIGEN').AsString)) +
+        '<br><span class="field-name">' + FieldStr('CAMPO_PRECIO') + '</span>' +
+        '</td>');
+
+      SL.Add('<td class="c5 num colnum">' +
+        FieldFloatStr('PRECIO_ANTERIOR') +
+        '</td>');
+
+      SL.Add('<td class="c6 num colnum">' +
+        FieldFloatStr('PRECIO_NUEVO') +
+        '</td>');
+
+      SL.Add('<td class="c7 num colnum">' +
+        FieldFloatStr('DIFERENCIA') +
+        '</td>');
+
+      SL.Add('<td class="c8 num colnum">' +
+        FieldPercentStr('PORC_DIFERENCIA') +
+        '</td>');
+
+      SL.Add('<td class="c9 num colbenef">' +
+        FieldPercentStr('PORC_BENEFICIO_NUEVO') +
+        '</td>');
+
+      SL.Add('</tr>');
+
+      mTabla.Next;
+      Application.ProcessMessages;
+
+      if GlbCerrandoSistema then
+        Break;
+    end;
+
+    SL.Add('</tbody>');
+    SL.Add('</table>');
+
+    SL.Add('<div class="footer">');
+    SL.Add('Reporte generado autom&aacute;ticamente por el sistema. Valores expresados en RD$.');
+    SL.Add('</div>');
+
+    SL.Add('</div>');
+    SL.Add('</div>');
+    SL.Add('</body>');
+    SL.Add('</html>');
+
+    HtmlBody := SL.Text;
+    SL.SaveToFile(HtmlFile);
+  finally
+    SL.Free;
+  end;
+
+  dmdatos.qryEmailProceso.Close;
+  dmdatos.qryEmailProceso.Params[0].Value := GlbIDTipoEmail;
+  dmdatos.qryEmailProceso.Open;
+  dmdatos.qryEmailProceso.First;
+
+  if dmdatos.qryEmailProcesoSTATUS.Value = 'A' then
+  begin
+    if GlbEnviaEmail then
+    begin
+      if dmdatos.qryEmailProceso.RecordCount = 1 then
+      begin
+        if dmCompania.tblCompania.State = dsInactive then
+          dmCompania.tblCompania.Open;
+
+        dmCompania.tblCompania.Locate('codigo', glbCia_Key, []);
+        GlbMuestraMensajeEmail:=False;
+        ProcLogTrackingEmail(
+          glbidtipoemail,
+          dmdatos.qryEmailProcesoEMAIL_SERVER.Value,
+          dmdatos.qryEmailProcesoPORT.AsString,
+          dmdatos.qryEmailProcesoUSER_EMAIL.Value,
+          Desencriptar(dmdatos.qryEmailProcesoUSER_PASSWORD.Value, 2005),
+          Now,
+          dmdatos.qryEmailProcesoTOEMAIL.Value,
+          dmdatos.qryEmailProcesoFROMEMAIL.Value,
+          dmdatos.qryEmailProcesoSUBJECT.Value + ' -CIA:' +
+          dmCompania.tblCompaniaNOMBRE.Value +
+          ' Sucursal : ' + dmCompania.tblCompaniaNUM_SUCURSAL.AsString + ' ' +
+          FormatDateTime('dd/mm/yyyy hh:mm a/p', Now),
+          HtmlBody,
+          VarUsuarioGlb,
+          'A',
+          '',
+          Now,
+          strusername,
+          FormatDateTime('dd/mm/yyyy hh:mm a/p', Now),
+          strusername,
+          '',
+          dmCompania.tblCompaniaEMAIL.Value,
+          dmCompania.tblCompaniaNOMBRE.Value
+        );
+      end;
+
+      GlbEnviaEmail := False;
+    end;
+  end;
+
+  Application.ProcessMessages;
+end;
+
+Procedure CalculaTiempoT(AnioIn:Integer;MesIn:Integer;DiaIn:Integer;
+AnioOut:Integer;MesOut:Integer;DiaOut:Integer;
+var TAnio:Integer;Var TMes:Integer;Var TDia:Integer);
+begin
+  if DiaOut < DiaIn then
+  begin
+    Inc(DiaOut,DiasEnElmes(AnioOut,MesOut));
+    Dec(MesOut);
+  end;
+  if MesOut < MesIn then
+  begin
+    Dec(AnioOut);
+    Inc(MesOut,12);
+  end;
+  TAnio:= AnioOut - AnioIn;
+  Tmes := MesOut - MesIn;
+  TDia := DiaOut - DiaIn;
+  if TDia >= 30 then
+  begin
+    TDia:=0;
+    Inc(TMes);
+  end;
+  if tmes >=12 then
+  begin
+    Inc(TAnio);
+    Tmes:=0;
+  end;  
+end;
+
+
+Function MontoIsrADeducir(Salario:Real):Real;
+  Function ValorEscala(Indice:Integer):Real;
+  begin
+    if dmdatos.qryEscalaIsr.Locate('CODIGO_ESCALA',Indice,[]) then
+    Result:=dmdatos.qryEscalaIsrESCALA_RETENCION.Value else Result:=0;
+  end;
+  Function ValorExento(Indice:Integer):Real;
+  begin
+    if dmdatos.qryEscalaIsr.Locate('CODIGO_ESCALA',Indice,[]) then
+    Result:=dmdatos.qryEscalaIsrTASA_EXENTO.Value else Result:=0;
+  end;
+  Function ValorExedente(Indice:Integer):Real;
+  begin
+    if dmdatos.qryEscalaIsr.Locate('CODIGO_ESCALA',Indice,[]) then
+    Result:=dmdatos.qryEscalaIsrEXCEDENTE.Value else Result:=0;
+  end;
+  Function ValorTasa(Indice:Integer):Real;
+  begin
+    if dmdatos.qryEscalaIsr.Locate('CODIGO_ESCALA',Indice,[]) then
+    Result:=dmdatos.qryEscalaIsrTASA_EXENTO.Value else Result:=0;
+  end;
+begin
+  if (Salario > ValorEscala(1)) and (Salario < ValorEscala(2)) then
+  begin
+    Result:= (Salario - ValorEscala(1)) * ValorTasa(1);
+  end else
+  if (Salario > ValorEscala(2)) and (Salario < ValorEscala(3)) then
+  begin
+    Result:= (Salario - ValorEscala(2)) * ValorTasa(2) + ValorExedente(2);
+  end else
+  if (Salario > ValorEscala(3)) then
+  begin
+    Result:= (Salario - ValorEscala(3)) * ValorTasa(3) + ValorExedente(3);
+  end else Result:=0;
+end;
+
+function CantDiasDom(AnioAct : Word; mes2 : word; dia2 : word; dias : integer): integer;
+var
+  fecha : TDatetime;
+  x:integer;
+begin
+  fecha:=EncodeDate(AnioAct,mes2,dia2);
+  Result := 0;
+  for x:= 1 to dias do
+  Begin
+    if DayOfWeek(fecha) = 1 then
+    Begin
+      Result := Result + 1;
+    end;
+    fecha := fecha + 1;
+  end;  
+end;
 
 function CheckInternetWithRetries: Boolean;
 var
@@ -1623,6 +2234,7 @@ begin
   end;
   if GLBMostrarArchivo then
   begin
+    GlbNombreArchivo:=DestFile;
     if (FileExists(DestFile)) then
     ShellExecute(0,'open',PChar(DestFile), '','',SW_SHOWNORMAL);
   end else
@@ -1682,7 +2294,7 @@ begin
   finally
     Pdf.free;
   end;
-  Application.ProcessMessages;
+  //Application.ProcessMessages;
   if GLBMostrarArchivo then
   begin
     if (FileExists(DestFile)) then
@@ -1757,7 +2369,7 @@ begin
   end;
 
   FreeObjectInstance(Pdf);
-  Application.ProcessMessages;
+  //Application.ProcessMessages;
   if GLBMostrarArchivo then
   begin
     if (FileExists(DestFile)) then
@@ -2685,6 +3297,49 @@ begin
   sqlQuery:=Nil;
 end;
 
+function generanumerocks: LongInt;
+begin
+  dmcks.stpnumcks.close;
+  dmcks.stpnumcks.params[0].Value:=1; // glbTipoCks;
+  dmcks.stpnumcks.params[1].Value:='sec_num_cks';//tabla
+  dmcks.stpnumcks.Params[2].Value:=glbNumcks;//asigna numero inicia cheque
+  dmcks.stpnumcks.Params[3].Value:=glbBancos;
+  dmcks.stpnumcks.ExecProc;
+  Result:=dmcks.stpnumcks.params[4].Value;//numero cheque
+end;
+
+function generaproxnumcks: LongInt;
+begin
+  dmcks.stpnumcks.close;
+  dmcks.stpnumcks.params[0].Value:=1; //glbTipoCks;
+  dmcks.stpnumcks.params[1].Value:='sec_num_cks';//tabla
+  dmcks.stpnumcks.Params[2].Value:=0;//incrementa numero de ck
+  dmcks.stpnumcks.Params[3].Value:=glbBancos;
+  dmcks.stpnumcks.ExecProc;
+  Result:=dmcks.stpnumcks.params[4].Value;//numero cheque
+end;
+
+Function glbProcGetNumcks(nombproc:string;tipo:smallint;codbanco:integer):LongInt;//ultimo numero de cheque
+begin
+  dmcks.stpNumcks.close;
+  dmcks.stpNumcks.params[0].Value:=tipo;
+  dmcks.stpNumcks.params[1].Value:='SEC_NUM_CKS';
+  dmcks.stpNumcks.params[2].Value:=-1;//devuelve el numero actual
+  dmcks.stpnumcks.Params[3].Value := codbanco;//codigo banco  
+  dmcks.stpNumcks.ExecProc;
+  Result:=dmcks.stpNumcks.params[4].Value+1;//le suma uno al numero actual
+end;
+
+Function glbProcActNumcks(nombproc:string;tipo:smallint):LongInt;//ultimo numero de cheque
+begin
+  dmcks.stpNumcks.close;
+  dmcks.stpNumcks.params[0].Value:=tipo;
+  dmcks.stpNumcks.params[1].Value:='SEC_NUM_CKS';
+  dmcks.stpNumcks.params[2].Value:=0;//incrementa numero actual
+  dmcks.stpNumcks.ExecProc;
+  Result:=dmcks.stpNumcks.params[3].Value;
+end;
+
 procedure GlbSalvarQuery(Tabla:TIBDataSet);
 begin
   if tabla.State in [dsEdit,dsInsert] then
@@ -2879,6 +3534,11 @@ begin
   qryEmp.Params[0].DataType  := ftInteger;
   qryEmp.Params[0].Value     := vCodigo;
   qryEmp.Open;
+  if qryEmp.fieldbyname('Nombre').IsNull then
+  begin
+    result:='';
+    exit;
+  end;
   S:=qryEmp.fieldbyname('Nombre').Value;
   count := pos(' ',S);
   Z := Palabras(S);
@@ -3507,7 +4167,7 @@ begin
       WriteToLog('Error: ' + IntToStr(ExecuteResult));
       ShowMessage('Verifique ejecutable para envio de email : ' + IntToStr(ExecuteResult));
     end else
-    if (GlbMuestraMensajeEmail) then
+    if (GlbMuestraMensajeEmail) OR (GlbUsuarioLogueado = 'DIVISON') then
     MessageDlg('Datos reporte enviados por email correctamente.', mtInformation,[mbOk], 0);
   except
   WriteToLog('Error cargando herramienta envio de email');
@@ -3987,7 +4647,7 @@ begin
     ShellExecute(0,'open',PChar(NombreArchivo), '','',SW_SHOWNORMAL);
     GLBMostrarArchivo:=False;
   end;
-  Application.ProcessMessages;
+  //Application.ProcessMessages;
 end;
 
 
@@ -4083,7 +4743,7 @@ begin
         ProgressBar1.StepIt;
         mTabla.Next;
         Inc(fila);
-        Application.ProcessMessages;
+        //Application.ProcessMessages;
       end;
       finally
         mTabla.Bookmark := mMarcador;
@@ -4110,7 +4770,7 @@ begin
     ShellExecute(0,'open',PChar(NombreArchivo), '','',SW_SHOWNORMAL);
     GLBMostrarArchivo:=False;
   end;
-  Application.ProcessMessages;
+  //Application.ProcessMessages;
 end;
 
 procedure ExporToExcelCertQ(mTabla : TIBQuery; NombreArchivo : String);
@@ -4232,7 +4892,7 @@ begin
     ShellExecute(0,'open',PChar(NombreArchivo), '','',SW_SHOWNORMAL);
     GLBMostrarArchivo:=False;
   end;
-  Application.ProcessMessages;
+  //Application.ProcessMessages;
 end;
 
 procedure ExporToExcel(mTabla : TIBQuery; NombreArchivo : String;addFechaF:Boolean;emailAuto:Boolean);
@@ -4401,7 +5061,7 @@ begin
   end;
   end;
 
-  Application.ProcessMessages;
+  //Application.ProcessMessages;
 end;
 
 
@@ -4571,7 +5231,7 @@ begin
   end;
   end;
 
-  Application.ProcessMessages;
+  //Application.ProcessMessages;
 end;
 
 procedure ExporNCFListToExcel(mTabla : TIBQuery; NombreArchivo : String);
@@ -4722,7 +5382,7 @@ begin
       GlbEnviaEmail:=False;
     end;
   end;
-    Application.ProcessMessages;
+    //Application.ProcessMessages;
 end;
 
 Function SetMergeCells(sheet:variant;cel1:variant;cel2:variant;
@@ -4736,6 +5396,483 @@ begin
   SetMergeCells:=False;
   end;
 End;
+
+
+Procedure ExporToExcelInvReorden(mTabla : TIBQuery; NombreArchivo : String; ZipFile:boolean);
+var
+  SL: TStringList;
+  targetFile: string;
+  ExcelFile: string;
+  DirOut: string;
+
+  function HtmlEncode(const S: string): string;
+  begin
+    Result := S;
+    Result := StringReplace(Result, '&', '&amp;', [rfReplaceAll]);
+    Result := StringReplace(Result, '<', '&lt;', [rfReplaceAll]);
+    Result := StringReplace(Result, '>', '&gt;', [rfReplaceAll]);
+    Result := StringReplace(Result, '"', '&quot;', [rfReplaceAll]);
+  end;
+
+  function FieldStr(const AFieldName: string): string;
+  begin
+    if mTabla.FindField(AFieldName) = nil then
+      Result := ''
+    else if mTabla.FieldByName(AFieldName).IsNull then
+      Result := ''
+    else
+      Result := HtmlEncode(mTabla.FieldByName(AFieldName).AsString);
+  end;
+
+  function FieldFloatStr(const AFieldName: string): string;
+  begin
+    if mTabla.FindField(AFieldName) = nil then
+      Result := '0.00'
+    else if mTabla.FieldByName(AFieldName).IsNull then
+      Result := '0.00'
+    else
+      Result := FormatFloat('#,##0.00', mTabla.FieldByName(AFieldName).AsFloat);
+  end;
+
+  function FieldDateStr(const AFieldName: string): string;
+  begin
+    if mTabla.FindField(AFieldName) = nil then
+      Result := ''
+    else if mTabla.FieldByName(AFieldName).IsNull then
+      Result := ''
+    else
+      Result := FormatDateTime('dd/mm/yyyy', mTabla.FieldByName(AFieldName).AsDateTime);
+  end;
+
+  function BuildExcelFileName(const ABaseName: string): string;
+  begin
+    Result := Trim(ABaseName);
+    Result := StringReplace(Result, '\\', '\', [rfReplaceAll]);
+
+    if ExtractFileExt(Result) = '' then
+      Result := Result + '.xls'
+    else if UpperCase(ExtractFileExt(Result)) <> '.XLS' then
+      Result := ChangeFileExt(Result, '.xls');
+  end;
+
+begin
+  targetFile := '';
+  NombreArchivo := StringReplace(NombreArchivo, '\\', '\', [rfReplaceAll]);
+  ExcelFile := BuildExcelFileName(NombreArchivo);
+
+  DirOut := ExtractFileDir(ExcelFile);
+  if (DirOut <> '') and (not DirectoryExists(DirOut)) then
+    ForceDirectories(DirOut);
+
+  SL := TStringList.Create;
+  try
+    SL.Add('<html>');
+    SL.Add('<head>');
+    SL.Add('<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">');
+    SL.Add('<style>');
+    SL.Add('body { font-family: Arial; font-size: 10pt; }');
+    SL.Add('table { border-collapse: collapse; }');
+    SL.Add('th { background-color: #D9EAF7; font-weight: bold; text-align: center; border: 1px solid #808080; }');
+    SL.Add('td { border: 1px solid #808080; padding: 3px; }');
+    SL.Add('.titulo { font-size: 14pt; font-weight: bold; text-align: center; }');
+    SL.Add('.subtitulo { font-size: 12pt; font-weight: bold; text-align: center; }');
+    SL.Add('.num { text-align: right; mso-number-format:"#,##0.00"; }');
+    SL.Add('.fecha { text-align: center; mso-number-format:"dd/mm/yyyy"; }');
+    SL.Add('</style>');
+    SL.Add('</head>');
+    SL.Add('<body>');
+
+    SL.Add('<table>');
+    SL.Add('<tr><td colspan="11" class="titulo">' + HtmlEncode(dmCompania.tblCompaniaNombre.Value) + '</td></tr>');
+    SL.Add('<tr><td colspan="11" class="subtitulo">INVENTARIO EN PUNTO DE REORDEN</td></tr>');
+    SL.Add('<tr><td colspan="11" class="subtitulo">' + HtmlEncode(UpperCase(GlbrangoFecha)) + '</td></tr>');
+    SL.Add('<tr><td colspan="11" class="subtitulo">Valores en RD$</td></tr>');
+    SL.Add('<tr><td colspan="11">&nbsp;</td></tr>');
+
+    SL.Add('<tr>');
+    SL.Add('<th>Código</th>');
+    SL.Add('<th>Código Barra</th>');
+    SL.Add('<th>Descripción</th>');
+    SL.Add('<th>Proveedor</th>');
+    SL.Add('<th>Teléfono Prov.</th>');
+    SL.Add('<th>Email Proveedor</th>');
+    SL.Add('<th>Última Venta</th>');
+    SL.Add('<th>Costo</th>');
+    SL.Add('<th>Precio Venta</th>');
+    SL.Add('<th>Existencia</th>');
+    SL.Add('<th>Punto Reorden</th>');
+    SL.Add('</tr>');
+
+    mTabla.First;
+    while not mTabla.Eof do
+    begin
+      SL.Add('<tr>');
+      SL.Add('<td>' + FieldStr('CODIGO') + '</td>');
+      SL.Add('<td>' + FieldStr('CODIGO_BARRA') + '</td>');
+      SL.Add('<td>' + FieldStr('DESCRIPCION') + '</td>');
+      SL.Add('<td>' + FieldStr('DESCPROVEEDOR') + '</td>');
+      SL.Add('<td>' + FieldStr('TELF_PROV') + '</td>');
+      SL.Add('<td>' + FieldStr('EMAILPROVEEDOR') + '</td>');
+      SL.Add('<td class="fecha">' + FieldDateStr('FECHAULTVENTA') + '</td>');
+      SL.Add('<td class="num">' + FieldFloatStr('PRECIOCOSTO') + '</td>');
+      SL.Add('<td class="num">' + FieldFloatStr('PRECIOVENTA') + '</td>');
+      SL.Add('<td class="num">' + FieldFloatStr('CANTIDAD') + '</td>');
+      SL.Add('<td class="num">' + FieldFloatStr('CANTIDAD_REORDEN') + '</td>');
+      SL.Add('</tr>');
+
+      mTabla.Next;
+      Application.ProcessMessages;
+      if GlbCerrandoSistema then
+        Break;
+    end;
+
+    SL.Add('</table>');
+    SL.Add('</body>');
+    SL.Add('</html>');
+
+    SL.SaveToFile(ExcelFile);
+  finally
+    SL.Free;
+  end;
+
+  if not FileExists(ExcelFile) then
+    raise Exception.Create('No se pudo generar el archivo Excel: ' + ExcelFile);
+
+  if GLBMostrarArchivo then
+    GlbRutaExeLIbroVenta := ExcelFile;
+
+  dmdatos.qryEmailProceso.Close;
+  dmdatos.qryEmailProceso.Params[0].Value := GlbIDTipoEmail;
+  dmdatos.qryEmailProceso.Open;
+  dmdatos.qryEmailProceso.First;
+
+  if dmdatos.qryEmailProcesoSTATUS.Value = 'A' then
+  begin
+    if GlbEnviaEmail then
+    begin
+      if ZipFile then
+      begin
+        ProcZipFile(ExcelFile, targetFile);
+
+        if Trim(targetFile) = '' then
+          raise Exception.Create('ProcZipFile no retornó el archivo destino.');
+
+        if not FileExists(targetFile) then
+          raise Exception.Create('No existe el archivo ZIP generado: ' + targetFile);
+      end
+      else
+        targetFile := ExcelFile;
+
+      if Trim(targetFile) = '' then
+        raise Exception.Create('La ruta del archivo adjunto está vacía.');
+
+      if not FileExists(targetFile) then
+        raise Exception.Create('No existe el archivo adjunto: ' + targetFile);
+
+      if dmdatos.qryEmailProceso.RecordCount = 1 then
+      begin
+        if dmCompania.tblCompania.State = dsInactive then
+          dmCompania.tblCompania.Open;
+
+        dmCompania.tblCompania.Locate('codigo', glbCia_Key, []);
+
+        ProcLogTrackingEmail(
+          glbidtipoemail,
+          dmdatos.qryEmailProcesoEMAIL_SERVER.Value,
+          dmdatos.qryEmailProcesoPORT.AsString,
+          dmdatos.qryEmailProcesoUSER_EMAIL.Value,
+          Desencriptar(dmdatos.qryEmailProcesoUSER_PASSWORD.Value, 2005),
+          Now,
+          dmdatos.qryEmailProcesoTOEMAIL.Value,
+          dmdatos.qryEmailProcesoFROMEMAIL.Value,
+          dmdatos.qryEmailProcesoSUBJECT.Value + ' -CIA:' +
+          dmCompania.tblCompaniaNOMBRE.Value +
+          ' Sucursal : ' + dmCompania.tblCompaniaNUM_SUCURSAL.AsString + ' ' +
+          FormatDateTime('dd/mm/yyyy hh:mm a/p', Now),
+          'Inventario en reorden.',
+          VarUsuarioGlb,
+          'A',
+          '',
+          Now,
+          strusername,
+          FormatDateTime('dd/mm/yyyy hh:mm a/p', Now),
+          strusername,
+          targetFile,
+          dmCompania.tblCompaniaEMAIL.Value,
+          dmCompania.tblCompaniaNOMBRE.Value
+        );
+      end;
+
+      GlbEnviaEmail := False;
+    end;
+  end;
+
+  Application.ProcessMessages;
+  if GlbCerrandoSistema then
+    Exit;
+end;
+
+Procedure ExporToExcelInvReordenEXCEL(mTabla : TIBQuery; NombreArchivo : String);
+Var
+  fila : Integer;
+  frm: TForm;
+  ProgressBar1: TProgressBar;
+  ProgressBar2: TProgressBar;
+  targetFile : string;
+  fIni : Integer;
+  fFin : Integer;
+begin
+  NombreArchivo := StringReplace(NombreArchivo, '\\', '\', []);
+
+  frm := TForm.Create(nil);
+  ProgressBar1 := TProgressBar.Create(nil);
+  ProgressBar2 := TProgressBar.Create(nil);
+
+  try
+    With Frm Do
+    begin
+      Frm.Color := clCream;
+      Frm.Position := poOwnerFormCenter;
+      Frm.BorderStyle := bsNone;
+      Caption := 'Creado en ejecución';
+      Height := 100;
+      Width := 800;
+
+      With TLabel.Create(nil) Do
+      begin
+        Caption := 'Generando reporte...espere.';
+        Left := 8;
+        Top := 8;
+        Height := 25;
+        Width := 300;
+        Parent := Frm;
+      end;
+
+      ProgressBar1.Left := 8;
+      ProgressBar1.Top := 22;
+      ProgressBar1.Width := 600;
+      ProgressBar1.Max := mTabla.RecordCount;
+      ProgressBar1.Position := 0;
+      ProgressBar1.Parent := Frm;
+
+      ProgressBar2.Left := 8;
+      ProgressBar2.Top := 56;
+      ProgressBar2.Width := 600;
+      ProgressBar2.Max := 11;
+      ProgressBar2.Position := 0;
+      ProgressBar2.Parent := Frm;
+    end;
+
+    frm.Show;
+    Application.ProcessMessages;
+
+    Excel := TExcelApplication.Create(nil);
+    Excel.Connect;
+
+    Excel.Workbooks.Add(NULL, 0);
+
+    Hoja := Excel.Worksheets.Item[1] as _WorkSheet;
+    Hoja.Name := 'Inv. Reorden';
+
+    { Encabezado principal }
+    Hoja.Range['A1', 'K1'].MergeCells := True;
+    Hoja.Range['A2', 'K2'].MergeCells := True;
+    Hoja.Range['A3', 'K3'].MergeCells := True;
+    Hoja.Range['A4', 'K4'].MergeCells := True;
+
+    Hoja.Range['A1', 'A1'].Value2 := dmCompania.tblCompaniaNombre.Value;
+    Hoja.Range['A2', 'A2'].Value2 := 'INVENTARIO EN PUNTO DE REORDEN';
+    Hoja.Range['A3', 'A3'].Value2 := UpperCase(GlbrangoFecha);
+    Hoja.Range['A4', 'A4'].Value2 := 'Valores en RD$';
+
+    Hoja.Range['A1', 'K4'].Font.Bold := True;
+    Hoja.Range['A1', 'K4'].HorizontalAlignment := xlCenter;
+
+    { Titulos }
+    fila := 7;
+    fIni := fila + 1;
+
+    Hoja.Range['A' + IntToStr(fila), 'A' + IntToStr(fila)].Value2 := 'Código';
+    Hoja.Range['B' + IntToStr(fila), 'B' + IntToStr(fila)].Value2 := 'Código Barra';
+    Hoja.Range['C' + IntToStr(fila), 'C' + IntToStr(fila)].Value2 := 'Descripción';
+    Hoja.Range['D' + IntToStr(fila), 'D' + IntToStr(fila)].Value2 := 'Proveedor';
+    Hoja.Range['E' + IntToStr(fila), 'E' + IntToStr(fila)].Value2 := 'Teléfono Prov.';
+    Hoja.Range['F' + IntToStr(fila), 'F' + IntToStr(fila)].Value2 := 'Email Proveedor';
+    Hoja.Range['G' + IntToStr(fila), 'G' + IntToStr(fila)].Value2 := 'Última Venta';
+    Hoja.Range['H' + IntToStr(fila), 'H' + IntToStr(fila)].Value2 := 'Costo';
+    Hoja.Range['I' + IntToStr(fila), 'I' + IntToStr(fila)].Value2 := 'Precio Venta';
+    Hoja.Range['J' + IntToStr(fila), 'J' + IntToStr(fila)].Value2 := 'Existencia';
+    Hoja.Range['K' + IntToStr(fila), 'K' + IntToStr(fila)].Value2 := 'Punto Reorden';
+
+    Hoja.Range['A' + IntToStr(fila), 'K' + IntToStr(fila)].Font.Bold := True;
+    Hoja.Range['A' + IntToStr(fila), 'K' + IntToStr(fila)].HorizontalAlignment := xlCenter;
+
+    Inc(fila);
+
+    mTabla.First;
+
+    While Not mTabla.Eof do
+    begin
+      ProgressBar2.Position := 0;
+
+      Hoja.Range['A' + IntToStr(fila), 'A' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('CODIGO').AsString;
+      ProgressBar2.StepIt;
+
+      Hoja.Range['B' + IntToStr(fila), 'B' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('CODIGO_BARRA').AsString;
+      ProgressBar2.StepIt;
+
+      Hoja.Range['C' + IntToStr(fila), 'C' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('DESCRIPCION').AsString;
+      ProgressBar2.StepIt;
+
+      Hoja.Range['D' + IntToStr(fila), 'D' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('DESCPROVEEDOR').AsString;
+      ProgressBar2.StepIt;
+
+      Hoja.Range['E' + IntToStr(fila), 'E' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('TELF_PROV').AsString;
+      ProgressBar2.StepIt;
+
+      Hoja.Range['F' + IntToStr(fila), 'F' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('EMAILPROVEEDOR').AsString;
+      ProgressBar2.StepIt;
+
+      if not mTabla.FieldByName('FECHAULTVENTA').IsNull then
+        Hoja.Range['G' + IntToStr(fila), 'G' + IntToStr(fila)].Value2 :=
+          FormatDateTime('dd/mm/yyyy', mTabla.FieldByName('FECHAULTVENTA').AsDateTime)
+      else
+        Hoja.Range['G' + IntToStr(fila), 'G' + IntToStr(fila)].Value2 := '';
+      ProgressBar2.StepIt;
+
+      Hoja.Range['H' + IntToStr(fila), 'H' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('PRECIOCOSTO').AsFloat;
+      ProgressBar2.StepIt;
+
+      Hoja.Range['I' + IntToStr(fila), 'I' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('PRECIOVENTA').AsFloat;
+      ProgressBar2.StepIt;
+
+      Hoja.Range['J' + IntToStr(fila), 'J' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('CANTIDAD').AsFloat;
+      ProgressBar2.StepIt;
+
+      Hoja.Range['K' + IntToStr(fila), 'K' + IntToStr(fila)].Value2 :=
+        mTabla.FieldByName('CANTIDAD_REORDEN').AsFloat;
+      ProgressBar2.StepIt;
+
+      ProgressBar1.StepIt;
+
+      mTabla.Next;
+      Inc(fila);
+
+      Application.ProcessMessages;
+    end;
+
+    fFin := fila - 1;
+
+    { Formato columnas }
+    Hoja.Range['A:A', 'A:A'].ColumnWidth := 12;
+    Hoja.Range['B:B', 'B:B'].ColumnWidth := 18;
+    Hoja.Range['C:C', 'C:C'].ColumnWidth := 45;
+    Hoja.Range['D:D', 'D:D'].ColumnWidth := 35;
+    Hoja.Range['E:E', 'E:E'].ColumnWidth := 18;
+    Hoja.Range['F:F', 'F:F'].ColumnWidth := 35;
+    Hoja.Range['G:G', 'G:G'].ColumnWidth := 14;
+    Hoja.Range['H:H', 'I:I'].ColumnWidth := 14;
+    Hoja.Range['J:J', 'K:K'].ColumnWidth := 14;
+
+    if fFin >= fIni then
+    begin
+      Hoja.Range['H' + IntToStr(fIni), 'I' + IntToStr(fFin)].NumberFormat := '#,##0.00';
+      Hoja.Range['J' + IntToStr(fIni), 'K' + IntToStr(fFin)].NumberFormat := '#,##0.00';
+      Hoja.Range['G' + IntToStr(fIni), 'G' + IntToStr(fFin)].NumberFormat := 'dd/mm/yyyy';
+
+      Hoja.Range['A7', 'K' + IntToStr(fFin)].Borders.LineStyle := xlContinuous;
+      Hoja.Range['A7', 'K' + IntToStr(fFin)].VerticalAlignment := xlCenter;
+    end;
+
+    { Congelar encabezado visualmente no siempre funciona igual en Delphi 7 COM,
+      por eso no se fuerza aquí para evitar errores por versión de Excel. }
+
+    Excel.ActiveWorkbook.SaveAs(
+      NombreArchivo + '.xls',
+      EmptyParam, EmptyParam, EmptyParam,
+      EmptyParam, EmptyParam, xlNoChange,
+      EmptyParam, EmptyParam, EmptyParam,
+      EmptyParam, EmptyParam, 0
+    );
+
+    Excel.Quit;
+    Excel.Disconnect;
+
+  finally
+    FreeAndNil(Excel);
+    frm.Hide;
+    FreeAndNil(frm);
+  end;
+
+  if GLBMostrarArchivo then
+  begin
+    if FileExists(NombreArchivo + '.xls') then
+    begin
+      GlbRutaExeLIbroVenta := NombreArchivo + '.xls';
+    end;
+  end;
+
+  dmdatos.qryEmailProceso.Close;
+  dmdatos.qryEmailProceso.Params[0].Value := GlbIDTipoEmail;
+  dmdatos.qryEmailProceso.Open;
+  dmdatos.qryEmailProceso.First;
+
+  if (dmdatos.qryEmailProcesoSTATUS.Value = 'A') then
+  begin
+    if (GlbEnviaEmail) then
+    begin
+      if ProcZipFile(NombreArchivo, targetFile) then
+      begin
+        if dmdatos.qryEmailProceso.RecordCount = 1 then
+        begin
+          if dmCompania.tblCompania.State = dsInactive then
+            dmCompania.tblCompania.Open;
+
+          dmCompania.tblCompania.Locate('codigo', glbCia_Key, []);
+
+          ProcLogTrackingEmail(
+            glbidtipoemail,
+            dmdatos.qryEmailProcesoEMAIL_SERVER.Value,
+            dmdatos.qryEmailProcesoPORT.AsString,
+            dmdatos.qryEmailProcesoUSER_EMAIL.Value,
+            Desencriptar(dmdatos.qryEmailProcesoUSER_PASSWORD.Value, 2005),
+            Now,
+            dmdatos.qryEmailProcesoTOEMAIL.Value,
+            dmdatos.qryEmailProcesoFROMEMAIL.Value,
+            dmdatos.qryEmailProcesoSUBJECT.Value + ' -CIA:' +
+            dmCompania.tblCompaniaNOMBRE.Value +
+            ' Sucursal : ' + dmCompania.tblCompaniaNUM_SUCURSAL.AsString + ' ' +
+            FormatDateTime('dd/mm/yyyy hh:mm a/p', Now),
+            'Inventario en reorden.',
+            VarUsuarioGlb,
+            'A',
+            '',
+            Now,
+            strusername,
+            FormatDateTime('dd/mm/yyyy hh:mm a/p', Now),
+            strusername,
+            targetFile,
+            dmCompania.tblCompaniaEMAIL.Value,
+            dmCompania.tblCompaniaNOMBRE.Value
+          );
+        end;
+      end;
+
+      GlbEnviaEmail := False;
+    end;
+  end;
+
+  Application.ProcessMessages;
+end;
 
 Procedure ExporToExcelFCTCuadre(mTabla : TIBQuery; NombreArchivo : String);
 
@@ -5211,6 +6348,8 @@ Begin
   //strAppPath:=
   GlbShowCtaBanco:=0;
   GlbImprimeTicketCustom:=0;
+  GlbProsesur := 0;
+  GlbActivaNomina:=1;
   //GlbUsuarioPassword  := '';
 end.
 

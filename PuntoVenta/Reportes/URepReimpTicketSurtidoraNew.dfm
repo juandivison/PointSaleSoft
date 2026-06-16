@@ -1,8 +1,8 @@
 object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   Left = 0
-  Top = -368
-  Width = 288
-  Height = 960
+  Top = -383
+  Width = 278
+  Height = 932
   Frame.Color = clBlack
   Frame.DrawTop = False
   Frame.DrawBottom = False
@@ -32,9 +32,9 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   Page.PaperSize = Custom
   Page.Values = (
     38.100000000000000000
-    2540.000000000000000000
+    2465.832000000000000000
     25.400000000000000000
-    762.000000000000000000
+    735.541666666666700000
     50.800000000000000000
     25.400000000000000000
     0.000000000000000000)
@@ -59,7 +59,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object PageHeaderBand1: TQRBand
     Left = 19
     Top = 10
-    Width = 259
+    Width = 249
     Height = 86
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -79,10 +79,10 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ParentFont = False
     Size.Values = (
       227.541666666666700000
-      685.270833333333300000)
+      658.812500000000000000)
     BandType = rbPageHeader
     object QRDBText2: TQRDBText
-      Left = 85
+      Left = 80
       Top = 44
       Width = 89
       Height = 16
@@ -93,7 +93,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawRight = False
       Size.Values = (
         42.333333333333330000
-        224.895833333333300000
+        211.666666666666700000
         116.416666666666700000
         235.479166666666700000)
       Alignment = taCenter
@@ -179,7 +179,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       FontSize = 9
     end
     object QRLabel1: TQRLabel
-      Left = 76
+      Left = 71
       Top = 62
       Width = 106
       Height = 14
@@ -191,7 +191,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawRight = False
       Size.Values = (
         37.041666666666670000
-        201.083333333333300000
+        187.854166666666700000
         164.041666666666700000
         280.458333333333300000)
       Alignment = taCenter
@@ -244,7 +244,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       FontSize = 8
     end
     object QRDBText1: TQRDBText
-      Left = 90
+      Left = 85
       Top = 24
       Width = 78
       Height = 16
@@ -255,7 +255,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawRight = False
       Size.Values = (
         42.333333333333330000
-        238.125000000000000000
+        224.895833333333300000
         63.500000000000000000
         206.375000000000000000)
       Alignment = taCenter
@@ -279,7 +279,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ColumnHeaderBand1: TQRBand
     Left = 19
     Top = 114
-    Width = 259
+    Width = 249
     Height = 65
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -300,7 +300,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ParentFont = False
     Size.Values = (
       171.979166666666700000
-      685.270833333333300000)
+      658.812500000000000000)
     BandType = rbColumnHeader
     object QRLabel2: TQRLabel
       Left = 9
@@ -547,7 +547,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object qckRepComprobante: TQRBand
     Left = 19
     Top = 250
-    Width = 259
+    Width = 249
     Height = 0
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -567,13 +567,13 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ParentFont = False
     Size.Values = (
       0.000000000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     BandType = rbDetail
   end
   object PageFooterBand1: TQRBand
     Left = 19
     Top = 305
-    Width = 259
+    Width = 249
     Height = 105
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -593,7 +593,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ParentFont = False
     Size.Values = (
       277.812500000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     BandType = rbGroupFooter
     object QRLabel11: TQRLabel
       Left = 88
@@ -954,7 +954,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand1: TQRChildBand
     Left = 19
     Top = 179
-    Width = 259
+    Width = 249
     Height = 39
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -968,7 +968,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       103.187500000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ColumnHeaderBand1
     object QRLabel14: TQRLabel
       Left = 9
@@ -1037,7 +1037,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand8: TQRChildBand
     Left = 19
     Top = 96
-    Width = 259
+    Width = 249
     Height = 18
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1051,10 +1051,10 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       47.625000000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = PageHeaderBand1
     object QRLabel24: TQRLabel
-      Left = 111
+      Left = 106
       Top = 1
       Width = 36
       Height = 17
@@ -1065,7 +1065,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawRight = False
       Size.Values = (
         44.979166666666670000
-        293.687500000000000000
+        280.458333333333300000
         2.645833333333333000
         95.250000000000000000)
       Alignment = taCenter
@@ -1089,7 +1089,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object QRSubDetail1: TQRSubDetail
     Left = 19
     Top = 250
-    Width = 259
+    Width = 249
     Height = 20
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1102,7 +1102,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       52.916666666666670000
-      685.270833333333300000)
+      658.812500000000000000)
     Master = Owner
     DataSet = dmFactura.qryVentaFacturaDet
     FooterBand = PageFooterBand1
@@ -1145,7 +1145,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand7: TQRChildBand
     Left = 19
     Top = 270
-    Width = 259
+    Width = 249
     Height = 16
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1160,7 +1160,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       42.333333333333330000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = QRSubDetail1
     object QRDBText5: TQRDBText
       Left = 6
@@ -1332,7 +1332,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand9: TQRChildBand
     Left = 19
     Top = 218
-    Width = 259
+    Width = 249
     Height = 32
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1346,7 +1346,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       84.666666666666670000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand1
     object QRLabel7: TQRLabel
       Left = 5
@@ -1532,7 +1532,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object SummaryBand1: TQRBand
     Left = 19
     Top = 471
-    Width = 259
+    Width = 249
     Height = 22
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1546,7 +1546,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       58.208333333333330000
-      685.270833333333300000)
+      658.812500000000000000)
     BandType = rbSummary
     object QRLabel22: TQRLabel
       Left = 97
@@ -1617,7 +1617,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand11: TQRChildBand
     Left = 19
     Top = 493
-    Width = 259
+    Width = 249
     Height = 53
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1631,7 +1631,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       140.229166666666700000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = SummaryBand1
     object QRLabel6: TQRLabel
       Left = 3
@@ -1758,7 +1758,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand10: TQRChildBand
     Left = 19
     Top = 546
-    Width = 259
+    Width = 249
     Height = 51
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1772,10 +1772,10 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       134.937500000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand11
     object QRLabel27: TQRLabel
-      Left = 14
+      Left = 9
       Top = 1
       Width = 231
       Height = 33
@@ -1786,7 +1786,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawRight = False
       Size.Values = (
         87.312500000000000000
-        37.041666666666670000
+        23.812500000000000000
         2.645833333333333000
         611.187500000000000000)
       Alignment = taCenter
@@ -1802,7 +1802,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       FontSize = 8
     end
     object QRLabel33: TQRLabel
-      Left = 14
+      Left = 9
       Top = 35
       Width = 231
       Height = 15
@@ -1813,7 +1813,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawRight = False
       Size.Values = (
         39.687500000000000000
-        37.041666666666670000
+        23.812500000000000000
         92.604166666666670000
         611.187500000000000000)
       Alignment = taCenter
@@ -1832,7 +1832,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand12: TQRChildBand
     Left = 19
     Top = 597
-    Width = 259
+    Width = 249
     Height = 36
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1845,7 +1845,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       95.250000000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand10
     object QRLabel19: TQRLabel
       Left = 34
@@ -1962,7 +1962,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand13: TQRChildBand
     Left = 19
     Top = 633
-    Width = 259
+    Width = 249
     Height = 17
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -1975,7 +1975,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       44.979166666666670000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand12
     object QRLabel13: TQRLabel
       Left = 8
@@ -2004,7 +2004,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       FontSize = 8
     end
     object QRLabel23: TQRLabel
-      Left = 181
+      Left = 171
       Top = 3
       Width = 78
       Height = 11
@@ -2015,7 +2015,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawRight = False
       Size.Values = (
         29.104166666666670000
-        478.895833333333300000
+        452.437500000000000000
         7.937500000000000000
         206.375000000000000000)
       Alignment = taRightJustify
@@ -2038,7 +2038,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object QRLoopBand1: TQRLoopBand
     Left = 19
     Top = 451
-    Width = 259
+    Width = 249
     Height = 20
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -2054,7 +2054,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     LinkBand = SummaryBand1
     Size.Values = (
       52.916666666666670000
-      685.270833333333300000)
+      658.812500000000000000)
     Master = Owner
     PrintCount = 0
     PrintBefore = False
@@ -2147,7 +2147,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand2: TQRChildBand
     Left = 19
     Top = 410
-    Width = 259
+    Width = 249
     Height = 24
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -2161,7 +2161,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       63.500000000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = PageFooterBand1
     object QRDBText9: TQRDBText
       Left = 152
@@ -2270,7 +2270,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand3: TQRChildBand
     Left = 19
     Top = 434
-    Width = 259
+    Width = 249
     Height = 17
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -2283,7 +2283,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       44.979166666666670000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand2
     object QRLabel26: TQRLabel
       Left = 58
@@ -2353,7 +2353,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand4: TQRChildBand
     Left = 19
     Top = 650
-    Width = 259
+    Width = 249
     Height = 117
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -2367,7 +2367,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       309.562500000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand13
     object QRImage1: TQRImage
       Left = 2
@@ -5160,7 +5160,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand5: TQRChildBand
     Left = 19
     Top = 286
-    Width = 259
+    Width = 249
     Height = 19
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -5173,7 +5173,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       50.270833333333330000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand7
     object QRDBText24: TQRDBText
       Left = 38
@@ -5242,7 +5242,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand6: TQRChildBand
     Left = 19
     Top = 305
-    Width = 259
+    Width = 249
     Height = 0
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -5256,7 +5256,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       0.000000000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand5
     object QRExprMemo1: TQRExprMemo
       Left = 6
@@ -5293,7 +5293,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   object ChildBand14: TQRChildBand
     Left = 19
     Top = 767
-    Width = 259
+    Width = 249
     Height = 147
     Frame.Color = clBlack
     Frame.DrawTop = False
@@ -5307,7 +5307,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     ForceNewPage = False
     Size.Values = (
       388.937500000000000000
-      685.270833333333300000)
+      658.812500000000000000)
     ParentBand = ChildBand4
     object QRLabel28: TQRLabel
       Left = 4

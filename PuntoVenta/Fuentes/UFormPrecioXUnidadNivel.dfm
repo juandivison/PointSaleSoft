@@ -1,6 +1,6 @@
 object frmPrecioUnidadNivel: TfrmPrecioUnidadNivel
-  Left = 488
-  Top = 247
+  Left = 419
+  Top = 182
   Width = 890
   Height = 433
   Caption = 'Precio X Unidades'
@@ -155,6 +155,20 @@ object frmPrecioUnidadNivel: TfrmPrecioUnidadNivel
     DataField = 'PMinimo'
     DataSource = DataSource1
   end
+  object lblPrecioComer1ro: TLabel
+    Left = 440
+    Top = 368
+    Width = 251
+    Height = 20
+    Caption = 'Precio no actualizado en Comer 1ro'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clRed
+    Font.Height = -16
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
+    Visible = False
+  end
   object DBEdit4: TDBEdit
     Left = 518
     Top = 24
@@ -220,6 +234,7 @@ object frmPrecioUnidadNivel: TfrmPrecioUnidadNivel
     DataField = 'PORCUTILIDAD1'
     DataSource = dmInventario.dstblPrecioUnidadXNivel
     TabOrder = 3
+    OnEnter = DBEdit9Enter
     OnExit = DBEdit9Exit
   end
   object DBEdit10: TDBEdit
@@ -688,8 +703,8 @@ object frmPrecioUnidadNivel: TfrmPrecioUnidadNivel
     SkinFormtype = sfOnlyThisForm
     Version = '2.65.7.03'
     MenuUpdate = False
-    Left = 183
-    Top = 167
+    Left = 191
+    Top = 215
     SkinStream = {
       42E60000B36E0C00D676B1987EBC760C04AC9D5B8B63007F904FFFDFEBFADF71
       30AC007EFF9BAF75CD6E672D57FEAEF87C6A27CEAF97465D102324EBA08FE29B
@@ -2557,7 +2572,7 @@ object frmPrecioUnidadNivel: TfrmPrecioUnidadNivel
   object DataSource1: TDataSource
     DataSet = rxData
     Left = 432
-    Top = 176
+    Top = 200
   end
   object RxCalculator1: TRxCalculator
     Left = 736

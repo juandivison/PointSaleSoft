@@ -4,7 +4,7 @@ interface
 
 uses
   SysUtils, Classes, DB, IBCustomDataSet, IBQuery, RxMemDS, IBStoredProc,
-  IBTable, IBSQL;
+  Variants, IBTable, IBSQL, IBUpdateSQL;
 
 type
   TdmDatos = class(TDataModule)
@@ -719,6 +719,197 @@ type
     qryProvinciaseCFNOMBRE: TIBStringField;
     qryMunicipioseCFCODIGO: TIntegerField;
     qryMunicipioseCFNOMBRE: TIBStringField;
+    qryEscalaISR: TIBQuery;
+    qryEscalaISRCODIGO_RETENCION: TIntegerField;
+    qryEscalaISRCODIGO_ESCALA: TIntegerField;
+    qryEscalaISRESCALA_RETENCION: TFloatField;
+    qryEscalaISRTASA_EXENTO: TFloatField;
+    qryEscalaISREXCEDENTE: TFloatField;
+    qryEscalaISROBSERVACIONES: TIBStringField;
+    qryEscalaISRSTATUS_RETEN: TIBStringField;
+    qryEscalaISRFECHA_INI: TDateTimeField;
+    qryEscalaISRFECHA_FIN: TDateTimeField;
+    qryRegAdicional: TIBQuery;
+    qryRegAdicionalANIO_REGALIA: TIntegerField;
+    qryRegAdicionalCODIGO_CIA: TIntegerField;
+    qryRegAdicionalCODIGO_EMP: TIntegerField;
+    qryRegAdicionalMONTO: TFloatField;
+    qryRegAdicionalSTATUS: TIBStringField;
+    qryRegAdicionalINSERTADO_POR: TIBStringField;
+    qryRegAdicionalFECHA_IN: TDateTimeField;
+    qryRegAdicionalMODIFICADO_POR: TIBStringField;
+    qryRegAdicionalFECHA_MOD: TDateTimeField;
+    updqryRegAdicional: TIBUpdateSQL;
+    dtqryRegAdicional: TDataSource;
+    QryProyRegalia: TIBQuery;
+    QryProyRegaliaCIA_KEY: TSmallintField;
+    QryProyRegaliaCODIGO: TIntegerField;
+    QryProyRegaliaNOMBRE: TIBStringField;
+    QryProyRegaliaAPELLIDO: TIBStringField;
+    QryProyRegaliaSALARIOMENSUAL: TFloatField;
+    QryProyRegaliaSTATUS_EMP: TIBStringField;
+    QryProyRegaliaSALARIOACUMULADO: TFloatField;
+    QryProyRegaliaTIPOSERVICIO: TIntegerField;
+    QryProyRegaliaSUBTIPOSERV: TIntegerField;
+    QryProyRegaliaSTATUS_REGALIA: TIBStringField;
+    QryProyRegaliaSALARIOPROY: TFloatField;
+    QryProyRegaliaTOTALACUM: TFloatField;
+    QryProyRegaliaREG_PROY: TFloatField;
+    dtQryProyRegalia: TDataSource;
+    updqryFirmCredCoop: TIBUpdateSQL;
+    qryFirmCredCoop: TIBQuery;
+    qryFirmCredCoopCODIGO: TSmallintField;
+    qryFirmCredCoopNOMBRE: TIBStringField;
+    qryFirmCredCoopFECHA_IN: TDateTimeField;
+    qryFirmCredCoopFECHA_MOD: TDateTimeField;
+    qryFirmCredCoopSTATUS: TIBStringField;
+    qryFirmCredCoopMOD_POR: TIBStringField;
+    qryFirmCredCoopIN_POR: TIBStringField;
+    qryBoni: TIBQuery;
+    qryBoniCIA_KEY: TSmallintField;
+    qryBoniCODIGO: TIntegerField;
+    qryBoniFECHA: TDateTimeField;
+    qryBoniMONTO_BONIFIACION: TFloatField;
+    qryBoniISR: TFloatField;
+    qryBoniSTATUS: TIBStringField;
+    qryStatusRegalia: TIBQuery;
+    qryStatusRegaliaCIA_KEY: TIntegerField;
+    qryStatusRegaliaANO_REGALIA: TDateTimeField;
+    qryStatusRegaliaSTATUS: TIBStringField;
+    qryDatosBoni: TIBQuery;
+    qryDatosBoniCIA_KEY: TSmallintField;
+    qryDatosBoniCODIGO: TIntegerField;
+    qryDatosBoniFECHA: TDateTimeField;
+    qryDatosBoniMONTO_BONIFIACION: TFloatField;
+    qryDatosBoniISR: TFloatField;
+    qryDatosBoniBONONETO: TFloatField;
+    qryDatosBoniNUMERO_CKS: TIntegerField;
+    qryDatosBoniSTATUS: TIBStringField;
+    qryDatosBoniDEPTO_EMP: TIntegerField;
+    qryDatosBoniSECCION_EMP: TIntegerField;
+    dtTipoOrdenEmpCoop: TDataSource;
+    dtqryEmpRegalia: TDataSource;
+    dtqryBoni: TDataSource;
+    qryChequesPTipo: TIBQuery;
+    qryChequesPTipoDESCRIPCION: TIBStringField;
+    qryChequesPTipoTIPO_CKS: TSmallintField;
+    qryChequesPTipoTIPOSERVICIO: TIntegerField;
+    qryChequesPTipoCUENTA1_CAT: TIBStringField;
+    qryChequesPTipoCUENTA2_CAT: TIBStringField;
+    qryChequesPTipoCUENTA3_CAT: TIBStringField;
+    qryChequesPTipoCTA_CONCEPTO: TIntegerField;
+    qryChequesPTipoCOD_SUBTIPO: TSmallintField;
+    dtqryChequesPTipo: TDataSource;
+    qryOrdenEmp: TIBQuery;
+    qryOrdenEmpTipoOrdenDesc: TStringField;
+    qryOrdenEmpNombreCompleto: TStringField;
+    qryOrdenEmpNOMBREPROVEE: TStringField;
+    qryOrdenEmpAPELLIDO: TStringField;
+    qryOrdenEmpNOMB_EMPLEADO: TStringField;
+    qryOrdenEmpCEDULA: TStringField;
+    qryOrdenEmpCODIGO: TIntegerField;
+    qryOrdenEmpFECHA: TDateTimeField;
+    qryOrdenEmpNUMERO: TIntegerField;
+    qryOrdenEmpCOD_PROVEEDOR: TIntegerField;
+    qryOrdenEmpMONTO: TFloatField;
+    qryOrdenEmpSTATUS: TIBStringField;
+    qryOrdenEmpIN_POR: TIBStringField;
+    qryOrdenEmpFECHA_IN: TDateTimeField;
+    qryOrdenEmpMOD_POR: TIBStringField;
+    qryOrdenEmpFECHA_MOD: TDateTimeField;
+    qryOrdenEmpFORMA_PAGO: TSmallintField;
+    qryOrdenEmpTIPO_ORDEN: TIntegerField;
+    qryRepOrdCFirm: TIBQuery;
+    qryRepOrdCFirmNOMBRE: TIBStringField;
+    tTipoOrdenEmpCoop: TIBDataSet;
+    tTipoOrdenEmpCoopCODIGO: TIntegerField;
+    tTipoOrdenEmpCoopDESCRIPCION: TIBStringField;
+    DataSource1: TDataSource;
+    tProveedores: TIBDataSet;
+    tProveedoresCODIGO_CTE: TIntegerField;
+    tProveedoresTIPO_CLIENTE: TIntegerField;
+    tProveedoresNOMBRE_ABR: TIBStringField;
+    tProveedoresDESCRIPCION: TIBStringField;
+    tProveedoresCONTACTO: TIBStringField;
+    tProveedoresPAIS: TIBStringField;
+    tProveedoresESTADO: TIBStringField;
+    tProveedoresCIUDAD: TIBStringField;
+    tProveedoresCALYYNUM: TIBStringField;
+    tProveedoresTELEFONO: TIBStringField;
+    tProveedoresFAX: TIBStringField;
+    tProveedoresCODIGOPOSTAL: TIBStringField;
+    tProveedoresEMAIL: TIBStringField;
+    tProveedoresDIRECCIONWEB: TIBStringField;
+    tProveedoresSTATUS: TIBStringField;
+    tProveedoresFECHA_IN: TDateTimeField;
+    tProveedoresIN_POR: TIBStringField;
+    tProveedoresFECHA_MOD: TDateTimeField;
+    tProveedoresMOD_POR: TIBStringField;
+    tProveedoresRNC_PROVEEDOR: TIBStringField;
+    tProveedoresMOVIL1: TIBStringField;
+    tProveedoresMOVIL2: TIBStringField;
+    tProveedoresTELEFONO2: TIBStringField;
+    tProveedoresTELEFONO3: TIBStringField;
+    tProveedoresEXTENSIONES: TIBStringField;
+    tProveedoresCIA_KEY: TIntegerField;
+    tProveedoresLIMITE_CREDITO: TFloatField;
+    tProveedoresCOD_VENDEDOR: TIntegerField;
+    tProveedoresCONDICION: TIntegerField;
+    tProveedoresCANT_DIAS_CREDITO: TSmallintField;
+    tProveedoresIDTIPO_PROV: TIntegerField;
+    tProveedoresTIPODOC: TSmallintField;
+    tProveedoresID_PROVINCIA: TIntegerField;
+    tProveedoresID_MUNICIPIO: TIntegerField;
+    dtqryOrdenEmp: TDataSource;
+    dtqryFirmCredCoop: TDataSource;
+    updqryOrdenEmp: TIBUpdateSQL;
+    qryRepIR13: TIBQuery;
+    qryRepIR13CODIGO: TIntegerField;
+    qryRepIR13NOMBRE: TIBStringField;
+    qryRepIR13APELLIDO: TIBStringField;
+    qryRepIR13CEDULA: TIBStringField;
+    qryRepIR13STATUS: TIBStringField;
+    qryRepIR13DEPTO_EMP: TSmallintField;
+    qryRepIR13SALARIO_BRUTO: TFloatField;
+    qryRepIR13OTROS_INGRESOS: TFloatField;
+    qryRepIR13ISR_RETENIDO: TFloatField;
+    qryRepIR13AFP: TFloatField;
+    qryRepIR13SalarioProy: TFloatField;
+    qryRepIR13SalarioExcAfp: TCurrencyField;
+    qryRepIR13MontoBoni: TFloatField;
+    qryRepIR13MONTO_VAC: TFloatField;
+    qryRepIR13MONTO_REGALIA: TFloatField;
+    qryRepIR13ISR_CALCULADO: TFloatField;
+    QryVaca: TIBDataSet;
+    QryVacaCODIGO_TRANS: TIntegerField;
+    QryVacaCODIGO_TIPO_TRANS: TSmallintField;
+    QryVacaCODIGO_TIPO_NOMINA: TSmallintField;
+    QryVacaCODIGO: TIntegerField;
+    QryVacaVALOR_TRANS: TFloatField;
+    QryVacaFECHA_ENT: TDateTimeField;
+    QryVacaFECHA_SAL: TDateTimeField;
+    QryVacaOBSERVACIONES: TIBStringField;
+    QryVacaSTATUS_TRANS: TIBStringField;
+    QryVacaTIPO_CTA: TSmallintField;
+    QryVacaCANT_DIAS: TIntegerField;
+    QryVacaFECHA_EFECTIVA: TDateTimeField;
+    qryTotalNom: TIBQuery;
+    qryTotalNomSBRUTO: TFloatField;
+    qryTotalNomIDSS: TFloatField;
+    qryTotalNomCOOP: TFloatField;
+    qryTotalNomSEGMED: TFloatField;
+    qryTotalNomISR: TFloatField;
+    qryTotalNomOING: TFloatField;
+    qryTotalNomODED: TFloatField;
+    qryTotalNomSNETO: TFloatField;
+    qryLey8701: TIBQuery;
+    qryLey8701PORC_EMPLEADO: TFloatField;
+    qryLey8701PORC_PATRONO: TFloatField;
+    tTablaRetIsr: TIBTable;
+    qryEmpRegalia: TIBDataSet;
+    qryEmpRegaliaCIA_KEY: TSmallintField;
+    qryEmpRegaliaCODIGO: TIntegerField;
+    qryEmpRegaliaSTATUS: TIBStringField;
     procedure qryInvAfterOpen(DataSet: TDataSet);
     procedure qryDatosOrdenImpAfterScroll(DataSet: TDataSet);
     procedure qryDatosSolOrdenImpAfterScroll(DataSet: TDataSet);
@@ -729,11 +920,26 @@ type
     procedure tblLineaDescDocFAfterScroll(DataSet: TDataSet);
     procedure tblConfComEmpFilterRecord(DataSet: TDataSet;
       var Accept: Boolean);
+    procedure QryProyRegaliaCalcFields(DataSet: TDataSet);
+    procedure qryOrdenEmpCalcFields(DataSet: TDataSet);
+    procedure qryOrdenEmpBeforeOpen(DataSet: TDataSet);
+    procedure QryProyRegaliaFilterRecord(DataSet: TDataSet;
+      var Accept: Boolean);
+    procedure qryRepIR13CalcFields(DataSet: TDataSet);
+    procedure DataModuleDestroy(Sender: TObject);
+
   private
     { Private declarations }
+    procedure ClearLookupFieldLinks(ADataSet: TDataSet);
+    procedure PrepareForDestroy;
   public
     { Public declarations }
+
     codCatSel : Integer;
+    mesesProy : Real;
+    SumaDet : Boolean;
+    statusEmpReg:string;
+    destructor Destroy; override;
   end;
 
 var
@@ -741,10 +947,145 @@ var
 
 implementation
 
-uses UDatModConectar;//UDatModCon;
+uses UDatModConectar,uglobal;//UDatModCon;
 
 {$R *.dfm}
-   
+
+destructor TdmDatos.Destroy;
+begin
+  { 
+    Cierre defensivo:
+    Este DataModule contiene campos lookup y consultas cached-updates que apuntan
+    a otros componentes del mismo DataModule. Durante la destruccion en orden
+    inverso, esos componentes pueden liberarse antes que el dataset que los
+    referencia, provocando Access Violation al cerrar la aplicacion.
+  }
+  try
+    PrepareForDestroy;
+  except
+    { Nunca levantar excepcion desde el destructor }
+  end;
+
+  inherited Destroy;
+end;
+
+procedure TdmDatos.ClearLookupFieldLinks(ADataSet: TDataSet);
+var
+  I: Integer;
+  F: TField;
+begin
+  if ADataSet = nil then
+    Exit;
+
+  for I := 0 to ADataSet.FieldCount - 1 do
+  begin
+    F := ADataSet.Fields[I];
+
+    if (F <> nil) and (F.FieldKind = fkLookup) then
+    begin
+      { 
+        Importante: algunos lookup fields apuntan a datasets internos como
+        tblTipoDocFiscal, tblTipoCF, tTipoOrdenEmpCoop y tProveedores.
+        Si esos datasets se destruyen antes que el owner del campo lookup,
+        queda un puntero colgante.
+      }
+      try
+        F.LookupDataSet := nil;
+        F.LookupKeyFields := '';
+        F.LookupResultField := '';
+        F.KeyFields := '';
+      except
+      end;
+    end;
+  end;
+end;
+
+procedure TdmDatos.PrepareForDestroy;
+var
+  I: Integer;
+  C: TComponent;
+  DS: TDataSet;
+  SRC: TDataSource;
+begin
+  { Primero desconectar DataSources para cortar enlaces visuales/dataset }
+  for I := ComponentCount - 1 downto 0 do
+  begin
+    C := Components[I];
+
+    if C is TDataSource then
+    begin
+      SRC := TDataSource(C);
+      SRC.OnDataChange := nil;
+      SRC.OnStateChange := nil;
+      SRC.OnUpdateData := nil;
+      SRC.DataSet := nil;
+    end;
+  end;
+
+  { Luego preparar datasets/queries antes de que el inherited Destroy libere hijos }
+  for I := ComponentCount - 1 downto 0 do
+  begin
+    C := Components[I];
+
+    if C is TDataSet then
+    begin
+      DS := TDataSet(C);
+
+      DS.BeforeOpen := nil;
+      DS.AfterOpen := nil;
+      DS.BeforeClose := nil;
+      DS.AfterClose := nil;
+      DS.BeforeInsert := nil;
+      DS.AfterInsert := nil;
+      DS.BeforeEdit := nil;
+      DS.AfterEdit := nil;
+      DS.BeforePost := nil;
+      DS.AfterPost := nil;
+      DS.BeforeCancel := nil;
+      DS.AfterCancel := nil;
+      DS.BeforeDelete := nil;
+      DS.AfterDelete := nil;
+      DS.BeforeScroll := nil;
+      DS.AfterScroll := nil;
+      DS.OnCalcFields := nil;
+      DS.OnDeleteError := nil;
+      DS.OnEditError := nil;
+      DS.OnFilterRecord := nil;
+      DS.OnNewRecord := nil;
+      DS.OnPostError := nil;
+
+      ClearLookupFieldLinks(DS);
+
+      if DS.Active then
+      begin
+        DS.DisableControls;
+        try
+          DS.Close;
+        finally
+          DS.EnableControls;
+        end;
+      end;
+    end;
+
+    { 
+      TIBQuery con CachedUpdates puede mantener referencia a TIBUpdateSQL.
+      En este DataModule hay casos peligrosos:
+      - qryRegAdicional.UpdateObject = updqryRegAdicional
+      - qryOrdenEmp.UpdateObject = updqryOrdenEmp
+
+      Como los UpdateSQL estan creados despues que algunos queries, pueden
+      destruirse antes y dejar puntero colgante si no se limpia la referencia.
+    }
+    if C is TIBQuery then
+    begin
+      try
+        TIBQuery(C).UpdateObject := nil;
+      except
+      end;
+    end;
+  end;
+end;
+
 procedure TdmDatos.qryInvAfterOpen(DataSet: TDataSet);
 begin
   //rxqryInv.Close;
@@ -816,4 +1157,127 @@ begin
   Accept:= DataSet['IDCATEGORIA'] = codCatSel;
 end;
 
+procedure TdmDatos.QryProyRegaliaCalcFields(DataSet: TDataSet);
+var
+  MesProy : Real;
+begin
+  QryProyRegaliaTOTALACUM.Value:=0;
+  if dmdatos.mesesProy > 0 then
+  MesProy := dmdatos.MesesProy
+  else MesProy := 12 - StrToInt(FormatDateTime('mm',GlbFechaFinal));
+  if qryProyRegaliaStatus_emp.Value = 'A' then
+  QryProyRegaliaSALARIOPROY.Value:=QryProyRegaliaSALARIOMENSUAL.Value * MesProy
+  else QryProyRegaliaSALARIOPROY.Value:=0; 
+  QryProyRegaliaTOTALACUM.Value := QryProyRegaliaSALARIOACUMULADO.Value +
+  QryProyRegaliaSALARIOPROY.Value;
+  if (QryProyRegaliaSTATUS_REGALIA.Value = 'A') or (qryProyRegaliaStatus_emp.Value = 'A') then
+  QryProyRegaliaREG_PROY.Value := QryProyRegaliaTOTALACUM.Value / 12;
+
+  if dmdatos.qryRegAdicional.Locate('CODIGO_CIA;CODIGO_EMP',
+     VarArrayOf([QryProyRegaliaCIA_KEY.value,QryProyRegaliaCODIGO.Value]),[]) then
+  begin
+    QryProyRegaliaREG_PROY.Value:=QryProyRegaliaREG_PROY.Value + qryRegAdicionalMONTO.Value/12;
+    QryProyRegaliaTOTALACUM.Value := QryProyRegaliaTOTALACUM.Value + (qryRegAdicionalMONTO.Value);
+  end;
+end;
+
+procedure TdmDatos.qryOrdenEmpCalcFields(DataSet: TDataSet);
+begin
+  qryOrdenEmpNombreCompleto.Value := TrimRight(qryOrdenEmpNOMB_EMPLEADO.Value) +
+  ' '+TrimRight(qryOrdenEmpAPELLIDO.Value);
+end;
+
+procedure TdmDatos.qryOrdenEmpBeforeOpen(DataSet: TDataSet);
+begin
+  tProveedores.close;
+  tProveedores.Open;
+  tTipoOrdenEmpCoop.Close;
+  tTipoOrdenEmpCoop.Open;
+end;
+
+procedure TdmDatos.QryProyRegaliaFilterRecord(DataSet: TDataSet;
+  var Accept: Boolean);
+var
+  VStatusFiltro: string;
+  VStatusEmp: string;
+begin
+  Accept := True;
+
+  VStatusFiltro := UpperCase(Trim(statusEmpReg));
+
+  if VStatusFiltro = '' then
+    Exit;
+
+  VStatusEmp := '';
+
+  if DataSet.FindField('STATUS_EMP') <> nil then
+    VStatusEmp := UpperCase(Trim(DataSet.FieldByName('STATUS_EMP').AsString));
+
+  if VStatusFiltro = 'I' then
+    Accept := (VStatusEmp = 'I') or (VStatusEmp = 'D')
+  else
+    Accept := (VStatusEmp = VStatusFiltro);
+end;
+
+procedure TdmDatos.qryRepIR13CalcFields(DataSet: TDataSet);
+var
+  TotalGanado, DeducibleAfp:Real;
+begin
+  if tblEmpleados.Locate('CODIGO_CIA;CODIGO',VarArrayOf([glbCia_Key,qryRepIR13CODIGO.Value]),[]) then
+  qryRepIR13SalarioProy.Value :=tblEmpleadosSALARIO.Value * GlbCantMesProy
+  else
+  qryRepIR13SalarioProy.Value:=0;
+  //else
+  //MessageDlg('Codigo empleado no encontrado, Verifique',mtError,[mbOk],0);
+  qryRepIR13MONTO_REGALIA.Value :=
+         (qryRepIR13SalarioProy.Value   +
+          qryRepIR13SALARIO_BRUTO.Value +
+          qryRepIR13OTROS_INGRESOS.Value) / 12;
+  if dmdatos.qryRegAdicional.Locate('Codigo_Emp',qryRepIR13CODIGO.Value,[]) then
+  qryRepIR13MONTO_REGALIA.Value:=qryRepIR13MONTO_REGALIA.Value +
+  qryRegAdicionalMONTO.Value/12;
+  if QryVaca.Locate('CODIGO',qryRepIR13CODIGO.Value,[]) then
+  qryRepIR13MONTO_VAC.Value := QryVacaVALOR_TRANS.Value
+  else qryRepIR13MONTO_VAC.Value := 0;
+  TotalGanado:= qryRepIR13SALARIO_BRUTO.Value +
+                qryRepIR13SalarioProy.Value +
+                qryRepIR13OTROS_INGRESOS.Value +
+                qryRepIR13MONTO_VAC.Value;
+  if qryBoni.Locate('CODIGO',qryRepIR13CODIGO.Value,[]) then
+  begin
+    TotalGanado:=TotalGanado + qryBoniMONTO_BONIFIACION.Value;
+    qryRepIR13MontoBoni.Value := qryBoniMONTO_BONIFIACION.Value;
+  end;
+  qryTotalNom.Close; //preguntar si las vacaciones van completas
+  qryTotalNom.Params[0].Value:= GlbFechaInicial;
+  qryTotalNom.Params[1].Value:= EncodeDate(2003,5,31);//fecha en que inició AFP
+  qryTotalNom.Params[2].Value:= qryRepIR13CODIGO.Value;
+  qryTotalNom.Params[3].Value:= qryRepIR13CODIGO.Value;
+  qryTotalNom.Open;
+  DeducibleAfp:=TotalGanado - qryTotalNomSBRUTO.Value;
+  qryRepIR13SalarioExcAfp.Value:= (DeducibleAfp * qryLey8701PORC_EMPLEADO.Value/100);
+  TotalGanado :=TotalGanado  - qryRepIR13SalarioExcAfp.Value;
+               //(DeducibleAfp * qryLey8701PORC_EMPLEADO.Value/100);
+  qryRepIR13ISR_CALCULADO.Value := MontoIsrADeducir(TotalGanado);
+  if qryBoni.RecordCount > 0 then
+  if (qryRepIR13ISR_CALCULADO.Value > qryRepIR13ISR_RETENIDO.Value) then
+  begin
+    qryBoni.Edit;
+    qryBoniISR.Value:= qryRepIR13ISR_CALCULADO.Value - qryRepIR13ISR_RETENIDO.Value;
+    qryBoni.Post;
+  end;
+end;
+
+
+procedure TdmDatos.DataModuleDestroy(Sender: TObject);
+begin
+  QryProyRegalia.close;
+  qryOrdenEmp.close;
+  qryDatosBoni.close;
+  qryRepOrdCFirm.close;
+  qryRepIR13.Close;
+  qryTotalNom.close;
+end;
+
 End.
+

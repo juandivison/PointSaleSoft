@@ -90,7 +90,7 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
 UnitOutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 PackageDLLOutputDir=
 PackageDCPOutputDir=
@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/GLBRUTADB="Expert"
+RunParams=/GLBRUTADB="Electronica"
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -138,16 +138,18 @@ c:\program files (x86)\borland\delphi7\Projects\Bpl\PerlRegExD7.bpl=TPerlRegEx -
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
+[HistoryLists\hlSearchPath]
+Count=1
+Item0=$(DELPHI)\Lib\Debug
 [HistoryLists\hlUnitOutputDirectory]
-Count=2
+Count=1
 Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
-Item1=C:\Proyectos\IdesiSync\LoanProcess\VerificarLicencia\dcu
 [HistoryLists\hlOutputDirectorry]
-Count=1
-Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
-[HistoryLists\hlBPLOutput]
-Count=1
-Item0=C:\Proyectos\IdesiSync\LoanProcess\VerificarLicencia\Bin\
-[HistoryLists\hlDCPOutput]
-Count=1
-Item0=C:\Program Files (x86)\Borland\Delphi7\tpapro_5.00\tpapro_5.00\dcp
+Count=7
+Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Prosesur
+Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+Item3=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Farmacia
+Item4=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Galle
+Item5=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Mutur
+Item6=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Nomina

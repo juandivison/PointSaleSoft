@@ -3,7 +3,7 @@ unit URepReimpTicketFarm_ARS;
 interface
 
 uses Windows, SysUtils, Messages, Classes, Graphics, Controls,
-  db, StdCtrls, ExtCtrls, Forms, QuickRpt, QRCtrls;
+  db, StdCtrls, ExtCtrls, Forms, QuickRpt, QRCtrls, jpeg;
 
 type
   TqckRepReciboReimpTicketFarmaciaARS = class(TQuickRep)
@@ -108,6 +108,12 @@ type
     QRExpr2: TQRExpr;
     QRDBText23: TQRDBText;
     QRLabel6: TQRLabel;
+    ChildBand3: TQRChildBand;
+    QRImage1: TQRImage;
+    QRLabel30: TQRLabel;
+    qrCodigoSegecf: TQRLabel;
+    QRLabel31: TQRLabel;
+    qrFechaFDigital: TQRLabel;
     procedure QRDBText4Print(sender: TObject; var Value: String);
     procedure QuickRepBeforePrint(Sender: TCustomQuickRep;
       var PrintReport: Boolean);
@@ -152,6 +158,8 @@ type
       var PrintBand: Boolean);
     procedure QRLabel6Print(sender: TObject; var Value: String);
     procedure QuickRepStartPage(Sender: TCustomQuickRep);
+    procedure ChildBand3BeforePrint(Sender: TQRCustomBand;
+      var PrintBand: Boolean);
   private
     procedure ProcIncrementaPapel;
 
@@ -161,6 +169,7 @@ type
     xtipoVenta : String;
     nombreCteGenerico : String;
     strcopia : String;
+    procedure SetParameterValues;
   end;
 var
   qckRepReciboReimpTicketFarmaciaARS: TqckRepReciboReimpTicketFarmaciaARS;
@@ -170,7 +179,7 @@ var
 implementation
 
 uses UDatModCompania, UDatModClientes, UProcVentaRapida, UGlobal,
-  UDatModReportes, udatmodfactura, UDatModInventario;
+  UDatModReportes, udatmodfactura, UDatModInventario,UQrJpgHelper, UUtilecftimbre;
            
 
 {$R *.DFM}
@@ -185,7 +194,7 @@ procedure TqckRepReciboReimpTicketFarmaciaARS.QuickRepBeforePrint(Sender: TCusto
   var PrintReport: Boolean);
 begin
   hCImpreso:=False;
-  //qrLabelRNC.Caption:='';
+
   dmFactura.qryDatosVtaARS.Close;
   dmFactura.qryDatosVtaARS.Params[0].Value := dmFactura.qryVentaFacturaNUMERO.Value;
   dmFactura.qryDatosVtaARS.Open;
@@ -195,26 +204,21 @@ begin
 
   dmFactura.qryVentaFacturaDet.first;
   tRec:=0;
-  //if Assigned(qckRepReciboReimpTicketFarmaciaARS) then
-  //begin
 
-    qckRepReciboReimpTicketFarmaciaARS.AllDataSets.Add(dmCompania.tblCompania);
-    qckRepReciboReimpTicketFarmaciaARS.AllDataSets.Add(dmfactura.qryDatosVtaARS);
-    qckRepReciboReimpTicketFarmaciaARS.AllDataSets.Add(dmFactura.qryVentaFacturaDet);
-    
-    if Assigned(frmProcVentaRapida) then
+  qckRepReciboReimpTicketFarmaciaARS.AllDataSets.Add(dmCompania.tblCompania);
+  qckRepReciboReimpTicketFarmaciaARS.AllDataSets.Add(dmfactura.qryDatosVtaARS);
+  qckRepReciboReimpTicketFarmaciaARS.AllDataSets.Add(dmFactura.qryVentaFacturaDet);
+
+  if Assigned(frmProcVentaRapida) then
     qckRepReciboReimpTicketFarmaciaARS.AllDataSets.Add(frmProcVentaRapida.Totales);
 
-    IF (dmFactura.qryVentaFacturaCODIGO_CTE.Value = 0) THEN
+  if (dmFactura.qryVentaFacturaCODIGO_CTE.Value = 0) THEN
     ChildBand1.Height:=0;
-  //end;
 
   if (dmFactura.qryDatosVtaARS.RecordCount = 0) then
   begin
     ChildBand10.Height:=0;
     ChildBand1.Height :=40;
-    //qckRepReciboReimpTicketFarmaciaARS.Page.Length:=
-    //qckRepReciboReimpTicketFarmaciaARS.Page.Length - 5;
   end else
   begin
     ChildBand1.Height:=95;
@@ -582,6 +586,59 @@ procedure TqckRepReciboReimpTicketFarmaciaARS.QuickRepStartPage(
   Sender: TCustomQuickRep);
 begin
   //ProcIncrementaPapel;
+end;
+
+procedure TqckRepReciboReimpTicketFarmaciaARS.ChildBand3BeforePrint(
+  Sender: TQRCustomBand; var PrintBand: Boolean);
+begin
+  if (GlbActivaECF = 0) or (GlbValidarECF = 0)  then
+  PrintBand:=False else PrintBand:=True;
+end;
+
+procedure TqckRepReciboReimpTicketFarmaciaARS.SetParameterValues;
+var
+   codseg,femision,rutaqr, urlimage: string;
+begin
+
+  if GlbActivaECF = 0 then
+  begin
+    ChildBand3.Height:=0;
+    QRImage1.Visible:= False;
+    QRLabel30.Visible:= False;
+    QRLabel31.Visible:= False;
+    qrCodigoSegecf.Visible:= False;
+    qrFechaFDigital.Visible:= False;
+  end else
+  begin
+    urlimage:=GetUrlImageTimbre(dmFactura.qryVentaFacturaNUMERO.Value,codseg,femision);
+    if (urlimage <> '') then
+    begin
+       SetQrUrlAsJpgToQRImage(
+       urlImage,
+       QRImage1,
+       45,  // mm (ajústalo si quieres más grande/pequeño)
+       PrinterSettings.PrinterIndex );
+       qrCodigoSegecf.Caption := codseg;
+       qrFechaFDigital.Caption:= femision;
+    end else
+    begin
+      rutaqr:=UUtilecftimbre.GetRutaTimbre(dmFactura.qryVentaFacturaNUMERO.Value,codseg,femision);
+      if FileExists(rutaqr) then
+      begin
+        QRImage1.Picture.LoadFromFile(rutaqr);
+        qrCodigoSegecf.Caption :=codseg;
+        qrFechaFDigital.Caption:=femision;
+      end else
+      begin
+        LogInformacionTxt('Ruta codigo QR, no existe ->'+rutaqr);
+        ChildBand3.Height:=0;
+      end;
+    end;
+  end;
+ 
+  if length(GlbPiedePaginaFactura) < 37 then
+  ChildBand10.height:= 22;
+  qrLabel27.Caption:= GlbPiedePaginaFactura;
 end;
 
 end.

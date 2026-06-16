@@ -39,17 +39,26 @@ type
     QRExpr1: TQRExpr;
     QRGroup1: TQRGroup;
     ChildBand1: TQRChildBand;
-    QRLabel12: TQRLabel;
-    QRLabel13: TQRLabel;
-    QRLabel14: TQRLabel;
-    QRLabel15: TQRLabel;
     QRLabel16: TQRLabel;
     QRDBText13: TQRDBText;
     QRLabel17: TQRLabel;
     QRDBText14: TQRDBText;
     QRLabel18: TQRLabel;
     QRDBText15: TQRDBText;
+    ChildBand2: TQRChildBand;
+    QRLabel19: TQRLabel;
+    QRLabel20: TQRLabel;
+    QRLabel21: TQRLabel;
+    QRLabel22: TQRLabel;
+    QRLabel12: TQRLabel;
+    QRLabel13: TQRLabel;
+    QRLabel14: TQRLabel;
+    QRDBText16: TQRDBText;
+    QRDBText17: TQRDBText;
+    QRDBText18: TQRDBText;
     procedure QRLabel3Print(sender: TObject; var Value: String);
+    procedure ChildBand1BeforePrint(Sender: TQRCustomBand;
+      var PrintBand: Boolean);
   private
 
   public
@@ -68,6 +77,27 @@ procedure TqckSobrePagoNomina.QRLabel3Print(sender: TObject;
   var Value: String);
 begin
   Value := FormatDatetime(Shortdateformat,dmNomina.qryRepNomina.Params[0].Value)+' al '+FormatDatetime(Shortdateformat,dmNomina.qryRepNomina.Params[0].Value);
+end;
+
+procedure TqckSobrePagoNomina.ChildBand1BeforePrint(Sender: TQRCustomBand;
+  var PrintBand: Boolean);
+begin
+  if (dmNomina.qryRepNominaREGALIA.Value > 0) AND
+     (dmNomina.qryRepNominaVACACIONES.Value > 0) AND
+     (dmNomina.qryRepNominaBONIFICACION.Value > 0) then
+  begin
+    PrintBand:=false;
+    ChildBand1.Height:=0;
+  end else
+  begin
+    PrintBand:=True;
+    QRLabel12.Enabled:=dmNomina.qryRepNominaREGALIA.Value > 0;
+    QRDBText16.Enabled:=dmNomina.qryRepNominaREGALIA.Value > 0;
+    QRLabel13.Enabled:=dmNomina.qryRepNominaVACACIONES.Value > 0;
+    QRDBText17.Enabled:=dmNomina.qryRepNominaVACACIONES.Value > 0;
+    QRLabel14.Enabled:=dmNomina.qryRepNominaBONIFICACION.Value > 0;
+    QRDBText18.Enabled:=dmNomina.qryRepNominaBONIFICACION.Value >0;
+  end;
 end;
 
 end.

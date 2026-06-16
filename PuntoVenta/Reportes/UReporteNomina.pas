@@ -48,6 +48,12 @@ type
     QRLabel16: TQRLabel;
     QRDBText13: TQRDBText;
     QRExpr8: TQRExpr;
+    QRLabel12: TQRLabel;
+    QRExpr9: TQRExpr;
+    QRExpr10: TQRExpr;
+    QRLabel13: TQRLabel;
+    ChildBand1: TQRChildBand;
+    QRLabel14: TQRLabel;
     procedure QRLabel3Print(sender: TObject; var Value: String);
     procedure QRDBText8Print(sender: TObject; var Value: String);
     procedure QRDBText7Print(sender: TObject; var Value: String);
@@ -55,6 +61,12 @@ type
     procedure QRDBText11Print(sender: TObject; var Value: String);
     procedure QRDBText12Print(sender: TObject; var Value: String);
     procedure QRExpr1Print(sender: TObject; var Value: String);
+    procedure QRBand3BeforePrint(Sender: TQRCustomBand;
+      var PrintBand: Boolean);
+    procedure QuickRepBeforePrint(Sender: TCustomQuickRep;
+      var PrintReport: Boolean);
+    procedure ChildBand1BeforePrint(Sender: TQRCustomBand;
+      var PrintBand: Boolean);
   private
 
   public
@@ -63,10 +75,12 @@ type
 
 var
   qckRepNomina: TqckRepNomina;
-
+  sumaRegalia,
+  SumaVacaciones,
+  SumaBonificaciones:Currency;
 implementation
 
-uses UDatModNomina;
+uses UDatModNomina, UGlobal;
 
 {$R *.DFM}
 
@@ -106,6 +120,42 @@ end;
 procedure TqckRepNomina.QRExpr1Print(sender: TObject; var Value: String);
 begin
   if Value = '0.00' then Value:='';
+end;
+
+procedure TqckRepNomina.QRBand3BeforePrint(Sender: TQRCustomBand;
+  var PrintBand: Boolean);
+begin
+  if dmNomina.qryRepNominaREGALIA.Value > 0 then
+  sumaRegalia:=sumaRegalia + dmNomina.qryRepNominaREGALIA.Value;
+  if dmNomina.qryRepNominaVACACIONES.Value > 0 then
+  SumaVacaciones:=SumaVacaciones + dmNomina.qryRepNominaVACACIONES.Value;
+  IF dmNomina.qryRepNominaBONIFICACION.Value > 0 then
+  SumaBonificaciones:=SumaBonificaciones + dmNomina.qryRepNominaBONIFICACION.Value;
+end;
+
+procedure TqckRepNomina.QuickRepBeforePrint(Sender: TCustomQuickRep;
+  var PrintReport: Boolean);
+begin
+  sumaRegalia:=0;
+  SumaVacaciones:=0;
+  SumaBonificaciones:=0;
+end;
+
+procedure TqckRepNomina.ChildBand1BeforePrint(Sender: TQRCustomBand;
+  var PrintBand: Boolean);
+begin
+  if (sumaRegalia = 0) or
+  (SumaVacaciones = 0) or
+  (SumaBonificaciones = 0) then
+  begin
+    PrintBand:=False;
+    ChildBand1.Height:=0;
+    exit;
+  end;
+  QRLabel14.Caption:=
+  'Totales Regalia: '+InsertarComa(FloattoStr(sumaRegalia))+
+  ' | Vacaciones: '+InsertarComa(FloattoStr(SumaVacaciones))+
+  ' | Bonificaciones: '+InsertarComa(FloattoStr(SumaBonificaciones));
 end;
 
 end.

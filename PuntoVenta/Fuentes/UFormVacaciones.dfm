@@ -1,6 +1,6 @@
 object frmVacaciones: TfrmVacaciones
-  Left = 233
-  Top = 124
+  Left = 322
+  Top = 186
   Width = 928
   Height = 480
   Caption = 'Vacaciones'
@@ -104,6 +104,7 @@ object frmVacaciones: TfrmVacaciones
         TitleFont.Name = 'MS Sans Serif'
         TitleFont.Style = []
         MultiSelect = True
+        RowColor2 = 16776176
         Columns = <
           item
             Expanded = False
@@ -113,11 +114,13 @@ object frmVacaciones: TfrmVacaciones
           item
             Expanded = False
             FieldName = 'CODIGO_TIPO_TRANS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODIGO_TIPO_NOMINA'
+            Width = 64
             Visible = True
           end
           item
@@ -128,26 +131,31 @@ object frmVacaciones: TfrmVacaciones
           item
             Expanded = False
             FieldName = 'VALOR_TRANS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_ENT'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_SAL'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'OBSERVACIONES'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'STATUS_TRANS'
+            Width = 64
             Visible = True
           end
           item
@@ -163,6 +171,7 @@ object frmVacaciones: TfrmVacaciones
           item
             Expanded = False
             FieldName = 'FECHA_EFECTIVA'
+            Width = 64
             Visible = True
           end>
       end
@@ -183,6 +192,7 @@ object frmVacaciones: TfrmVacaciones
         TitleFont.Height = -11
         TitleFont.Name = 'MS Sans Serif'
         TitleFont.Style = []
+        RowColor2 = 16776176
         Columns = <
           item
             Expanded = False
@@ -192,11 +202,13 @@ object frmVacaciones: TfrmVacaciones
           item
             Expanded = False
             FieldName = 'CODIGO_TIPO_TRANS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODIGO_TIPO_NOMINA'
+            Width = 64
             Visible = True
           end
           item
@@ -207,26 +219,31 @@ object frmVacaciones: TfrmVacaciones
           item
             Expanded = False
             FieldName = 'VALOR_TRANS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_ENT'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_SAL'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'OBSERVACIONES'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'STATUS_TRANS'
+            Width = 64
             Visible = True
           end
           item
@@ -242,6 +259,7 @@ object frmVacaciones: TfrmVacaciones
           item
             Expanded = False
             FieldName = 'FECHA_EFECTIVA'
+            Width = 64
             Visible = True
           end>
       end
@@ -421,6 +439,7 @@ object frmVacaciones: TfrmVacaciones
       Width = 88
       Height = 25
       Caption = 'I&nsertar'
+      Enabled = False
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clNavy
       Font.Height = -11

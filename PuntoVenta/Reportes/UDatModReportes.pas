@@ -1990,6 +1990,10 @@ type
     qryViewVentasMastSHOWPRECIOCONITBIS: TSmallintField;
     qryViewVentasDetLEVEL_PRECIO_VENTA: TSmallintField;
     qryViewVentasDetTRANSP_ITBIS: TIntegerField;
+    qryRptInvReordenEmail: TIBQuery;
+    qryCambioPreciosEmail: TIBQuery;
+    qryMarcarPComoEnviadox: TIBQuery;
+    qryMarcarPComoEnviado: TIBDataSet;
     procedure qryDatosRepVxCajasCalcFields(DataSet: TDataSet);
     procedure qryDatosRepVxCajasResumenCalcFields(DataSet: TDataSet);
     procedure qryDatosRepDifVendedoresCalcFields(DataSet: TDataSet);

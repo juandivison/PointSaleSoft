@@ -1,3 +1,4 @@
+
 unit UImpresionVentas;
 
 interface
@@ -88,10 +89,11 @@ UDatModClientes,UDatModFactura,
    TipoVenta : String;
    esContado : boolean = true;
    numerodocReimp : integer;
-
+   imp8_5x11:smallint=0;
 procedure ReImpDevolucion(numDev : Integer;var _flag : boolean);
 var
   flag : Boolean;
+  ImpCCopias:smallint;
 begin
   //Usado para filtrar dmfactura.qryventafactura
   UProcesarDevolucion.numeroFactura := numDev;
@@ -263,7 +265,7 @@ begin
           qckFactServ_8_5SAMNewMuturs:=Nil;
           end;
       end else
-      if esContado and (GlBAyaco = 1) then
+      if esContado and (GlBAyaco = 1) and (imp8_5x11 = 0) then
       begin
         qckRepReciboReimpTicketSurtidoraNew:=TqckRepReciboReimpTicketSurtidoraNew.Create(Nil);
       try
@@ -298,6 +300,9 @@ begin
         qckRepReciboReimpTicketSurtidoraNew.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
         //pulgadaInc:=0.86;
         dmFactura.qryVentaFacturaDet.Last;
+
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;
 
       if (glbQckUnaPagina = 1) then
       begin
@@ -363,8 +368,11 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+            if ImpCCopias = 2 then
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -486,6 +494,9 @@ begin
         //pulgadaInc:=0.86;
         dmFactura.qryVentaFacturaDet.Last;
 
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;
+
       if (glbQckUnaPagina = 1) then
       begin
         if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and
@@ -550,8 +561,11 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+            if ImpCCopias = 2 then
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -836,6 +850,7 @@ end;
 Procedure ReImprimirRecibo;
 var
   flag : boolean;
+  ImpCCopias:smallint;
 begin
 
   if frmProcVentaRapida.rxVenta.RecordCount > 0 then
@@ -1292,6 +1307,9 @@ begin
         //pulgadaInc:=0.86;
         dmFactura.qryVentaFacturaDet.Last;
 
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;
+
       if (glbQckUnaPagina = 1) then
       begin
         if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and
@@ -1356,8 +1374,11 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+            if ImpCCopias >= 2 then
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -1421,6 +1442,8 @@ begin
         qckRepReciboReimpTicketSurtidoraNew.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
         //pulgadaInc:=0.86;
         dmFactura.qryVentaFacturaDet.Last;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;        
       if (glbQckUnaPagina = 1) then
       begin
         if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and
@@ -1486,8 +1509,11 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+            if ImpCCopias >= 2 then
+            qckRepReciboReimpTicketSurtidoraNew.Print;            
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -1662,6 +1688,7 @@ Procedure ImprimeDocumento(serieDoc:Integer);
 var
    tRecordsDet : Integer;
    flag : boolean;
+   ImpCCopias:smallint;
 begin
   GlbRutaLogoDoc:='';
 
@@ -1993,7 +2020,10 @@ begin
         end;
         qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
         if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-        qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+        begin
+          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+          ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+        end;
         if GlbEsCopia then
         qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)'
         else        
@@ -2012,6 +2042,8 @@ begin
         qckRepReciboReimpTicketSurtidoraNew.valorNCF   := dmFactura.qryVentaFacturaNUMERO_NCF.Value;
         //pulgadaInc:=0.86;
         dmFactura.qryVentaFacturaDet.Last;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;        
    if (glbQckUnaPagina = 1) then
    begin
         if dmFactura.qryVentaFacturaDet.RecordCount = 1 then
@@ -2075,14 +2107,28 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            if ImpCCopias > 3 then
+              ImpCCopias:=3;
+
+            if (GlbImpReciboSinPreg = 1) then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              if (ImpCCopias >= 2) then
+                 qckRepReciboReimpTicketSurtidoraNew.Print;
+              if (ImpCCopias >= 3) then //no queremos imprimri mas de 3 en caso de error del usuario
+                 qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+            reciboImpreso:=True;
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
             begin
               qckRepReciboReimpTicketSurtidoraNew.PrinterSetup;
               qckRepReciboReimpTicketSurtidoraNew.Print;
+              reciboImpreso:=True;
             end;
           end else
           begin
@@ -3338,6 +3384,7 @@ if (GlbFarmacia = 1) and (GlbRec55Pulg = 1) then
         (dmFactura.qryVentaFacturaDet.RecordCount - 1 ) * 0.25;
 
         flag:=true;
+        qckRepReciboReimpTicketFarmaciaARS.SetParameterValues;
         qckRepReciboReimpTicketFarmaciaARS.Prepare;
       if (glbQckUnaPagina = 1) then
       begin
@@ -3996,10 +4043,11 @@ procedure ReimprimirFacturaNoFiscal(numTRN : Integer);
 var
   tRecordsDet : integer;
   ImpPDF, flag : boolean;
-    
+  ImpCCopias:smallint;
   pulgadaInc : Real;
-begin  
+begin
   ImpPDF := False;
+  ImpCCopias:=1;
   dmCompania.tblCompania.Close;
   dmCompania.tblCompania.Open;
   dmCompania.tblCompania.Locate('codigo', GlbCia_Key,[]);
@@ -4253,7 +4301,10 @@ begin
         end;
         qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
         if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-        qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+        begin
+          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+          ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+        end;
         if GlbEsCopia then
         qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)'
         else        
@@ -4272,6 +4323,8 @@ begin
         qckRepReciboReimpTicketSurtidoraNew.valorNCF   := dmFactura.qryVentaFacturaNUMERO_NCF.Value;
         //pulgadaInc:=0.86;
         dmFactura.qryVentaFacturaDet.Last;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;        
         if (glbQckUnaPagina = 1) then
         begin
         if dmFactura.qryVentaFacturaDet.RecordCount = 1 then
@@ -4335,8 +4388,15 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            if ImpCCopias > 1 then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              Delay(1000);
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -5017,7 +5077,10 @@ if (GLBECOM = 1) then   //Elias comunicaciones Santiago
         end;
         qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
           if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+          begin
+            qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+            ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+          end;
           if GlbEsCopia then
              qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)'
           else
@@ -5036,6 +5099,8 @@ if (GLBECOM = 1) then   //Elias comunicaciones Santiago
           qckRepReciboReimpTicketSurtidoraNew.valorNCF   := dmFactura.qryVentaFacturaNUMERO_NCF.Value;
           //pulgadaInc:=0.86;
           dmFactura.qryVentaFacturaDet.Last;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;          
           if (glbQckUnaPagina = 1) then
           begin
            if dmFactura.qryVentaFacturaDet.RecordCount = 1 then
@@ -5099,8 +5164,15 @@ if (GLBECOM = 1) then   //Elias comunicaciones Santiago
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            if ImpCCopias > 1 then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              Delay(1000);
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -5287,7 +5359,10 @@ if (GLBECOM = 1) then   //Elias comunicaciones Santiago
         end;
         qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
         if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-        qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+        begin
+          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+          ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+        end;
         qckRepReciboReimpTicketSurtidoraNew.strcopia :='';
 
         //qckRepReciboReimpTicketSurtidoraNew.ncfDesc := GlbDescNCF;
@@ -5303,6 +5378,9 @@ if (GLBECOM = 1) then   //Elias comunicaciones Santiago
         qckRepReciboReimpTicketSurtidoraNew.valorNCF   := dmFactura.qryVentaFacturaNUMERO_NCF.Value;
         //pulgadaInc:=0.86;
         dmFactura.qryVentaFacturaDet.Last;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;
+      
   if (glbQckUnaPagina = 1) then
   begin
         if dmFactura.qryVentaFacturaDet.RecordCount = 1 then
@@ -5367,7 +5445,15 @@ if (GLBECOM = 1) then   //Elias comunicaciones Santiago
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
+          begin
+            if ImpCCopias > 1 then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              Delay(1000);
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+          end
           else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
@@ -5718,11 +5804,18 @@ var
   cRc : Integer;
   ctrlLoop:Integer;
   pl : real;
+  ImpCCopias:smallint;
+  _chkImpenPDF:boolean;
 begin
   if not Assigned(frmProcVentaRapida) then exit;
   ctrlLoop :=0;
   pl:=7.27;
   GlbEsCopia:=True;
+  if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
+  begin
+    ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+  end;
+
   //reimprime factura aqui
   dmCompania.tblCompania.Close;
   dmCompania.tblCompania.Open;
@@ -5730,12 +5823,16 @@ begin
   dmfactura.qryFactReimpMaster.close;
   dmfactura.qryVentaFactura.Close;
   dmreportes.qryViewVentasMast.Close;
-                        
+  _chkImpenPDF:=false;
   frmConsultaFacturas:=TfrmConsultaFacturas.Create(Nil);
   try
+
     frmConsultaFacturas.BitBtn2.Caption := '&Re-Imprimir';
     if frmConsultaFacturas.Showmodal = mrOK then
     begin
+      _chkImpenPDF:=frmConsultaFacturas.chkImpenPDF.Checked;
+      if frmConsultaFacturas.CheckBox3.Checked then
+      imp8_5x11:=1 else imp8_5x11:=0;
       if frmConsultaFacturas.rdgContado.Checked then
          frmProcVentaRapida.esContado:=True
       else frmProcVentaRapida.esContado:=False;
@@ -6534,7 +6631,10 @@ begin
         end;
         qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
         if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-        qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+        begin
+          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+          ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+        end;
         qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)';
 
         if GlbImpCodProducto = 0 then
@@ -6587,6 +6687,8 @@ begin
             frmProcVentaRapida.RxDBGrid1.Visible:=True;
 
             DmFactura.qryVentaFacturaDet.Last;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;            
             //cRc := dmFactura.qryVentaFacturaDet.RecordCount;
             dmFactura.qryVentaFacturaDet.First;
             //cRc:=0;
@@ -6634,10 +6736,28 @@ begin
           VarArrayOf([1,6]),[]) then     //Factura/Recibo Punto Venta
           qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.PrinterIndex:=
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
-
+      if _chkImpenPDF then
+      begin
+        //todo crear PDF ----REQUEIMIENDO ANA EL TEJEDOR
+        GLBMostrarArchivo:=True;
+        ReportExportPDF(qckRepReciboReimpTicketSurtidoraNew,
+        GlbRutaRecibos+'\FacturaContado'+
+        dmFactura.qryVentaFacturaNOMBRE_FACTURAR.Value+'_'+
+        dmFactura.qryVentaFacturaNUMERO_FACTURA.AsString+'.pdf');
+        GLBMostrarArchivo:=false;
+        _chkImpenPDF:=False;
+      end
+      else
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            if ImpCCopias > 1 then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              Delay(1000);
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -6757,9 +6877,11 @@ begin
           qckRepReciboReimpTicketSurtidoraNew.ChildBand14.Height:=0;
           //qckRepReciboReimpTicketSurtidoraNew.ChildBand13.HasChild:=False;
         end;
-        qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
         if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-        qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+        begin
+          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+          ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+        end;
         qckRepReciboReimpTicketSurtidoraNew.strcopia :='';
 
         //qckRepReciboReimpTicketSurtidoraNew.ncfDesc := GlbDescNCF;
@@ -6775,7 +6897,14 @@ begin
         if not dmFactura.qryVentaFacturaNUMERO_NCF.IsNull then
         qckRepReciboReimpTicketSurtidoraNew.valorNCF := dmFactura.qryVentaFacturaNUMERO_NCF.AsString; // valorNCF;
         //pulgadaInc:=0.86;
+
+        qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
+        //39657
+
         dmFactura.qryVentaFacturaDet.Last;
+
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;
       if (glbQckUnaPagina = 1) then
       begin
         if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and
@@ -6847,11 +6976,28 @@ begin
           VarArrayOf([1,6]),[]) then     //Factura/Recibo Punto Venta
           qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.PrinterIndex:=
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
-
+      if _chkImpenPDF then
+      begin
+        //todo crear PDF ----REQUEIMIENDO ANA EL TEJEDOR
+        GLBMostrarArchivo:=True;
+        ReportExportPDF(qckRepReciboReimpTicketSurtidoraNew,
+        GlbRutaRecibos+'\FacturaContado'+
+        dmFactura.qryVentaFacturaNOMBRE_FACTURAR.Value+'_'+
+        dmFactura.qryVentaFacturaNUMERO_FACTURA.AsString+'.pdf');
+        GLBMostrarArchivo:=false;
+        _chkImpenPDF:=False;
+      end
+      else
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
           begin
             qckRepReciboReimpTicketSurtidoraNew.Prepare;
-            qckRepReciboReimpTicketSurtidoraNew.Print
+            if ImpCCopias > 1 then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              Delay(1000);
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;
           end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
@@ -6941,6 +7087,9 @@ begin
             pulgadaInc:=0.86;
             //temporal
             //{ 01312021
+
+            qckRepReciboReimpTicketFarmaciaARS.SetParameterValues;
+            
             dmFactura.qryVentaFacturaDet.Last;
         if (glbQckUnaPagina = 1) then
         begin
@@ -7075,6 +7224,7 @@ begin
             qckRepReciboReimpTicketFarmaciaARS.xtipoVenta := TipoVenta;
             qckRepReciboReimpTicketFarmaciaARS.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
             pulgadaInc:=0.86;
+            qckRepReciboReimpTicketFarmaciaARS.SetParameterValues;
             //temporal
             //{
       if (glbQckUnaPagina = 1) then
@@ -7183,7 +7333,10 @@ begin
               end;
              qckRepReciboReimpTicketSurtidoraNew.SetParameterValues; 
              if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-             qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+             begin
+               qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+               ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+             end;
              qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)';
              if GlbImpCodProducto = 0 then
              begin
@@ -7204,6 +7357,8 @@ begin
             pulgadaInc:=0.86;
             dmFactura.qryVentaFacturaDet.Last;
             dmFactura.qryVentaFacturaDet.First;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;            
            if (glbQckUnaPagina = 1) then
            begin
               if dmFactura.qryVentaFacturaDet.RecordCount = 1 then
@@ -7287,8 +7442,15 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            if ImpCCopias > 1 then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              Delay(1000);
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;           
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -7325,7 +7487,10 @@ begin
               end;
               qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
               if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-              qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+              begin
+                qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+                ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+              end;
              qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)';
              if GlbImpCodProducto = 0 then
              begin
@@ -7344,6 +7509,10 @@ begin
             qckRepReciboReimpTicketSurtidoraNew.xtipoVenta := TipoVenta;
             qckRepReciboReimpTicketSurtidoraNew.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
             pulgadaInc:=0.86;
+
+           if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+           qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;
+
            if (glbQckUnaPagina = 1) then
            begin
             if dmFactura.qryVentaFacturaDet.RecordCount = 1 then
@@ -7417,8 +7586,15 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            if ImpCCopias > 1 then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              Delay(1000);
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -7700,7 +7876,10 @@ begin
         end;
         qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
           if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+          begin
+            qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+            ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+          end;
           if GlbEsCopia then
           qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)'
           else 
@@ -7723,6 +7902,8 @@ begin
           pulgadaInc:=0.86;
           dmFactura.qryVentaFacturaDet.Last;
           dmFactura.qryVentaFacturaDet.first;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;
     if (glbQckUnaPagina = 1) then
     begin
         if dmFactura.qryVentaFacturaDet.RecordCount > 20  then
@@ -7778,8 +7959,15 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-          qckRepReciboReimpTicketSurtidoraNew.Print
-          else
+          begin
+            if ImpCCopias > 1 then
+            begin
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+              Delay(1000);
+              qckRepReciboReimpTicketSurtidoraNew.Print;
+            end else
+            qckRepReciboReimpTicketSurtidoraNew.Print;          
+          end else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin
             if (GlbImprimeReciboFact = 1) then
@@ -7836,7 +8024,10 @@ begin
         end;
         qckRepReciboReimpTicketSurtidoraNew.SetParameterValues;
         if frmProcVentaRapida.rxspinImpCantCopias.Decimal > 0 then
-        qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+        begin
+          qckRepReciboReimpTicketSurtidoraNew.PrinterSettings.Copies:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text);
+          ImpCCopias:= StrToInt(frmProcVentaRapida.rxspinImpCantCopias.Text)
+        end;
         if GlbEsCopia then
           qckRepReciboReimpTicketSurtidoraNew.strcopia :=' (COPIA)'
         else qckRepReciboReimpTicketSurtidoraNew.strcopia :='';
@@ -7860,6 +8051,8 @@ begin
 
         dmFactura.qryVentaFacturaDet.Last;
         dmFactura.qryVentaFacturaDet.first;
+      if (dmFactura.qryVentaFacturaDet.RecordCount = 1) and (GlbImpQREncuesta = 0) then
+      qckRepReciboReimpTicketSurtidoraNew.Page.Length:=8.198;        
       if (glbQckUnaPagina = 1) then
       begin
         if dmFactura.qryVentaFacturaDet.RecordCount = 1 then
@@ -7930,7 +8123,11 @@ begin
           GetImpresora(dmDatos.qryImpresorasNOMBRE_IMPRESORA.Value);
 
           if (GlbImpReciboSinPreg = 1) and (GlbImprimeReciboFact = 1) then
-             qckRepReciboReimpTicketSurtidoraNew.Print
+          begin
+             qckRepReciboReimpTicketSurtidoraNew.Print;
+             if ImpCCopias = 2 then
+             qckRepReciboReimpTicketSurtidoraNew.Print;
+          end
           else
           if MessageDlg('Imprimir?',mtInformation, [mbYes, mbNo], 0)=mryes then
           begin

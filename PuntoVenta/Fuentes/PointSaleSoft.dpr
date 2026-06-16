@@ -2,6 +2,11 @@ program PointSaleSoft;
 
 uses
   Forms,
+  SysUtils,
+  Classes,
+  DB,
+  ExtCtrls,
+  IBDatabase,
   UGlobal in 'UGlobal.pas',
   UMenuPrincipal in 'UMenuPrincipal.pas' {frmMenuPrincipal},
   UDatosVentas in 'UDatosVentas.pas' {dmVentas: TDataModule},
@@ -570,7 +575,6 @@ uses
   UFormFormatoTipoDoc in '..\Reportes\UFormFormatoTipoDoc.pas' {frmFormatoReportes},
   UQckCotServ8_5Standar in '..\Reportes\UQckCotServ8_5Standar.pas' {qckCotServ8_5Standar: TQuickRep},
   UformExpExcel in 'UformExpExcel.pas' {frmExportarExcel},
-  qckRepCertificadoSAM in 'qckRepCertificadoSAM.pas' {qckCertificadoSam: TQuickRep},
   UFormDealers in 'UFormDealers.pas' {frmDealers},
   UFormAgencias in 'UFormAgencias.pas' {frmAgencias},
   UFormConsultaCertificados in 'UFormConsultaCertificados.pas' {frmConsultaCertificados},
@@ -736,14 +740,273 @@ uses
   UFrmOrderFilePicker in 'UFrmOrderFilePicker.pas' {frmOrderFilePicker},
   UFacturaTxtBuilder in 'UFacturaTxtBuilder.pas',
   UFacturaTxtEcfFlow in 'UFacturaTxtEcfFlow.pas',
-  UQckRepCartaRutaVeh in 'UQckRepCartaRutaVeh.pas' {qckCartaRutaVeh: TQuickRep},
   UQckRepCartaRutaVehTpl in 'UQckRepCartaRutaVehTpl.pas' {qckCartaRutaVehTpl: TQuickRep},
   UFrmCartaRutaTemplate in 'UFrmCartaRutaTemplate.pas' {frmCartaRutaTemplate},
-  USincronizarTablaInv in 'USincronizarTablaInv.pas';
+  USincronizarTablaInv in 'USincronizarTablaInv.pas',
+  USincronizarPrecioUnidadSurtidora in 'USincronizarPrecioUnidadSurtidora.pas',
+  URegDatAdicionales in 'URegDatAdicionales.pas' {frmDatosAdicRegalia},
+  UProyeccionRegalia in 'UProyeccionRegalia.pas' {frmProyeccionRegPascual},
+  UElijeTipockReg in 'UElijeTipockReg.pas' {frmElijeBcoCksReg},
+  URepProyRegalia in '..\Reportes\URepProyRegalia.pas' {qckProyRegalia: TQuickRep},
+  UChequesRegalia in '..\Reportes\UChequesRegalia.pas' {frmCksRegalia},
+  URepCksNomPer in '..\Reportes\URepCksNomPer.pas' {QckRepCksNomPer: TQuickRep},
+  UImpChequesNomina in 'UImpChequesNomina.pas' {FrmImpcksNomina},
+  UVercksDanados in 'UVercksDanados.pas' {frmCksDaniados},
+  URepCksProg in 'URepCksProg.pas' {QckRepCksProg: TQuickRep},
+  UCksRegalia in '..\Reportes\UCksRegalia.pas' {qckCksRegalia: TQuickRep},
+  UReptEmpleados in 'UReptEmpleados.pas',
+  ReportePersonalSimple in '..\Reportes\ReportePersonalSimple.pas' {QckReporteGralSimple: TQuickRep},
+  ReportePersonalXDepto in '..\Reportes\ReportePersonalXDepto.pas' {QckReporteGralXDepto: TQuickRep},
+  URepNFISFN in '..\Reportes\URepNFISFN.pas' {qckRepPerNFSFN: TQuickRep},
+  URepListadoNomina in '..\Reportes\URepListadoNomina.pas' {qckListadoNomina: TQuickRep},
+  URepListadoNominaB in '..\Reportes\URepListadoNominaB.pas' {qckListadoNominaB: TQuickRep},
+  UOrdenDespEmpleados in 'UOrdenDespEmpleados.pas' {frmOrdEmpleados},
+  UListFirmOrdEmp in 'UListFirmOrdEmp.pas' {qckListFirmOrdComp: TQuickRep},
+  URepOrdenComp in '..\Reportes\URepOrdenComp.pas' {qckOrdenComp: TQuickRep},
+  UCreditosFrmCoop in 'UCreditosFrmCoop.pas' {frmCreditosCoop},
+  UTipoOrdEmpCoop in 'UTipoOrdEmpCoop.pas' {frmTipoOrdEmpCoop},
+  UFrmbrowseDatosNomina in 'UFrmbrowseDatosNomina.pas' {frmDatosNomina},
+  UImportarDatosTSS in 'UImportarDatosTSS.pas' {frmExportarDatosTSS},
+  UFrmTssExportCenter in 'UFrmTssExportCenter.pas' {frmTssExportCenter},
+  URepBonifica in 'URepBonifica.pas' {qckboni: TQuickRep},
+  UCalculoBonificaciones in 'UCalculoBonificaciones.pas' {frmCalculoBonificaciones},
+  UFrmTssNovedadManual in 'UFrmTssNovedadManual.pas' {frmTssNovedadManual},
+  UFrmEmpleadoPensionAlimenticia in 'UFrmEmpleadoPensionAlimenticia.pas' {frmEmpleadoPensionAlimenticia},
+  UNOmHistorico in 'UNOmHistorico.pas' {frmNOmHistorico},
+  URepIR13 in '..\Reportes\URepIR13.pas' {qckRepIR13: TQuickRep},
+  UFormSepararNombre in 'UFormSepararNombre.pas' {frmSepararNombre},
+  UformConsultarVerificaMontosVtas in 'UformConsultarVerificaMontosVtas.pas' {frmConsultarVtasVerDiff};
 
 {$E exe}
 
 {$R PointSaleSoft.res}
+
+procedure ShutdownTrace(const S: string);
+var
+  F: TextFile;
+  FileName: string;
+begin
+  try
+    FileName := ExtractFilePath(ParamStr(0)) + 'shutdown_trace.txt';
+    AssignFile(F, FileName);
+
+    if FileExists(FileName) then
+      Append(F)
+    else
+      Rewrite(F);
+
+    try
+      Writeln(F, FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', Now) + ' | ' + S);
+    finally
+      CloseFile(F);
+    end;
+  except
+    { Nunca levantar error desde el logger de cierre }
+  end;
+end;
+
+procedure PrepareComponentForShutdown(AOwner: TComponent);
+var
+  I: Integer;
+  C: TComponent;
+  DS: TDataSet;
+  SRC: TDataSource;
+  TMR: TTimer;
+  TR: TIBTransaction;
+begin
+  if AOwner = nil then
+    Exit;
+
+  ShutdownTrace('PREPARE BEGIN: ' + AOwner.Name + ' / ' + AOwner.ClassName);
+
+  for I := AOwner.ComponentCount - 1 downto 0 do
+  begin
+    C := AOwner.Components[I];
+
+    if C = nil then
+      Continue;
+
+    ShutdownTrace('  CHILD: ' + C.Name + ' / ' + C.ClassName);
+
+    try
+      if C is TTimer then
+      begin
+        TMR := TTimer(C);
+        TMR.Enabled := False;
+        ShutdownTrace('  TIMER OFF: ' + C.Name);
+      end;
+
+      if C is TDataSource then
+      begin
+        SRC := TDataSource(C);
+        SRC.OnDataChange := nil;
+        SRC.OnStateChange := nil;
+        SRC.OnUpdateData := nil;
+        SRC.DataSet := nil;
+        ShutdownTrace('  DATASOURCE DETACHED: ' + C.Name);
+      end;
+
+      if C is TDataSet then
+      begin
+        DS := TDataSet(C);
+
+        DS.BeforeOpen := nil;
+        DS.AfterOpen := nil;
+        DS.BeforeClose := nil;
+        DS.AfterClose := nil;
+        DS.BeforeInsert := nil;
+        DS.AfterInsert := nil;
+        DS.BeforeEdit := nil;
+        DS.AfterEdit := nil;
+        DS.BeforePost := nil;
+        DS.AfterPost := nil;
+        DS.BeforeCancel := nil;
+        DS.AfterCancel := nil;
+        DS.BeforeDelete := nil;
+        DS.AfterDelete := nil;
+        DS.BeforeScroll := nil;
+        DS.AfterScroll := nil;
+        DS.OnCalcFields := nil;
+        DS.OnFilterRecord := nil;
+        DS.OnNewRecord := nil;
+
+        if DS.Active then
+        begin
+          ShutdownTrace('  DATASET CLOSE BEGIN: ' + DS.Name + ' / ' + DS.ClassName);
+          DS.DisableControls;
+          try
+            DS.Close;
+          finally
+            DS.EnableControls;
+          end;
+          ShutdownTrace('  DATASET CLOSE OK: ' + DS.Name);
+        end;
+      end;
+
+      if C is TIBTransaction then
+      begin
+        TR := TIBTransaction(C);
+        if TR.InTransaction then
+        begin
+          ShutdownTrace('  TRANSACTION ACTIVE: ' + TR.Name);
+          try
+            TR.Commit;
+            ShutdownTrace('  TRANSACTION COMMIT OK: ' + TR.Name);
+          except
+            on E: Exception do
+            begin
+              ShutdownTrace('  TRANSACTION COMMIT FAIL: ' + TR.Name + ' -> ' + E.Message);
+              try
+                TR.Rollback;
+                ShutdownTrace('  TRANSACTION ROLLBACK OK: ' + TR.Name);
+              except
+                on E2: Exception do
+                  ShutdownTrace('  TRANSACTION ROLLBACK FAIL: ' + TR.Name + ' -> ' + E2.Message);
+              end;
+            end;
+          end;
+        end;
+      end;
+
+    except
+      on E: Exception do
+      begin
+        ShutdownTrace(
+          '  CHILD PREPARE FAIL: ' + C.Name + ' / ' + C.ClassName +
+          ' -> ' + E.ClassName + ': ' + E.Message
+        );
+      end;
+    end;
+  end;
+
+  ShutdownTrace('PREPARE END: ' + AOwner.Name + ' / ' + AOwner.ClassName);
+end;
+procedure FreeOwnedChildrenWithTrace(AOwner: TComponent);
+var
+  C: TComponent;
+  N: string;
+begin
+  if AOwner = nil then
+    Exit;
+
+  ShutdownTrace('FREE CHILDREN BEGIN: ' + AOwner.Name + ' / ' + AOwner.ClassName);
+
+  while AOwner.ComponentCount > 0 do
+  begin
+    C := AOwner.Components[AOwner.ComponentCount - 1];
+
+    if C = nil then
+      Break;
+
+    N := C.Name;
+    if N = '' then
+      N := '(sin nombre)';
+
+    ShutdownTrace('  CHILD FREE BEGIN: ' + N + ' / ' + C.ClassName);
+
+    try
+      C.Free;
+      ShutdownTrace('  CHILD FREE OK: ' + N);
+    except
+      on E: Exception do
+      begin
+        ShutdownTrace(
+          '  CHILD FREE FAIL: ' + N + ' / ' + C.ClassName +
+          ' -> ' + E.ClassName + ': ' + E.Message
+        );
+        raise;
+      end;
+    end;
+  end;
+
+  ShutdownTrace('FREE CHILDREN END: ' + AOwner.Name + ' / ' + AOwner.ClassName);
+end;
+
+procedure FreeApplicationOwnedComponentsWithTrace;
+var
+  C: TComponent;
+  N: string;
+begin
+  ShutdownTrace('ComponentCount inicial=' + IntToStr(Application.ComponentCount));
+
+  while Application.ComponentCount > 0 do
+  begin
+    C := Application.Components[Application.ComponentCount - 1];
+
+    if C = nil then
+      Break;
+
+    N := C.Name;
+    if N = '' then
+      N := '(sin nombre)';
+
+    ShutdownTrace('FREE BEGIN: ' + N + ' / ' + C.ClassName);
+
+    try
+      PrepareComponentForShutdown(C);
+
+      if SameText(C.Name, 'dmDatos') then
+      FreeOwnedChildrenWithTrace(C);
+      
+      { En Delphi, Free ya lo remueve del Owner normalmente.
+        Para diagnosticar, esta variante es menos agresiva. }
+      C.Free;
+
+      ShutdownTrace('FREE OK: ' + N);
+    except
+      on E: Exception do
+      begin
+        ShutdownTrace(
+          'FREE FAIL: ' + N + ' / ' + C.ClassName +
+          ' -> ' + E.ClassName + ': ' + E.Message
+        );
+        Break;
+      end;
+    end;
+  end;
+
+  ShutdownTrace('ComponentCount final=' + IntToStr(Application.ComponentCount));
+end;
 
 begin
   Application.Initialize;
@@ -796,12 +1059,19 @@ begin
   Application.CreateForm(TdmLavanderia, dmLavanderia);
   Application.CreateForm(TdmFactElectronica, dmFactElectronica);
   Application.CreateForm(TfrmMenuPrincipal, frmMenuPrincipal);
-  Application.CreateForm(TqckCartaRutaVehTpl, qckCartaRutaVehTpl);
+  //Application.CreateForm(TqckCartaRutaVehTpl, qckCartaRutaVehTpl);
   Application.Title := 'ERP Enterprise System';
   frmPresentacion.Close;
   frmPresentacion.Free;
-  frmPresentacion:=Nil;
-  Application.Run;
+  frmPresentacion:=Nil;       
+  try
+    Application.Run;
+  finally                                  
+    GlbCerrandoSistema := True;
+    //ShutdownTrace('Application.Run retorno. Iniciando cierre controlado.');
+    //FreeApplicationOwnedComponentsWithTrace;
+    //ShutdownTrace('Cierre controlado terminado.');
+  end;
 end.
 
 

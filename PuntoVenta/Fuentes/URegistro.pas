@@ -111,6 +111,12 @@ type
     tRegistroSHOWPRICEWITHITBIS: TSmallintField;
     DBRadioGroup10: TDBRadioGroup;
     tRegistroCLAVE_MAESTRA: TIBStringField;
+    DBEdit22: TDBEdit;
+    tRegistroCLAVE_PRECIOS: TIBStringField;
+    Label23: TLabel;
+    tClavePrecio: TRxMemoryData;
+    tClavePrecioClave: TStringField;
+    dstClavePrecio: TDataSource;
     procedure Button1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
@@ -158,14 +164,37 @@ begin
           frmConfClaveMaestra.Edit1.Text:=tClaveMasterClave.Value;
           frmConfClaveMaestra.Button1Click(Self);
           tRegistroCLAVE_MAESTRA.Value := frmConfClaveMaestra.Edit2.Text;
+          GlbClavePrecios:=tRegistroCLAVE_MAESTRA.Value;
         finally
         freeAndNil(frmConfClaveMaestra);
         end;
         //Encriptar(tClaveMasterClave.Value,2005)
       end
       else
-      tRegistroCLAVE_MAESTRA.Value := '';
+      begin
+        tRegistroCLAVE_MAESTRA.Value := '';
+      end;
       tClaveMaster.Post;
+                        
+      tClavePrecio.Edit;
+      if (Length(tClavePrecioClave.Value) > 0) then
+      begin
+        frmConfClaveMaestra:=TfrmConfClaveMaestra.Create(nil);
+        try
+          frmConfClaveMaestra.Edit1.Text:=tClavePrecioClave.Value;
+          frmConfClaveMaestra.Button1Click(Self);
+          tRegistroCLAVE_PRECIOS.Value := frmConfClaveMaestra.Edit2.Text;
+          GlbClavePrecios:=tRegistroCLAVE_PRECIOS.Value;
+        finally
+        freeAndNil(frmConfClaveMaestra);
+        end;
+      end else
+      begin
+        tRegistroCLAVE_PRECIOS.Value := '';
+        GlbClavePrecios:='';
+      end;
+      tClavePrecio.Post;
+
     end;
     if (tRegistroTRANSP_ITBIS.Value = 0) then
     begin
@@ -219,6 +248,8 @@ begin
   usr := Trim(StrUserName);
   if ((usr <> 'DIVISON') OR (usr <> 'nosivid') or (usr <> 'SOPORTE')) and (VarUsuarioGlb > 0) then
   begin
+    DBEdit22.Visible:=False;
+    Label23.Visible:=False;
     label4.Visible := False;
     dbedit4.Visible:= False;
     dbedit6.Visible:= False;
@@ -231,6 +262,8 @@ begin
     dbedit4.Visible:= True;
     dbedit6.Visible:= True;
     Button2.Visible:= True;
+    DBEdit22.Visible:=True;
+     Label23.Visible:=True;
   end;
   
   if tRegistro.State = dsInactive then
@@ -245,9 +278,10 @@ begin
     tClaveMaster.Close;
     tClaveMaster.Open;
     tClaveMaster.Insert;
-    //tClaveMasterClave.Value:= Desencriptar(tRegistroCLAVE_MAESTRA.Value,2005);
-    //tClaveMasterClaveConfirme.Value:= Desencriptar(tRegistroCLAVE_MAESTRA.Value,2005);
 
+    tClavePrecio.Close;
+    tClavePrecio.Open;
+    tClavePrecio.Insert;
    frmConfClaveMaestra:=TfrmConfClaveMaestra.Create(nil);
    try
      frmConfClaveMaestra.Edit1.Text:='';
@@ -255,11 +289,17 @@ begin
      frmConfClaveMaestra.btnDesencriptarClick(self);
      tClaveMasterClave.Value        :=frmConfClaveMaestra.Edit3.Text;
      tClaveMasterClaveConfirme.Value:=tClaveMasterClave.Value;
+
+     frmConfClaveMaestra.Edit1.Text:='';
+     frmConfClaveMaestra.Edit2.Text:=tRegistroCLAVE_PRECIOS.Value;
+     frmConfClaveMaestra.btnDesencriptarClick(self);
+     tClavePrecioClave.Value :=frmConfClaveMaestra.Edit3.Text;
    finally
    freeAndNil(frmConfClaveMaestra);
    end;
 
     tClaveMaster.Post;
+    tClavePrecio.Post;
   end else
   begin
     dbedit9.Enabled:=false;
@@ -399,6 +439,10 @@ procedure TfrmTrgtr.DBEdit10Exit(Sender: TObject);
 begin
   if (tClaveMaster.State in [dsEdit, dsInsert]) then
   tregistro.Edit;
+  if tClavePrecio.State in [dsInsert, dsEdit] then
+  begin
+    tregistro.Edit;
+  end;
 end;
 
 //***********************

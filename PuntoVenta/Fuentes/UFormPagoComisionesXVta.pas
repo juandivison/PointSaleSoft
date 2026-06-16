@@ -113,13 +113,13 @@ begin
   try
     if frmSelDatosIntegrarNom.ShowModal = mrOk then
     begin
-      glbFechaNom := ExtraerFecha(frmSelDatosIntegrarNom.dtpkFechaNom.Datetime);
+      GlbFechaNomina := ExtraerFecha(frmSelDatosIntegrarNom.dtpkFechaNom.Datetime);
 
       frmSelDatosIntegrarNom.VerificarTipoCia;
       frmSelDatosIntegrarNom.VerificarTipoNomina(frmSelDatosIntegrarNom.xTipoNomina);
       frmNominaEmpleado:=TfrmNominaEmpleado.create(Nil);
       try
-        GlbRangoFechaNomina(glbFechaNom,fechaini, fechafin);
+        GlbRangoFechaNomina(GlbFechaNomina,fechaini, fechafin);
         DateTimePicker1.DateTime:=fechaini;
         DateTimePicker2.DateTime:=fechafin;
         dmcomision.qryVentasComisionable.Close;
@@ -189,7 +189,7 @@ begin
     dmComision.tblComisionXVta.Insert;
     dmComision.tblComisionXVtaTIPO.Value:=0;
     dmComision.tblComisionXVtaCODIGO_EMPLEADO.Value:= dmComision.qryVentasComisionableSumCODIGO_VENDEDOR.Value;
-    dmComision.tblComisionXVtaFECHA_PAGO.Value:= ExtraerFecha(glbFechaNom);
+    dmComision.tblComisionXVtaFECHA_PAGO.Value:= ExtraerFecha(GlbFechaNomina);
     dmComision.tblComisionXVtaFECHA_INICIO.Value:=ExtraerFecha(DateTimePicker1.Date);
     dmComision.tblComisionXVtaFECHA_FINAL.Value:=ExtraerFecha(DateTimePicker2.Date);
     dmComision.tblComisionXVtaSTATUS.Value:='A';
@@ -260,12 +260,12 @@ begin
   while not dmComision.qryVentasComisionableSum.Eof do
   begin
     if not dmComision.tblComisionXVta.Locate('CODIGO_EMPLEADO;TIPO;FECHA_PAGO;',
-    VarArrayOf([dmComision.qryVentasComisionableSumCODIGO_VENDEDOR.Value,0,ExtraerFecha(glbFechaNom)]),[]) then
+    VarArrayOf([dmComision.qryVentasComisionableSumCODIGO_VENDEDOR.Value,0,ExtraerFecha(GlbFechaNomina)]),[]) then
     begin
       dmComision.tblComisionXVta.Insert;
       dmComision.tblComisionXVtaTIPO.Value:=0;
       dmComision.tblComisionXVtaCODIGO_EMPLEADO.Value:= dmComision.qryVentasComisionableSumCODIGO_VENDEDOR.Value;
-      dmComision.tblComisionXVtaFECHA_PAGO.Value:= ExtraerFecha(glbFechaNom);
+      dmComision.tblComisionXVtaFECHA_PAGO.Value:= ExtraerFecha(GlbFechaNomina);
       dmComision.tblComisionXVtaFECHA_INICIO.Value:=ExtraerFecha(DateTimePicker1.Date);
       dmComision.tblComisionXVtaFECHA_FINAL.Value:=ExtraerFecha(DateTimePicker2.Date);
       dmComision.tblComisionXVtaSTATUS.Value:='A';

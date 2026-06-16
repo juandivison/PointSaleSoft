@@ -156,7 +156,7 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
     object rgMode: TRadioGroup
       Left = 16
       Top = 24
-      Width = 521
+      Width = 465
       Height = 81
       Columns = 2
       ItemIndex = 0
@@ -262,6 +262,15 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
       TabOrder = 10
       Visible = False
       OnClick = AnyParamControlChange
+    end
+    object chkNcrFinalize: TCheckBox
+      Left = 1017
+      Top = 168
+      Width = 183
+      Height = 17
+      Caption = 'Finalizar legacy de NCR aceptada'
+      TabOrder = 11
+      OnClick = chkNcrFinalizeClick
     end
   end
   object gbOptions: TGroupBox

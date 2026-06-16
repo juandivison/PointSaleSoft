@@ -1,8 +1,8 @@
 object dmCalculos: TdmCalculos
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Left = 582
-  Top = 255
+  Left = 543
+  Top = 224
   Height = 473
   Width = 698
   object ibsqlGetPorcDescFctSvr: TIBSQL
@@ -1733,6 +1733,45 @@ object dmCalculos: TdmCalculos
     object qryAplicaOfertaCANT_TIPO_UNIDAD: TIntegerField
       FieldName = 'CANT_TIPO_UNIDAD'
       Origin = 'UNIDADES.CANTIDAD'
+    end
+  end
+  object qryVerCotiConVta: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select v.NUMERO numero_trn, c.numero, c.fecha, c.status  '
+      'From COTIZACION_MAST c'
+      'inner join VENTAS_MAST v on v.COTIZACION_ORIGEN = c.NUMERO'
+      'Where  c.NUMERO =:numerocoti')
+    Left = 592
+    Top = 232
+    ParamData = <
+      item
+        DataType = ftInteger
+        Name = 'numerocoti'
+        ParamType = ptInput
+      end>
+    object qryVerCotiConVtaNUMERO_TRN: TIntegerField
+      FieldName = 'NUMERO_TRN'
+      Origin = 'VENTAS_MAST.NUMERO'
+      Required = True
+    end
+    object qryVerCotiConVtaNUMERO: TIntegerField
+      FieldName = 'NUMERO'
+      Origin = 'COTIZACION_MAST.NUMERO'
+      Required = True
+    end
+    object qryVerCotiConVtaFECHA: TDateTimeField
+      FieldName = 'FECHA'
+      Origin = 'COTIZACION_MAST.FECHA'
+    end
+    object qryVerCotiConVtaSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'COTIZACION_MAST.STATUS'
+      FixedChar = True
+      Size = 1
     end
   end
 end

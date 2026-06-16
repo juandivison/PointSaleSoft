@@ -718,34 +718,8 @@ procedure TqckRepReciboReimpTicketSurtidoraNew.ChildBand4BeforePrint(
   var
    codseg,femision,rutaqr: string;
 begin
-  if (GlbActivaECF = 0) or (GlbValidarECF = 0)  then
+  if (GlbActivaECF = 0) and (GlbValidarECF = 0)  then
   PrintBand:=False else PrintBand:=True;
-
-{  if GlbActivaECF = 0 then
-  begin
-    ChildBand4.Height:=0;
-    QRImage1.Visible:= False;
-    QRLabel30.Visible:= False;
-    QRLabel31.Visible:= False;
-    qrCodigoSegecf.Visible:= False;
-    qrFechaFDigital.Visible:= False;
-  end else
-  begin
-    rutaqr:=UUtilecftimbre.GetRutaTimbre(dmFactura.qryVentaFacturaNUMERO.Value,codseg,femision);
-    if FileExists(rutaqr) then
-    begin
-      //LogInformacionTxt('Asignando CodigoQR ->'+rutaqr+ ' codseg='+codseg);
-      QRImage1.Picture.LoadFromFile(rutaqr);
-      qrCodigoSegecf.Caption :=codseg;
-      qrFechaFDigital.Caption:=femision;
-      ChildBand4.HasChild:=False;
-      PrintBand:=True;
-    end else
-    begin
-      LogInformacionTxt('Ruta codigo QR, no existe ->'+rutaqr);
-      ChildBand4.Height:=0;
-    end;
-  end;}
 end;
 
 procedure TqckRepReciboReimpTicketSurtidoraNew.QRDBText12Print(

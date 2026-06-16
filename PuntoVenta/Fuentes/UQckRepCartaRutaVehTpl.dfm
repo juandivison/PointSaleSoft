@@ -1,6 +1,6 @@
 object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
   Left = 0
-  Top = 0
+  Top = -389
   Width = 816
   Height = 1056
   Frame.Color = clBlack
@@ -56,7 +56,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
     Left = 48
     Top = 24
     Width = 720
-    Height = 160
+    Height = 165
     Frame.Color = clBlack
     Frame.DrawTop = False
     Frame.DrawBottom = False
@@ -68,7 +68,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
     ForceNewColumn = False
     ForceNewPage = False
     Size.Values = (
-      423.333333333333300000
+      436.562500000000000000
       1905.000000000000000000)
     BandType = rbPageHeader
     object imgLogo: TQRImage
@@ -90,7 +90,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
     end
     object lblFecha: TQRLabel
       Left = 536
-      Top = 129
+      Top = 139
       Width = 184
       Height = 23
       Frame.Color = clBlack
@@ -101,7 +101,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Size.Values = (
         60.854166666666670000
         1418.166666666667000000
-        341.312500000000000000
+        367.770833333333300000
         486.833333333333300000)
       Alignment = taRightJustify
       AlignToBand = True
@@ -120,7 +120,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       FontSize = 14
     end
     object QRDBText13: TQRDBText
-      Left = 225
+      Left = 228
       Top = 1
       Width = 55
       Height = 20
@@ -131,7 +131,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Frame.DrawRight = False
       Size.Values = (
         52.916666666666670000
-        595.312500000000000000
+        603.250000000000000000
         2.645833333333333000
         145.520833333333300000)
       Alignment = taLeftJustify
@@ -152,7 +152,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       FontSize = 12
     end
     object QRDBText14: TQRDBText
-      Left = 225
+      Left = 228
       Top = 22
       Width = 55
       Height = 20
@@ -163,7 +163,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Frame.DrawRight = False
       Size.Values = (
         52.916666666666670000
-        595.312500000000000000
+        603.250000000000000000
         58.208333333333330000
         145.520833333333300000)
       Alignment = taLeftJustify
@@ -184,7 +184,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       FontSize = 12
     end
     object QRDBText28: TQRDBText
-      Left = 225
+      Left = 228
       Top = 43
       Width = 55
       Height = 20
@@ -195,7 +195,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Frame.DrawRight = False
       Size.Values = (
         52.916666666666670000
-        595.312500000000000000
+        603.250000000000000000
         113.770833333333300000
         145.520833333333300000)
       Alignment = taLeftJustify
@@ -216,7 +216,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       FontSize = 12
     end
     object QRDBText4: TQRDBText
-      Left = 225
+      Left = 228
       Top = 64
       Width = 55
       Height = 20
@@ -227,7 +227,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Frame.DrawRight = False
       Size.Values = (
         52.916666666666670000
-        595.312500000000000000
+        603.250000000000000000
         169.333333333333300000
         145.520833333333300000)
       Alignment = taLeftJustify
@@ -248,7 +248,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       FontSize = 12
     end
     object QRDBText18: TQRDBText
-      Left = 225
+      Left = 228
       Top = 85
       Width = 55
       Height = 20
@@ -259,7 +259,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Frame.DrawRight = False
       Size.Values = (
         52.916666666666670000
-        595.312500000000000000
+        603.250000000000000000
         224.895833333333300000
         145.520833333333300000)
       Alignment = taLeftJustify
@@ -280,20 +280,20 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       FontSize = 12
     end
     object QRDBText33: TQRDBText
-      Left = 225
-      Top = 105
-      Width = 31
-      Height = 13
+      Left = 228
+      Top = 107
+      Width = 41
+      Height = 16
       Frame.Color = clBlack
       Frame.DrawTop = False
       Frame.DrawBottom = False
       Frame.DrawLeft = False
       Frame.DrawRight = False
       Size.Values = (
-        34.395833333333330000
-        595.312500000000000000
-        277.812500000000000000
-        82.020833333333330000)
+        42.333333333333330000
+        603.250000000000000000
+        283.104166666666700000
+        108.479166666666700000)
       Alignment = taLeftJustify
       AlignToBand = False
       AutoSize = True
@@ -303,17 +303,17 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       DataField = 'EMAIL'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -9
+      Font.Height = -13
       Font.Name = 'Times New Roman'
       Font.Style = []
       ParentFont = False
       Transparent = False
       WordWrap = True
-      FontSize = 7
+      FontSize = 10
     end
     object lblTitulo: TQRLabel
       Left = 247
-      Top = 119
+      Top = 129
       Width = 226
       Height = 32
       Frame.Color = clBlack
@@ -324,7 +324,7 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Size.Values = (
         84.666666666666670000
         653.520833333333300000
-        314.854166666666700000
+        341.312500000000000000
         597.958333333333300000)
       Alignment = taCenter
       AlignToBand = True
@@ -345,9 +345,9 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
   end
   object bndDetail: TQRBand
     Left = 48
-    Top = 184
+    Top = 189
     Width = 720
-    Height = 729
+    Height = 732
     Frame.Color = clBlack
     Frame.DrawTop = False
     Frame.DrawBottom = False
@@ -358,12 +358,12 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
     ForceNewColumn = False
     ForceNewPage = False
     Size.Values = (
-      1928.812500000000000000
+      1936.750000000000000000
       1905.000000000000000000)
     BandType = rbDetail
     object qrmDestinatario: TQRMemo
-      Left = 45
-      Top = 28
+      Left = 42
+      Top = 34
       Width = 584
       Height = 41
       Frame.Color = clBlack
@@ -373,8 +373,8 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Frame.DrawRight = False
       Size.Values = (
         108.479166666666700000
-        119.062500000000000000
-        74.083333333333330000
+        111.125000000000000000
+        89.958333333333330000
         1545.166666666667000000)
       Alignment = taCenter
       AlignToBand = False
@@ -393,43 +393,6 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Transparent = True
       WordWrap = True
       FontSize = 12
-    end
-    object qrmCuerpo: TQRMemo
-      Left = 42
-      Top = 97
-      Width = 605
-      Height = 74
-      Frame.Color = clBlack
-      Frame.DrawTop = False
-      Frame.DrawBottom = False
-      Frame.DrawLeft = False
-      Frame.DrawRight = False
-      Size.Values = (
-        195.791666666666700000
-        111.125000000000000000
-        256.645833333333300000
-        1600.729166666667000000)
-      Alignment = taLeftJustify
-      AlignToBand = False
-      AutoSize = False
-      AutoStretch = False
-      Color = clWhite
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -19
-      Font.Name = 'Times New Roman'
-      Font.Style = []
-      Lines.Strings = (
-        
-          'Hacemos la certificacion y al mismo tiempo hacemos constar que e' +
-          'l o la Senor/a '
-        
-          'CLIENTE GENERAL con RNC NO. 000000000 es responsable del vehicul' +
-          'o descrito a continuacion:')
-      ParentFont = False
-      Transparent = True
-      WordWrap = True
-      FontSize = 14
     end
     object lblTipoCap: TQRLabel
       Left = 94
@@ -869,14 +832,14 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Left = 42
       Top = 422
       Width = 553
-      Height = 123
+      Height = 115
       Frame.Color = clBlack
       Frame.DrawTop = False
       Frame.DrawBottom = False
       Frame.DrawLeft = False
       Frame.DrawRight = False
       Size.Values = (
-        325.437500000000000000
+        304.270833333333300000
         111.125000000000000000
         1116.541666666667000000
         1463.145833333333000000)
@@ -893,19 +856,19 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Lines.Strings = (
         
           '     Sus documentos estan en la Direccion General de Impuestos I' +
-          'nternos.'
-        
-          'Agradecemos todas las colaboraciones y consideraciones posibles ' +
-          'para esta persona hasta que sus documentos sean entregados.')
+          'nternos, agradecemos todas las colaboraciones y consideraciones ' +
+          'posibles para esta persona hasta que sus documentos sean entrega' +
+          'dos.'
+        '')
       ParentFont = False
       Transparent = True
       WordWrap = True
       FontSize = 14
     end
     object shpFirma: TQRShape
-      Left = 272
-      Top = 705
-      Width = 190
+      Left = 242
+      Top = 692
+      Width = 236
       Height = 9
       Frame.Color = clBlack
       Frame.DrawTop = False
@@ -914,16 +877,16 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Frame.DrawRight = False
       Size.Values = (
         23.812500000000000000
-        719.666666666666700000
-        1865.312500000000000000
-        502.708333333333300000)
+        640.291666666666700000
+        1830.916666666667000000
+        624.416666666666700000)
       Shape = qrsHorLine
       VertAdjust = 0
     end
     object lblCargoFirma: TQRLabel
-      Left = 273
-      Top = 682
-      Width = 173
+      Left = 285
+      Top = 693
+      Width = 149
       Height = 25
       Frame.Color = clBlack
       Frame.DrawTop = False
@@ -932,14 +895,14 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       Frame.DrawRight = False
       Size.Values = (
         66.145833333333330000
-        722.312500000000000000
-        1804.458333333333000000
-        457.729166666666700000)
+        754.062500000000000000
+        1833.562500000000000000
+        394.229166666666700000)
       Alignment = taCenter
       AlignToBand = True
       AutoSize = True
       AutoStretch = False
-      Caption = 'DTO. DE VENTAS'
+      Caption = 'Gerente General'
       Color = clWhite
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
@@ -951,10 +914,74 @@ object qckCartaRutaVehTpl: TqckCartaRutaVehTpl
       WordWrap = True
       FontSize = 16
     end
+    object qrmCuerpo: TQRRichText
+      Left = 42
+      Top = 104
+      Width = 609
+      Height = 74
+      Frame.Color = clBlack
+      Frame.DrawTop = False
+      Frame.DrawBottom = False
+      Frame.DrawLeft = False
+      Frame.DrawRight = False
+      Size.Values = (
+        195.791666666666700000
+        111.125000000000000000
+        275.166666666666700000
+        1611.312500000000000000)
+      Alignment = taLeftJustify
+      AutoStretch = False
+      Color = clWindow
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -19
+      Font.Name = 'Times New Roman'
+      Font.Style = []
+      Lines.Strings = (
+        
+          'Hacemos la certificacion y al mismo tiempo hacemos constar que e' +
+          'l o la Senor/a '
+        
+          'CLIENTE GENERAL con RNC NO. 000000000 es responsable del vehicul' +
+          'o '
+        'descrito a continuacion:'
+        '')
+    end
+    object lblNombreFirma: TQRLabel
+      Left = 253
+      Top = 669
+      Width = 214
+      Height = 24
+      Frame.Color = clBlack
+      Frame.DrawTop = False
+      Frame.DrawBottom = False
+      Frame.DrawLeft = False
+      Frame.DrawRight = False
+      Size.Values = (
+        63.500000000000000000
+        669.395833333333300000
+        1770.062500000000000000
+        566.208333333333300000)
+      Alignment = taCenter
+      AlignToBand = True
+      AutoSize = True
+      AutoStretch = False
+      Caption = 'Amaurys Garcia de la Paz'
+      Color = clWhite
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -21
+      Font.Name = 'Times New Roman'
+      Font.Style = [fsUnderline]
+      ParentFont = False
+      Transparent = False
+      WordWrap = True
+      FontSize = 16
+    end
   end
   object bndFooter: TQRBand
     Left = 48
-    Top = 913
+    Top = 921
     Width = 720
     Height = 46
     Frame.Color = clBlack

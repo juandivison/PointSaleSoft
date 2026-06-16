@@ -74,6 +74,13 @@ begin
     dmNomina.StpVacaciones.Params[2].Value := glbFechaInicial;
     dmNomina.StpVacaciones.Params[3].Value := glbFechaFinal;
     dmNomina.StpVacaciones.ExecProc;
+    if not dmNomina.StpVacaciones.Transaction.InTransaction then
+    dmNomina.StpVacaciones.Transaction.StartTransaction;
+    try
+      dmNomina.StpVacaciones.Transaction.CommitRetaining;
+    except
+    dmNomina.StpVacaciones.Transaction.RollbackRetaining;
+    end;
     dmNomina.QryVaca.close;
     dmNomina.QryVaca.Params[0].Value := glbFechaInicial;
     dmNomina.QryVaca.Params[1].Value := glbFechaFinal;

@@ -433,6 +433,52 @@ type
     EdPointsFactElectronica1: TMenuItem;
     BitBtn10: TBitBtn;
     SecuenciaFacturas1: TMenuItem;
+    RxSpeedButton20: TRxSpeedButton;
+    IngresosEmpleados1: TMenuItem;
+    Dieta1: TMenuItem;
+    HorasTrabajadas1: TMenuItem;
+    Vacaciones2: TMenuItem;
+    Regalia1: TMenuItem;
+    Bonificaciones1: TMenuItem;
+    Integrar1: TMenuItem;
+    CantidaddeDias1: TMenuItem;
+    CalcularRegalia1: TMenuItem;
+    Integrar2: TMenuItem;
+    Calcular1: TMenuItem;
+    PopupRepNomina: TPopupMenu;
+    ExportarNominaTSS1: TMenuItem;
+    ListadoPersonalExcel1: TMenuItem;
+    Dgt3ANEXO981: TMenuItem;
+    Nomina4: TMenuItem;
+    Preliminar1: TMenuItem;
+    Definitiva1: TMenuItem;
+    Ingresos2: TMenuItem;
+    Deducciones2: TMenuItem;
+    Cooperativa1: TMenuItem;
+    Prestamos1: TMenuItem;
+    AFP1: TMenuItem;
+    ISR1: TMenuItem;
+    OtrasDeducciones1: TMenuItem;
+    Cheques3: TMenuItem;
+    Nomina5: TMenuItem;
+    ListadoNombres1: TMenuItem;
+    ListadoNombresF1: TMenuItem;
+    ListadoBonificacion1: TMenuItem;
+    DietaAdicionales2: TMenuItem;
+    HorasExtras1: TMenuItem;
+    Vacaciones4: TMenuItem;
+    SalarioNavidad1: TMenuItem;
+    MenuItem1: TMenuItem;
+    MenuItem2: TMenuItem;
+    IR131: TMenuItem;
+    ProyeccionRegalia1: TMenuItem;
+    Empleados2: TMenuItem;
+    OrdenEmpleadosCoop1: TMenuItem;
+    ComitCrdito1: TMenuItem;
+    Actualizar3: TMenuItem;
+    NovedadesTSS1: TMenuItem;
+    PensionAlimenticia1: TMenuItem;
+    HistricoNmina1: TMenuItem;
     procedure Salir1Click(Sender: TObject);
     
     procedure ransaccionesDiarias1Click(Sender: TObject);
@@ -726,6 +772,21 @@ type
     procedure EdPointsFactElectronica1Click(Sender: TObject);
     procedure BitBtn10Click(Sender: TObject);
     procedure SecuenciaFacturas1Click(Sender: TObject);
+    procedure ExportarNominaTSS1Click(Sender: TObject);
+    procedure Empleados2Click(Sender: TObject);
+    procedure ProyeccionRegalia1Click(Sender: TObject);
+    procedure ComitCrdito1Click(Sender: TObject);
+    procedure Actualizar3Click(Sender: TObject);
+    procedure Integrar1Click(Sender: TObject);
+    procedure Preliminar1Click(Sender: TObject);
+    procedure Definitiva1Click(Sender: TObject);
+    procedure NovedadesTSS1Click(Sender: TObject);
+    procedure PensionAlimenticia1Click(Sender: TObject);
+    procedure HistricoNmina1Click(Sender: TObject);
+    procedure Calcular1Click(Sender: TObject);
+    procedure Integrar2Click(Sender: TObject);
+    procedure IR131Click(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
      procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
@@ -866,30 +927,131 @@ UInventarioProd, UTipoInventario,UConfirmaLicencia,
   UFormCiudadesECF, URepVentaDiariaNuevoR, URepVentaDiaria,
   UFormProgressBarfRM, URepVentaDiariaResumen, UFormPagoComisionesXVta,
   UFrmOrdenLavanderia, frmEntregaOrdenLavanderia,UnitFrmConfigEndpoints,
-  UFrmOrders2EcfRunner, UFormSecFact;//, UFormLoadDatosDGII;
+  UFrmOrders2EcfRunner,UReptEmpleados, UFormSecFact,UFormPersonalRep,
+  UProyeccionRegalia, UOrdenDespEmpleados, UCreditosFrmCoop, UDatModNomina,
+  URepNominaGral, UFrmTssExportCenter, UFrmTssNovedadManual,
+  UFrmEmpleadoPensionAlimenticia, UNOmHistorico, UCalculoBonificaciones,
+  URepIR13;//, UFormLoadDatosDGII;
 
 {$R *.dfm}
+procedure TfrmMenuPrincipal.Salir1Click(Sender: TObject);
+var
+  Ini: TIniFile;
+  NombArchivo: String;
+  OwnTransaction: Boolean;
+begin
+  if GlbCerrandoSistema then
+    Exit;
 
+  GlbCerrandoSistema := True;
+
+  { 1. Guardar bandera INI }
+  try
+    NombArchivo := ExtractFilePath(Application.ExeName) + 'repconf_cr.ini';
+    Ini := TIniFile.Create(NombArchivo);
+    try
+      if GlbCorriendoII = 0 then
+      begin
+        Ini.WriteInteger('Aplicacion', 'GlbCorriendo', 0);
+        Ini.UpdateFile;
+      end;
+    finally
+      Ini.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      { No detener el cierre por error del INI.
+        Si tienes log, registrar E.Message aquí. }
+    end;
+  end;
+
+  { 2. Registrar logout en base de datos }
+  try
+    if Assigned(dmUsuarios) and Assigned(dmUsuarios.procMantRegDet) then
+    begin
+      dmUsuarios.procMantRegDet.Close;
+
+      OwnTransaction := not dmUsuarios.procMantRegDet.Transaction.InTransaction;
+
+      if OwnTransaction then
+        dmUsuarios.procMantRegDet.Transaction.StartTransaction;
+
+      try
+        { Ajusta estos dos parámetros si el SP realmente los requiere }
+        if dmUsuarios.procMantRegDet.Params.Count > 0 then
+          dmUsuarios.procMantRegDet.Params[0].Clear;
+
+        if dmUsuarios.procMantRegDet.Params.Count > 1 then
+          dmUsuarios.procMantRegDet.Params[1].Clear;
+
+        dmUsuarios.procMantRegDet.Params[2].Value := 0;             // Accion/logout
+        dmUsuarios.procMantRegDet.Params[3].Value := VarUsuarioGlb; // cod_usuario
+        dmUsuarios.procMantRegDet.Params[4].Value := StrUserName;   // nombre_pc
+
+        dmUsuarios.procMantRegDet.ExecProc;
+
+        if OwnTransaction then
+          dmUsuarios.procMantRegDet.Transaction.Commit;
+
+      except
+        on E: Exception do
+        begin
+          if OwnTransaction and dmUsuarios.procMantRegDet.Transaction.InTransaction then
+            dmUsuarios.procMantRegDet.Transaction.Rollback;
+
+          { Registrar E.Message si tienes log.
+            No usar Halt. }
+        end;
+      end;
+
+      dmUsuarios.procMantRegDet.Close;
+    end;
+  except
+    on E: Exception do
+    begin
+      { Protección final para que el cierre continúe.
+        Registrar E.Message si tienes log. }
+    end;
+  end;
+
+  glbLogueado := 0;
+
+
+  { 4. Una sola vía de cierre }
+  try
+  dmconectar.IBDatabase1.CloseDataSets;
+  dmconectar.IBDatabase2.CloseDataSets;
+  dmconectar.IBDatabase1.Close;
+  dmconectar.IBDatabase2.Close;
+  except
+  end;
+  Application.Terminate;
+end;
+
+{
 procedure TfrmMenuPrincipal.Salir1Click(Sender: TObject);
 var
   Ini: TIniFile;
   NombArchivo : String;
   x: integer;
 begin
-  NombArchivo := ExtractFilePath(Application.ExeName)+'repconf_cr.ini';
-  Ini := TIniFile.Create(NombArchivo );
+  GlbCerrandoSistema:=True;
   try
-    if (GlbCorriendoII = 0) then
-    Ini.WriteInteger('Aplicacion', 'GlbCorriendo', 0);
-  finally
-  Ini.Free;
-  end;
+    NombArchivo := ExtractFilePath(Application.ExeName)+'repconf_cr.ini';
+    Ini := TIniFile.Create(NombArchivo );
+    try
+      if (GlbCorriendoII = 0) then
+      Ini.WriteInteger('Aplicacion', 'GlbCorriendo', 0);
+    finally
+    Ini.Free;
+    end;
 
   //dmUsuarios.procMantRegDet.Params[0].Value:= //Permitido
   //dmUsuarios.procMantRegDet.Params[1].Value:= //Logueado
-  dmUsuarios.procMantRegDet.Params[2].Value:= 0; //Accion
+  dmUsuarios.procMantRegDet.Params[2].Value:= 0;//Accion
   dmUsuarios.procMantRegDet.Params[3].Value:= VarUsuarioGlb;//cod_usuario
-  dmUsuarios.procMantRegDet.Params[4].Value:= StrUserName;//nombre_pc
+  dmUsuarios.procMantRegDet.Params[4].Value:= StrUserName;  //nombre_pc
 
   dmUsuarios.procMantRegDet.ExecProc;
   if not dmUsuarios.procMantRegDet.Transaction.InTransaction then
@@ -901,11 +1063,18 @@ begin
   end;
   dmUsuarios.procMantRegDet.close;
   glbLogueado:= 0;
-  logout;
+  try
+    logout;
+  except
+    close;
+  end;
   //dmConectar.IBDatabase1.CloseDataSets;
   //dmConectar.IBDatabase1.Close;
   Application.Terminate;
-end;
+  except
+  Halt;
+  end;
+end;   }
 
 procedure TfrmMenuPrincipal.ransaccionesDiarias1Click(Sender: TObject);
 begin
@@ -931,7 +1100,6 @@ begin
       ActivaPermiso(TForm(frmInventarioProd), 1000, dmUsuarios.qryRolesID_ROL.Value, 0);//menu principal: 1000 debe estar en la tabla PROCESOS
       dmUsuarios.qryRoles.Next;
     end;
-
     frmInventarioProd.PageControl1.TabIndex:=0;
     frmInventarioProd.Showmodal;
   finally
@@ -969,15 +1137,14 @@ var
 begin
   if Msg.message = WM_KEYDOWN then
      if Msg.WParam = VK_RETURN then
-        begin
-          Actual := Screen.ActiveControl;
-          if (actual is TButton) or (actual is TDBMemo) or (Actual is TRxDBGrid)
-             or (actual is TMemo) then
-             exit
-          else
-             Msg.wParam := VK_TAB;
-        end;
-
+     begin
+       Actual := Screen.ActiveControl;
+       if (actual is TButton) or (actual is TDBMemo) or (Actual is TRxDBGrid)
+          or (actual is TMemo) then
+          exit
+       else
+       Msg.wParam := VK_TAB;
+     end;
 end;
 
 procedure TfrmMenuPrincipal.FormCreate(Sender: TObject);
@@ -1024,8 +1191,7 @@ begin
 
   qtyCorr := 0;
   GLBRUTADB := GetCommandParam('/GLBRUTADB');
-
-
+    
   if (GLBRUTADB = '') and (GLBRUTADBINI <> '') then
   GLBRUTADB:=GLBRUTADBINI
   else
@@ -1076,6 +1242,11 @@ begin
     GlbClaveSupEncrypted := frmtrgtr.tRegistroCLAVE_MAESTRA.Value
     else
     GlbClaveSupEncrypted := '';
+
+    if not frmtrgtr.tRegistroCLAVE_PRECIOS.IsNull then
+    GlbClavePrecios:= frmtrgtr.tRegistroCLAVE_PRECIOS.Value
+    else
+    GlbClavePrecios:= '';
 
     if frmtrgtr.tRegistroDBHist.Value = 1 then
     GlbModoHistorico := True
@@ -1646,6 +1817,14 @@ begin
   GlbFarmacia:=0;
   GlbShowCtaBanco:=0;
   //GlBTapiceria
+                             //Expert for test
+  if ((strA = '131764967') or (strA ='130787931')) then
+  GlbProsesur:=1;
+
+  //133711451 -FYG CATELO MOTOPRESTAMOS E INVERSIONES SRL
+  if (strA = '133711451') then
+  GLBMotor :=1;
+
   if (strA = '131657052') then
   GlbFarmacia := 1
   else
@@ -1680,7 +1859,7 @@ begin
      (dmCompania.tblCompaniarnc_numero.value = '101616212')
   then
   GlBBurgos:= 1;
-
+  
   if (dmCompania.tblCompaniarnc_numero.value = '130200106') then
   begin
     GlBInveraf:=1;
@@ -1865,6 +2044,29 @@ begin
   end;
   if (GlBExpert = 1) and (GlbActivaECF = 1) then
   BitBtn10.Enabled:=True else BitBtn10.Enabled:=False;
+
+  if (GlbActivaNomina = 1) then
+  begin
+    Application.MainForm.Caption := 'PayRoll System';
+    TabSheet1.TabVisible:=False;
+    PageControl1.Pages[1].Visible:=False;
+    PageControl1.Pages[3].Visible:=False;
+    TabSheet3.TabVisible:=False;
+    TabSheet4.TabVisible:=False;
+    PageControl1.Pages[4].Visible:=False;
+    TabSheet5.TabVisible:=False;
+    PageControl1.Pages[5].Visible:=False;
+    TabSheet6.TabVisible:=False;
+    PageControl1.Pages[6].Visible:=False;
+    TabSheet7.TabVisible:=False;
+    PageControl1.Pages[7].Visible:=False;
+    TabSheet8.TabVisible:=False;
+    PageControl1.Pages[8].Visible:=False;
+    TabSheet9.TabVisible:=False;
+    PageControl1.Pages[9].Visible:=False;
+    tabCtaXCobrar.TabVisible:=False;
+  end;
+    
 end;
 
 
@@ -2265,7 +2467,6 @@ begin
   frmSelFecha.Free;
   frmSelFecha:=Nil
   end;
-
 end;
 
 procedure TfrmMenuPrincipal.ManualOnline1Click(Sender: TObject);
@@ -2660,7 +2861,7 @@ begin
   try
     if frmSelDatosIntegrarNom.ShowModal = mrOk then
     begin
-      glbFechaNom := ExtraerFecha(frmSelDatosIntegrarNom.dtpkFechaNom.Datetime);
+      GlbFechaNomina := ExtraerFecha(frmSelDatosIntegrarNom.dtpkFechaNom.Datetime);
       frmSelDatosIntegrarNom.VerificarTipoCia;
       frmSelDatosIntegrarNom.VerificarTipoNomina(frmSelDatosIntegrarNom.xTipoNomina);
       frmNominaEmpleado:=TfrmNominaEmpleado.create(Nil);
@@ -2838,6 +3039,7 @@ begin
   //F4-115 F9-120
   if (key = 115) And (BitBtn1.Enabled) then
   begin
+    if GlbActivaNomina = 1 then exit;
     if BitBtn1.Enabled then
     BitBtn1Click(self);
   end;
@@ -4409,6 +4611,9 @@ var
   NombArchivo : String;
   x: integer;
 begin
+  if   GlbCerrandoSistema then exit;  
+  try
+  GlbCerrandoSistema := True;  
   NombArchivo := ExtractFilePath(Application.ExeName)+'\'+'repconf_cr.ini';
   Ini := TIniFile.Create(NombArchivo );
   try
@@ -4433,6 +4638,9 @@ begin
   end;
 
   glbLogueado:= 0;
+  except  on E : Exception do
+      LogInformacionTxt(E.ClassName+' Error. Mensaje: '+E.Message);
+  end;
 end;
 
 function TfrmMenuPrincipal.ValidaRegistro(accion: smallint;
@@ -4495,13 +4703,17 @@ var
   NombArchivo : String;
   x: integer;
 begin
-  NombArchivo := ExtractFilePath(Application.ExeName)+'\'+'repconf_cr.ini';
-  Ini := TIniFile.Create(NombArchivo );
   try
-    if (GlbCorriendo = 0) then
-    Ini.WriteInteger('Aplicacion', 'GlbCorriendo', 0);
-  finally
-  Ini.Free;
+    NombArchivo := ExtractFilePath(Application.ExeName)+'\'+'repconf_cr.ini';
+    Ini := TIniFile.Create(NombArchivo );
+    try
+      if (GlbCorriendo = 0) then
+      Ini.WriteInteger('Aplicacion', 'GlbCorriendo', 0);
+    finally
+    Ini.Free;
+    end;
+  except
+    LogInformacionTxt('Error saliendo de PointSaleSoft');
   end;
 end;
 
@@ -5929,8 +6141,7 @@ begin
     begin
       tipoNomina := frmSelDatosIntegrarNomCont.xTipoNomina;
       xcodigoProy:= frmSelDatosIntegrarNomCont.xCodigoProyecto;
-      glbFechaNom:= ExtraerFecha(frmSelDatosIntegrarNomCont.dtpkFechaNom.Date);
-      GlbFechaNomina := glbFechaNom;
+      GlbFechaNomina:= ExtraerFecha(frmSelDatosIntegrarNomCont.dtpkFechaNom.Date);
     end;
   finally
   frmSelDatosIntegrarNomCont.Free;
@@ -8449,6 +8660,444 @@ begin
   frmSecuenciaFct.free;
   frmSecuenciaFct:=nil;
   end;
+end;
+
+procedure TfrmMenuPrincipal.ExportarNominaTSS1Click(Sender: TObject);
+begin
+  //WinExec(PChar('C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert\TssExportPrototype.exe'+' /GLBRUTADB='+GLBRUTADB), SW_SHOWNORMAL)
+  frmTssExportCenter:= TfrmTssExportCenter.Create(nil);
+  try
+   frmTssExportCenter.ShowModal;
+  finally
+  frmTssExportCenter.free;
+  frmTssExportCenter:=nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.Empleados2Click(Sender: TObject);
+begin
+  FrmFormPerRep:=TFrmFormPerRep.Create(nil);
+  try
+  with FrmFormPerRep do
+  if ShowModal = mrOK then
+    Case Opciones.ItemIndex of
+      0:UReptEmpleados.Simple(VistaPrevia,Filtrar);
+      1:UReptEmpleados.Con_Salario(VistaPrevia,Filtrar);
+      2:UReptEmpleados.Por_Fecha_Entrada(VistaPrevia,Filtrar);
+      3:UReptEmpleados.Por_Departamentos(VistaPrevia,Filtrar);
+      //NO en uso
+      //4:UReptEmpleados.Tipo_de_Empleado(VistaPrevia,Filtrar);
+      //5:UReptEmpleados.Tipo_Nomina(VistaPrevia,Filtrar);
+      6:UReptEmpleados.Salario_Actual_Anterior(VistaPrevia,Filtrar);
+      7:UReptEmpleados.Salario_Actual_NFSFN(VistaPrevia,Filtrar);
+      8:UReptEmpleados.Ocasionales(VistaPrevia,Filtrar);
+      //qckRepPerNFSFN
+    end;
+  finally
+  FrmFormPerRep.free;
+  FrmFormPerRep:=nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.ProyeccionRegalia1Click(Sender: TObject);
+begin
+  frmProyeccionRegPascual := TfrmProyeccionRegPascual.Create(nil);
+  try
+    frmProyeccionRegPascual.Showmodal;
+  finally
+  frmProyeccionRegPascual.Free;
+  frmProyeccionRegPascual:= Nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.ComitCrdito1Click(Sender: TObject);
+begin
+  frmCreditosCoop:=TfrmCreditosCoop.Create(nil);
+  try
+   frmCreditosCoop.showmodal;
+  finally
+  frmCreditosCoop.free;
+  frmCreditosCoop:=nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.Actualizar3Click(Sender: TObject);
+begin
+  frmOrdEmpleados:=TfrmOrdEmpleados.Create(nil);
+  try
+    frmOrdEmpleados.ShowModal;
+  finally
+  frmOrdEmpleados.Free;
+  frmOrdEmpleados:=Nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.Integrar1Click(Sender: TObject);
+begin
+  frmProyeccionRegPascual := TfrmProyeccionRegPascual.Create(nil);
+  try
+    frmProyeccionRegPascual.Showmodal;
+  finally
+  frmProyeccionRegPascual.Free;
+  frmProyeccionRegPascual:= Nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.Preliminar1Click(Sender: TObject);
+begin
+  glbCheckNomina := 3;
+  frmSelDatosIntegrarNom:=TfrmSelDatosIntegrarNom.Create(nil);
+  try
+    if frmSelDatosIntegrarNom.Showmodal = mrOk then
+    begin
+  glbCheckNomina := 3;
+  dmNomina.QryRepNomGral.Close;
+  dmNomina.QryRepNomGral.Params[0].value := glbCia_Key;
+  dmNomina.QryRepNomGral.Params[1].value := glbTipoNom;
+  dmNomina.QryRepNomGral.Params[2].value := glbFechaNomina;
+  dmNomina.QryRepNomGral.Open;
+  if dmNomina.QryRepNomGral.recordcount = 0 then
+  raise Exception.Create('No hay datos');
+   QckRepNominaGral:=TQckRepNominaGral.Create(nil);
+   try
+    if MessageDlg('Imprimir?',mtinformation,[mbyes,mbno],0)=mryes then
+    begin
+    QckRepNominaGral.PrinterSetup;
+    QckRepNominaGral.Print;
+    end else
+    QckRepNominaGral.Preview;
+  finally
+  QckRepNominaGral.free;
+  QckRepNominaGral:=nil;
+  end;
+  end;
+  finally
+  frmSelDatosIntegrarNom.Free;
+  frmSelDatosIntegrarNom:=Nil;
+  end;
+
+    {DmNomina.QryRepNomGral .sql.clear;
+    DmNomina.QryRepNomGral.sql.add('SELECT * FROM EMPLEADO Empleados');
+    DmNomina.QryRepNomGral.sql.add('INNER JOIN NOMINA Nomina');
+    dmNomina.QryRepNomGral.sql.add('ON  (Nomina.CODIGO_EMP = Empleados.CODIGO)');
+    dmNomina.QryRepNomGral.sql.add('INNER JOIN DEPTOS Deptos');
+    dmNomina.QryRepNomGral.sql.add('ON  (Empleados.DEPTO_EMP = Deptos.CODIGO)');
+    dmNomina.QryRepNomGral.sql.add('where Cia_Key =:Cia_Key');
+    dmNomina.QryRepNomGral.sql.add('and Tipo_Nomina =:Tipo_Nom');
+    dmNomina.QryRepNomGral.sql.add('and Fecha_Nomina =:Fecha_Nom');
+    dmNomina.QryRepNomGral.sql.add('and Status_Nomina <>'+chr(39)+'E'+chr(39));
+    dmNomina.QryRepNomGral.sql.add('Order By Empleados.DEPTO_EMP,Empleados.SECCION,Empleados.CARGO,Nomina.CODIGO_EMP ');
+    }
+    //Empleados.INF_NDEPTO, Empleados.INF_NSECCION, Nomina.Codigo');
+
+   {
+    //dmNomina.QryRepNomGral.params[0].ParamType:= ptInput;
+    //dmNomina.QryRepNomGral.params[0].DataType := ftInteger;//edtcodcia
+    dmNomina.QryRepNomGral.params[0].Value    := glbCia_Key;
+
+    //dmNomina.QryRepNomGral.params[1].ParamType:= ptInput;
+    //dmNomina.QryRepNomGral.params[1].DataType := ftInteger;//edttipoNomina
+    dmNomina.QryRepNomGral.params[1].Value    := glbTipoNom;
+
+    //dmNomina.QryRepNomGral.params[2].ParamType:= ptInput;
+    //dmNomina.QryRepNomGral.params[2].DataType := ftDatetime;   //fechafin
+    dmNomina.QryRepNomGral.params[2].Value    := glbFechaNom;
+    dmNomina.QryRepNomGral.Open;
+
+  QckRepNominaGral:=TQckRepNominaGral.Create(nil);
+  try
+    if MessageDlg('Imprimir?',mtInformation,[mbyes,mbNo],0)=mrYes then
+    begin
+      QckRepNominaGral.PrinterSetup;
+      QckRepNominaGral.Print;
+    end else
+    QckRepNominaGral.Preview;
+  finally
+  QckRepNominaGral.Free;
+  QckRepNominaGral:=Nil;
+  end;
+  dmNomina.QryRepNomGral.Close;
+  }
+end;
+
+procedure TfrmMenuPrincipal.Definitiva1Click(Sender: TObject);
+begin
+  glbCheckNomina := 4;
+  frmSelDatosIntegrarNom:=TfrmSelDatosIntegrarNom.Create(nil);
+  try
+    if frmSelDatosIntegrarNom.Showmodal = mrOk then
+    begin
+  dmNomina.QryRepNomGral.Close;
+  dmNomina.QryRepNomGral.Params[0].value := glbCia_Key;
+  dmNomina.QryRepNomGral.Params[1].value := glbTipoNom;
+  dmNomina.QryRepNomGral.Params[2].value := glbFechaNomina;
+  dmNomina.QryRepNomGral.Open;
+  if dmNomina.QryRepNomGral.recordcount = 0 then
+  raise Exception.Create('No hay datos');
+   QckRepNominaGral:=TQckRepNominaGral.Create(nil);
+   try
+    if MessageDlg('Imprimir?',mtinformation,[mbyes,mbno],0)=mryes then
+    begin
+    QckRepNominaGral.PrinterSetup;
+    QckRepNominaGral.Print;
+    end else
+    QckRepNominaGral.Preview;
+  finally
+  QckRepNominaGral.free;
+  QckRepNominaGral:=nil;
+  end;
+    end;
+  if not dmConectar.IBTransaction1.InTransaction then
+  dmConectar.IBTransaction1.StartTransaction;
+  try
+    dmConectar.IBTransaction1.commit;
+  except
+  dmConectar.IBTransaction1.Rollback;
+  end;
+  finally
+  frmSelDatosIntegrarNom.Free;
+  frmSelDatosIntegrarNom:=Nil;
+  end;  
+end;
+
+procedure TfrmMenuPrincipal.NovedadesTSS1Click(Sender: TObject);
+begin
+  if frmTssNovedadManual = nil then
+    frmTssNovedadManual := TfrmTssNovedadManual.Create(Application);
+
+  frmTssNovedadManual.ShowModal;
+end;
+
+procedure TfrmMenuPrincipal.PensionAlimenticia1Click(Sender: TObject);
+begin
+  frmEmpleadoPensionAlimenticia := TfrmEmpleadoPensionAlimenticia.Create(Self);
+  try
+    frmEmpleadoPensionAlimenticia.Database := dmConectar.IBDatabase1;
+    frmEmpleadoPensionAlimenticia.Transaction := dmConectar.IBTransaction1;
+    frmEmpleadoPensionAlimenticia.ShowModal;
+  finally
+    frmEmpleadoPensionAlimenticia.Free;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.HistricoNmina1Click(Sender: TObject);
+begin
+  frmNOmHistorico:=TfrmNOmHistorico.Create(nil);
+  try
+    frmNOmHistorico.showmodal;
+  finally
+  frmNOmHistorico.free;
+  frmNOmHistorico:=nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.Calcular1Click(Sender: TObject);
+begin
+  frmCalculoBonificaciones:=TfrmCalculoBonificaciones.Create(nil);
+  try
+    frmCalculoBonificaciones.Showmodal;
+  finally
+  FreeAndNil(frmCalculoBonificaciones);
+  end;
+end;
+
+procedure TfrmMenuPrincipal.Integrar2Click(Sender: TObject);
+var
+  cantEmp:integer;
+  totalEmp:integer;
+begin
+if MessageDlg('¿Desea integrar Bonificacion Anual a Nómina?',mtInformation,[mbyes,mbno],0)=mrno then
+  exit;
+  frmSelDatosIntegrarNom:=TfrmSelDatosIntegrarNom.Create(Nil);
+  try
+    frmSelDatosIntegrarNom.lblAnioBono.visible:=True;
+    frmSelDatosIntegrarNom.edtAniobono.visible:=True;
+    frmSelDatosIntegrarNom.edtAniobono.SetInteger(StrToInt(FormatDateTime('yyyy',now)));
+    if frmSelDatosIntegrarNom.ShowModal = mrOk then
+    begin
+      GlbFechaNomina := ExtraerFecha(frmSelDatosIntegrarNom.dtpkFechaNom.Datetime);
+      frmSelDatosIntegrarNom.VerificarTipoCia;
+      frmSelDatosIntegrarNom.VerificarTipoNomina(frmSelDatosIntegrarNom.xTipoNomina);
+      dmCompania.tblCompania.Close;
+      dmCompania.tblCompania.Open;
+      dmCompania.tblCompania.Locate('CODIGO',GlbCodigoCia,[]);
+      frmCalculoBonificaciones:=TfrmCalculoBonificaciones.Create(nil);
+      frmCalculoBonificaciones.edtAnio.Text:= InttoStr(StrToInt(FormatDateTime('yyyy',now))-1);
+
+      if (frmCalculoBonificaciones.edtAnio.Text <> '') then
+      frmCalculoBonificaciones.edtAnio.SetInteger(StrToInt(
+      frmCalculoBonificaciones.edtAnio.text));
+
+      frmCalculoBonificaciones.qryDatosBoni.Close;
+      frmCalculoBonificaciones.qryDatosBoni.Params[0].Value :=
+                              EncodeDate(frmCalculoBonificaciones.edtAnio.ValueInteger, 12, 31);
+      frmCalculoBonificaciones.qryDatosBoni.Open;
+      frmCalculoBonificaciones.qryDatosBoni.Last;
+      if frmCalculoBonificaciones.qryDatosBoni.RecordCount = 0 then
+      begin
+        MessageDlg('No existen datos para '+
+        frmCalculoBonificaciones.edtAnio.Text,mtInformation,[mbok],0);
+        FreeAndNil(frmCalculoBonificaciones);
+        FreeAndNil(frmSelDatosIntegrarNom);
+        exit;
+      end;
+      frmCalculoBonificaciones.qryDatosBoni.first;
+      dmNomina.tblNomina.Close;
+      dmNomina.tblNomina.Params[0].Value := GlbCia_Key;
+      dmNomina.tblNomina.Params[1].Value := GlbTipoNom;
+      dmNomina.tblNomina.Params[2].Value := ExtraerFecha(GlbFechaNomina);
+      dmNomina.tblNomina.Open;
+      frmCalculoBonificaciones.qryDatosBoni.Last;
+
+      cantEmp:=frmCalculoBonificaciones.qryDatosBoni.RecordCount;
+      totalEmp:=cantEmp;
+      //MessageDlg('Integracion Bonos finalizado. Emp afectados '+IntToStr(cantEmp)+
+      //' de '+IntToStr(totalEmp)+' para año '+
+      //frmCalculoBonificaciones.edtAnio.Text+'.',mtInformation,[mbok],0);
+
+      frmCalculoBonificaciones.qryDatosBoni.first;
+
+      frmCalculoBonificaciones.qryDatosBoni.DisableControls;
+  While Not frmCalculoBonificaciones.qryDatosBoni.Eof do
+  begin
+    if (frmCalculoBonificaciones.qryDatosBoniSTATUS.Value = 'R') then
+    begin
+      frmCalculoBonificaciones.qryDatosBoni.Next;
+      continue;
+    end;
+    if dmNomina.tblNomina.Locate('CODIGO_EMP', frmCalculoBonificaciones.qryDatosBoniCODIGO.Value,[]) then
+    begin
+      if (dmNomina.tblNominaSTATUS_NOMINA.Value = 'R') then
+      begin
+        frmCalculoBonificaciones.qryDatosBoni.Next;
+        continue;
+      end;
+      dmNomina.tblNomina.Edit;
+
+      if frmCalculoBonificaciones.qryDatosBoniMONTO_BONIFIACION.IsNull or
+      (frmCalculoBonificaciones.qryDatosBoniMONTO_BONIFIACION.Value <=0) then
+      dmNomina.tblNominaBONIFICACION.Value := 0;
+
+      if (frmCalculoBonificaciones.qryDatosBoniSTATUS.Value = 'A') then
+      begin
+        dmNomina.tblNominaBONIFICACION.Value :=
+        frmCalculoBonificaciones.qryDatosBoniMONTO_BONIFIACION.Value;
+        cantEmp:=cantEmp-1;
+      end;
+      dmNomina.tblNomina.Post;
+    end;
+    frmCalculoBonificaciones.qryDatosBoni.Next;
+  end;
+
+  frmCalculoBonificaciones.qryDatosBoni.EnableControls;
+  try
+    dmNomina.tblNomina.ApplyUpdates;
+    dmNomina.tblNomina.Transaction.CommitRetaining;
+  except
+  dmNomina.tblNomina.Transaction.RollbackRetaining;
+  end;
+  try
+    frmCalculoBonificaciones.qryDatosBoni.ApplyUpdates;
+    frmCalculoBonificaciones.qryDatosBoni.Transaction.CommitRetaining;
+    dmnomina.ibstpProcActNomTotales.Params[0].Value:= glbTipoNom;
+    dmnomina.ibstpProcActNomTotales.Params[1].Value:= glbCia_Key;
+    dmnomina.ibstpProcActNomTotales.Params[2].Value:= ExtraerFecha(GlbFechaNomina);
+    dmnomina.ibstpProcActNomTotales.ExecProc;
+    if Not dmnomina.ibstpProcActNomTotales.Transaction.InTransaction then
+    dmnomina.ibstpProcActNomTotales.Transaction.StartTransaction;
+    try
+      dmnomina.ibstpProcActNomTotales.Transaction.CommitRetaining;
+    except
+    dmnomina.ibstpProcActNomTotales.Transaction.RollbackRetaining;
+    end;
+
+  except
+  frmCalculoBonificaciones.qryDatosBoni.Transaction.RollbackRetaining;
+  end;
+    end;
+  finally
+  frmCalculoBonificaciones.qryDatosBoni.Close;
+  FreeAndNil(frmCalculoBonificaciones);
+  FreeAndNil(frmSelDatosIntegrarNom);
+  end;
+  MessageDlg('Integracion Bonos finalizado. Emp afectados '+IntToStr(cantEmp)+
+  ' de '+IntToStr(totalEmp)+' para año '+
+  frmCalculoBonificaciones.edtAnio.Text+'.',mtInformation,[mbok],0);
+
+end;
+
+procedure TfrmMenuPrincipal.IR131Click(Sender: TObject);
+Var
+   StrFiltro:String;
+begin
+  GetDateTipoMoneda1.Fecha:= GlbFechaTrnDiaria;
+  GetDateTipoMoneda1.FechaFinal:= GlbFechaTrnDiaria;
+
+  if GetDateTipoMoneda1.Execute then
+  begin
+    //if StrToInt(FormatDateTime('mm',fecha.fechaFinal))  12 then
+    GlbCantMesProy:=StrToFloat(InputBox('Reporte de IR13 Proyectado','Entre cant. Meses a proyectar','2.5'));
+    dmDatos.tblEmpleados.Close;
+    dmDatos.tblEmpleados.Open;
+    GlbFechaInicial:=ExtraerFecha(GetDateTipoMoneda1.Fecha);
+    GlbFechaFinal  :=ExtraerFecha(GetDateTipoMoneda1.FechaFinal);
+    dmdatos.qryBoni.Close;
+    dmdatos.qryBoni.Params[0].Value := GlbFechaFinal;
+    dmdatos.qryBoni.Open;
+    dmdatos.tTablaRetIsr.Close;
+    dmdatos.tTablaRetIsr.Open;
+    dmdatos.qryEscalaIsr.Close;
+    dmdatos.qryEscalaIsr.Params[0].Value := ExtraerFecha(GetDateTipoMoneda1.FechaFinal); 
+    dmdatos.qryEscalaIsr.Open;
+    dmdatos.QryVaca.Close;
+    dmdatos.QryVaca.Filtered:=False;
+    dmdatos.QryVaca.params[0].Value := ExtraerFecha(GlbFechaInicial);
+    dmdatos.QryVaca.params[1].Value := EncodeDate(StrToInt(formatdatetime('yyyy',GlbFechaInicial)),12,31);
+    dmdatos.QryVaca.Open;
+    dmdatos.qryRegAdicional.Close;
+    dmdatos.qryRegAdicional.Filtered:=False;
+    dmdatos.qryRegAdicional.Params[0].Value := StrToInt(FormatDateTime('yyyy',GlbFechaInicial));
+    dmdatos.qryRegAdicional.Open;
+
+    dmdatos.qryLey8701.Close;
+    dmdatos.qryLey8701.Params[0].Value := 1;//afp
+    dmdatos.qryLey8701.Params[1].Value := ExtraerFecha(GlbFechaFinal);
+    dmdatos.qryLey8701.Open;
+
+    dmdatos.qryRepIR13.Close;
+    dmdatos.qryRepIR13.Filtered := False;
+    dmdatos.qryRepIR13.Params[0].Value := GlbFechaInicial;
+    dmdatos.qryRepIR13.Params[1].Value := GlbFechaFinal;
+    dmdatos.qryRepIR13.Filtered:=False;
+    strFiltro:='';
+    StrFiltro:=InputBox('Reporte de IR/13','0-Todos, 1-Los que Pagan','0');
+    if StrFiltro <> '0' then
+    Begin
+      dmdatos.qryRepIR13.Filter:= 'ISR_RETENIDO > 0';
+      dmdatos.qryRepIR13.Filtered:=True;
+    end;
+    dmdatos.qryRepIR13.Open;
+    qckRepIR13:=TQckRepIR13.Create(Nil);
+    try
+      qckRepIR13.Preview;
+    finally
+    qckRepIR13.Free;
+    qckRepIR13:= Nil;
+    end;
+    if Not dmConectar.IBTransaction1.InTransaction then
+    dmConectar.IBTransaction1.InTransaction;
+    try
+      dmConectar.IBTransaction1.CommitRetaining;
+    except
+    dmConectar.IBTransaction1.RollbackRetaining; 
+    end;
+  end;
+
+end;
+
+procedure TfrmMenuPrincipal.FormDestroy(Sender: TObject);
+begin
+  frmMenuPrincipal := nil;
 end;
 
 end.

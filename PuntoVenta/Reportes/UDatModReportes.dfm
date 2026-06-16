@@ -1,8 +1,8 @@
 object dmReportes: TdmReportes
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Left = 735
-  Top = 214
+  Left = 360
+  Top = 193
   Height = 695
   Width = 1086
   object qryDatosRepClientes: TIBQuery
@@ -10849,8 +10849,8 @@ object dmReportes: TdmReportes
       ''
       ''
       '')
-    Left = 128
-    Top = 512
+    Left = 144
+    Top = 528
   end
   object qryRepGastosVtas_Base: TIBQuery
     Database = dmConectar.IBDatabase1
@@ -12691,5 +12691,174 @@ object dmReportes: TdmReportes
         Name = 'ciakey'
         ParamType = ptInput
       end>
+  end
+  object qryRptInvReordenEmail: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    Left = 120
+    Top = 480
+  end
+  object qryCambioPreciosEmail: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT'
+      '  A.ID,'
+      '  A.FECHA_CAMBIO,'
+      '  A.FECHA_DIA,'
+      '  A.TABLA_ORIGEN,'
+      '  A.CAMPO_PRECIO,'
+      '  A.COD_PRODUCTO,'
+      '  A.CODIGO_BARRA,'
+      '  A.DESCRIPCION,'
+      '  A.IDUNIDAD,'
+      '  A.DESC_UNIDAD,'
+      '  A.PRECIO_ANTERIOR,'
+      '  A.PRECIO_NUEVO,'
+      '  A.DIFERENCIA,'
+      '  A.PORC_DIFERENCIA,'
+      '  A.COSTO_BASE,'
+      '  A.PORC_BENEFICIO_ANT,'
+      '  A.PORC_BENEFICIO_NUEVO,'
+      '  A.COD_USUARIO,'
+      '  A.NOMBRE_USUARIO,'
+      '  A.NOMBRE_PC'
+      'FROM AUD_CAMBIO_PRECIO A'
+      'WHERE A.FECHA_CAMBIO >= :FECHAINI'
+      '  AND A.FECHA_CAMBIO < :FECHAFIN'
+      '  AND COALESCE(A.ENVIADO, 0) = 0'
+      'ORDER BY'
+      '  A.FECHA_CAMBIO,'
+      '  A.COD_PRODUCTO,'
+      '  A.CAMPO_PRECIO;')
+    Left = 800
+    Top = 568
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'FECHAINI'
+        ParamType = ptUnknown
+      end
+      item
+        DataType = ftUnknown
+        Name = 'FECHAFIN'
+        ParamType = ptUnknown
+      end>
+  end
+  object qryMarcarPComoEnviadox: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    Left = 936
+    Top = 560
+  end
+  object qryMarcarPComoEnviado: TIBDataSet
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    DeleteSQL.Strings = (
+      'delete from AUD_CAMBIO_PRECIO'
+      'where'
+      '  ID = :OLD_ID')
+    InsertSQL.Strings = (
+      'insert into AUD_CAMBIO_PRECIO'
+      
+        '  (ID, FECHA_CAMBIO, FECHA_DIA, TABLA_ORIGEN, CAMPO_PRECIO, COD_' +
+        'PRODUCTO, '
+      
+        '   CODIGO_BARRA, DESCRIPCION, IDUNIDAD, DESC_UNIDAD, PRECIO_ANTE' +
+        'RIOR, PRECIO_NUEVO, '
+      
+        '   DIFERENCIA, PORC_DIFERENCIA, COSTO_BASE, PORC_BENEFICIO_ANT, ' +
+        'PORC_BENEFICIO_NUEVO, '
+      
+        '   COD_USUARIO, NOMBRE_USUARIO, NOMBRE_PC, ENVIADO, FECHA_ENVIO,' +
+        ' APP_USER, '
+      '   PC_NAME)'
+      'values'
+      
+        '  (:ID, :FECHA_CAMBIO, :FECHA_DIA, :TABLA_ORIGEN, :CAMPO_PRECIO,' +
+        ' :COD_PRODUCTO, '
+      
+        '   :CODIGO_BARRA, :DESCRIPCION, :IDUNIDAD, :DESC_UNIDAD, :PRECIO' +
+        '_ANTERIOR, '
+      
+        '   :PRECIO_NUEVO, :DIFERENCIA, :PORC_DIFERENCIA, :COSTO_BASE, :P' +
+        'ORC_BENEFICIO_ANT, '
+      
+        '   :PORC_BENEFICIO_NUEVO, :COD_USUARIO, :NOMBRE_USUARIO, :NOMBRE' +
+        '_PC, :ENVIADO, '
+      '   :FECHA_ENVIO, :APP_USER, :PC_NAME)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  ID,'
+      '  FECHA_CAMBIO,'
+      '  FECHA_DIA,'
+      '  TABLA_ORIGEN,'
+      '  CAMPO_PRECIO,'
+      '  COD_PRODUCTO,'
+      '  CODIGO_BARRA,'
+      '  DESCRIPCION,'
+      '  IDUNIDAD,'
+      '  DESC_UNIDAD,'
+      '  PRECIO_ANTERIOR,'
+      '  PRECIO_NUEVO,'
+      '  DIFERENCIA,'
+      '  PORC_DIFERENCIA,'
+      '  COSTO_BASE,'
+      '  PORC_BENEFICIO_ANT,'
+      '  PORC_BENEFICIO_NUEVO,'
+      '  COD_USUARIO,'
+      '  NOMBRE_USUARIO,'
+      '  NOMBRE_PC,'
+      '  ENVIADO,'
+      '  FECHA_ENVIO,'
+      '  APP_USER,'
+      '  PC_NAME'
+      'from AUD_CAMBIO_PRECIO '
+      'where'
+      '  ID = :ID')
+    SelectSQL.Strings = (
+      'Select * from AUD_CAMBIO_PRECIO'
+      'WHERE FECHA_CAMBIO >= :FECHAINI'
+      ' AND FECHA_CAMBIO < :FECHAFIN'
+      '  AND COALESCE(ENVIADO, 0) = :status')
+    ModifySQL.Strings = (
+      'update AUD_CAMBIO_PRECIO'
+      'set'
+      '  ID = :ID,'
+      '  FECHA_CAMBIO = :FECHA_CAMBIO,'
+      '  FECHA_DIA = :FECHA_DIA,'
+      '  TABLA_ORIGEN = :TABLA_ORIGEN,'
+      '  CAMPO_PRECIO = :CAMPO_PRECIO,'
+      '  COD_PRODUCTO = :COD_PRODUCTO,'
+      '  CODIGO_BARRA = :CODIGO_BARRA,'
+      '  DESCRIPCION = :DESCRIPCION,'
+      '  IDUNIDAD = :IDUNIDAD,'
+      '  DESC_UNIDAD = :DESC_UNIDAD,'
+      '  PRECIO_ANTERIOR = :PRECIO_ANTERIOR,'
+      '  PRECIO_NUEVO = :PRECIO_NUEVO,'
+      '  DIFERENCIA = :DIFERENCIA,'
+      '  PORC_DIFERENCIA = :PORC_DIFERENCIA,'
+      '  COSTO_BASE = :COSTO_BASE,'
+      '  PORC_BENEFICIO_ANT = :PORC_BENEFICIO_ANT,'
+      '  PORC_BENEFICIO_NUEVO = :PORC_BENEFICIO_NUEVO,'
+      '  COD_USUARIO = :COD_USUARIO,'
+      '  NOMBRE_USUARIO = :NOMBRE_USUARIO,'
+      '  NOMBRE_PC = :NOMBRE_PC,'
+      '  ENVIADO = :ENVIADO,'
+      '  FECHA_ENVIO = :FECHA_ENVIO,'
+      '  APP_USER = :APP_USER,'
+      '  PC_NAME = :PC_NAME'
+      'where'
+      '  ID = :OLD_ID')
+    Left = 944
+    Top = 608
   end
 end

@@ -1,7 +1,7 @@
 object dmBancos: TdmBancos
   OldCreateOrder = False
-  Left = 971
-  Top = 314
+  Left = 768
+  Top = 252
   Height = 299
   Width = 598
   object qryBancos: TIBQuery

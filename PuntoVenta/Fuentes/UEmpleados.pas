@@ -88,6 +88,30 @@ type
     RxDBLookupCombo4: TRxDBLookupCombo;
     RxDBLookupCombo5: TRxDBLookupCombo;
     SkinData1: TSkinData;
+    Label18: TLabel;
+    DBEdit16: TDBEdit;
+    Label19: TLabel;
+    DBEdit17: TDBEdit;
+    Image1: TImage;
+    RxSpeedButton2: TRxSpeedButton;
+    PopupMenuBuscar: TPopupMenu;
+    Codigo1: TMenuItem;
+    Compaa1: TMenuItem;
+    Nombre1: TMenuItem;
+    Apellido1: TMenuItem;
+    Nomina1: TMenuItem;
+    TipoEmpleado1: TMenuItem;
+    Departamento1: TMenuItem;
+    Seccion1: TMenuItem;
+    Status1: TMenuItem;
+    Todos1: TMenuItem;
+    DBEdit18: TDBEdit;
+    Label21: TLabel;
+    DBDateEdit2: TDBDateEdit;
+    Label22: TLabel;
+    RxDBLookupCombo6: TRxDBLookupCombo;
+    Label23: TLabel;
+    dstblTipoIngEmp: TDataSource;
     procedure btnInsertarClick(Sender: TObject);
     procedure btnSalvarClick(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
@@ -100,11 +124,22 @@ type
     procedure SpeedButton3Click(Sender: TObject);
     procedure SpeedButton2Click(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
+    procedure DBEdit1Change(Sender: TObject);
+    procedure Codigo1Click(Sender: TObject);
+    procedure Compaa1Click(Sender: TObject);
+    procedure Nombre1Click(Sender: TObject);
+    procedure Apellido1Click(Sender: TObject);
+    procedure Nomina1Click(Sender: TObject);
+    procedure TipoEmpleado1Click(Sender: TObject);
+    procedure Status1Click(Sender: TObject);
+    procedure Todos1Click(Sender: TObject);
+    procedure RxDBLookupCombo5Exit(Sender: TObject);
   private
     procedure ResizeBMP(b: TBitmap; NewWidth, NewHeight: integer);
     { Private declarations }
   public
     { Public declarations }
+    procedure FiltrarEmpleado(strCampo: string;strcriterio:string);
   end;
 
 var
@@ -124,6 +159,7 @@ begin
     dmEmpleados.tblEmpleadosFECHA_IN.Value:=now;
     dmEmpleados.tblEmpleadosCODIGO_CIA.Value:=1;
     dmEmpleados.tblEmpleadosSTATUS.Value    :='A';
+    dmEmpleados.tblEmpleadosTIPO_ING.Value  :=1;//Normal
     DBEdit2.SetFocus;
     DBEdit2.SelectAll;
   end;
@@ -133,14 +169,10 @@ procedure TfrmEmpleados.btnSalvarClick(Sender: TObject);
 begin
   if dmEmpleados.tblEmpleados.State in [dsEdit,dsInsert] then
   begin
-    dmEmpleados.tblEmpleados.Post;
-    dmEmpleados.tblEmpleados.ApplyUpdates;
-    if Not dmEmpleados.tblEmpleados.Transaction.InTransaction then
-    dmEmpleados.tblEmpleados.Transaction.StartTransaction;
-    try
-      dmEmpleados.tblEmpleados.Transaction.CommitRetaining;
-    except
-    dmEmpleados.tblEmpleados.Transaction.RollbackRetaining;
+    GlbSalvarQuery(dmEmpleados.tblEmpleados);
+    if dmEmpleados.tblEmpleados.State in [dsEdit] then
+    begin
+      
     end;
   end;
 end;
@@ -154,22 +186,7 @@ begin
   begin
     if dmEmpleados.tblEmpleados.State = dsBrowse then
     dmEmpleados.tblEmpleados.Edit;
-
-    {Jpgf := TJPEGImage.Create;
-    Bmp := TBitmap.Create;
-    Jpgf.LoadFromFile(OpenPictureDialog1.FileName);
-    // Copy JPEG to bitmap:
-    Bmp.Width := Jpgf.Width;
-    Bmp.Height := Jpgf.Height;
-    Bmp.Canvas.Draw(0,0,Jpgf);
-    // Resize Bitmap
-    ResizeBMP(Bmp,[newsizeW],[newsizeh]);
-    // Copy BMP back to JPG
-    Jpgf.Assign(Bmp);
-    Jpgf.Free;
-    Bmp.Free; }
-
-    dmEmpleados.tblEmpleadosFOTO.LoadFromFile(OpenPictureDialog1.FileName);
+    dmEmpleados.tblEmpleadosPATH_FOTO_EMP.Value:=OpenPictureDialog1.FileName;
   end;
 end;
 
@@ -301,6 +318,122 @@ begin
   StretchBlt(b.Canvas.Handle,0,0,b.Width,b.Height,tbmp.Canvas.Handle,
   0,0,tbmp.Width,tbmp.Height,SRCCOPY);
   tbmp.Free;
+end;
+
+procedure TfrmEmpleados.DBEdit1Change(Sender: TObject);
+begin
+  if not dmEmpleados.tblEmpleadosPATH_FOTO_EMP.IsNull then
+  begin
+    if FileExists(dmEmpleados.tblEmpleadosPATH_FOTO_EMP.Value) then
+    begin
+      Image1.BringToFront;
+      Image1.Picture.LoadFromFile(dmEmpleados.tblEmpleadosPATH_FOTO_EMP.Value);
+    end;
+  end;
+end;
+
+procedure TfrmEmpleados.Codigo1Click(Sender: TObject);
+var strFiltro : String;
+begin
+  strFiltro:=InputBox('Buscar por empleado','Entre código empleado','');
+  if not dmEmpleados.tblEmpleados.Locate('Codigo',StrToInt(strFiltro),[]) then
+  MessageDlg('Codigo "'+strFiltro+'", no existe.',mtinformation,[mbok],0);
+end;
+
+procedure TfrmEmpleados.FiltrarEmpleado(strCampo: string;strcriterio:string);
+var
+  strFiltro:String;
+begin
+  strFiltro:=InputBox('Filtrar Datos Empleados','Entre valor para '+strcriterio,'');
+  dmEmpleados.tblEmpleados.Filtered  := False;
+  dmEmpleados.strFilterField:= StrCampo;
+  dmEmpleados.ValuetoFilter          := StrFiltro;
+  dmEmpleados.tblEmpleados.Filtered  := True;
+end;
+
+procedure TfrmEmpleados.Compaa1Click(Sender: TObject);
+begin
+  if Compaa1.Checked then
+  begin
+    dmEmpleados.tblEmpleados.Filtered:=False;
+    Compaa1.Checked:=False;
+    exit;
+  end else
+  FiltrarEmpleado('CODIGO_CIA',' por codigo compañia.');
+  Compaa1.Checked :=True;
+end;
+
+procedure TfrmEmpleados.Nombre1Click(Sender: TObject);
+begin
+  if Nombre1.Checked then
+  begin
+    dmEmpleados.tblEmpleados.Filtered:=False;
+    Nombre1.Checked:=False;
+    exit;
+  end else
+  FiltrarEmpleado('nombre',' por nombre empleado.');
+  Nombre1.Checked :=True;
+end;
+
+procedure TfrmEmpleados.Apellido1Click(Sender: TObject);
+begin
+  if Nombre1.Checked then
+  begin
+    dmEmpleados.tblEmpleados.Filtered:=False;
+    Apellido1.Checked:=False;
+    exit;
+  end else
+  FiltrarEmpleado('apellido',' por apellido empleado.');
+  Apellido1.Checked :=True;
+end;
+
+procedure TfrmEmpleados.Nomina1Click(Sender: TObject);
+begin
+  if Nombre1.Checked then
+  begin
+    dmEmpleados.tblEmpleados.Filtered:=False;
+    Nomina1.Checked:=False;
+    exit;
+  end else
+  FiltrarEmpleado('TIPO_NOMINA',' por tipo Nómina.');
+  Nomina1.Checked :=True;
+end;
+
+procedure TfrmEmpleados.TipoEmpleado1Click(Sender: TObject);
+begin
+  if TipoEmpleado1.Checked then
+  begin
+    dmEmpleados.tblEmpleados.Filtered:=False;
+    TipoEmpleado1.Checked:=False;
+    Exit;
+  end else
+  FiltrarEmpleado('TIPO_EMPLEADO',' por tipo empleado.');
+  TipoEmpleado1.Checked :=True;
+end;
+
+procedure TfrmEmpleados.Status1Click(Sender: TObject);
+begin
+  if Status1.Checked then
+  begin
+    dmEmpleados.tblEmpleados.Filtered:=False;
+    Status1.Checked:=False;
+    Exit;
+  end else
+  FiltrarEmpleado('STATUS',' por estatus empleado.');
+  Status1.Checked :=True;
+end;
+
+procedure TfrmEmpleados.Todos1Click(Sender: TObject);
+begin
+  dmEmpleados.tblEmpleados.Filtered:=False;
+end;
+
+
+procedure TfrmEmpleados.RxDBLookupCombo5Exit(Sender: TObject);
+begin
+  if dmEmpleados.tblEmpleados.state in [dsBrowse, dsInactive] then exit;
+  if dmEmpleados.tblEmpleadosTIPO_EMPLEADO.Value = 2 then
+  dmEmpleados.tblEmpleadosTIPO_ING.Value:=2;
 end;
 
 end.

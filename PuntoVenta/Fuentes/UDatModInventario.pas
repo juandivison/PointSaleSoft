@@ -785,6 +785,9 @@ type
     qryInvOtroQTYOTRO: TFloatField;
     tblTasaITBISIDITBISECF: TSmallintField;
     tblTipoInventarioIDINDICADORBOSERV: TSmallintField;
+    tblInventarioProdAUD_COD_USUARIO: TIntegerField;
+    tblInventarioProdAUD_APP_USER: TIBStringField;
+    tblInventarioProdAUD_PC_NAME: TIBStringField;
     procedure qryConsultaInvActualAfterScroll(DataSet: TDataSet);
     procedure qryPrecioCompraArtiCalcFields(DataSet: TDataSet);
     procedure qryRepProdVenceFilterRecord(DataSet: TDataSet;

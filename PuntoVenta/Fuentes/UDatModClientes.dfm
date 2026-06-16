@@ -1,8 +1,8 @@
 object dmClientes: TdmClientes
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Left = 651
-  Top = 197
+  Left = 617
+  Top = 210
   Height = 521
   Width = 884
   object dstblClientes: TDataSource

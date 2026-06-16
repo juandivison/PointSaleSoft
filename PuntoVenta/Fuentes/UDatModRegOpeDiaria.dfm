@@ -1,7 +1,7 @@
 object dtmTransOpeDiaria: TdtmTransOpeDiaria
   OldCreateOrder = False
-  Left = 242
-  Top = 101
+  Left = 455
+  Top = 135
   Height = 554
   Width = 788
   object tblOrdenCompraMaster: TIBDataSet

@@ -126,6 +126,8 @@ type
     edtrutaExeItesi2ToolEcf: TEdit;
     Label21: TLabel;
     chkFacturatxt: TCheckBox;
+    CheckBox2: TCheckBox;
+    CheckBox3: TCheckBox;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -188,9 +190,14 @@ begin
   NombArchivo := ExtractFilePath(Application.ExeName)+'\'+'repconf_cr.ini';
   Ini := TIniFile.Create(NombArchivo );
 
+  if CheckBox2.Checked then
+  GlbActivaNomina:= Ini.ReadInteger('MenuPrincipal','GlbActivaNomina',0);
+  if GlbActivaNomina = 1 then
+  CheckBox2.Checked:=True
+  else CheckBox2.Checked:=False;
   //0: MODO 0 – convertir la misma venta, E32 ? E31 (sin duplicar venta).
   //1: MODO 1 – nueva venta E31 copiando ítems, más una Nota de Crédito E34 que anula la E32.
-
+  GlbActivaNomina:=Ini.ReadInteger('MenuPrincipal','GlbActivaNomina',0);
   GlbUsarFacturaTxtECF:=Ini.ReadInteger('Venta','GlbUsarFacturaTxtECF',0);
   if GlbUsarFacturaTxtECF = 1 then
   chkFacturatxt.Checked:=True
@@ -358,7 +365,7 @@ begin
   GlbFormatoConduce:= -1;
 
   try
-   GlbIgI:= Ini.ReadInteger('Extra','GlbIgI', 0);
+   GlbIgI:= Ini.ReadInteger('Extra','GlbIgI', 1);
 
    GlbIncLargoPapel := Ini.ReadInteger('Venta','GlbIncLargoPapel', 1);
    
@@ -554,8 +561,12 @@ begin
 
     GlbPermiteVentaInv0 := Ini.ReadInteger('Venta', 'GlbPermiteVentaInv0',0);
     GlbPermiteUnaInstancia := Ini.ReadInteger('Aplicacion', 'GlbPermiteUnaInstancia', 0);
-
+                                                        
     GlbInsertarEnLoan := Ini.ReadInteger('Aplicacion', 'GlbInsertarEnLoan', 0);
+
+    if GlbInsertarEnLoan = 1 then
+       CheckBox3.Checked := True
+    else CheckBox3.Checked := False;
 
     GlbEmailTool := Ini.ReadString('Aplicacion', 'GlbEmailTool', '');
     GLBUseCustomEmailServer :=Ini.ReadInteger('Aplicacion', 'GLBUseCustomEmailServer', 0);
@@ -806,6 +817,12 @@ begin
   //Pendiente de configurar en interfaz de usuario
   //Permite insertar clientes en DB Prestamos
   GlbInsertarEnLoan := 0;
+  if CheckBox3.Checked then
+  begin
+    GlbInsertarEnLoan := 1;
+    Ini.WriteInteger('Aplicacion','GlbInsertarEnLoan',GlbInsertarEnLoan);
+  end;
+
   if chkFacturatxt.Checked and chkboxeCF.Checked then
   begin
     GlbUsarFacturaTxtECF:=1;
@@ -816,6 +833,14 @@ begin
     chkFacturatxt.Checked:=False;
     Ini.WriteInteger('Venta','GlbUsarFacturaTxtECF',0);
   end;
+
+  if CheckBox2.Checked then
+  Ini.WriteInteger('MenuPrincipal','GlbActivaNomina',1)
+  else
+  Ini.WriteInteger('MenuPrincipal','GlbActivaNomina',0);
+  if CheckBox2.Checked then
+  GlbActivaNomina:=1 else
+  GlbActivaNomina:=0;
 
   if chkActivaFinger.Checked then
   begin
@@ -891,7 +916,7 @@ begin
 
   if (GlbRutaEcf = '') and (GlbActivaECF = 1) then
   begin
-    MessageBox(0, PChar('Debes configurar ruta de libreria para emitir eCF.'), 'Facturación Electrónica', MB_ICONERROR or MB_OK);
+    MessageBox(0, 'Debes configurar ruta de libreria para emitir eCF.', 'Facturación Electrónica', MB_ICONERROR or MB_OK);
     edtEcfRuta.Color:= clYellow;
   end;
 

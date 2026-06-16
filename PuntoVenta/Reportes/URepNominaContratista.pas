@@ -169,13 +169,13 @@ begin
      Begin
        QRLabel1.Caption := 'NOMINA PRELIMINAR';
        if dia = 15 Then
-       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
        if (dia = 30) or (dia = 31) Then
-       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
        if (dia = 28) and (mes = 2 ) then
-       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
        if (dia = 29) and (mes = 2 ) then
-       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);       
+       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);       
      End
   Else
      Begin
@@ -190,26 +190,26 @@ begin
         Begin
           QRLabel10.Caption := 'NOMINA QUINCENAL';
           if dia = 15 Then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 30) or (dia = 31) Then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 28) and (mes = 2 ) then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 29) and (mes = 2 ) then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
         End
   Else
      if _xTipoNomina = 4 Then
         Begin
           QRLabel10.Caption := 'NOMINA OCASIONALES';
           if dia = 15 Then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd', EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd', EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 30) or (dia = 31) Then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd', EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd', EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 28) and (mes = 2 ) then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd', EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd', EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 29) and (mes = 2 ) then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd', EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd', EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
         End
   Else
      if _xTipoNomina = 3 Then

@@ -1,6 +1,6 @@
 object qckCartaSaldoTpl: TqckCartaSaldoTpl
   Left = 0
-  Top = -143
+  Top = -306
   Width = 816
   Height = 1056
   Frame.Color = clBlack
@@ -452,24 +452,6 @@ object qckCartaSaldoTpl: TqckCartaSaldoTpl
       WordWrap = True
       FontSize = 14
     end
-    object shpFirma: TQRShape
-      Left = 208
-      Top = 574
-      Width = 273
-      Height = 9
-      Frame.Color = clBlack
-      Frame.DrawTop = False
-      Frame.DrawBottom = False
-      Frame.DrawLeft = False
-      Frame.DrawRight = False
-      Size.Values = (
-        23.812500000000000000
-        550.333333333333300000
-        1518.708333333333000000
-        722.312500000000000000)
-      Shape = qrsHorLine
-      VertAdjust = 0
-    end
     object lblNombreGerente: TQRLabel
       Left = 299
       Top = 555
@@ -495,15 +477,15 @@ object qckCartaSaldoTpl: TqckCartaSaldoTpl
       Font.Color = clWindowText
       Font.Height = -17
       Font.Name = 'Times New Roman'
-      Font.Style = []
+      Font.Style = [fsUnderline]
       ParentFont = False
       Transparent = True
       WordWrap = True
       FontSize = 13
     end
     object lblCargoGerente: TQRLabel
-      Left = 212
-      Top = 583
+      Left = 303
+      Top = 577
       Width = 114
       Height = 20
       Frame.Color = clBlack
@@ -513,45 +495,14 @@ object qckCartaSaldoTpl: TqckCartaSaldoTpl
       Frame.DrawRight = False
       Size.Values = (
         52.916666666666670000
-        560.916666666666700000
-        1542.520833333333000000
+        801.687500000000000000
+        1526.645833333333000000
         301.625000000000000000)
       Alignment = taCenter
-      AlignToBand = False
+      AlignToBand = True
       AutoSize = True
       AutoStretch = False
       Caption = 'Gerente General'
-      Color = clWhite
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -17
-      Font.Name = 'Times New Roman'
-      Font.Style = []
-      ParentFont = False
-      Transparent = True
-      WordWrap = True
-      FontSize = 13
-    end
-    object lblEmpresaFirma: TQRLabel
-      Left = 334
-      Top = 584
-      Width = 146
-      Height = 20
-      Frame.Color = clBlack
-      Frame.DrawTop = False
-      Frame.DrawBottom = False
-      Frame.DrawLeft = False
-      Frame.DrawRight = False
-      Size.Values = (
-        52.916666666666670000
-        883.708333333333300000
-        1545.166666666667000000
-        386.291666666666700000)
-      Alignment = taCenter
-      AlignToBand = False
-      AutoSize = True
-      AutoStretch = False
-      Caption = 'de [NombreEmpresa]'
       Color = clWhite
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText

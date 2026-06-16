@@ -1,6 +1,6 @@
 object frmCartaSaldoTemplate: TfrmCartaSaldoTemplate
-  Left = 347
-  Top = 189
+  Left = 363
+  Top = 172
   Width = 968
   Height = 736
   Caption = 'Template Carta de Saldo'

@@ -3,7 +3,8 @@ unit UDatModNomina;
 interface
 
 uses
-  SysUtils, Classes, DB, IBCustomDataSet, IBQuery, IBTable, IBStoredProc;
+  SysUtils, Classes, DB, IBCustomDataSet, IBQuery, IBTable, IBStoredProc,
+  IBUpdateSQL;
 
 type
   TdmNomina = class(TDataModule)
@@ -263,7 +264,6 @@ type
     QryRepNomGralIDSS: TFloatField;
     QryRepNomGralCOOPERATIVA: TFloatField;
     QryRepNomGralMONTO_AFP: TFloatField;
-    QryRepNomGralBMI: TIntegerField;
     QryRepNomGralISR: TFloatField;
     QryRepNomGralOTROS_INGRESOS: TFloatField;
     QryRepNomGralOTRAS_DEDUCCIONES: TFloatField;
@@ -273,7 +273,6 @@ type
     QryRepNomGralNOMBRE: TIBStringField;
     QryRepNomGralAPELLIDO: TIBStringField;
     QryRepNomGralNUMERO_CKS: TIntegerField;
-    QryRepNomGralCODIGO: TIBStringField;
     QryRepNomGralCOD_ORDEN: TIntegerField;
     QryRepNomGralDEPTO_EMP: TSmallintField;
     QryRepNomGralSECCION_EMP: TSmallintField;
@@ -473,14 +472,218 @@ type
     StpIntegraComisionXVta: TIBQuery;
     QryRepNomGralPREST_OFIC: TFloatField;
     ibstpProcActNomComisiones: TIBStoredProc;
+    qryNomantIsr: TIBQuery;
+    qryNomantIsrCODIGO_EMP: TIntegerField;
+    qryNomantIsrSALARIO_BRUTO: TFloatField;
+    IBQuery1: TIBQuery;
+    FloatField1: TFloatField;
+    IntegerField1: TIntegerField;
+    qryLey8701: TIBQuery;
+    qryLey8701PORC_EMPLEADO: TFloatField;
+    qryLey8701PORC_PATRONO: TFloatField;
+    qVaca: TIBQuery;
+    qVacaCODIGO: TIntegerField;
+    qVacaVALOR_TRANS: TFloatField;
+    QryIntNomina: TIBQuery;
+    QryPersonal: TIBQuery;
+    StpCalTotalN: TIBStoredProc;
+    StpIsrProyectado: TIBStoredProc;
+    QryIntNominaSERIE_NOMINA: TIntegerField;
+    QryIntNominaCODIGO_EMP: TIntegerField;
+    QryIntNominaCIA_KEY: TSmallintField;
+    QryIntNominaTIPO_NOMINA: TSmallintField;
+    QryIntNominaCOOPERATIVA: TFloatField;
+    QryIntNominaISR: TFloatField;
+    QryIntNominaOTROS_INGRESOS: TFloatField;
+    QryIntNominaOTRAS_DEDUCCIONES: TFloatField;
+    QryIntNominaSALARIO_NETO: TFloatField;
+    QryIntNominaSTATUS_NOMINA: TIBStringField;
+    QryIntNominaNUMERO_CKS: TIntegerField;
+    QryIntNominaMONTO_AFP: TFloatField;
+    QryIntNominaFECHA_NOMINA: TDateTimeField;
+    QryIntNominaSALARIO_BRUTO: TFloatField;
+    QryIntNominaIDSS: TFloatField;
+    QryIntNominaSEGURO_MEDICO: TFloatField;
+    QryIntNominaFECHA_IN: TDateTimeField;
+    QryIntNominaCODIGO_USUARIO: TIntegerField;
+    QryIntNominaCUOTA_PRESTAMO: TFloatField;
+    QryIntNominaTSS: TFloatField;
+    QryIntNominaCOMISION: TFloatField;
+    QryIntNominaSFS_DEPENDIENTES: TFloatField;
+    QryIntNominaSFS_COMPLEMENTARIO: TFloatField;
+    qryEmpleadosFECHAVACACIONES: TDateTimeField;
+    StpIntIsr: TIBStoredProc;
+    tblNominaVACACIONES: TFloatField;
+    tblNominaREGALIA: TFloatField;
+    tblNominaBONIFICACION: TFloatField;
+    qryChequesM: TIBQuery;
+    qryChequesMNUM_TRANS: TFloatField;
+    qryChequesMCODIGO_CIA: TIntegerField;
+    qryChequesMSOL_EXPNO: TIntegerField;
+    qryChequesMCODIGO_EMPLEADO: TIntegerField;
+    qryChequesMFECHA_EMISION: TDateTimeField;
+    qryChequesMBENEFICIARIO: TIBStringField;
+    qryChequesMMONTO: TFloatField;
+    qryChequesMCONCEPTO: TMemoField;
+    qryChequesMNUMERO_CKS: TIntegerField;
+    qryChequesMFECHA_PAGO: TDateTimeField;
+    qryChequesMTIPO_CKS: TSmallintField;
+    qryChequesMCOD_BANCO: TIntegerField;
+    qryChequesMSTATUS: TIBStringField;
+    qryChequesMTIPO_NOMINA: TSmallintField;
+    qryChequesMSUBTIPO: TSmallintField;
+    qryChequesDet: TIBQuery;
+    qryChequesDetSERIE: TFloatField;
+    qryChequesDetNUM_TRANS: TFloatField;
+    qryChequesDetCUENTA1: TIBStringField;
+    qryChequesDetCUENTA2: TIBStringField;
+    qryChequesDetCUENTA3: TIBStringField;
+    qryChequesDetCREDITO: TFloatField;
+    qryChequesDetDEBITO: TFloatField;
+    qryChequesDetSTATUS: TIBStringField;
+    qryChequesDetCOD_CONCEPTO: TIntegerField;
+    qryChequesDetCENTRO_COSTOS: TIntegerField;
+    dtChequesM: TDataSource;
+    dtChequesDet: TDataSource;
+    updChequesM: TIBUpdateSQL;
+    updChequesDet: TIBUpdateSQL;
+    stpCksDanados: TIBStoredProc;
+    stpNumcks: TIBStoredProc;
+    QryCksNomM: TIBQuery;
+    QryCksNomMNUM_TRANS: TFloatField;
+    QryCksNomMCODIGO_CIA: TIntegerField;
+    QryCksNomMSOL_EXPNO: TIntegerField;
+    QryCksNomMCODIGO_EMPLEADO: TIntegerField;
+    QryCksNomMFECHA_EMISION: TDateTimeField;
+    QryCksNomMBENEFICIARIO: TIBStringField;
+    QryCksNomMMONTO: TFloatField;
+    QryCksNomMCONCEPTO: TMemoField;
+    QryCksNomMNUMERO_CKS: TIntegerField;
+    QryCksNomMFECHA_PAGO: TDateTimeField;
+    QryCksNomMTIPO_CKS: TSmallintField;
+    QryCksNomMCOD_BANCO: TIntegerField;
+    QryCksNomMSTATUS: TIBStringField;
+    QryCksNomMTIPO_NOMINA: TSmallintField;
+    QryCksNomMSUBTIPO: TSmallintField;
+    dtCksNomM: TDataSource;
+    UpdCksNomM: TIBUpdateSQL;
+    QryRepCksN: TIBQuery;
+    QryRepCksNNUM_TRANS: TFloatField;
+    QryRepCksNCODIGO_CIA: TIntegerField;
+    QryRepCksNSOL_EXPNO: TIntegerField;
+    QryRepCksNCODIGO_EMPLEADO: TIntegerField;
+    QryRepCksNFECHA_EMISION: TDateTimeField;
+    QryRepCksNBENEFICIARIO: TIBStringField;
+    QryRepCksNMONTO: TFloatField;
+    QryRepCksNCONCEPTO: TMemoField;
+    QryRepCksNNUMERO_CKS: TIntegerField;
+    QryRepCksNFECHA_PAGO: TDateTimeField;
+    QryRepCksNTIPO_CKS: TSmallintField;
+    QryRepCksNCOD_BANCO: TIntegerField;
+    QryRepCksNSTATUS: TIBStringField;
+    QryRepCksNTIPO_NOMINA: TSmallintField;
+    QryRepCksNSUBTIPO: TSmallintField;
+    dtRepCksN: TDataSource;
+    UpdRepCksN: TIBUpdateSQL;
+    StpNumCksNom: TIBStoredProc;
+    QryPersonalCODIGO: TIntegerField;
+    QryPersonalCODIGO_CIA: TIntegerField;
+    QryPersonalNOMBRE: TIBStringField;
+    QryPersonalAPELLIDO: TIBStringField;
+    QryPersonalCEDULA: TIBStringField;
+    QryPersonalFOTO: TBlobField;
+    QryPersonalPASSPORT: TIBStringField;
+    QryPersonalCALLE: TIBStringField;
+    QryPersonalNUM_CASA: TSmallintField;
+    QryPersonalCIUDAD: TIBStringField;
+    QryPersonalPAIS: TIBStringField;
+    QryPersonalTELEF_CASA: TIBStringField;
+    QryPersonalTELEF_OFICINA: TIBStringField;
+    QryPersonalCELULAR: TIBStringField;
+    QryPersonalEMAIL: TIBStringField;
+    QryPersonalSEXO: TIBStringField;
+    QryPersonalESTADO_CIVIL: TIBStringField;
+    QryPersonalTELEF_REFERENCIA: TIBStringField;
+    QryPersonalNOMBRE_REFERENCIA: TIBStringField;
+    QryPersonalFECHA_NAC: TDateTimeField;
+    QryPersonalNACIONALIDAD: TIBStringField;
+    QryPersonalFECHA_ENTRADA: TDateTimeField;
+    QryPersonalFECHA_SALIDA: TDateTimeField;
+    QryPersonalSALARIO: TFloatField;
+    QryPersonalTIPO_NOMINA: TSmallintField;
+    QryPersonalTIPO_EMPLEADO: TSmallintField;
+    QryPersonalDEPTO_EMP: TSmallintField;
+    QryPersonalSECCION: TSmallintField;
+    QryPersonalCARGO: TSmallintField;
+    QryPersonalPAGA_AFP: TSmallintField;
+    QryPersonalPAGA_TSS: TSmallintField;
+    QryPersonalSTATUS: TIBStringField;
+    QryPersonalFECHA_IN: TDateTimeField;
+    QryPersonalIN_POR: TIBStringField;
+    QryPersonalFECHA_MOD: TDateTimeField;
+    QryPersonalMOD_POR: TIBStringField;
+    QryPersonalLICENCIA: TIBStringField;
+    QryPersonalFECHA_VENCE_LICENCIA: TDateTimeField;
+    QryPersonalFECHAVACACIONES: TDateTimeField;
+    QryPersonalPATH_FOTO_EMP: TIBStringField;
+    QryPersonalDDEPTO: TIBStringField;
+    QryPersonalDSECCION: TIBStringField;
+    QryPersonalOCUPACIOND: TIBStringField;
+    QryPersonalNOMBRECOMPLETO: TIBStringField;
+    qryRepListNombNom: TIBQuery;
+    qryRepListNombNomDEPARTAMENTO: TIBStringField;
+    qryRepListNombNomCODIGO: TIntegerField;
+    qryRepListNombNomNOMBRE: TIBStringField;
+    qryRepListNombNomAPELLIDO: TIBStringField;
+    qryRepListNombNomDEPTO_EMP: TSmallintField;
+    qryRepListNombNomSTATUS_EMP: TIBStringField;
+    qryRepListNombNomSECCION: TIBStringField;
+    qryRepListNombNomCODIGO1: TIntegerField;
+    qryRepListNombNomFECHA_NOMINA: TDateTimeField;
+    qryRepListNombNomNUMERO_CKS: TIntegerField;
+    qryRepListNombNom_bonibase: TIBQuery;
+    qryRepListNombNomBase: TIBQuery;
+    qrypersonalbase: TIBQuery;
+    StpIntDeduc: TIBStoredProc;
+    dsQryPersonal: TDataSource;
+    qryRepNominaREGALIA: TFloatField;
+    qryRepNominaVACACIONES: TFloatField;
+    qryRepNominaBONIFICACION: TFloatField;
+    QryRepNomGralREGALIA: TFloatField;
+    QryRepNomGralVACACIONES: TFloatField;
+    QryRepNomGralBONIFICACION: TFloatField;
+    QryRepNomGralBMI: TIntegerField;
+    QryRepNomGralCODIGODPTO: TSmallintField;
+    qryHist: TIBDataSet;
+    qryHistSERIE_HISTORICO: TIntegerField;
+    qryHistCODIGO: TIntegerField;
+    qryHistCIA_KEY: TSmallintField;
+    qryHistTELEFONO: TIBStringField;
+    qryHistCODIGO_TIPO_TRANS: TSmallintField;
+    qryHistINF_NDEPTO: TSmallintField;
+    qryHistDIRECCION: TIBStringField;
+    qryHistINF_NSECCION: TIBStringField;
+    qryHistOCUPACION: TIBStringField;
+    qryHistFECHA_ENTRADA: TDateTimeField;
+    qryHistFECHA_SALIDA: TDateTimeField;
+    qryHistSALARIO_ANTERIOR: TFloatField;
+    qryHistSALARIO_NUEVO: TFloatField;
+    qryHistSTATUS_HIST: TIBStringField;
+    qryHistOBSERVACIONES: TMemoField;
+    qryHistTIPO_EMPLEADO: TSmallintField;
+    qryHistTIPO_NOMINA: TSmallintField;
     procedure tblNominaSALARIO_BRUTOChange(Sender: TField);
     procedure tblDependienteNomMasterAfterScroll(DataSet: TDataSet);
     procedure QryRepNomGralCalcFields(DataSet: TDataSet);
     procedure tblNominaCalcFields(DataSet: TDataSet);
+    procedure qryChequesMAfterScroll(DataSet: TDataSet);
+    procedure QryPersonalFilterRecord(DataSet: TDataSet;
+      var Accept: Boolean);
   private
     { Private declarations }
   public
     { Public declarations }
+    statusemp:string;
   end;
 
 var
@@ -520,15 +723,17 @@ begin
   QryRepNomGralIDSS.Value +
   QryRepNomGralISR.Value  +
   QryRepNomGralCooperativa.Value +
-  QryRepNomGralBMI.Value         +
+  //QryRepNomGralBMI.Value         +
   QryRepNomGralTSS.Value         +
   QryRepNomGralOtras_Deducciones.Value +
   QryRepNomGralMONTO_AFP.Value         +
-  QryRepNomGralPREST_OFIC.Value
-  ;
+  QryRepNomGralPREST_OFIC.Value;                
 
   QryRepNomGralTotal_Ing.Value := QryRepNomGralSALARIO_BRUTO.Value
-  + QryRepNomGralOTROS_INGRESOS.Value;
+  + QryRepNomGralOTROS_INGRESOS.Value;// +
+  //QryRepNomGralREGALIA.Value+
+  //QryRepNomGralVACACIONES.Value+
+  //QryRepNomGralBONIFICACION.Value;
 end;
 
 procedure TdmNomina.tblNominaCalcFields(DataSet: TDataSet);
@@ -556,6 +761,25 @@ begin
      Begin
        dmNomina.tblNominaDiasTrab.Value := 0;//dmNomina.tblNominaDSalario.Value / glbDNomina;
      End;
+end;
+
+procedure TdmNomina.qryChequesMAfterScroll(DataSet: TDataSet);
+begin
+  with qryChequesM do
+  begin
+    qryChequesDet.DisableControls;
+    qryChequesDet.Close;
+    qryChequesDet.Params[0].Value := QryChequesmNum_Trans.Value;
+    qryChequesDet.Open;
+    qryChequesDet.EnableControls;
+  end;
+end;
+
+procedure TdmNomina.QryPersonalFilterRecord(DataSet: TDataSet;
+  var Accept: Boolean);
+begin
+  if (statusemp <> '') then
+  Accept:=DataSet['Status'] = chr(39)+statusemp+chr(39);
 end;
 
 end.

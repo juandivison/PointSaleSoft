@@ -2,8 +2,8 @@ object dmcks: Tdmcks
   OldCreateOrder = False
   Left = 500
   Top = 147
-  Height = 506
-  Width = 659
+  Height = 668
+  Width = 995
   object qrybancos: TIBDataSet
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
@@ -2055,5 +2055,87 @@ object dmcks: Tdmcks
     Transaction = dmConectar.IBTransaction1
     Left = 640
     Top = 344
+  end
+  object tTipocheque: TIBDataSet
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    DeleteSQL.Strings = (
+      'delete from TIPO_CKS'
+      'where'
+      '  CODIGO = :OLD_CODIGO')
+    InsertSQL.Strings = (
+      'insert into TIPO_CKS'
+      '  (CODIGO, DESCRIPCION)'
+      'values'
+      '  (:CODIGO, :DESCRIPCION)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  CODIGO,'
+      '  DESCRIPCION'
+      'from TIPO_CKS '
+      'where'
+      '  CODIGO = :CODIGO')
+    SelectSQL.Strings = (
+      'Select * from TIPO_CKS')
+    ModifySQL.Strings = (
+      'update TIPO_CKS'
+      'set'
+      '  CODIGO = :CODIGO,'
+      '  DESCRIPCION = :DESCRIPCION'
+      'where'
+      '  CODIGO = :OLD_CODIGO')
+    Left = 704
+    Top = 40
+    object tTipochequeCODIGO: TSmallintField
+      FieldName = 'CODIGO'
+      Origin = 'TIPO_CKS.CODIGO'
+      Required = True
+    end
+    object tTipochequeDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'TIPO_CKS.DESCRIPCION'
+      Size = 12
+    end
+  end
+  object DataSource1: TDataSource
+    DataSet = tTipocheque
+    Left = 704
+    Top = 88
+  end
+  object QryCks_Clasif: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT TIPO_CKS, DESCRIPCION, STATUS'
+      'FROM CHEQUES_PTIPO Cheques_ptipo'
+      'where Cheques_ptipo.Status = '#39'A'#39
+      'order by Cheques_ptipo.Tipo_Cks')
+    Left = 56
+    Top = 424
+    object QryCks_ClasifTIPO_CKS: TSmallintField
+      FieldName = 'TIPO_CKS'
+      Origin = 'CHEQUES_PTIPO.TIPO_CKS'
+      Required = True
+    end
+    object QryCks_ClasifDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'CHEQUES_PTIPO.DESCRIPCION'
+      Size = 30
+    end
+    object QryCks_ClasifSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'CHEQUES_PTIPO.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+  end
+  object dtCks_Clasif: TDataSource
+    DataSet = QryCks_Clasif
+    Left = 56
+    Top = 472
   end
 end

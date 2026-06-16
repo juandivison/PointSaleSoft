@@ -1,6 +1,6 @@
 object frmCartaRutaTemplate: TfrmCartaRutaTemplate
-  Left = 405
-  Top = 170
+  Left = 392
+  Top = 138
   Width = 951
   Height = 744
   Caption = 'Template Carta de Ruta'
@@ -127,7 +127,7 @@ object frmCartaRutaTemplate: TfrmCartaRutaTemplate
     end
     object lblDireccionPie: TLabel
       Left = 648
-      Top = 60
+      Top = 92
       Width = 60
       Height = 13
       Caption = 'Direccion pie'
@@ -145,6 +145,13 @@ object frmCartaRutaTemplate: TfrmCartaRutaTemplate
       Width = 46
       Height = 13
       Caption = 'Ruta logo'
+    end
+    object lblNombreFirma: TLabel
+      Left = 648
+      Top = 59
+      Width = 66
+      Height = 13
+      Caption = 'Nombre Firma'
     end
     object edtNumeroCartaTemplate: TEdit
       Left = 144
@@ -183,7 +190,7 @@ object frmCartaRutaTemplate: TfrmCartaRutaTemplate
     end
     object edtDireccionPie: TEdit
       Left = 744
-      Top = 56
+      Top = 88
       Width = 161
       Height = 21
       TabOrder = 5
@@ -210,6 +217,13 @@ object frmCartaRutaTemplate: TfrmCartaRutaTemplate
       Caption = 'Buscar logo'
       TabOrder = 8
       OnClick = btnBuscarLogoClick
+    end
+    object edtNombreFirma: TEdit
+      Left = 744
+      Top = 54
+      Width = 161
+      Height = 21
+      TabOrder = 9
     end
   end
   object grpTextos: TGroupBox

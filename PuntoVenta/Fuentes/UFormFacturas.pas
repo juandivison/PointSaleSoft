@@ -1,7 +1,7 @@
 unit UFormFacturas;
 
 interface
-
+                        
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Grids, DBGrids, RXDBCtrl, StdCtrls, Buttons, DBCtrls, EditNew,
@@ -115,6 +115,9 @@ type
     BitBtn16: TBitBtn;
     CartadeRuta1: TMenuItem;
     CartadeSaldo1: TMenuItem;
+    CheckBox3: TCheckBox;
+    VerificarMontos1: TMenuItem;
+    chkImpenPDF: TCheckBox;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure cboxClientesChange(Sender: TObject);
@@ -160,6 +163,7 @@ type
     procedure SpeedButton1Click(Sender: TObject);
     procedure BitBtn16Click(Sender: TObject);
     procedure CartadeSaldo1Click(Sender: TObject);
+    procedure VerificarMontos1Click(Sender: TObject);
   private
     { Private declarations }
     procedure VerificaVendedor;
@@ -202,7 +206,8 @@ USES UDatModFactura, uglobal, UDatModClientes, UFormCambiarCteFact,
   UDatModPagoTarjeta, UFormUpdateMontopagado, UUtilecf, UUtilecftimbre,
   UfrmlECF_TIMBRE_LOG, UFormAsignareCFAVentasSineCF, UModoConsumoToCredito,
   UBuscarClientesPersonasP, UFormNCFAsignados, USetClaveMaestra,
-  UFrmCartaRutaTemplate, UFrmCartaSaldoTemplate;
+  UFrmCartaRutaTemplate, UFrmCartaSaldoTemplate,
+  UformConsultarVerificaMontosVtas;
 {$R *.dfm}
 
 procedure TfrmConsultaFacturas.BitBtn1Click(Sender: TObject);
@@ -510,7 +515,7 @@ begin
     AsignareCFSerieE1.Enabled:=false;
   end;
   
-  if  glbSam = 0 then
+  if  glbSam = 0 then                    
   BitBtn14.Visible:=false;
   
   if (GlBLimao = 1) or (GlBInMobi = 1) then
@@ -701,7 +706,7 @@ begin
   begin
     //$0080FFFF  ---Amarillo
     BackGround:=$00CFAAA9;//gris //no tiene eCF-NCF
-    Label10.Visible:=True;
+    Label10.Visible:=false;
   end
   else
      if (dmfactura.qryDetPagos.RecordCount = 0) and
@@ -710,10 +715,10 @@ begin
     if (GlbActivaECF = 1) and dmfactura.qryVentaFacturaSERIE_NCF_ASIGNADO.IsNull then
     begin
       BackGround:=$0080FFFF; //no tiene eCF-NCF
-      Label10.Visible:=True;
+      Label10.Visible:=false;
     end else
     BackGround:=$0091F7F1;
-    lblDetPago.Visible:=True;
+    lblDetPago.Visible:=false;
     if (dmfactura.qryVentaFacturaFORMA_PAGO.Value = 1) then
     begin
       if AutoAutualizaFPago1.Checked then
@@ -884,7 +889,7 @@ end;
 
 procedure TfrmConsultaFacturas.FormShow(Sender: TObject);
 begin
-  if GlbMutur = 1 then
+  if (GLBMutur = 1) or (GLBMotor = 1) then
   begin
     BitBtn16.Visible:=True;
     CartadeRuta1.Visible:=True;
@@ -1414,7 +1419,7 @@ begin
   end;
   if not GetVerificaeCF(dmFactura.qryVentaFacturaNumero.Value) then
   MessageDlg('Venta no tiene e-CF asignado o validado.',mtInformation,[mbOk],0)
-  else MessageDlg('Venta tiene e-CF asignado.',mtInformation,[mbOk],0);
+  else MessageDlg('Venta tiene e-CF validado.',mtInformation,[mbOk],0);
 end;              
 
 procedure TfrmConsultaFacturas.ConsultaTimbreeCF1Click(Sender: TObject);
@@ -1959,6 +1964,16 @@ begin
     ShowModal;
   finally
   Free;
+  end;
+end;
+
+procedure TfrmConsultaFacturas.VerificarMontos1Click(Sender: TObject);
+begin
+  frmConsultarVtasVerDiff:=TfrmConsultarVtasVerDiff.Create(nil);
+  try
+    frmConsultarVtasVerDiff.showmodal;
+  finally
+  freeAndNil(frmConsultarVtasVerDiff);
   end;
 end;
 

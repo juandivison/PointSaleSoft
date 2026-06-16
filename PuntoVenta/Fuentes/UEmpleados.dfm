@@ -1,8 +1,8 @@
 object frmEmpleados: TfrmEmpleados
-  Left = 284
-  Top = 118
-  Width = 822
-  Height = 529
+  Left = 385
+  Top = 170
+  Width = 866
+  Height = 561
   Caption = 'Empleados'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -18,13 +18,13 @@ object frmEmpleados: TfrmEmpleados
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 814
+    Width = 858
     Height = 41
     Align = alTop
     Color = 10547677
     TabOrder = 0
     object RxSpeedButton1: TRxSpeedButton
-      Left = 502
+      Left = 603
       Top = 4
       Width = 95
       Height = 33
@@ -45,6 +45,36 @@ object frmEmpleados: TfrmEmpleados
       Layout = blGlyphLeft
       NumGlyphs = 2
       OnClick = RxSpeedButton1Click
+    end
+    object RxSpeedButton2: TRxSpeedButton
+      Left = 302
+      Top = 3
+      Width = 98
+      Height = 33
+      DropDownMenu = PopupMenuBuscar
+      Caption = '&Buscar'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clNavy
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsBold]
+      Glyph.Data = {
+        76010000424D7601000000000000760000002800000020000000100000000100
+        0400000000000001000000000000000000001000000010000000000000000000
+        800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+        FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333333333
+        33033333333333333F7F3333333333333000333333333333F777333333333333
+        000333333333333F777333333333333000333333333333F77733333333333300
+        033333333FFF3F777333333700073B703333333F7773F77733333307777700B3
+        33333377333777733333307F8F8F7033333337F333F337F3333377F8F9F8F773
+        3333373337F3373F3333078F898F870333337F33F7FFF37F333307F99999F703
+        33337F377777337F3333078F898F8703333373F337F33373333377F8F9F8F773
+        333337F3373337F33333307F8F8F70333333373FF333F7333333330777770333
+        333333773FF77333333333370007333333333333777333333333}
+      Layout = blGlyphLeft
+      NumGlyphs = 2
+      ParentFont = False
+      Transparent = True
     end
     object btnInsertar: TBitBtn
       Left = 7
@@ -118,7 +148,7 @@ object frmEmpleados: TfrmEmpleados
       NumGlyphs = 2
     end
     object btnCancelar: TBitBtn
-      Left = 303
+      Left = 404
       Top = 4
       Width = 95
       Height = 33
@@ -142,7 +172,7 @@ object frmEmpleados: TfrmEmpleados
       NumGlyphs = 2
     end
     object btnCerarAbrirres: TBitBtn
-      Left = 403
+      Left = 504
       Top = 4
       Width = 95
       Height = 33
@@ -169,7 +199,7 @@ object frmEmpleados: TfrmEmpleados
       NumGlyphs = 2
     end
     object BitBtn2: TBitBtn
-      Left = 600
+      Left = 701
       Top = 4
       Width = 95
       Height = 33
@@ -180,8 +210,8 @@ object frmEmpleados: TfrmEmpleados
   object PageControl1: TPageControl
     Left = 0
     Top = 41
-    Width = 814
-    Height = 457
+    Width = 858
+    Height = 489
     ActivePage = tabEmpleados
     Align = alClient
     TabOrder = 1
@@ -190,7 +220,7 @@ object frmEmpleados: TfrmEmpleados
       PopupMenu = PopupMenu1
       object Label1: TLabel
         Left = 8
-        Top = 3
+        Top = 2
         Width = 44
         Height = 16
         Caption = 'Codigo'
@@ -198,7 +228,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object Label2: TLabel
         Left = 8
-        Top = 46
+        Top = 45
         Width = 49
         Height = 16
         Caption = 'Nombre'
@@ -206,7 +236,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object Label3: TLabel
         Left = 8
-        Top = 88
+        Top = 87
         Width = 50
         Height = 16
         Caption = 'Apellido'
@@ -214,7 +244,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object Label5: TLabel
         Left = 208
-        Top = 296
+        Top = 332
         Width = 37
         Height = 16
         Caption = 'Status'
@@ -222,49 +252,49 @@ object frmEmpleados: TfrmEmpleados
       end
       object Label6: TLabel
         Left = 208
-        Top = 250
+        Top = 289
         Width = 43
         Height = 16
         Caption = 'Salario'
       end
       object Label7: TLabel
-        Left = 205
-        Top = 46
+        Left = 208
+        Top = 45
         Width = 42
         Height = 16
         Caption = 'Celular'
       end
       object Label8: TLabel
         Left = 8
-        Top = 214
+        Top = 289
         Width = 83
         Height = 16
         Caption = 'Numero Casa'
       end
       object Label9: TLabel
         Left = 8
-        Top = 172
+        Top = 251
         Width = 31
         Height = 16
         Caption = 'Calle'
       end
       object Label10: TLabel
         Left = 208
-        Top = 8
+        Top = 2
         Width = 54
         Height = 16
         Caption = 'Telefono'
       end
       object Label11: TLabel
         Left = 208
-        Top = 168
+        Top = 166
         Width = 81
         Height = 16
         Caption = 'Nacionalidad'
       end
       object Label12: TLabel
         Left = 208
-        Top = 212
+        Top = 249
         Width = 88
         Height = 16
         Caption = 'Fecha Entrada'
@@ -279,14 +309,14 @@ object frmEmpleados: TfrmEmpleados
       end
       object Label13: TLabel
         Left = 208
-        Top = 125
+        Top = 88
         Width = 34
         Height = 16
         Caption = 'Email'
       end
       object Label14: TLabel
-        Left = 7
-        Top = 251
+        Left = 8
+        Top = 330
         Width = 43
         Height = 16
         Caption = 'Ciudad'
@@ -296,7 +326,7 @@ object frmEmpleados: TfrmEmpleados
         Top = 128
         Width = 43
         Height = 16
-        Caption = 'Cedula'
+        Caption = 'C'#233'dula'
         FocusControl = DBEdit3
       end
       object Label20: TLabel
@@ -307,15 +337,15 @@ object frmEmpleados: TfrmEmpleados
         Caption = 'Foto'
       end
       object Label4: TLabel
-        Left = 7
-        Top = 291
+        Left = 8
+        Top = 370
         Width = 27
         Height = 16
         Caption = 'Pais'
       end
       object Label16: TLabel
         Left = 80
-        Top = 3
+        Top = 2
         Width = 20
         Height = 16
         Caption = 'Cia'
@@ -323,14 +353,14 @@ object frmEmpleados: TfrmEmpleados
       end
       object Label17: TLabel
         Left = 400
-        Top = 8
+        Top = 2
         Width = 37
         Height = 16
         Caption = 'Cargo'
       end
       object Label26: TLabel
         Left = 400
-        Top = 125
+        Top = 128
         Width = 78
         Height = 16
         Caption = 'Tipo Nomina'
@@ -360,7 +390,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object Label37: TLabel
         Left = 400
-        Top = 85
+        Top = 87
         Width = 86
         Height = 16
         Caption = 'Departamento'
@@ -375,7 +405,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object Label38: TLabel
         Left = 400
-        Top = 48
+        Top = 45
         Width = 49
         Height = 16
         Caption = 'Seccion'
@@ -400,7 +430,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object SpeedButton2: TSpeedButton
         Left = 585
-        Top = 65
+        Top = 62
         Width = 15
         Height = 22
         Caption = '...'
@@ -408,11 +438,55 @@ object frmEmpleados: TfrmEmpleados
       end
       object SpeedButton3: TSpeedButton
         Left = 584
-        Top = 22
+        Top = 19
         Width = 15
         Height = 22
         Caption = '...'
         OnClick = SpeedButton3Click
+      end
+      object Label18: TLabel
+        Left = 8
+        Top = 166
+        Width = 149
+        Height = 16
+        Caption = 'Licencia de Conducir No.'
+        FocusControl = DBEdit16
+      end
+      object Label19: TLabel
+        Left = 8
+        Top = 210
+        Width = 136
+        Height = 16
+        Caption = 'Fecha Vence Licencia '
+        FocusControl = DBEdit17
+      end
+      object Image1: TImage
+        Left = 648
+        Top = 24
+        Width = 105
+        Height = 105
+      end
+      object Label21: TLabel
+        Left = 209
+        Top = 128
+        Width = 54
+        Height = 16
+        Caption = 'Passport'
+        FocusControl = DBEdit3
+      end
+      object Label22: TLabel
+        Left = 208
+        Top = 209
+        Width = 109
+        Height = 16
+        Caption = 'Fecha Nacimiento'
+      end
+      object Label23: TLabel
+        Left = 400
+        Top = 209
+        Width = 120
+        Height = 16
+        Caption = 'Tipo Ingresos/Pago'
       end
       object DBEdit1: TDBEdit
         Left = 8
@@ -422,6 +496,7 @@ object frmEmpleados: TfrmEmpleados
         DataField = 'CODIGO'
         DataSource = dstblEmpleados
         TabOrder = 0
+        OnChange = DBEdit1Change
       end
       object DBEdit2: TDBEdit
         Left = 8
@@ -443,7 +518,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object DBEdit5: TDBEdit
         Left = 208
-        Top = 311
+        Top = 347
         Width = 33
         Height = 24
         CharCase = ecUpperCase
@@ -452,67 +527,67 @@ object frmEmpleados: TfrmEmpleados
         TabOrder = 15
       end
       object DBEdit7: TDBEdit
-        Left = 206
-        Top = 61
+        Left = 208
+        Top = 62
         Width = 186
         Height = 24
         DataField = 'CELULAR'
         DataSource = dstblEmpleados
-        TabOrder = 10
+        TabOrder = 17
       end
       object DBEdit8: TDBEdit
         Left = 8
-        Top = 228
-        Width = 186
+        Top = 307
+        Width = 189
         Height = 24
         DataField = 'NUM_CASA'
         DataSource = dstblEmpleados
-        TabOrder = 6
+        TabOrder = 11
       end
       object DBEdit9: TDBEdit
         Left = 208
-        Top = 22
+        Top = 19
         Width = 186
         Height = 24
         DataField = 'TELEF_CASA'
         DataSource = dstblEmpleados
-        TabOrder = 9
+        TabOrder = 16
       end
       object DBEdit10: TDBEdit
         Left = 8
-        Top = 188
-        Width = 186
+        Top = 267
+        Width = 189
         Height = 24
         DataField = 'CALLE'
         DataSource = dstblEmpleados
-        TabOrder = 5
+        TabOrder = 9
       end
       object DBEdit11: TDBEdit
-        Left = 207
+        Left = 208
         Top = 183
         Width = 186
         Height = 24
         DataField = 'NACIONALIDAD'
         DataSource = dstblEmpleados
-        TabOrder = 12
+        TabOrder = 19
       end
       object DBEdit13: TDBEdit
-        Left = 206
-        Top = 143
+        Left = 208
+        Top = 106
         Width = 186
         Height = 24
         DataField = 'EMAIL'
         DataSource = dstblEmpleados
-        TabOrder = 11
+        TabOrder = 18
       end
       object DBEdit14: TDBEdit
-        Left = 7
-        Top = 267
-        Width = 186
+        Left = 8
+        Top = 346
+        Width = 189
         Height = 24
         DataField = 'CIUDAD'
         DataSource = dstblEmpleados
-        TabOrder = 7
+        TabOrder = 13
       end
       object DBEdit15: TDBEdit
         Left = 8
@@ -530,7 +605,7 @@ object frmEmpleados: TfrmEmpleados
         Height = 105
         DataField = 'FOTO'
         DataSource = dstblEmpleados
-        TabOrder = 22
+        TabOrder = 26
       end
       object BitBtn1: TBitBtn
         Left = 647
@@ -541,7 +616,7 @@ object frmEmpleados: TfrmEmpleados
         Caption = 'Asignar &Foto'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 21
+        TabOrder = 25
         OnClick = BitBtn1Click
         Glyph.Data = {
           76010000424D7601000000000000760000002800000020000000100000000100
@@ -564,7 +639,7 @@ object frmEmpleados: TfrmEmpleados
         Width = 40
         Height = 25
         Action = DataSetFirst1
-        TabOrder = 23
+        TabOrder = 27
         Glyph.Data = {
           76010000424D7601000000000000760000002800000020000000100000000100
           04000000000000010000130B0000130B00001000000000000000000000000000
@@ -586,7 +661,7 @@ object frmEmpleados: TfrmEmpleados
         Width = 40
         Height = 25
         Action = DataSetPrior1
-        TabOrder = 24
+        TabOrder = 28
         Glyph.Data = {
           76010000424D7601000000000000760000002800000020000000100000000100
           04000000000000010000120B0000120B00001000000000000000000000000000
@@ -608,7 +683,7 @@ object frmEmpleados: TfrmEmpleados
         Width = 40
         Height = 25
         Action = DataSetNext1
-        TabOrder = 25
+        TabOrder = 29
         Glyph.Data = {
           76010000424D7601000000000000760000002800000020000000100000000100
           04000000000000010000120B0000120B00001000000000000000000000000000
@@ -630,7 +705,7 @@ object frmEmpleados: TfrmEmpleados
         Width = 40
         Height = 25
         Action = DataSetLast1
-        TabOrder = 26
+        TabOrder = 30
         Glyph.Data = {
           76010000424D7601000000000000760000002800000020000000100000000100
           04000000000000010000130B0000130B00001000000000000000000000000000
@@ -648,31 +723,31 @@ object frmEmpleados: TfrmEmpleados
       end
       object DBDateEdit1: TDBDateEdit
         Left = 208
-        Top = 228
+        Top = 267
         Width = 121
         Height = 21
         DataField = 'FECHA_ENTRADA'
         DataSource = dstblEmpleados
         NumGlyphs = 2
-        TabOrder = 13
+        TabOrder = 10
       end
       object DBEdit4: TDBEdit
-        Left = 7
-        Top = 306
-        Width = 186
+        Left = 8
+        Top = 385
+        Width = 189
         Height = 24
         DataField = 'PAIS'
         DataSource = dstblEmpleados
-        TabOrder = 8
+        TabOrder = 14
       end
       object DBEdit6: TDBEdit
-        Left = 207
-        Top = 267
+        Left = 208
+        Top = 305
         Width = 122
         Height = 24
         DataField = 'SALARIO'
         DataSource = dstblEmpleados
-        TabOrder = 14
+        TabOrder = 12
       end
       object DBEdit12: TDBEdit
         Left = 80
@@ -685,7 +760,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object GroupBox1: TGroupBox
         Left = 400
-        Top = 213
+        Top = 265
         Width = 185
         Height = 84
         Caption = '* &Deducciones'
@@ -695,7 +770,7 @@ object frmEmpleados: TfrmEmpleados
         Font.Name = 'MS Sans Serif'
         Font.Style = [fsBold]
         ParentFont = False
-        TabOrder = 27
+        TabOrder = 31
         object DBCheckBox1: TDBCheckBox
           Left = 8
           Top = 16
@@ -742,7 +817,7 @@ object frmEmpleados: TfrmEmpleados
       end
       object RxDBLookupCombo1: TRxDBLookupCombo
         Left = 400
-        Top = 102
+        Top = 103
         Width = 185
         Height = 23
         DropDownCount = 8
@@ -751,11 +826,11 @@ object frmEmpleados: TfrmEmpleados
         LookupField = 'CODIGO'
         LookupDisplay = 'NOMBRE'
         LookupSource = dmNomina.DtDepto
-        TabOrder = 18
+        TabOrder = 22
       end
       object RxDBLookupCombo2: TRxDBLookupCombo
         Left = 400
-        Top = 65
+        Top = 62
         Width = 185
         Height = 23
         DropDownCount = 8
@@ -764,11 +839,11 @@ object frmEmpleados: TfrmEmpleados
         LookupField = 'CODIGO'
         LookupDisplay = 'NOMBRE'
         LookupSource = dmNomina.dtDeptoSeccion
-        TabOrder = 17
+        TabOrder = 21
       end
       object RxDBLookupCombo3: TRxDBLookupCombo
         Left = 400
-        Top = 24
+        Top = 19
         Width = 185
         Height = 23
         DropDownCount = 8
@@ -777,7 +852,7 @@ object frmEmpleados: TfrmEmpleados
         LookupField = 'CODIGO'
         LookupDisplay = 'NOMBRE'
         LookupSource = dmNomina.dtCargosEmp
-        TabOrder = 16
+        TabOrder = 20
       end
       object RxDBLookupCombo4: TRxDBLookupCombo
         Left = 400
@@ -790,7 +865,7 @@ object frmEmpleados: TfrmEmpleados
         LookupField = 'CODIGO'
         LookupDisplay = 'DESCRIPCION'
         LookupSource = dmNomina.DtTipoNom
-        TabOrder = 19
+        TabOrder = 23
       end
       object RxDBLookupCombo5: TRxDBLookupCombo
         Left = 400
@@ -803,7 +878,58 @@ object frmEmpleados: TfrmEmpleados
         LookupField = 'CODIGO_TIPO_EMP'
         LookupDisplay = 'DESCRIPCION'
         LookupSource = dmNomina.DtTipoEmp
-        TabOrder = 20
+        TabOrder = 24
+        OnExit = RxDBLookupCombo5Exit
+      end
+      object DBEdit16: TDBEdit
+        Left = 8
+        Top = 183
+        Width = 189
+        Height = 24
+        DataField = 'LICENCIA'
+        DataSource = dstblEmpleados
+        TabOrder = 6
+      end
+      object DBEdit17: TDBEdit
+        Left = 8
+        Top = 228
+        Width = 189
+        Height = 24
+        DataField = 'FECHA_VENCE_LICENCIA'
+        DataSource = dstblEmpleados
+        TabOrder = 7
+      end
+      object DBEdit18: TDBEdit
+        Left = 207
+        Top = 143
+        Width = 186
+        Height = 24
+        DataField = 'PASSPORT'
+        DataSource = dstblEmpleados
+        TabOrder = 5
+      end
+      object DBDateEdit2: TDBDateEdit
+        Left = 208
+        Top = 227
+        Width = 121
+        Height = 21
+        DataField = 'FECHA_NAC'
+        DataSource = dstblEmpleados
+        NumGlyphs = 2
+        TabOrder = 8
+      end
+      object RxDBLookupCombo6: TRxDBLookupCombo
+        Left = 400
+        Top = 227
+        Width = 185
+        Height = 23
+        DropDownCount = 8
+        DataField = 'TIPO_ING'
+        DataSource = dstblEmpleados
+        LookupField = 'CODIGO'
+        LookupDisplay = 'DESCRIPCION'
+        LookupSource = dstblTipoIngEmp
+        TabOrder = 32
       end
     end
     object tabExaminar: TTabSheet
@@ -812,8 +938,8 @@ object frmEmpleados: TfrmEmpleados
       object RxDBGrid1: TRxDBGrid
         Left = 0
         Top = 0
-        Width = 657
-        Height = 436
+        Width = 850
+        Height = 458
         Align = alClient
         DataSource = dstblEmpleados
         PopupMenu = PopupMenu1
@@ -833,12 +959,6 @@ object frmEmpleados: TfrmEmpleados
           item
             Expanded = False
             FieldName = 'CODIGO_CIA'
-            Width = 64
-            Visible = True
-          end
-          item
-            Expanded = False
-            FieldName = 'FOTO'
             Width = 64
             Visible = True
           end
@@ -1034,6 +1154,12 @@ object frmEmpleados: TfrmEmpleados
           end
           item
             Expanded = False
+            FieldName = 'FOTO'
+            Width = 64
+            Visible = True
+          end
+          item
+            Expanded = False
             FieldName = 'FECHA_MOD'
             Width = 64
             Visible = True
@@ -1074,6 +1200,40 @@ object frmEmpleados: TfrmEmpleados
             Expanded = False
             FieldName = 'SALARIO'
             Width = 64
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'PATH_FOTO_EMP'
+            Width = 64
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'LICENCIA'
+            Width = 64
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'FECHA_VENCE_LICENCIA'
+            Width = 64
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'FECHAVACACIONES'
+            Width = 64
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'TIPO_ING'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'FECHA_ULT_NOM'
             Visible = True
           end>
       end
@@ -2789,5 +2949,56 @@ object frmEmpleados: TfrmEmpleados
       3DF647358EB5C926BB1D15DFBD7EBB382E43F6EE2A52BA00EE1149CE9CF0FBB6
       07EFDED4331B735019F7A27C7A9C1EC635DA14469933864FE3F8747965B58ECE
       590FBDE62E9A53653F1ABD189A5844DA8B4576B9FEE726BD6604EEDEC580}
+  end
+  object PopupMenuBuscar: TPopupMenu
+    Left = 368
+    Top = 96
+    object Codigo1: TMenuItem
+      Caption = 'Codigo'
+      ShortCut = 116
+      OnClick = Codigo1Click
+    end
+    object Compaa1: TMenuItem
+      Caption = 'Compa'#241#237'a'
+      OnClick = Compaa1Click
+    end
+    object Nombre1: TMenuItem
+      Caption = 'Nombre'
+      OnClick = Nombre1Click
+    end
+    object Apellido1: TMenuItem
+      Caption = 'Apellido'
+      OnClick = Apellido1Click
+    end
+    object Nomina1: TMenuItem
+      Caption = 'Tipo de Nomina'
+      OnClick = Nomina1Click
+    end
+    object TipoEmpleado1: TMenuItem
+      Caption = 'Tipo de Empleado'
+      OnClick = TipoEmpleado1Click
+    end
+    object Departamento1: TMenuItem
+      Caption = 'Departamento'
+      Visible = False
+    end
+    object Seccion1: TMenuItem
+      Caption = 'Seccion'
+      Visible = False
+    end
+    object Status1: TMenuItem
+      Caption = 'Status'
+      OnClick = Status1Click
+    end
+    object Todos1: TMenuItem
+      Caption = '&Todos'
+      OnClick = Todos1Click
+    end
+  end
+  object dstblTipoIngEmp: TDataSource
+    DataSet = dmEmpleados.tblTipoIngEmp
+    OnStateChange = dstblEmpleadosStateChange
+    Left = 740
+    Top = 386
   end
 end

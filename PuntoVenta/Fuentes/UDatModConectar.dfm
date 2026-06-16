@@ -1,8 +1,8 @@
 object dmConectar: TdmConectar
   OldCreateOrder = False
-  Left = 1562
-  Top = 131
-  Height = 348
+  Left = 1482
+  Top = 162
+  Height = 440
   Width = 262
   object IBDatabase1: TIBDatabase
     DatabaseName = 
@@ -189,6 +189,7 @@ object dmConectar: TdmConectar
     IdleTimer = 0
     SQLDialect = 1
     TraceFlags = []
+    AllowStreamedConnected = False
     Left = 168
     Top = 24
   end

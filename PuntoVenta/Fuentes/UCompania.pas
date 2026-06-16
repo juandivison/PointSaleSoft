@@ -143,6 +143,16 @@ type
     RxDBLookupCombo15: TRxDBLookupCombo;
     tblCompaniaID_PROVINCIA: TIntegerField;
     tblCompaniaID_MUNICIPIO: TIntegerField;
+    RxDBLookupCombo2: TRxDBLookupCombo;
+    Label21: TLabel;
+    dstbltiporiesgoarl: TDataSource;
+    tbltipo_riesgo_arl: TIBTable;
+    tbltipo_riesgo_arlID: TIntegerField;
+    tbltipo_riesgo_arlTIPO: TIBStringField;
+    tbltipo_riesgo_arlFECHA_INI: TDateTimeField;
+    tbltipo_riesgo_arlFECHA_FIN: TDateTimeField;
+    tbltipo_riesgo_arlPORCIENTO: TFloatField;
+    tblCompaniaTIPO_RIESGO_ARL: TIBStringField;
     procedure FormCreate(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
     procedure BitBtn2Click(Sender: TObject);
@@ -188,6 +198,8 @@ procedure TfrmCompania.FormCreate(Sender: TObject);
 var
   xGrafico : String;
 begin
+  tbltipo_riesgo_arl.close;
+  tbltipo_riesgo_arl.open;
   dmDatos.qryProvinciaseCF.Close;
   dmDatos.qryProvinciaseCF.Open;
   dmDatos.qryMunicipioseCF.Close;

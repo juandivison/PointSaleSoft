@@ -1,6 +1,6 @@
 object frmBancos: TfrmBancos
-  Left = 341
-  Top = 225
+  Left = 362
+  Top = 242
   Width = 866
   Height = 531
   Caption = 'Mantenimiento Cta Banco'

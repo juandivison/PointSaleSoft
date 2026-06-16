@@ -1,9 +1,10 @@
 object dmDatos: TdmDatos
   OldCreateOrder = False
-  Left = 301
-  Top = 280
-  Height = 618
-  Width = 923
+  OnDestroy = DataModuleDestroy
+  Left = 390
+  Top = 142
+  Height = 769
+  Width = 1023
   object qryTasa: TIBQuery
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
@@ -4785,8 +4786,8 @@ object dmDatos: TdmDatos
     SQL.Strings = (
       'select  *  from EMAILPROCESO'
       'where idtipo=:idtipo')
-    Left = 769
-    Top = 240
+    Left = 753
+    Top = 232
     ParamData = <
       item
         DataType = ftInteger
@@ -4870,7 +4871,6 @@ object dmDatos: TdmDatos
   object qryMembrete: TIBQuery
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
-    Active = True
     BufferChunks = 1000
     CachedUpdates = False
     SQL.Strings = (
@@ -5494,8 +5494,8 @@ object dmDatos: TdmDatos
       '  SUBJECT = :SUBJECT'
       'where'
       '  ID = :OLD_ID')
-    Left = 56
-    Top = 72
+    Left = 88
+    Top = 88
     object tblEmailTemplateID: TIntegerField
       FieldName = 'ID'
       Origin = 'EMAIL_TEMPLATE.ID'
@@ -5612,8 +5612,8 @@ object dmDatos: TdmDatos
       '  NOMBRE = :NOMBRE'
       'where'
       '  CODIGO = :OLD_CODIGO')
-    Left = 664
-    Top = 512
+    Left = 656
+    Top = 536
     object tblEcfCiudadesCODIGO: TIntegerField
       FieldName = 'CODIGO'
       Origin = 'ECF_TERRITORIO.CODIGO'
@@ -5629,7 +5629,7 @@ object dmDatos: TdmDatos
   object dstblEcfCiudades: TDataSource
     DataSet = tblEcfCiudades
     Left = 736
-    Top = 528
+    Top = 552
   end
   object qryProvinciaseCF: TIBQuery
     Database = dmConectar.IBDatabase1
@@ -5689,6 +5689,1453 @@ object dmDatos: TdmDatos
       Origin = 'ECF_TERRITORIO.NOMBRE'
       Required = True
       Size = 60
+    end
+  end
+  object qryEscalaISR: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    SQL.Strings = (
+      'SELECT * FROM RETENCION_ISR'
+      'Where  :Fecha between fecha_ini And fecha_fin')
+    Left = 152
+    Top = 191
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'Fecha'
+        ParamType = ptInput
+        Value = '01/01/2026'
+      end>
+    object qryEscalaISRCODIGO_RETENCION: TIntegerField
+      DisplayWidth = 22
+      FieldName = 'CODIGO_RETENCION'
+      Origin = 'RETENCION_ISR.CODIGO_RETENCION'
+      Required = True
+    end
+    object qryEscalaISRCODIGO_ESCALA: TIntegerField
+      DisplayLabel = 'CodEscala'
+      DisplayWidth = 13
+      FieldName = 'CODIGO_ESCALA'
+      Origin = 'RETENCION_ISR.CODIGO_ESCALA'
+    end
+    object qryEscalaISRESCALA_RETENCION: TFloatField
+      DisplayLabel = 'EscalaRet'
+      DisplayWidth = 16
+      FieldName = 'ESCALA_RETENCION'
+      Origin = 'RETENCION_ISR.ESCALA_RETENCION'
+      DisplayFormat = ',0.00'
+    end
+    object qryEscalaISRTASA_EXENTO: TFloatField
+      DisplayLabel = 'Exento'
+      DisplayWidth = 9
+      FieldName = 'TASA_EXENTO'
+      Origin = 'RETENCION_ISR.TASA_EXENTO'
+      DisplayFormat = ',0.00'
+    end
+    object qryEscalaISREXCEDENTE: TFloatField
+      DisplayLabel = 'Excedente'
+      DisplayWidth = 15
+      FieldName = 'EXCEDENTE'
+      Origin = 'RETENCION_ISR.EXCEDENTE'
+      DisplayFormat = ',0.00'
+    end
+    object qryEscalaISROBSERVACIONES: TIBStringField
+      DisplayWidth = 24
+      FieldName = 'OBSERVACIONES'
+      Origin = 'RETENCION_ISR.OBSERVACIONES'
+      Size = 40
+    end
+    object qryEscalaISRSTATUS_RETEN: TIBStringField
+      DisplayWidth = 17
+      FieldName = 'STATUS_RETEN'
+      Origin = 'RETENCION_ISR.STATUS_RETEN'
+      FixedChar = True
+      Size = 1
+    end
+    object qryEscalaISRFECHA_INI: TDateTimeField
+      DisplayWidth = 13
+      FieldName = 'FECHA_INI'
+      Origin = 'RETENCION_ISR.FECHA_INI'
+    end
+    object qryEscalaISRFECHA_FIN: TDateTimeField
+      DisplayWidth = 13
+      FieldName = 'FECHA_FIN'
+      Origin = 'RETENCION_ISR.FECHA_FIN'
+    end
+  end
+  object qryRegAdicional: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    SQL.Strings = (
+      'Select * From Adicional_Regalia'
+      'where anio_regalia = :anioregalia')
+    UpdateObject = updqryRegAdicional
+    Left = 264
+    Top = 536
+    ParamData = <
+      item
+        DataType = ftInteger
+        Name = 'anioregalia'
+        ParamType = ptInput
+      end>
+    object qryRegAdicionalANIO_REGALIA: TIntegerField
+      FieldName = 'ANIO_REGALIA'
+      Origin = 'ADICIONAL_REGALIA.ANIO_REGALIA'
+      Required = True
+    end
+    object qryRegAdicionalCODIGO_CIA: TIntegerField
+      FieldName = 'CODIGO_CIA'
+      Origin = 'ADICIONAL_REGALIA.CODIGO_CIA'
+      Required = True
+    end
+    object qryRegAdicionalCODIGO_EMP: TIntegerField
+      FieldName = 'CODIGO_EMP'
+      Origin = 'ADICIONAL_REGALIA.CODIGO_EMP'
+      Required = True
+    end
+    object qryRegAdicionalMONTO: TFloatField
+      FieldName = 'MONTO'
+      Origin = 'ADICIONAL_REGALIA.MONTO'
+    end
+    object qryRegAdicionalSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'ADICIONAL_REGALIA.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object qryRegAdicionalINSERTADO_POR: TIBStringField
+      FieldName = 'INSERTADO_POR'
+      Origin = 'ADICIONAL_REGALIA.INSERTADO_POR'
+      Size = 12
+    end
+    object qryRegAdicionalFECHA_IN: TDateTimeField
+      FieldName = 'FECHA_IN'
+      Origin = 'ADICIONAL_REGALIA.FECHA_IN'
+    end
+    object qryRegAdicionalMODIFICADO_POR: TIBStringField
+      FieldName = 'MODIFICADO_POR'
+      Origin = 'ADICIONAL_REGALIA.MODIFICADO_POR'
+      Size = 12
+    end
+    object qryRegAdicionalFECHA_MOD: TDateTimeField
+      FieldName = 'FECHA_MOD'
+      Origin = 'ADICIONAL_REGALIA.FECHA_MOD'
+    end
+  end
+  object updqryRegAdicional: TIBUpdateSQL
+    ModifySQL.Strings = (
+      'update Adicional_Regalia'
+      'set'
+      '  ANIO_REGALIA = :ANIO_REGALIA,'
+      '  CODIGO_CIA = :CODIGO_CIA,'
+      '  CODIGO_EMP = :CODIGO_EMP,'
+      '  MONTO = :MONTO,'
+      '  STATUS = :STATUS,'
+      '  INSERTADO_POR = :INSERTADO_POR,'
+      '  FECHA_IN = :FECHA_IN,'
+      '  MODIFICADO_POR = :MODIFICADO_POR,'
+      '  FECHA_MOD = :FECHA_MOD'
+      'where'
+      '  ANIO_REGALIA = :OLD_ANIO_REGALIA and'
+      '  CODIGO_CIA = :OLD_CODIGO_CIA and'
+      '  CODIGO_EMP = :OLD_CODIGO_EMP')
+    InsertSQL.Strings = (
+      'insert into Adicional_Regalia'
+      
+        '  (ANIO_REGALIA, CODIGO_CIA, CODIGO_EMP, MONTO, STATUS, INSERTAD' +
+        'O_POR, '
+      '   FECHA_IN, MODIFICADO_POR, FECHA_MOD)'
+      'values'
+      
+        '  (:ANIO_REGALIA, :CODIGO_CIA, :CODIGO_EMP, :MONTO, :STATUS, :IN' +
+        'SERTADO_POR, '
+      '   :FECHA_IN, :MODIFICADO_POR, :FECHA_MOD)')
+    DeleteSQL.Strings = (
+      'delete from Adicional_Regalia'
+      'where'
+      '  ANIO_REGALIA = :OLD_ANIO_REGALIA and'
+      '  CODIGO_CIA = :OLD_CODIGO_CIA and'
+      '  CODIGO_EMP = :OLD_CODIGO_EMP')
+    Left = 157
+    Top = 600
+  end
+  object dtqryRegAdicional: TDataSource
+    DataSet = qryRegAdicional
+    Left = 256
+    Top = 592
+  end
+  object QryProyRegalia: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    OnCalcFields = QryProyRegaliaCalcFields
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select * from Proc_ProyRegalia('
+      ':FechaIni,:FechaFin)'
+      'order by SALARIOMENSUAL DESC'
+      ',CODIGO ')
+    OnFilterRecord = QryProyRegaliaFilterRecord
+    Left = 835
+    Top = 205
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'FechaIni'
+        ParamType = ptInput
+      end
+      item
+        DataType = ftDateTime
+        Name = 'FechaFin'
+        ParamType = ptInput
+      end>
+    object QryProyRegaliaCIA_KEY: TSmallintField
+      FieldName = 'CIA_KEY'
+      Origin = 'PROC_PROYREGALIA.CIA_KEY'
+    end
+    object QryProyRegaliaCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'PROC_PROYREGALIA.CODIGO'
+    end
+    object QryProyRegaliaNOMBRE: TIBStringField
+      FieldName = 'NOMBRE'
+      Origin = 'PROC_PROYREGALIA.NOMBRE'
+      Size = 30
+    end
+    object QryProyRegaliaAPELLIDO: TIBStringField
+      FieldName = 'APELLIDO'
+      Origin = 'PROC_PROYREGALIA.APELLIDO'
+      Size = 30
+    end
+    object QryProyRegaliaSALARIOMENSUAL: TFloatField
+      FieldName = 'SALARIOMENSUAL'
+      Origin = 'PROC_PROYREGALIA.SALARIOMENSUAL'
+    end
+    object QryProyRegaliaSTATUS_EMP: TIBStringField
+      FieldName = 'STATUS_EMP'
+      Origin = 'PROC_PROYREGALIA.STATUS_EMP'
+      FixedChar = True
+      Size = 1
+    end
+    object QryProyRegaliaSALARIOACUMULADO: TFloatField
+      FieldName = 'SALARIOACUMULADO'
+      Origin = 'PROC_PROYREGALIA.SALARIOACUMULADO'
+    end
+    object QryProyRegaliaTIPOSERVICIO: TIntegerField
+      FieldName = 'TIPOSERVICIO'
+      Origin = 'PROC_PROYREGALIA.TIPOSERVICIO'
+    end
+    object QryProyRegaliaSUBTIPOSERV: TIntegerField
+      FieldName = 'SUBTIPOSERV'
+      Origin = 'PROC_PROYREGALIA.SUBTIPOSERV'
+    end
+    object QryProyRegaliaSTATUS_REGALIA: TIBStringField
+      FieldName = 'STATUS_REGALIA'
+      Origin = 'PROC_PROYREGALIA.STATUS_REGALIA'
+      FixedChar = True
+      Size = 1
+    end
+    object QryProyRegaliaSALARIOPROY: TFloatField
+      DisplayLabel = 'Salario Proyectado'
+      FieldKind = fkCalculated
+      FieldName = 'SALARIOPROY'
+      DisplayFormat = ',0.00'
+      Calculated = True
+    end
+    object QryProyRegaliaTOTALACUM: TFloatField
+      DisplayLabel = 'TSalario Acum'
+      FieldKind = fkCalculated
+      FieldName = 'TOTALACUM'
+      DisplayFormat = ',0.00'
+      Calculated = True
+    end
+    object QryProyRegaliaREG_PROY: TFloatField
+      DisplayLabel = 'ProyRegalia'
+      FieldKind = fkCalculated
+      FieldName = 'REG_PROY'
+      DisplayFormat = ',0.00'
+      Calculated = True
+    end
+  end
+  object dtQryProyRegalia: TDataSource
+    DataSet = QryProyRegalia
+    Left = 837
+    Top = 253
+  end
+  object updqryFirmCredCoop: TIBUpdateSQL
+    ModifySQL.Strings = (
+      'update coop_apr_creditos'
+      'set'
+      '  CODIGO = :CODIGO,'
+      '  NOMBRE = :NOMBRE,'
+      '  STATUS = :STATUS,'
+      '  FECHA_IN = :FECHA_IN,'
+      '  IN_POR = :IN_POR,'
+      '  FECHA_MOD = :FECHA_MOD,'
+      '  MOD_POR = :MOD_POR'
+      'where'
+      '  CODIGO = :OLD_CODIGO')
+    InsertSQL.Strings = (
+      'insert into coop_apr_creditos'
+      '  (CODIGO, NOMBRE, STATUS, FECHA_IN, IN_POR, FECHA_MOD, MOD_POR)'
+      'values'
+      
+        '  (:CODIGO, :NOMBRE, :STATUS, :FECHA_IN, :IN_POR, :FECHA_MOD, :M' +
+        'OD_POR)')
+    DeleteSQL.Strings = (
+      'delete from coop_apr_creditos'
+      'where'
+      '  CODIGO = :OLD_CODIGO')
+    Left = 368
+    Top = 648
+  end
+  object qryFirmCredCoop: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    SQL.Strings = (
+      'select * from coop_apr_creditos')
+    UpdateObject = updqryFirmCredCoop
+    Left = 368
+    Top = 592
+    object qryFirmCredCoopCODIGO: TSmallintField
+      FieldName = 'CODIGO'
+      Origin = 'COOP_APR_CREDITOS.CODIGO'
+    end
+    object qryFirmCredCoopNOMBRE: TIBStringField
+      FieldName = 'NOMBRE'
+      Origin = 'COOP_APR_CREDITOS.NOMBRE'
+      Size = 40
+    end
+    object qryFirmCredCoopFECHA_IN: TDateTimeField
+      FieldName = 'FECHA_IN'
+      Origin = 'COOP_APR_CREDITOS.FECHA_IN'
+    end
+    object qryFirmCredCoopFECHA_MOD: TDateTimeField
+      FieldName = 'FECHA_MOD'
+      Origin = 'COOP_APR_CREDITOS.FECHA_MOD'
+    end
+    object qryFirmCredCoopSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'COOP_APR_CREDITOS.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object qryFirmCredCoopMOD_POR: TIBStringField
+      FieldName = 'MOD_POR'
+      Origin = 'COOP_APR_CREDITOS.MOD_POR'
+      Size = 12
+    end
+    object qryFirmCredCoopIN_POR: TIBStringField
+      FieldName = 'IN_POR'
+      Origin = 'COOP_APR_CREDITOS.IN_POR'
+      Size = 12
+    end
+  end
+  object qryBoni: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select '
+      '  CIA_KEY,'
+      '  CODIGO,'
+      '  FECHA,'
+      '  MONTO_BONIFIACION,'
+      '  ISR,'
+      '  STATUS '
+      'From PAGO_BONIFICACION '
+      'Where fecha =:fechaboni')
+    Left = 928
+    Top = 176
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'fechaboni'
+        ParamType = ptInput
+      end>
+    object qryBoniCIA_KEY: TSmallintField
+      FieldName = 'CIA_KEY'
+      Origin = 'PAGO_BONIFICACION.CIA_KEY'
+      Required = True
+    end
+    object qryBoniCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'PAGO_BONIFICACION.CODIGO'
+      Required = True
+    end
+    object qryBoniFECHA: TDateTimeField
+      FieldName = 'FECHA'
+      Origin = 'PAGO_BONIFICACION.FECHA'
+      Required = True
+    end
+    object qryBoniMONTO_BONIFIACION: TFloatField
+      FieldName = 'MONTO_BONIFIACION'
+      Origin = 'PAGO_BONIFICACION.MONTO_BONIFIACION'
+    end
+    object qryBoniISR: TFloatField
+      FieldName = 'ISR'
+      Origin = 'PAGO_BONIFICACION.ISR'
+    end
+    object qryBoniSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'PAGO_BONIFICACION.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+  end
+  object qryStatusRegalia: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT   '
+      '  CODIGO'
+      '  CIA_KEY,'
+      '  ANO_REGALIA,'
+      '  STATUS'
+      'FROM STATUS_REGALIA '
+      'WHERE F_YEAR(ANO_REGALIA) = F_YEAR(:FECHAREGALIA)'
+      '')
+    Left = 347
+    Top = 532
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'FECHAREGALIA'
+        ParamType = ptInput
+      end>
+    object qryStatusRegaliaCIA_KEY: TIntegerField
+      FieldName = 'CIA_KEY'
+      Origin = 'STATUS_REGALIA.CODIGO'
+      Required = True
+    end
+    object qryStatusRegaliaANO_REGALIA: TDateTimeField
+      FieldName = 'ANO_REGALIA'
+      Origin = 'STATUS_REGALIA.ANO_REGALIA'
+    end
+    object qryStatusRegaliaSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'STATUS_REGALIA.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+  end
+  object qryDatosBoni: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT '
+      'PAGO_BONIFICACION.CIA_KEY, '
+      'PAGO_BONIFICACION.CODIGO, '
+      'PAGO_BONIFICACION.FECHA, '
+      'PAGO_BONIFICACION.MONTO_BONIFIACION, '
+      'PAGO_BONIFICACION.ISR, '
+      '(PAGO_BONIFICACION.MONTO_BONIFIACION - '
+      'PAGO_BONIFICACION.ISR) BonoNeto,'
+      'PAGO_BONIFICACION.NUMERO_CKS, '
+      'PAGO_BONIFICACION.STATUS, '
+      'Empleados.DEPTO_EMP, Empleados.SECCION_EMP'
+      'FROM PAGO_BONIFICACION'
+      '   INNER JOIN EMPLEADOS Empleados'
+      '   ON  (PAGO_BONIFICACION.CODIGO = Empleados.CODIGO)  '
+      '   AND  (PAGO_BONIFICACION.CIA_KEY = Empleados.CIA_KEY)  '
+      'Where Fecha = :fechaboni'
+      'and PAGO_BONIFICACION.NUMERO_CKS is null'
+      
+        'ORDER BY Empleados.DEPTO_EMP, Empleados.SECCION_EMP, PAGO_BONIFI' +
+        'CACION.CODIGO')
+    Left = 936
+    Top = 69
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'fechaboni'
+        ParamType = ptInput
+      end>
+    object qryDatosBoniCIA_KEY: TSmallintField
+      FieldName = 'CIA_KEY'
+      Origin = 'PAGO_BONIFICACION.CIA_KEY'
+      Required = True
+    end
+    object qryDatosBoniCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'PAGO_BONIFICACION.CODIGO'
+      Required = True
+    end
+    object qryDatosBoniFECHA: TDateTimeField
+      FieldName = 'FECHA'
+      Origin = 'PAGO_BONIFICACION.FECHA'
+      Required = True
+    end
+    object qryDatosBoniMONTO_BONIFIACION: TFloatField
+      FieldName = 'MONTO_BONIFIACION'
+      Origin = 'PAGO_BONIFICACION.MONTO_BONIFIACION'
+    end
+    object qryDatosBoniISR: TFloatField
+      FieldName = 'ISR'
+      Origin = 'PAGO_BONIFICACION.ISR'
+    end
+    object qryDatosBoniBONONETO: TFloatField
+      FieldName = 'BONONETO'
+    end
+    object qryDatosBoniNUMERO_CKS: TIntegerField
+      FieldName = 'NUMERO_CKS'
+      Origin = 'PAGO_BONIFICACION.NUMERO_CKS'
+    end
+    object qryDatosBoniSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'PAGO_BONIFICACION.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object qryDatosBoniDEPTO_EMP: TIntegerField
+      FieldName = 'DEPTO_EMP'
+      Origin = 'EMPLEADOS.DEPTO_EMP'
+    end
+    object qryDatosBoniSECCION_EMP: TIntegerField
+      FieldName = 'SECCION_EMP'
+      Origin = 'EMPLEADOS.SECCION_EMP'
+    end
+  end
+  object dtTipoOrdenEmpCoop: TDataSource
+    DataSet = tTipoOrdenEmpCoop
+    Left = 536
+    Top = 568
+  end
+  object dtqryEmpRegalia: TDataSource
+    Left = 440
+    Top = 536
+  end
+  object dtqryBoni: TDataSource
+    DataSet = qryBoni
+    Left = 936
+    Top = 120
+  end
+  object qryChequesPTipo: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT '
+      'Cheques_ptipo.DESCRIPCION, '
+      'Cheques_ptipocta.TIPO_CKS, '
+      'Cheques_ptipocta.TIPOSERVICIO, '
+      'Cheques_ptipocta.CUENTA1_CAT, '
+      'Cheques_ptipocta.CUENTA2_CAT,'
+      'Cheques_ptipocta.CUENTA3_CAT,'
+      'Cheques_ptipocta.CTA_CONCEPTO,'
+      'Cheques_ptipocta.COD_SUBTIPO'
+      'FROM CHEQUES_PTIPO Cheques_ptipo'
+      '   INNER JOIN CHEQUES_PTIPOCTA Cheques_ptipocta'
+      '   ON  (Cheques_ptipo.TIPO_CKS = Cheques_ptipocta.TIPO_CKS)  '
+      'Where Cheques_ptipocta.TIPO_CKS = 4'
+      'And Cheques_ptipocta.TIPOSERVICIO = :TIPOSERVICIO'
+      'And Cheques_ptipocta.COD_SUBTIPO = :CODSUBTIPO')
+    Left = 912
+    Top = 380
+    ParamData = <
+      item
+        DataType = ftInteger
+        Name = 'TIPOSERVICIO'
+        ParamType = ptInput
+      end
+      item
+        DataType = ftInteger
+        Name = 'CODSUBTIPO'
+        ParamType = ptInput
+      end>
+    object qryChequesPTipoDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'CHEQUES_PTIPO.DESCRIPCION'
+      Size = 30
+    end
+    object qryChequesPTipoTIPO_CKS: TSmallintField
+      FieldName = 'TIPO_CKS'
+      Origin = 'CHEQUES_PTIPOCTA.TIPO_CKS'
+      Required = True
+    end
+    object qryChequesPTipoTIPOSERVICIO: TIntegerField
+      FieldName = 'TIPOSERVICIO'
+      Origin = 'CHEQUES_PTIPOCTA.TIPOSERVICIO'
+      Required = True
+    end
+    object qryChequesPTipoCUENTA1_CAT: TIBStringField
+      FieldName = 'CUENTA1_CAT'
+      Origin = 'CHEQUES_PTIPOCTA.CUENTA1_CAT'
+      Required = True
+      FixedChar = True
+      Size = 3
+    end
+    object qryChequesPTipoCUENTA2_CAT: TIBStringField
+      FieldName = 'CUENTA2_CAT'
+      Origin = 'CHEQUES_PTIPOCTA.CUENTA2_CAT'
+      Required = True
+      FixedChar = True
+      Size = 2
+    end
+    object qryChequesPTipoCUENTA3_CAT: TIBStringField
+      FieldName = 'CUENTA3_CAT'
+      Origin = 'CHEQUES_PTIPOCTA.CUENTA3_CAT'
+      Required = True
+      FixedChar = True
+      Size = 2
+    end
+    object qryChequesPTipoCTA_CONCEPTO: TIntegerField
+      FieldName = 'CTA_CONCEPTO'
+      Origin = 'CHEQUES_PTIPOCTA.CTA_CONCEPTO'
+      Required = True
+    end
+    object qryChequesPTipoCOD_SUBTIPO: TSmallintField
+      FieldName = 'COD_SUBTIPO'
+      Origin = 'CHEQUES_PTIPOCTA.COD_SUBTIPO'
+    end
+  end
+  object dtqryChequesPTipo: TDataSource
+    DataSet = qryChequesPTipo
+    Left = 912
+    Top = 448
+  end
+  object qryOrdenEmp: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BeforeOpen = qryOrdenEmpBeforeOpen
+    OnCalcFields = qryOrdenEmpCalcFields
+    BufferChunks = 1000
+    CachedUpdates = True
+    SQL.Strings = (
+      'Select * from orden_empleados'
+      'Where fecha between :fechaini and :fechafin'
+      'order by COD_PROVEEDOR,Numero, codigo, fecha')
+    UpdateObject = updqryOrdenEmp
+    Left = 928
+    Top = 232
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'fechaini'
+        ParamType = ptInput
+      end
+      item
+        DataType = ftDateTime
+        Name = 'fechafin'
+        ParamType = ptInput
+      end>
+    object qryOrdenEmpTipoOrdenDesc: TStringField
+      FieldKind = fkLookup
+      FieldName = 'TipoOrdenDesc'
+      LookupDataSet = tTipoOrdenEmpCoop
+      LookupKeyFields = 'CODIGO'
+      LookupResultField = 'DESCRIPCION'
+      KeyFields = 'TIPO_ORDEN'
+      Lookup = True
+    end
+    object qryOrdenEmpNombreCompleto: TStringField
+      FieldKind = fkCalculated
+      FieldName = 'NombreCompleto'
+      Size = 50
+      Calculated = True
+    end
+    object qryOrdenEmpNOMBREPROVEE: TStringField
+      FieldKind = fkLookup
+      FieldName = 'NOMBREPROVEE'
+      LookupDataSet = tProveedores
+      LookupKeyFields = 'CODIGO_CTE'
+      LookupResultField = 'DESCRIPCION'
+      KeyFields = 'COD_PROVEEDOR'
+      Size = 30
+      Lookup = True
+    end
+    object qryOrdenEmpAPELLIDO: TStringField
+      FieldKind = fkLookup
+      FieldName = 'APELLIDO'
+      LookupDataSet = dmNomina.QryPersonal
+      LookupKeyFields = 'CODIGO'
+      LookupResultField = 'APELLIDO'
+      KeyFields = 'CODIGO'
+      Size = 30
+      Lookup = True
+    end
+    object qryOrdenEmpNOMB_EMPLEADO: TStringField
+      FieldKind = fkLookup
+      FieldName = 'NOMB_EMPLEADO'
+      LookupDataSet = dmNomina.QryPersonal
+      LookupKeyFields = 'CODIGO'
+      LookupResultField = 'NOMBRE'
+      KeyFields = 'CODIGO'
+      Size = 30
+      Lookup = True
+    end
+    object qryOrdenEmpCEDULA: TStringField
+      FieldKind = fkLookup
+      FieldName = 'CEDULA'
+      LookupDataSet = dmNomina.QryPersonal
+      LookupKeyFields = 'CODIGO'
+      LookupResultField = 'CEDULA'
+      KeyFields = 'CODIGO'
+      Lookup = True
+    end
+    object qryOrdenEmpCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'ORDEN_EMPLEADOS.CODIGO'
+      Required = True
+    end
+    object qryOrdenEmpFECHA: TDateTimeField
+      FieldName = 'FECHA'
+      Origin = 'ORDEN_EMPLEADOS.FECHA'
+      Required = True
+    end
+    object qryOrdenEmpNUMERO: TIntegerField
+      FieldName = 'NUMERO'
+      Origin = 'ORDEN_EMPLEADOS.NUMERO'
+    end
+    object qryOrdenEmpCOD_PROVEEDOR: TIntegerField
+      FieldName = 'COD_PROVEEDOR'
+      Origin = 'ORDEN_EMPLEADOS.COD_PROVEEDOR'
+    end
+    object qryOrdenEmpMONTO: TFloatField
+      FieldName = 'MONTO'
+      Origin = 'ORDEN_EMPLEADOS.MONTO'
+    end
+    object qryOrdenEmpSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'ORDEN_EMPLEADOS.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object qryOrdenEmpIN_POR: TIBStringField
+      FieldName = 'IN_POR'
+      Origin = 'ORDEN_EMPLEADOS.IN_POR'
+      Size = 12
+    end
+    object qryOrdenEmpFECHA_IN: TDateTimeField
+      FieldName = 'FECHA_IN'
+      Origin = 'ORDEN_EMPLEADOS.FECHA_IN'
+    end
+    object qryOrdenEmpMOD_POR: TIBStringField
+      FieldName = 'MOD_POR'
+      Origin = 'ORDEN_EMPLEADOS.MOD_POR'
+      Size = 12
+    end
+    object qryOrdenEmpFECHA_MOD: TDateTimeField
+      FieldName = 'FECHA_MOD'
+      Origin = 'ORDEN_EMPLEADOS.FECHA_MOD'
+    end
+    object qryOrdenEmpFORMA_PAGO: TSmallintField
+      FieldName = 'FORMA_PAGO'
+      Origin = 'ORDEN_EMPLEADOS.FORMA_PAGO'
+    end
+    object qryOrdenEmpTIPO_ORDEN: TIntegerField
+      FieldName = 'TIPO_ORDEN'
+      Origin = 'ORDEN_EMPLEADOS.TIPO_ORDEN'
+    end
+  end
+  object qryRepOrdCFirm: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'select nombre '
+      'from coop_apr_creditos'
+      'where status = '#39'A'#39
+      '')
+    Left = 904
+    Top = 512
+    object qryRepOrdCFirmNOMBRE: TIBStringField
+      FieldName = 'NOMBRE'
+      Origin = 'COOP_APR_CREDITOS.NOMBRE'
+      Size = 40
+    end
+  end
+  object tTipoOrdenEmpCoop: TIBDataSet
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    DeleteSQL.Strings = (
+      'delete from TIPO_ORDEN_EMP'
+      'where'
+      '  CODIGO = :OLD_CODIGO')
+    InsertSQL.Strings = (
+      'insert into TIPO_ORDEN_EMP'
+      '  (CODIGO, DESCRIPCION)'
+      'values'
+      '  (:CODIGO, :DESCRIPCION)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  CODIGO,'
+      '  DESCRIPCION'
+      'from TIPO_ORDEN_EMP '
+      'where'
+      '  CODIGO = :CODIGO')
+    SelectSQL.Strings = (
+      'Select * from TIPO_ORDEN_EMP')
+    ModifySQL.Strings = (
+      'update TIPO_ORDEN_EMP'
+      'set'
+      '  CODIGO = :CODIGO,'
+      '  DESCRIPCION = :DESCRIPCION'
+      'where'
+      '  CODIGO = :OLD_CODIGO')
+    Left = 680
+    Top = 628
+    object tTipoOrdenEmpCoopCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'TIPO_ORDEN_EMP.CODIGO'
+      Required = True
+    end
+    object tTipoOrdenEmpCoopDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'TIPO_ORDEN_EMP.DESCRIPCION'
+      Size = 30
+    end
+  end
+  object DataSource1: TDataSource
+    DataSet = tTipoOrdenEmpCoop
+    Left = 800
+    Top = 608
+  end
+  object tProveedores: TIBDataSet
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SelectSQL.Strings = (
+      'Select * from proveedores')
+    Left = 48
+    Top = 536
+    object tProveedoresCODIGO_CTE: TIntegerField
+      FieldName = 'CODIGO_CTE'
+      Origin = 'PROVEEDORES.CODIGO_CTE'
+      Required = True
+    end
+    object tProveedoresTIPO_CLIENTE: TIntegerField
+      FieldName = 'TIPO_CLIENTE'
+      Origin = 'PROVEEDORES.TIPO_CLIENTE'
+    end
+    object tProveedoresNOMBRE_ABR: TIBStringField
+      FieldName = 'NOMBRE_ABR'
+      Origin = 'PROVEEDORES.NOMBRE_ABR'
+      Size = 60
+    end
+    object tProveedoresDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'PROVEEDORES.DESCRIPCION'
+      Size = 80
+    end
+    object tProveedoresCONTACTO: TIBStringField
+      FieldName = 'CONTACTO'
+      Origin = 'PROVEEDORES.CONTACTO'
+      Size = 35
+    end
+    object tProveedoresPAIS: TIBStringField
+      FieldName = 'PAIS'
+      Origin = 'PROVEEDORES.PAIS'
+      Size = 30
+    end
+    object tProveedoresESTADO: TIBStringField
+      FieldName = 'ESTADO'
+      Origin = 'PROVEEDORES.ESTADO'
+      Size = 30
+    end
+    object tProveedoresCIUDAD: TIBStringField
+      FieldName = 'CIUDAD'
+      Origin = 'PROVEEDORES.CIUDAD'
+    end
+    object tProveedoresCALYYNUM: TIBStringField
+      FieldName = 'CALYYNUM'
+      Origin = 'PROVEEDORES.CALYYNUM'
+      Size = 80
+    end
+    object tProveedoresTELEFONO: TIBStringField
+      FieldName = 'TELEFONO'
+      Origin = 'PROVEEDORES.TELEFONO'
+      Size = 12
+    end
+    object tProveedoresFAX: TIBStringField
+      FieldName = 'FAX'
+      Origin = 'PROVEEDORES.FAX'
+      Size = 12
+    end
+    object tProveedoresCODIGOPOSTAL: TIBStringField
+      FieldName = 'CODIGOPOSTAL'
+      Origin = 'PROVEEDORES.CODIGOPOSTAL'
+      FixedChar = True
+      Size = 6
+    end
+    object tProveedoresEMAIL: TIBStringField
+      FieldName = 'EMAIL'
+      Origin = 'PROVEEDORES.EMAIL'
+      Size = 40
+    end
+    object tProveedoresDIRECCIONWEB: TIBStringField
+      FieldName = 'DIRECCIONWEB'
+      Origin = 'PROVEEDORES.DIRECCIONWEB'
+      Size = 40
+    end
+    object tProveedoresSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'PROVEEDORES.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object tProveedoresFECHA_IN: TDateTimeField
+      FieldName = 'FECHA_IN'
+      Origin = 'PROVEEDORES.FECHA_IN'
+    end
+    object tProveedoresIN_POR: TIBStringField
+      FieldName = 'IN_POR'
+      Origin = 'PROVEEDORES.IN_POR'
+      Size = 12
+    end
+    object tProveedoresFECHA_MOD: TDateTimeField
+      FieldName = 'FECHA_MOD'
+      Origin = 'PROVEEDORES.FECHA_MOD'
+    end
+    object tProveedoresMOD_POR: TIBStringField
+      FieldName = 'MOD_POR'
+      Origin = 'PROVEEDORES.MOD_POR'
+      Size = 12
+    end
+    object tProveedoresRNC_PROVEEDOR: TIBStringField
+      FieldName = 'RNC_PROVEEDOR'
+      Origin = 'PROVEEDORES.RNC_PROVEEDOR'
+      Size = 15
+    end
+    object tProveedoresMOVIL1: TIBStringField
+      FieldName = 'MOVIL1'
+      Origin = 'PROVEEDORES.MOVIL1'
+    end
+    object tProveedoresMOVIL2: TIBStringField
+      FieldName = 'MOVIL2'
+      Origin = 'PROVEEDORES.MOVIL2'
+    end
+    object tProveedoresTELEFONO2: TIBStringField
+      FieldName = 'TELEFONO2'
+      Origin = 'PROVEEDORES.TELEFONO2'
+    end
+    object tProveedoresTELEFONO3: TIBStringField
+      FieldName = 'TELEFONO3'
+      Origin = 'PROVEEDORES.TELEFONO3'
+    end
+    object tProveedoresEXTENSIONES: TIBStringField
+      FieldName = 'EXTENSIONES'
+      Origin = 'PROVEEDORES.EXTENSIONES'
+      Size = 40
+    end
+    object tProveedoresCIA_KEY: TIntegerField
+      FieldName = 'CIA_KEY'
+      Origin = 'PROVEEDORES.CIA_KEY'
+    end
+    object tProveedoresLIMITE_CREDITO: TFloatField
+      FieldName = 'LIMITE_CREDITO'
+      Origin = 'PROVEEDORES.LIMITE_CREDITO'
+    end
+    object tProveedoresCOD_VENDEDOR: TIntegerField
+      FieldName = 'COD_VENDEDOR'
+      Origin = 'PROVEEDORES.COD_VENDEDOR'
+    end
+    object tProveedoresCONDICION: TIntegerField
+      FieldName = 'CONDICION'
+      Origin = 'PROVEEDORES.CONDICION'
+    end
+    object tProveedoresCANT_DIAS_CREDITO: TSmallintField
+      FieldName = 'CANT_DIAS_CREDITO'
+      Origin = 'PROVEEDORES.CANT_DIAS_CREDITO'
+    end
+    object tProveedoresIDTIPO_PROV: TIntegerField
+      FieldName = 'IDTIPO_PROV'
+      Origin = 'PROVEEDORES.IDTIPO_PROV'
+    end
+    object tProveedoresTIPODOC: TSmallintField
+      FieldName = 'TIPODOC'
+      Origin = 'PROVEEDORES.TIPODOC'
+    end
+    object tProveedoresID_PROVINCIA: TIntegerField
+      FieldName = 'ID_PROVINCIA'
+      Origin = 'PROVEEDORES.ID_PROVINCIA'
+    end
+    object tProveedoresID_MUNICIPIO: TIntegerField
+      FieldName = 'ID_MUNICIPIO'
+      Origin = 'PROVEEDORES.ID_MUNICIPIO'
+    end
+  end
+  object dtqryOrdenEmp: TDataSource
+    DataSet = qryOrdenEmp
+    Left = 412
+    Top = 64
+  end
+  object dtqryFirmCredCoop: TDataSource
+    DataSet = qryFirmCredCoop
+    Left = 600
+    Top = 216
+  end
+  object updqryOrdenEmp: TIBUpdateSQL
+    RefreshSQL.Strings = (
+      'Select '
+      '  CODIGO,'
+      '  FECHA,'
+      '  NUMERO,'
+      '  COD_PROVEEDOR,'
+      '  MONTO,'
+      '  STATUS,'
+      '  IN_POR,'
+      '  FECHA_IN,'
+      '  MOD_POR,'
+      '  FECHA_MOD,'
+      '  FORMA_PAGO,'
+      '  TIPO_ORDEN'
+      'from orden_empleados '
+      'where'
+      '  CODIGO = :CODIGO and'
+      '  FECHA = :FECHA')
+    ModifySQL.Strings = (
+      'update orden_empleados'
+      'set'
+      '  CODIGO = :CODIGO,'
+      '  FECHA = :FECHA,'
+      '  NUMERO = :NUMERO,'
+      '  COD_PROVEEDOR = :COD_PROVEEDOR,'
+      '  MONTO = :MONTO,'
+      '  STATUS = :STATUS,'
+      '  IN_POR = :IN_POR,'
+      '  FECHA_IN = :FECHA_IN,'
+      '  MOD_POR = :MOD_POR,'
+      '  FECHA_MOD = :FECHA_MOD,'
+      '  FORMA_PAGO = :FORMA_PAGO,'
+      '  TIPO_ORDEN = :TIPO_ORDEN'
+      'where'
+      '  CODIGO = :OLD_CODIGO and'
+      '  FECHA = :OLD_FECHA')
+    InsertSQL.Strings = (
+      'insert into orden_empleados'
+      
+        '  (CODIGO, FECHA, NUMERO, COD_PROVEEDOR, MONTO, STATUS, IN_POR, ' +
+        'FECHA_IN, '
+      '   MOD_POR, FECHA_MOD, FORMA_PAGO, TIPO_ORDEN)'
+      'values'
+      
+        '  (:CODIGO, :FECHA, :NUMERO, :COD_PROVEEDOR, :MONTO, :STATUS, :I' +
+        'N_POR, '
+      '   :FECHA_IN, :MOD_POR, :FECHA_MOD, :FORMA_PAGO, :TIPO_ORDEN)')
+    DeleteSQL.Strings = (
+      'delete from orden_empleados'
+      'where'
+      '  CODIGO = :OLD_CODIGO and'
+      '  FECHA = :OLD_FECHA')
+    Left = 936
+    Top = 280
+  end
+  object qryRepIR13: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    OnCalcFields = qryRepIR13CalcFields
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT Empleados.CODIGO, '
+      'Empleados.NOMBRE, '
+      'Empleados.APELLIDO, '
+      'Empleados.CEDULA, '
+      'Empleados.STATUS,'
+      'Empleados.DEPTO_EMP,'
+      'SUM(Nomina.SALARIO_BRUTO) SALARIO_BRUTO, '
+      'SUM(Nomina.OTROS_INGRESOS) OTROS_INGRESOS, '
+      'SUM(Nomina.ISR) ISR_RETENIDO,'
+      'SUM(Nomina.Monto_afp) afp'
+      ''
+      'FROM NOMINA Nomina'
+      '   INNER JOIN EMPLEADO Empleados'
+      '   ON  (Nomina.CODIGO_EMP = Empleados.CODIGO)  '
+      'WHERE FECHA_NOMINA BETWEEN :Fechaini And :Fechafin'
+      'AND STATUS_NOMINA IN ('#39'A'#39','#39'P'#39')'
+      'GROUP BY '
+      'Empleados.CODIGO,'
+      'Empleados.NOMBRE,'
+      'Empleados.APELLIDO,'
+      'Empleados.CEDULA,'
+      'Empleados.STATUS,'
+      'Empleados.DEPTO_EMP'
+      ''
+      'ORDER BY  Empleados.DEPTO_EMP,Empleados.CODIGO')
+    Left = 928
+    Top = 576
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'Fechaini'
+        ParamType = ptUnknown
+      end
+      item
+        DataType = ftUnknown
+        Name = 'Fechafin'
+        ParamType = ptUnknown
+      end>
+    object qryRepIR13CODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'EMPLEADO.CODIGO'
+      Required = True
+    end
+    object qryRepIR13NOMBRE: TIBStringField
+      FieldName = 'NOMBRE'
+      Origin = 'EMPLEADO.NOMBRE'
+      Size = 35
+    end
+    object qryRepIR13APELLIDO: TIBStringField
+      FieldName = 'APELLIDO'
+      Origin = 'EMPLEADO.APELLIDO'
+      Size = 35
+    end
+    object qryRepIR13CEDULA: TIBStringField
+      FieldName = 'CEDULA'
+      Origin = 'EMPLEADO.CEDULA'
+      Size = 14
+    end
+    object qryRepIR13STATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'EMPLEADO.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object qryRepIR13DEPTO_EMP: TSmallintField
+      FieldName = 'DEPTO_EMP'
+      Origin = 'EMPLEADO.DEPTO_EMP'
+    end
+    object qryRepIR13SALARIO_BRUTO: TFloatField
+      FieldName = 'SALARIO_BRUTO'
+    end
+    object qryRepIR13OTROS_INGRESOS: TFloatField
+      FieldName = 'OTROS_INGRESOS'
+    end
+    object qryRepIR13ISR_RETENIDO: TFloatField
+      FieldName = 'ISR_RETENIDO'
+    end
+    object qryRepIR13AFP: TFloatField
+      FieldName = 'AFP'
+    end
+    object qryRepIR13MontoBoni: TFloatField
+      FieldKind = fkCalculated
+      FieldName = 'MontoBoni'
+      Calculated = True
+    end
+    object qryRepIR13SalarioExcAfp: TCurrencyField
+      FieldKind = fkCalculated
+      FieldName = 'SalarioExcAfp'
+      Calculated = True
+    end
+    object qryRepIR13MONTO_VAC: TFloatField
+      FieldKind = fkCalculated
+      FieldName = 'MONTO_VAC'
+      Calculated = True
+    end
+    object qryRepIR13MONTO_REGALIA: TFloatField
+      FieldKind = fkCalculated
+      FieldName = 'MONTO_REGALIA'
+      Calculated = True
+    end
+    object qryRepIR13ISR_CALCULADO: TFloatField
+      FieldKind = fkCalculated
+      FieldName = 'ISR_CALCULADO'
+      Calculated = True
+    end
+    object qryRepIR13SalarioProy: TFloatField
+      FieldKind = fkCalculated
+      FieldName = 'SalarioProy'
+      Calculated = True
+    end
+  end
+  object QryVaca: TIBDataSet
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    DeleteSQL.Strings = (
+      'delete from VACACIONES'
+      'where'
+      '  CODIGO_TRANS = :OLD_CODIGO_TRANS')
+    InsertSQL.Strings = (
+      'insert into VACACIONES'
+      
+        '  (CODIGO_TRANS, CODIGO_TIPO_TRANS, CODIGO_TIPO_NOMINA, CODIGO, ' +
+        'VALOR_TRANS, '
+      
+        '   FECHA_ENT, FECHA_SAL, OBSERVACIONES, STATUS_TRANS, TIPO_CTA, ' +
+        'CANT_DIAS, '
+      '   FECHA_EFECTIVA)'
+      'values'
+      
+        '  (:CODIGO_TRANS, :CODIGO_TIPO_TRANS, :CODIGO_TIPO_NOMINA, :CODI' +
+        'GO, :VALOR_TRANS, '
+      
+        '   :FECHA_ENT, :FECHA_SAL, :OBSERVACIONES, :STATUS_TRANS, :TIPO_' +
+        'CTA, :CANT_DIAS, '
+      '   :FECHA_EFECTIVA)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  CODIGO_TRANS,'
+      '  CODIGO_TIPO_TRANS,'
+      '  CODIGO_TIPO_NOMINA,'
+      '  CODIGO,'
+      '  VALOR_TRANS,'
+      '  FECHA_ENT,'
+      '  FECHA_SAL,'
+      '  OBSERVACIONES,'
+      '  STATUS_TRANS,'
+      '  TIPO_CTA,'
+      '  CANT_DIAS,'
+      '  FECHA_EFECTIVA'
+      'from VACACIONES '
+      'where'
+      '  CODIGO_TRANS = :CODIGO_TRANS')
+    SelectSQL.Strings = (
+      'SELECT *'
+      'FROM VACACIONES Vacaciones'
+      'Where Fecha_Ent >=:Fecha_ini '
+      'and Fecha_Sal <=:Fecha_Fin'
+      'Order By Codigo')
+    ModifySQL.Strings = (
+      'update VACACIONES'
+      'set'
+      '  CODIGO_TRANS = :CODIGO_TRANS,'
+      '  CODIGO_TIPO_TRANS = :CODIGO_TIPO_TRANS,'
+      '  CODIGO_TIPO_NOMINA = :CODIGO_TIPO_NOMINA,'
+      '  CODIGO = :CODIGO,'
+      '  VALOR_TRANS = :VALOR_TRANS,'
+      '  FECHA_ENT = :FECHA_ENT,'
+      '  FECHA_SAL = :FECHA_SAL,'
+      '  OBSERVACIONES = :OBSERVACIONES,'
+      '  STATUS_TRANS = :STATUS_TRANS,'
+      '  TIPO_CTA = :TIPO_CTA,'
+      '  CANT_DIAS = :CANT_DIAS,'
+      '  FECHA_EFECTIVA = :FECHA_EFECTIVA'
+      'where'
+      '  CODIGO_TRANS = :OLD_CODIGO_TRANS')
+    Left = 920
+    Top = 624
+    object QryVacaCODIGO_TRANS: TIntegerField
+      FieldName = 'CODIGO_TRANS'
+      Origin = 'VACACIONES.CODIGO_TRANS'
+      Required = True
+    end
+    object QryVacaCODIGO_TIPO_TRANS: TSmallintField
+      FieldName = 'CODIGO_TIPO_TRANS'
+      Origin = 'VACACIONES.CODIGO_TIPO_TRANS'
+    end
+    object QryVacaCODIGO_TIPO_NOMINA: TSmallintField
+      FieldName = 'CODIGO_TIPO_NOMINA'
+      Origin = 'VACACIONES.CODIGO_TIPO_NOMINA'
+    end
+    object QryVacaCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'VACACIONES.CODIGO'
+    end
+    object QryVacaVALOR_TRANS: TFloatField
+      FieldName = 'VALOR_TRANS'
+      Origin = 'VACACIONES.VALOR_TRANS'
+    end
+    object QryVacaFECHA_ENT: TDateTimeField
+      FieldName = 'FECHA_ENT'
+      Origin = 'VACACIONES.FECHA_ENT'
+    end
+    object QryVacaFECHA_SAL: TDateTimeField
+      FieldName = 'FECHA_SAL'
+      Origin = 'VACACIONES.FECHA_SAL'
+    end
+    object QryVacaOBSERVACIONES: TIBStringField
+      FieldName = 'OBSERVACIONES'
+      Origin = 'VACACIONES.OBSERVACIONES'
+      Size = 40
+    end
+    object QryVacaSTATUS_TRANS: TIBStringField
+      FieldName = 'STATUS_TRANS'
+      Origin = 'VACACIONES.STATUS_TRANS'
+      FixedChar = True
+      Size = 1
+    end
+    object QryVacaTIPO_CTA: TSmallintField
+      FieldName = 'TIPO_CTA'
+      Origin = 'VACACIONES.TIPO_CTA'
+    end
+    object QryVacaCANT_DIAS: TIntegerField
+      FieldName = 'CANT_DIAS'
+      Origin = 'VACACIONES.CANT_DIAS'
+    end
+    object QryVacaFECHA_EFECTIVA: TDateTimeField
+      FieldName = 'FECHA_EFECTIVA'
+      Origin = 'VACACIONES.FECHA_EFECTIVA'
+    end
+  end
+  object qryTotalNom: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT '
+      'sum(Nomina.SALARIO_BRUTO) SBRUTO, '
+      'sum(Nomina.IDSS) IDSS, '
+      'sum(Nomina.COOPERATIVA) COOP, '
+      'sum(0.0) SEGMED, '
+      'sum(Nomina.ISR) ISR, '
+      'sum(Nomina.OTROS_INGRESOS) OING, '
+      'sum(Nomina.OTRAS_DEDUCCIONES) ODED, '
+      'sum(Nomina.SALARIO_NETO) SNETO'
+      'FROM NOMINA Nomina'
+      '   INNER JOIN EMPLEADO Empleados'
+      '   ON  (Nomina.CIA_KEY = Empleados.CODIGO_CIA)  '
+      '   AND  (Nomina.CODIGO_EMP = Empleados.CODIGO)  '
+      'and Nomina.STATUS_NOMINA = '#39'P'#39
+      'WHERE Nomina.FECHA_NOMINA BETWEEN :FECHAINI AND :FECHAFIN'
+      'and Empleados.CODIGO between :codigoini and :codigofin ')
+    Left = 864
+    Top = 560
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'FECHAINI'
+        ParamType = ptUnknown
+      end
+      item
+        DataType = ftUnknown
+        Name = 'FECHAFIN'
+        ParamType = ptUnknown
+      end
+      item
+        DataType = ftUnknown
+        Name = 'codigoini'
+        ParamType = ptUnknown
+      end
+      item
+        DataType = ftUnknown
+        Name = 'codigofin'
+        ParamType = ptUnknown
+      end>
+    object qryTotalNomSBRUTO: TFloatField
+      FieldName = 'SBRUTO'
+    end
+    object qryTotalNomIDSS: TFloatField
+      FieldName = 'IDSS'
+    end
+    object qryTotalNomCOOP: TFloatField
+      FieldName = 'COOP'
+    end
+    object qryTotalNomSEGMED: TFloatField
+      FieldName = 'SEGMED'
+    end
+    object qryTotalNomISR: TFloatField
+      FieldName = 'ISR'
+    end
+    object qryTotalNomOING: TFloatField
+      FieldName = 'OING'
+    end
+    object qryTotalNomODED: TFloatField
+      FieldName = 'ODED'
+    end
+    object qryTotalNomSNETO: TFloatField
+      FieldName = 'SNETO'
+    end
+  end
+  object qryLey8701: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select * From PROC_Ley87 ( :tipo,  :fechanom)')
+    Left = 858
+    Top = 616
+    ParamData = <
+      item
+        DataType = ftSmallint
+        Name = 'tipo'
+        ParamType = ptInput
+      end
+      item
+        DataType = ftDateTime
+        Name = 'fechanom'
+        ParamType = ptInput
+      end>
+    object qryLey8701PORC_EMPLEADO: TFloatField
+      FieldName = 'PORC_EMPLEADO'
+    end
+    object qryLey8701PORC_PATRONO: TFloatField
+      FieldName = 'PORC_PATRONO'
+    end
+  end
+  object tTablaRetIsr: TIBTable
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    TableName = 'RETENCION_ISR'
+    Left = 544
+    Top = 624
+  end
+  object qryEmpRegalia: TIBDataSet
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    DeleteSQL.Strings = (
+      'delete from EMP_DESAUCIADOS'
+      'where'
+      '  CIA_KEY = :OLD_CIA_KEY and'
+      '  CODIGO = :OLD_CODIGO')
+    InsertSQL.Strings = (
+      'insert into EMP_DESAUCIADOS'
+      '  (CIA_KEY, CODIGO, STATUS)'
+      'values'
+      '  (:CIA_KEY, :CODIGO, :STATUS)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  CIA_KEY,'
+      '  CODIGO,'
+      '  STATUS'
+      'from EMP_DESAUCIADOS '
+      'where'
+      '  CIA_KEY = :CIA_KEY and'
+      '  CODIGO = :CODIGO')
+    SelectSQL.Strings = (
+      'SELECT '
+      '  CIA_KEY,  CODIGO,  STATUS'
+      'FROM EMP_DESAUCIADOS')
+    ModifySQL.Strings = (
+      'update EMP_DESAUCIADOS'
+      'set'
+      '  CIA_KEY = :CIA_KEY,'
+      '  CODIGO = :CODIGO,'
+      '  STATUS = :STATUS'
+      'where'
+      '  CIA_KEY = :OLD_CIA_KEY and'
+      '  CODIGO = :OLD_CODIGO')
+    Left = 848
+    Top = 152
+    object qryEmpRegaliaCIA_KEY: TSmallintField
+      FieldName = 'CIA_KEY'
+      Origin = 'EMP_DESAUCIADOS.CIA_KEY'
+      Required = True
+    end
+    object qryEmpRegaliaCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'EMP_DESAUCIADOS.CODIGO'
+      Required = True
+    end
+    object qryEmpRegaliaSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'EMP_DESAUCIADOS.STATUS'
+      FixedChar = True
+      Size = 1
     end
   end
 end

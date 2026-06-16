@@ -318,7 +318,7 @@ object frmPagoComisiones: TfrmPagoComisiones
         Top = 24
         Width = 271
         Height = 21
-        ItemHeight = 13
+        ItemHeight = 0
         TabOrder = 1
         OnChange = cboxListaVendedoresChange
       end

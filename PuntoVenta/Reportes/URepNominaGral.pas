@@ -106,6 +106,7 @@ type
     QRLabel36: TQRLabel;
     QRDBText19: TQRDBText;
     QRLabel38: TQRLabel;
+    qrLabelPagosDeLey: TQRLabel;
     procedure QRBand1BeforePrint(Sender: TQRCustomBand;
       var PrintBand: Boolean);
     procedure QRDBText2Print(sender: TObject; var Value: String);
@@ -158,6 +159,10 @@ type
     procedure QRBand4BeforePrint(Sender: TQRCustomBand;
       var PrintBand: Boolean);
     procedure QRLabel10Print(sender: TObject; var Value: String);
+    procedure QRBand6BeforePrint(Sender: TQRCustomBand;
+      var PrintBand: Boolean);
+    procedure QuickRepBeforePrint(Sender: TCustomQuickRep;
+      var PrintReport: Boolean);
   private
 
   public
@@ -167,6 +172,9 @@ type
 var
   QckRepNominaGral: TQckRepNominaGral;
   ContDet : Integer = 0 ;
+  sumaRegalia,
+  SumaVacaciones,
+  SumaBonificaciones:Currency;
 
 implementation
 
@@ -178,18 +186,18 @@ procedure TQckRepNominaGral.QRBand1BeforePrint(Sender: TQRCustomBand;
 var
   Ano, Mes, Dia : Word;
 begin
-  DecodeDate(glbFechaNom, Ano, Mes, Dia);
+  DecodeDate(GlbFechaNomina, Ano, Mes, Dia);
   if glbCheckNomina = 3 then
      Begin
        QRLabel1.Caption := 'NOMINA PRELIMINAR';
        if dia = 15 Then
-       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
        if (dia = 30) or (dia = 31) Then
-       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
        if (dia = 28) and (mes = 2 ) then
-       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
        if (dia = 29) and (mes = 2 ) then
-       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);       
+       QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);       
      End
   Else
      Begin
@@ -204,26 +212,26 @@ begin
         Begin
           QRLabel10.Caption := 'NOMINA QUINCENAL';
           if dia = 15 Then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 30) or (dia = 31) Then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 28) and (mes = 2 ) then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 29) and (mes = 2 ) then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
         End
   Else
      if dmNomina.QryRepNomGralTIPO_NOMINA.Value = 4 Then
         Begin
           QRLabel10.Caption := 'NOMINA OCASIONALES';
           if dia = 15 Then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 1))+ ' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 30) or (dia = 31) Then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 28) and (mes = 2 ) then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
           if (dia = 29) and (mes = 2 ) then
-          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',glbFechaNom);
+          QRLabel2.Caption := 'PERIODO DEL '+FormatDateTime('yyyy-mm-dd',EncodeDate(Ano, Mes, 16))+' AL '+FormatDateTime('yyyy-mm-dd',GlbFechaNomina);
         End
   Else
      if dmNomina.QryRepNomGralTIPO_NOMINA.Value = 3 Then
@@ -443,7 +451,7 @@ begin
        dmNomina.StpStatus.Close;
        dmNomina.StpStatus.Params[0].value := glbTipoNom;
        dmNomina.StpStatus.Params[1].value := glbCia_Key;
-       dmNomina.StpStatus.Params[2].value := glbFechaNom;
+       dmNomina.StpStatus.Params[2].value := glbFechaNomina;
        dmNomina.StpStatus.Params[3].value := 'P';
        dmNomina.StpStatus.ExecProc;
      End;
@@ -459,14 +467,23 @@ end;
 procedure TQckRepNominaGral.QRBand3BeforePrint(Sender: TQRCustomBand;
   var PrintBand: Boolean);
 begin
+  if (not dmNomina.QryRepNomGralCODIGO_EMP.IsNull) then
    QrLabel36.Caption := sqlNombreAbr(dmNomina.QryRepNomGralCODIGO_EMP.Value);
+   
+   if dmNomina.QryRepNomGralREGALIA.Value > 0 then
+  sumaRegalia:=sumaRegalia + dmNomina.QryRepNomGralREGALIA.Value;
+  if dmNomina.QryRepNomGralVACACIONES.Value > 0 then
+  SumaVacaciones:=SumaVacaciones + dmNomina.QryRepNomGralVACACIONES.Value;
+  if dmNomina.QryRepNomGralBONIFICACION.Value > 0 then
+  SumaBonificaciones:=SumaBonificaciones + dmNomina.QryRepNomGralBONIFICACION.Value;
+
 end;
 
 procedure TQckRepNominaGral.QRLabel36Print(sender: TObject;
   var Value: String);
 begin
-  if (dmNomina.QryRepNomGralCodigo.Value  <> '' ) then
-  QRLabel36.Caption := sqlNombreAbr(dmNomina.QryRepNomGralCodigo.AsInteger);
+  if (not dmNomina.QryRepNomGralCODIGO_EMP.IsNull) then
+  QRLabel36.Caption := sqlNombreAbr(dmNomina.QryRepNomGralCODIGO_EMP.AsInteger);
 end;
 
 procedure TQckRepNominaGral.QckRepNominaGralAfterPrint(Sender: TObject);
@@ -477,7 +494,7 @@ begin
        dmNomina.StpStatus.Close;
        dmNomina.StpStatus.Params[0].value := glbTipoNom;
        dmNomina.StpStatus.Params[1].value := glbCia_Key;
-       dmNomina.StpStatus.Params[2].value := glbFechaNom;
+       dmNomina.StpStatus.Params[2].value := glbFechaNomina;
        dmNomina.StpStatus.Params[3].value := 'P';
        dmNomina.StpStatus.ExecProc;
      end;
@@ -573,6 +590,30 @@ begin
   end;
   if xTipo <> '' then
   Value:=Value + ' : '+xTipo;}
+end;
+
+procedure TQckRepNominaGral.QRBand6BeforePrint(Sender: TQRCustomBand;
+  var PrintBand: Boolean);
+begin
+  if (sumaRegalia = 0) and
+  (SumaVacaciones = 0) and
+  (SumaBonificaciones = 0) then
+  begin
+    qrLabelPagosDeLey.Enabled:=False;
+    exit;                                         
+  end;                   
+  qrLabelPagosDeLey.Caption:=
+  'Pagos de Ley: Regalia:'+InsertarComa(FloattoStr(sumaRegalia))+
+  ' | Vacaciones: '+InsertarComa(FloattoStr(SumaVacaciones))+
+  ' | Bonificaciones: '+InsertarComa(FloattoStr(SumaBonificaciones));
+end;
+
+procedure TQckRepNominaGral.QuickRepBeforePrint(Sender: TCustomQuickRep;
+  var PrintReport: Boolean);
+begin
+  sumaRegalia:=0;
+  SumaVacaciones:=0;
+  SumaBonificaciones:=0;
 end;
 
 end.

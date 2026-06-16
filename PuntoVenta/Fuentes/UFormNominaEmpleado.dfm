@@ -1,8 +1,8 @@
 object frmNominaEmpleado: TfrmNominaEmpleado
-  Left = 207
-  Top = 126
-  Width = 1043
-  Height = 562
+  Left = 363
+  Top = 193
+  Width = 1040
+  Height = 561
   Caption = 'Procesar N'#243'mina Empleados'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -148,7 +148,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     ParentFont = False
   end
   object DBStatusLabel3: TDBStatusLabel
-    Left = 686
+    Left = 702
     Top = 222
     Width = 85
     Height = 13
@@ -165,7 +165,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     Top = 139
     Width = 68
     Height = 20
-    Caption = 'Prestamo'
+    Caption = 'Pr'#233'stamo'
     FocusControl = DBEdit2
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -175,7 +175,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     ParentFont = False
   end
   object RxSpeedButton1: TRxSpeedButton
-    Left = 456
+    Left = 680
     Top = 450
     Width = 79
     Height = 30
@@ -212,21 +212,21 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     ParentFont = False
   end
   object Label13: TLabel
-    Left = 408
+    Left = 544
     Top = 218
     Width = 69
     Height = 13
     Caption = 'Status Nomina'
   end
   object Label14: TLabel
-    Left = 503
+    Left = 639
     Top = 218
     Width = 30
     Height = 13
     Caption = 'Status'
   end
   object Label15: TLabel
-    Left = 492
+    Left = 628
     Top = 218
     Width = 5
     Height = 13
@@ -237,6 +237,102 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     Font.Name = 'MS Sans Serif'
     Font.Style = [fsBold]
     ParentFont = False
+  end
+  object SpeedButton2: TSpeedButton
+    Left = 417
+    Top = 450
+    Width = 58
+    Height = 30
+    Caption = 'IS&R'
+    Flat = True
+    Glyph.Data = {
+      76010000424D7601000000000000760000002800000020000000100000000100
+      0400000000000001000000000000000000001000000010000000000000000000
+      800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+      FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333300000000
+      0EEE333377777777777733330FF00FBFB0EE33337F37733F377733330F0BFB0B
+      FB0E33337F73FF73337733330FF000BFBFB033337F377733333733330FFF0BFB
+      FBF033337FFF733F333733300000BF0FBFB03FF77777F3733F37000FBFB0F0FB
+      0BF077733FF7F7FF7337E0FB00000000BF0077F377777777F377E0BFBFBFBFB0
+      F0F077F3333FFFF7F737E0FBFB0000000FF077F3337777777337E0BFBFBFBFB0
+      FFF077F3333FFFF73FF7E0FBFB00000F000077FF337777737777E00FBFBFB0FF
+      0FF07773FFFFF7337F37003000000FFF0F037737777773337F7333330FFFFFFF
+      003333337FFFFFFF773333330000000003333333777777777333}
+    NumGlyphs = 2
+    OnClick = SpeedButton2Click
+  end
+  object Label16: TLabel
+    Left = 192
+    Top = 12
+    Width = 91
+    Height = 13
+    Caption = 'Buscar por Nombre'
+  end
+  object Label17: TLabel
+    Left = 400
+    Top = 95
+    Width = 105
+    Height = 20
+    Caption = 'VACACIONES'
+    FocusControl = DBEdit11
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
+  end
+  object Label18: TLabel
+    Left = 400
+    Top = 139
+    Width = 72
+    Height = 20
+    Caption = 'REGALIA'
+    FocusControl = DBEdit12
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
+  end
+  object Label19: TLabel
+    Left = 400
+    Top = 183
+    Width = 115
+    Height = 20
+    Caption = 'BONIFICACION'
+    FocusControl = DBEdit13
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
+  end
+  object SpeedButton1: TSpeedButton
+    Left = 546
+    Top = 450
+    Width = 59
+    Height = 31
+    Caption = '&COOP'
+    Enabled = False
+    Flat = True
+    Glyph.Data = {
+      76010000424D7601000000000000760000002800000020000000100000000100
+      0400000000000001000000000000000000001000000010000000000000000000
+      800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+      FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00555500000000
+      0555555F7777777775F55500FFFFFFFFF0555577F5FFFFFFF7F550F0FEEEEEEE
+      F05557F7F777777757F550F0FFFFFFFFF05557F7F5FFFFFFF7F550F0FEEEEEEE
+      F05557F7F777777757F550F0FF777FFFF05557F7F5FFFFFFF7F550F0FEEEEEEE
+      F05557F7F777777757F550F0FF7F777FF05557F7F5FFFFFFF7F550F0FEEEEEEE
+      F05557F7F777777757F550F0FF77F7FFF05557F7F5FFFFFFF7F550F0FEEEEEEE
+      F05557F7F777777757F550F0FFFFFFFFF05557F7FF5F5F5F57F550F00F0F0F0F
+      005557F77F7F7F7F77555055070707070555575F7F7F7F7F7F55550507070707
+      0555557575757575755555505050505055555557575757575555}
+    NumGlyphs = 2
+    OnClick = SpeedButton1Click
   end
   object DBEdit1: TDBEdit
     Left = 8
@@ -323,7 +419,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
   object DBGrid1: TDBGrid
     Left = 8
     Top = 240
-    Width = 857
+    Width = 905
     Height = 193
     DataSource = dmNomina.dstblNomina
     TabOrder = 10
@@ -367,7 +463,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
         Color = 13822906
         Expanded = False
         FieldName = 'SALARIO_NETO'
-        Width = 68
+        Width = 80
         Visible = True
       end
       item
@@ -385,6 +481,21 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       end
       item
         Expanded = False
+        FieldName = 'REGALIA'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'VACACIONES'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'BONIFICACION'
+        Visible = True
+      end
+      item
+        Expanded = False
         FieldName = 'OTRAS_DEDUCCIONES'
         Width = 69
         Visible = True
@@ -398,6 +509,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       item
         Expanded = False
         FieldName = 'ISR'
+        Width = 57
         Visible = True
       end
       item
@@ -437,7 +549,6 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       item
         Expanded = False
         FieldName = 'FECHA_IN'
-        Width = 64
         Visible = True
       end
       item
@@ -461,18 +572,16 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       item
         Expanded = False
         FieldName = 'SFS_COMPLEMENTARIO'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'SFS_DEPENDIENTES'
-        Width = 64
         Visible = True
       end>
   end
   object btnNuevo: TBitBtn
-    Left = 879
+    Left = 928
     Top = 237
     Width = 80
     Height = 27
@@ -494,7 +603,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     NumGlyphs = 2
   end
   object btnModificar: TBitBtn
-    Left = 879
+    Left = 928
     Top = 279
     Width = 80
     Height = 27
@@ -517,7 +626,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     NumGlyphs = 2
   end
   object btnCancelar: TBitBtn
-    Left = 879
+    Left = 928
     Top = 320
     Width = 80
     Height = 27
@@ -540,7 +649,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     NumGlyphs = 2
   end
   object BitBtn4: TBitBtn
-    Left = 879
+    Left = 928
     Top = 363
     Width = 80
     Height = 27
@@ -563,7 +672,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     NumGlyphs = 2
   end
   object btnRefrescar: TBitBtn
-    Left = 879
+    Left = 928
     Top = 407
     Width = 80
     Height = 27
@@ -590,7 +699,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     NumGlyphs = 2
   end
   object BitBtn12: TBitBtn
-    Left = 880
+    Left = 929
     Top = 450
     Width = 81
     Height = 30
@@ -599,7 +708,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     Kind = bkClose
   end
   object BitBtn1: TBitBtn
-    Left = 699
+    Left = 762
     Top = 450
     Width = 71
     Height = 30
@@ -622,7 +731,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     NumGlyphs = 2
   end
   object BitBtn2: TBitBtn
-    Left = 16
+    Left = 7
     Top = 450
     Width = 75
     Height = 30
@@ -640,7 +749,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     TabOrder = 7
   end
   object DBNavigatorE1: TDBNavigatorE
-    Left = 784
+    Left = 833
     Top = 208
     Width = 176
     Height = 25
@@ -663,16 +772,16 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     TabOrder = 19
   end
   object BitBtn3: TBitBtn
-    Left = 539
+    Left = 478
     Top = 450
-    Width = 80
+    Width = 66
     Height = 30
     Caption = 'De&ducciones'
     TabOrder = 20
     OnClick = BitBtn3Click
   end
   object BitBtn5: TBitBtn
-    Left = 97
+    Left = 86
     Top = 450
     Width = 96
     Height = 30
@@ -681,28 +790,28 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     OnClick = BitBtn5Click
   end
   object BitBtn6: TBitBtn
-    Left = 375
+    Left = 347
     Top = 450
-    Width = 76
+    Width = 67
     Height = 30
-    Caption = 'Ver Venta'
+    Caption = 'Ver Ventas'
     Enabled = False
     TabOrder = 22
     OnClick = BitBtn6Click
   end
   object BitBtn7: TBitBtn
-    Left = 622
+    Left = 606
     Top = 450
-    Width = 74
+    Width = 71
     Height = 30
     Caption = 'Postear Nom'
     TabOrder = 23
     OnClick = BitBtn7Click
   end
   object BitBtn8: TBitBtn
-    Left = 772
+    Left = 837
     Top = 450
-    Width = 93
+    Width = 89
     Height = 30
     Caption = 'Det x Emp'
     TabOrder = 24
@@ -723,9 +832,9 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     NumGlyphs = 2
   end
   object BitBtn9: TBitBtn
-    Left = 290
+    Left = 273
     Top = 450
-    Width = 75
+    Width = 71
     Height = 30
     Caption = '&Integrar Prod'
     Enabled = False
@@ -742,7 +851,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     TabOrder = 5
   end
   object BitBtn10: TBitBtn
-    Left = 200
+    Left = 186
     Top = 450
     Width = 85
     Height = 28
@@ -751,7 +860,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     OnClick = BitBtn10Click
   end
   object GDias_Trab: TGroupBox
-    Left = 404
+    Left = 540
     Top = 78
     Width = 296
     Height = 131
@@ -982,6 +1091,57 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       TabOrder = 5
     end
   end
+  object ProgressBar1: TProgressBar
+    Left = 8
+    Top = 488
+    Width = 521
+    Height = 17
+    TabOrder = 28
+    Visible = False
+  end
+  object edtBuscarxNombre: TEdit
+    Left = 188
+    Top = 28
+    Width = 101
+    Height = 21
+    TabOrder = 29
+  end
+  object Button1: TButton
+    Left = 292
+    Top = 24
+    Width = 75
+    Height = 25
+    Caption = '&Buscar'
+    TabOrder = 30
+    OnClick = Button1Click
+  end
+  object DBEdit11: TDBEdit
+    Left = 400
+    Top = 118
+    Width = 134
+    Height = 21
+    DataField = 'VACACIONES'
+    DataSource = dmNomina.dstblNomina
+    TabOrder = 31
+  end
+  object DBEdit12: TDBEdit
+    Left = 400
+    Top = 160
+    Width = 134
+    Height = 21
+    DataField = 'REGALIA'
+    DataSource = dmNomina.dstblNomina
+    TabOrder = 32
+  end
+  object DBEdit13: TDBEdit
+    Left = 400
+    Top = 208
+    Width = 134
+    Height = 21
+    DataField = 'BONIFICACION'
+    DataSource = dmNomina.dstblNomina
+    TabOrder = 33
+  end
   object PopupMenu1: TPopupMenu
     Left = 572
     Top = 17
@@ -1091,8 +1251,8 @@ object frmNominaEmpleado: TfrmNominaEmpleado
     SkinFormtype = sfOnlyThisForm
     Version = '2.65.7.03'
     MenuUpdate = True
-    Left = 752
-    Top = 112
+    Left = 701
+    Top = 16
     SkinStream = {
       FA9100008D460300D676B1987C9C760C04AC9D5B8B63007FCFF7EFE771F1FFDA
       6EBDDF9B9CCE5A441BEFFA00FEBEF1E1200F6D9490227565ACAA7A814D6DBD8C
@@ -2264,7 +2424,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       590FBDE62E9A53653F1ABD189A5844DA8B4576B9FEE726BD6604EEDEC580}
   end
   object MainMenu1: TMainMenu
-    Left = 488
+    Left = 506
     Top = 16
     object Opciones1: TMenuItem
       Caption = '&Opciones'
@@ -2280,6 +2440,115 @@ object frmNominaEmpleado: TfrmNominaEmpleado
         Caption = 'Aplicar Comisiones'
         OnClick = AplicarComisiones1Click
       end
+      object BrowseNomina1: TMenuItem
+        Caption = 'Browse Nomina'
+        OnClick = BrowseNomina1Click
+      end
+    end
+  end
+  object qryEscalaIsr: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT '
+      '   CODIGO_ESCALA, '
+      '   ESCALA_RETENCION, '
+      '   TASA_EXENTO, '
+      '   FECHA_INI, FECHA_FIN'
+      'FROM RETENCION_ISR Retencion_isr'
+      'Where :fecha between fecha_ini and fecha_fin  ')
+    Left = 637
+    Top = 16
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'fecha'
+        ParamType = ptInput
+      end>
+    object qryEscalaIsrCODIGO_ESCALA: TIntegerField
+      FieldName = 'CODIGO_ESCALA'
+      Origin = 'RETENCION_ISR.CODIGO_ESCALA'
+    end
+    object qryEscalaIsrESCALA_RETENCION: TFloatField
+      FieldName = 'ESCALA_RETENCION'
+      Origin = 'RETENCION_ISR.ESCALA_RETENCION'
+    end
+    object qryEscalaIsrTASA_EXENTO: TFloatField
+      FieldName = 'TASA_EXENTO'
+      Origin = 'RETENCION_ISR.TASA_EXENTO'
+    end
+    object qryEscalaIsrFECHA_INI: TDateTimeField
+      FieldName = 'FECHA_INI'
+      Origin = 'RETENCION_ISR.FECHA_INI'
+    end
+    object qryEscalaIsrFECHA_FIN: TDateTimeField
+      FieldName = 'FECHA_FIN'
+      Origin = 'RETENCION_ISR.FECHA_FIN'
+    end
+  end
+  object qryNomantIsr: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT CODIGO_EMP CODIGO, sum(SALARIO_BRUTO)  SALARIO_BRUTO'
+      'FROM NOMINA Nomina'
+      'Where fecha_nomina between  :fechaini and :fechafin'
+      'And Status_Nomina = '#39'P'#39
+      'group by CODIGO_EMP')
+    Left = 418
+    Top = 320
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'fechaini'
+        ParamType = ptInput
+      end
+      item
+        DataType = ftDateTime
+        Name = 'fechafin'
+        ParamType = ptInput
+      end>
+    object qryNomantIsrSALARIO_BRUTO: TFloatField
+      FieldName = 'SALARIO_BRUTO'
+      Origin = 'NOMINA.SALARIO_BRUTO'
+    end
+    object qryNomantIsrCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+    end
+  end
+  object qryVaca: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT CODIGO, e.FECHAVACACIONES, VALOR_TRANS'
+      'FROM VACACIONES v'
+      'inner join empleado e on e.CODIGO = v.CODIGO'
+      'WHERE  :fecha Between  v.FECHA_ENT and   v.FECHA_SAL')
+    Left = 568
+    Top = 352
+    ParamData = <
+      item
+        DataType = ftDateTime
+        Name = 'fecha'
+        ParamType = ptInput
+      end>
+    object qryVacaCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'VACACIONES.CODIGO'
+    end
+    object qryVacaVALOR_TRANS: TFloatField
+      FieldName = 'VALOR_TRANS'
+      Origin = 'VACACIONES.VALOR_TRANS'
+    end
+    object qryVacaFECHAVACACIONES: TDateTimeField
+      FieldName = 'FECHAVACACIONES'
+      Origin = 'EMPLEADO.FECHAVACACIONES'
     end
   end
 end

@@ -20,7 +20,8 @@ function SincronizarClienteERPALoanProcess(
 function ObtenerRutaDbLoanProcess: string;
 
 implementation
- uses UGlobal;
+ uses UGlobal, UFormSepararNombre;
+ 
 function TrimSafe(const S: string): string;
 begin
   Result := Trim(S);
@@ -252,7 +253,7 @@ begin
     QSrc.Transaction := ATrERP;
     QSrc.SQL.Text :=
       'select ' +
-      '  CODIGO_CTE, TIPO_CLIENTE, FOTO, NOMBRE_CTE, CEDULA, RNC, RNC_NUMERO, ' +
+      '  CODIGO_CTE, TIPO_CLIENTE, FOTO, COALESCE(NOMBRE_CTE,NOMBRE_FACTURAR) NOMBRE_CTE, CEDULA, RNC, RNC_NUMERO, ' +
       '  TELEF_CONTACTO, REFERENCIA, TELEF_REFERENCIA, OTRO_TELEFONO, FAX_CONTACTO, ' +
       '  CONDICION, LIMITE_CREDITO, EMAIL, WEBSITE, PAIS, CIUDAD, DIRECCION_CONT, ' +
       '  STATUS_CLIENTE, INSERTADO_POR, FECHA_INSERTADO, FECHA_MOD, MODI_POR, ' +
@@ -342,6 +343,7 @@ begin
         '  TIPO_CLIENTE = :TIPO_CLIENTE, ' +
         '  FOTO = :FOTO, ' +
         '  NOMBRE = :NOMBRE, ' +
+        '  APELLIDO = :APELLIDO, '+
         '  CEDULA = :CEDULA, ' +
         '  PASAPORTE = :PASAPORTE, ' +
         '  RNC = :RNC, ' +
@@ -375,14 +377,14 @@ begin
     begin
       QDst.SQL.Text :=
         'insert into CLIENTES ( ' +
-        '  CODIGO, TIPO_CLIENTE, FOTO, NOMBRE, CEDULA, PASAPORTE, RNC, ' +
+        '  CODIGO, TIPO_CLIENTE, FOTO, NOMBRE, APELLIDO, CEDULA, PASAPORTE, RNC, ' +
         '  TELEF_CONTACTO, REFERENCIA, TELEF_REFERENCIA, OTRO_TELEFONO, FAX_CONTACTO, ' +
         '  CONDICION, LIMITE_CREDITO, EMAIL, WEBSITE, PAIS, CIUDAD, ' +
         '  DIRECCION_REAL, DIRECCION_LOCAL, STATUS_CLIENTE, INSERTADO_POR, ' +
         '  FECHA_INSERTADO, FECHA_MOD, MODI_POR, CANT_DIAS_CREDITO, TIPO_NCF, ' +
         '  OBSERVACION, LUGAR_DE_TRABAJO, FECHA_NACIMIENTO, RUTA_FOTO ' +
         ') values ( ' +
-        '  :CODIGO, :TIPO_CLIENTE, :FOTO, :NOMBRE, :CEDULA, :PASAPORTE, :RNC, ' +
+        '  :CODIGO, :TIPO_CLIENTE, :FOTO, :NOMBRE, :APELLIDO, :CEDULA, :PASAPORTE, :RNC, ' +
         '  :TELEF_CONTACTO, :REFERENCIA, :TELEF_REFERENCIA, :OTRO_TELEFONO, :FAX_CONTACTO, ' +
         '  :CONDICION, :LIMITE_CREDITO, :EMAIL, :WEBSITE, :PAIS, :CIUDAD, ' +
         '  :DIRECCION_REAL, :DIRECCION_LOCAL, :STATUS_CLIENTE, :INSERTADO_POR, ' +
@@ -391,10 +393,19 @@ begin
         ')';
     end;
 
+    frmSepararNombre:=TfrmSepararNombre.Create(nil);
+    try
+      frmSepararNombre.edtValor.Text:=QSrc.FieldByName('nombre_cte').AsString;
+      frmSepararNombre.BitBtn1Click(nil);
+    finally
+      freeandnil(frmSepararNombre);
+    end;
+
     AssignParamAsInteger(QDst, 'CODIGO', CodigoDestino);
     AssignParamFromField(QDst.ParamByName('TIPO_CLIENTE'), QSrc.FieldByName('TIPO_CLIENTE'));
     AssignParamFromField(QDst.ParamByName('FOTO'), QSrc.FieldByName('FOTO'));
-    AssignParamAsString(QDst, 'NOMBRE', QSrc.FieldByName('NOMBRE_CTE').AsString);
+    AssignParamAsString(QDst, 'NOMBRE', UFormSepararNombre.r_nombre);
+    AssignParamAsString(QDst, 'APELLIDO',UFormSepararNombre.r_apellido);
     AssignParamAsString(QDst, 'CEDULA', TargetCedula);
     AssignParamAsString(QDst, 'PASAPORTE', TargetPasaporte);
     AssignParamAsString(QDst, 'RNC', TargetRnc);

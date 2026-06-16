@@ -1,6 +1,6 @@
 object frmNominaContratista: TfrmNominaContratista
-  Left = 210
-  Top = 128
+  Left = 367
+  Top = 212
   Width = 983
   Height = 561
   Caption = 'N'#243'mina Contratista'
@@ -206,7 +206,7 @@ object frmNominaContratista: TfrmNominaContratista
   object Label8: TLabel
     Left = 800
     Top = 135
-    Width = 137
+    Width = 136
     Height = 20
     Caption = 'Otras Deducciones'
     FocusControl = DBEdit5
@@ -402,6 +402,7 @@ object frmNominaContratista: TfrmNominaContratista
     TitleFont.Height = -11
     TitleFont.Name = 'MS Sans Serif'
     TitleFont.Style = []
+    RowColor2 = 16776176
     Columns = <
       item
         Expanded = False
@@ -416,11 +417,13 @@ object frmNominaContratista: TfrmNominaContratista
       item
         Expanded = False
         FieldName = 'CODIGO_PROY'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_NOMINA'
+        Width = 64
         Visible = True
       end
       item
@@ -431,16 +434,19 @@ object frmNominaContratista: TfrmNominaContratista
       item
         Expanded = False
         FieldName = 'PRECIO_XDIA'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'SALARIO_BRUTO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'COOPERATIVA'
+        Width = 64
         Visible = True
       end
       item
@@ -457,6 +463,7 @@ object frmNominaContratista: TfrmNominaContratista
       item
         Expanded = False
         FieldName = 'CUOTA_PRESTAMO'
+        Width = 64
         Visible = True
       end
       item
@@ -467,66 +474,79 @@ object frmNominaContratista: TfrmNominaContratista
       item
         Expanded = False
         FieldName = 'SFS_DEPENDIENTES'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'SFS_COMPLEMENTARIO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'OTROS_INGRESOS'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'OTRAS_DEDUCCIONES'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MONTO_RETENCIONDGII'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'SALARIO_NETO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'CODIGO_USUARIO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'STATUS'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'NUMERO_CKS'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_IN'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'IN_POR'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_MOD'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MOD_POR'
+        Width = 64
         Visible = True
       end>
   end

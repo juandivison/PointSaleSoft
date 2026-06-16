@@ -96,6 +96,13 @@ type
     tblCompaniaIMAGEN_DESKTOP: TIBStringField;
     tblCompaniaID_PROVINCIA: TIntegerField;
     tblCompaniaID_MUNICIPIO: TIntegerField;
+    tblCompaniaTIPO_RIESGO_ARL: TIBStringField;
+    tbltipo_riesgo_arl: TIBTable;
+    tbltipo_riesgo_arlID: TIntegerField;
+    tbltipo_riesgo_arlTIPO: TIBStringField;
+    tbltipo_riesgo_arlFECHA_INI: TDateTimeField;
+    tbltipo_riesgo_arlFECHA_FIN: TDateTimeField;
+    tbltipo_riesgo_arlPORCIENTO: TFloatField;
     procedure tblCompaniaAfterScroll(DataSet: TDataSet);
   private
     { Private declarations }

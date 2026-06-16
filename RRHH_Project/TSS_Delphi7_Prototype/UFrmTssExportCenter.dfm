@@ -1,6 +1,6 @@
 object frmTssExportCenter: TfrmTssExportCenter
-  Left = 191
-  Top = 131
+  Left = 203
+  Top = 154
   Width = 1060
   Height = 700
   Caption = 'Centro de Exportacion TSS / SUIR Plus'
@@ -133,7 +133,7 @@ object frmTssExportCenter: TfrmTssExportCenter
       Left = 736
       Top = 16
       Width = 121
-      Height = 95
+      Height = 30
       Ctl3D = True
       ParentCtl3D = False
       TabOrder = 5
@@ -160,7 +160,7 @@ object frmTssExportCenter: TfrmTssExportCenter
       Caption = 'Autodeterminacion'
     end
     object tsNovedades: TTabSheet
-      Caption = 'Novedades'
+      Caption = 'Novedades NV'
     end
     object tsBonificacion: TTabSheet
       Caption = 'Bonificacion INFOTEP'

@@ -1,6 +1,6 @@
 object frmPrestamos: TfrmPrestamos
-  Left = 341
-  Top = 141
+  Left = 334
+  Top = 180
   Width = 816
   Height = 457
   Caption = 'Prestamo Empleados'
@@ -19,8 +19,8 @@ object frmPrestamos: TfrmPrestamos
   object PageControl1: TPageControl
     Left = 0
     Top = 0
-    Width = 800
-    Height = 419
+    Width = 808
+    Height = 426
     ActivePage = TabSheet1
     Align = alClient
     TabOrder = 0
@@ -718,11 +718,13 @@ object frmPrestamos: TfrmPrestamos
           item
             Expanded = False
             FieldName = 'FECHA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'TIPO_PRESTAMO'
+            Width = 64
             Visible = True
           end
           item
@@ -733,46 +735,55 @@ object frmPrestamos: TfrmPrestamos
           item
             Expanded = False
             FieldName = 'PORC_INTERES'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTO_PRESTAMO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTO_PAGADO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_ULTIMO_PAGO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'STATUS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'IN_POR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_IN'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MOD_POR'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'FECHA_MOD'
+            Width = 64
             Visible = True
           end>
       end
