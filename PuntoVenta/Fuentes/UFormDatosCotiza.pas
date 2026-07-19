@@ -193,6 +193,9 @@ type
     ibsqlBusarFechaOrden: TIBSQL;
     Button3: TButton;
     ibStpInsertCotizaDet: TIBStoredProc;
+    ibqryCotizacionDetLEVEL_PRECIO_VENT: TSmallintField;
+    ibqryCotizacionMasterPROPINA: TFloatField;
+    ibqryCotizacionMasterPROPINALEGAL: TFloatField;
     procedure FormCreate(Sender: TObject);
     procedure RadioGroup1Click(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
@@ -1151,6 +1154,7 @@ begin
   ibStpInsertCotizaDet.Params[23].Value    := ibqryCotizacionDetMONTO_TASA.Value;
   ibStpInsertCotizaDet.Params[24].Value    := ibqryCotizacionDetIDTASAITBIS.Value;
   ibStpInsertCotizaDet.Params[25].Value    := ibqryCotizacionDetCANT_VIAJES.Value;
+  ibStpInsertCotizaDet.Params[26].Value    := ibqryCotizacionDetLEVEL_PRECIO_VENT.Value;
   //ibStpInsertCotizaDet.Params[21].Value := rxVentaMontoDescItem.Value;
   ibStpInsertCotizaDet.ExecProc;
 end;

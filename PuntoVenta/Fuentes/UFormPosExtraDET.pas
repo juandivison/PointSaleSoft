@@ -417,6 +417,7 @@ begin
     frmProcVentaRapida.ProgressBar1.StepIt;
     Application.ProcessMessages;
     dmCalculos.EsProcCalc:=False;
+    yNumSerie:=frmProcVentaRapida.rxVentaSerie.Value;
     dmCalculos.qryConsultaPosExtraDet.Next;//dmCalculos.qryConsultaPosExtraDetserie.value
     frmLogError.LogSteps(GlbNumVtaPOS,serierxVenta,now,now,'','UFormPosExtraDet');
   end;
@@ -618,6 +619,7 @@ begin
     frmProcVentaRapida.ProgressBar1.StepIt;
     Application.ProcessMessages;
     dmCalculos.EsProcCalc:=False;
+    yNumSerie:=frmProcVentaRapida.rxVentaSerie.Value;
     dmCalculos.qryDatosCotiPosExtra.Next;//dmCalculos.qryConsultaPosExtraDetserie.value
   end;
   frmProcVentaRapida.QryPrecios.Close;
@@ -734,6 +736,7 @@ begin
     frmProcVentaRapida.ProgressBar1.StepIt;
     Application.ProcessMessages;
     dmCalculos.EsProcCalc:=False;
+    yNumSerie:=frmProcVentaRapida.rxVentaSerie.Value;
     dmCalculos.qryDatosCotiPosExtra.Next;//dmCalculos.qryConsultaPosExtraDetserie.value
   end;
   dmCalculos.qryDatosCotiPosExtra.close;

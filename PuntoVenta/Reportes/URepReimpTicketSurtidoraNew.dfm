@@ -1,6 +1,6 @@
 object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   Left = 0
-  Top = -383
+  Top = 0
   Width = 278
   Height = 932
   Frame.Color = clBlack
@@ -731,9 +731,9 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     end
     object QRExpr5: TQRExpr
       Left = 152
-      Top = 12
+      Top = 14
       Width = 95
-      Height = 17
+      Height = 14
       Enabled = False
       Frame.Color = clBlack
       Frame.DrawTop = False
@@ -741,9 +741,9 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawLeft = False
       Frame.DrawRight = False
       Size.Values = (
-        44.979166666666670000
+        37.041666666666670000
         402.166666666666700000
-        31.750000000000000000
+        37.041666666666670000
         251.354166666666700000)
       Alignment = taRightJustify
       AlignToBand = False
@@ -751,7 +751,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       AutoStretch = False
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -13
+      Font.Height = -12
       Font.Name = 'Default'
       Font.Style = [fsBold]
       Color = clWhite
@@ -766,7 +766,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
         'LOR_SERVICIO_DET) - sum(qryVentaFacturaDet.ITBI_DET),sum(qryVent' +
         'aFacturaDet.VALOR_SERVICIO_DET))'
       Mask = ',0.00'
-      FontSize = 10
+      FontSize = 9
     end
     object QRDBText16: TQRDBText
       Left = 152
@@ -863,9 +863,9 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     end
     object QRExpr1: TQRExpr
       Left = 153
-      Top = 10
+      Top = 12
       Width = 95
-      Height = 17
+      Height = 14
       Enabled = False
       Frame.Color = clBlack
       Frame.DrawTop = False
@@ -873,9 +873,9 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Frame.DrawLeft = False
       Frame.DrawRight = False
       Size.Values = (
-        44.979166666666670000
+        37.041666666666670000
         404.812500000000000000
-        26.458333333333330000
+        31.750000000000000000
         251.354166666666700000)
       Alignment = taRightJustify
       AlignToBand = False
@@ -883,7 +883,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       AutoStretch = False
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -13
+      Font.Height = -12
       Font.Name = 'Default'
       Font.Style = [fsBold]
       Color = clWhite
@@ -895,7 +895,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       WordWrap = True
       Expression = 'sum(qryVentaFacturaDet.VALOR_SERVICIO_DET)'
       Mask = ',0.00'
-      FontSize = 10
+      FontSize = 9
     end
     object QRDBText13: TQRDBText
       Left = 152
@@ -2164,20 +2164,20 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       658.812500000000000000)
     ParentBand = PageFooterBand1
     object QRDBText9: TQRDBText
-      Left = 152
-      Top = 5
-      Width = 95
-      Height = 14
+      Left = 147
+      Top = 3
+      Width = 100
+      Height = 17
       Frame.Color = clBlack
       Frame.DrawTop = False
       Frame.DrawBottom = False
       Frame.DrawLeft = False
       Frame.DrawRight = False
       Size.Values = (
-        37.041666666666670000
-        402.166666666666700000
-        13.229166666666670000
-        251.354166666666700000)
+        44.979166666666670000
+        388.937500000000000000
+        7.937500000000000000
+        264.583333333333300000)
       Alignment = taRightJustify
       AlignToBand = False
       AutoSize = False
@@ -2187,7 +2187,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       DataField = 'VALOR_TOTAL_DET'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -11
+      Font.Height = -13
       Font.Name = 'Default'
       Font.Style = [fsBold]
       Mask = ',0.00'
@@ -2195,7 +2195,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       ParentFont = False
       Transparent = False
       WordWrap = True
-      FontSize = 8
+      FontSize = 10
     end
     object QRShape2: TQRShape
       Left = 136
@@ -2236,20 +2236,20 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       VertAdjust = 0
     end
     object QRLabel25: TQRLabel
-      Left = 88
+      Left = 77
       Top = 4
-      Width = 56
-      Height = 15
+      Width = 66
+      Height = 17
       Frame.Color = clBlack
       Frame.DrawTop = False
       Frame.DrawBottom = False
       Frame.DrawLeft = False
       Frame.DrawRight = False
       Size.Values = (
-        39.687500000000000000
-        232.833333333333300000
+        44.979166666666670000
+        203.729166666666700000
         10.583333333333330000
-        148.166666666666700000)
+        174.625000000000000000)
       Alignment = taLeftJustify
       AlignToBand = False
       AutoSize = True
@@ -2258,13 +2258,13 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Color = clWhite
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -11
+      Font.Height = -13
       Font.Name = 'Arial'
       Font.Style = [fsBold]
       ParentFont = False
       Transparent = False
       WordWrap = True
-      FontSize = 8
+      FontSize = 10
     end
   end
   object ChildBand3: TQRChildBand

@@ -404,28 +404,28 @@ begin
                qckFactServ8_5Ayaco.QRLabel25.Caption :='ITBIS Exonerado';
              end  else
              qckFactServ8_5Ayaco.QRLabel25.Caption :='ITBIS';
-              qckFactServ8_5Ayaco.TPag.Caption:=
-              IntToStr(qckFactServ8_5Ayaco.PageNumber);
-              qckFactServ8_5Ayaco.xtipoVenta := 'Devolución';
-              qckFactServ8_5Ayaco.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
-              if (GlbImpReciboSinPreg = 1) then
+             qckFactServ8_5Ayaco.TPag.Caption:=
+             IntToStr(qckFactServ8_5Ayaco.PageNumber);
+             qckFactServ8_5Ayaco.xtipoVenta := 'Devolución';
+             qckFactServ8_5Ayaco.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+             if (GlbImpReciboSinPreg = 1) then
                  qckFactServ8_5Ayaco.Print
-              else
-              if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
-              begin
-                qckFactServ8_5Ayaco.PrinterSetup;
-                qckFactServ8_5Ayaco.Print;
-              end else
-              qckFactServ8_5Ayaco.Preview;
+             else
+             if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+             begin
+               qckFactServ8_5Ayaco.PrinterSetup;
+               qckFactServ8_5Ayaco.Print;
+             end else
+             qckFactServ8_5Ayaco.Preview;
 
-              if (GlbImpReciboSinPreg = 0) then
-              if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
-              begin
-                qckFactServ8_5Ayaco.Preview;
-              end;
-            finally
-            qckFactServ8_5Ayaco.Free;
-            qckFactServ8_5Ayaco:=Nil;
+             if (GlbImpReciboSinPreg = 0) then
+             if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+             begin
+               qckFactServ8_5Ayaco.Preview;
+             end;
+             finally
+             qckFactServ8_5Ayaco.Free;
+             qckFactServ8_5Ayaco:=Nil;
           end;
         end else
         if (GlBBurgos = 1) then

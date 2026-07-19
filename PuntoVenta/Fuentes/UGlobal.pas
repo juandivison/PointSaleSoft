@@ -301,6 +301,7 @@ interface
     GlbBaseUrlRNC, GlbBaseUrlRNCEndPoint:String;
     GlbActivaIFiscal, GlbComerEs1ro: Integer;
     GlbUsarFacturaTxtECF, GlbActivaECF, GlbValidarECF:Integer;//Factura Electronica
+    GlbSecECFGenerada:boolean;
     GlbCajaeCF:String;
     GlbCodSucursal: String;
     GlbImpresoraFOnline: Boolean;
@@ -599,6 +600,7 @@ var TAnio:Integer;Var TMes:Integer;Var TDia:Integer);
    function GetComputerNameStr: string;
    Procedure ExportToHTMLCambioPrecios(mTabla: TIBQuery; NombreArchivo: String);
    function CheckRNCEdActivoenDGII(iddoc:string):boolean;
+   function QuitarCaracteresEspeciales(const Texto: string): string;
    function CheckInternetWithRetries: Boolean;
    procedure MarcarCambioPreciosEnviados(AQuery: TIBDataSet; AFechaIni, AFechaFin: TDateTime);
    //procedure EjecutarFormatearExcelYEsperar(fechaini:string;fechafin:string;ciakey:integer;const NombreArchivoExcel: string;nombreExe: string);
@@ -1265,6 +1267,60 @@ begin
       ShowMessage('No ACTIVO en DGII.');
     result:=False;
   end;
+end;
+
+function QuitarCaracteresEspeciales(const Texto: string): string;
+var
+  i: Integer;
+  c: Char;
+  UltimoFueEspacio: Boolean;
+begin
+  Result := '';
+  UltimoFueEspacio := False;
+
+  for i := 1 to Length(Texto) do
+  begin
+    c := Texto[i];
+
+    case c of
+      'á', 'à', 'ä', 'â', 'ã': c := 'a';
+      'Á', 'À', 'Ä', 'Â', 'Ã': c := 'A';
+
+      'é', 'è', 'ë', 'ê': c := 'e';
+      'É', 'È', 'Ë', 'Ê': c := 'E';
+
+      'í', 'ì', 'ï', 'î': c := 'i';
+      'Í', 'Ì', 'Ï', 'Î': c := 'I';
+
+      'ó', 'ò', 'ö', 'ô', 'õ': c := 'o';
+      'Ó', 'Ò', 'Ö', 'Ô', 'Õ': c := 'O';
+
+      'ú', 'ù', 'ü', 'û': c := 'u';
+      'Ú', 'Ù', 'Ü', 'Û': c := 'U';
+
+      'ñ': c := 'n';
+      'Ñ': c := 'N';
+
+      'ç': c := 'c';
+      'Ç': c := 'C';
+    end;
+
+    if c in ['A'..'Z', 'a'..'z', '0'..'9'] then
+    begin
+      Result := Result + c;
+      UltimoFueEspacio := False;
+    end
+    else if c = ' ' then
+    begin
+      if not UltimoFueEspacio then
+      begin
+        Result := Result + c;
+        UltimoFueEspacio := True;
+      end;
+    end;
+  end;
+
+  Result := Trim(Result);
 end;
 
 function EjecutarFormatearExcelYEsperar(
@@ -6350,6 +6406,7 @@ Begin
   GlbImprimeTicketCustom:=0;
   GlbProsesur := 0;
   GlbActivaNomina:=1;
+  GlbSecECFGenerada:=False;
   //GlbUsuarioPassword  := '';
 end.
 

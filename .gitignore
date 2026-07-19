@@ -1,67 +1,156 @@
-# Uncomment these types if you want even more clean repository. But be careful.
-# It can make harm to an existing project source. Read explanations below.
-#
-# Resource files are binaries containing manifest, project icon and version info.
-# They can not be viewed as text or compared by diff-tools. Consider replacing them with .rc files.
-#*.res
-#
-# Type library file (binary). In old Delphi versions it should be stored.
-# Since Delphi 2009 it is produced from .ridl file and can safely be ignored.
-#*.tlb
-#
-# Diagram Portfolio file. Used by the diagram editor up to Delphi 7.
-# Uncomment this if you are not using diagrams or use newer Delphi version.
-#*.ddp
-#
-# Visual LiveBindings file. Added in Delphi XE2.
-# Uncomment this if you are not using LiveBindings Designer.
-#*.vlb
-#
-# Deployment Manager configuration file for your project. Added in Delphi XE2.
-# Uncomment this if it is not mobile development and you do not use remote debug feature.
-#*.deployproj
-#
-# C++ object files produced when C/C++ Output file generation is configured.
-# Uncomment this if you are not using external objects (zlib library for example).
-#*.obj
-#
+# ============================================================
 
-# Default Delphi compiler directories
-# Content of this directories are generated with each Compile/Construct of a project.
-# Most of the time, files here have not there place in a code repository.
-#Win32/
-#Win64/
-#OSX64/
-#OSXARM64/
-#Android/
-#Android64/
-#iOSDevice64/
-#Linux64/
+# SISTEMA OPERATIVO
 
-# Carpetas build típicas (.NET / VS / otros)
-obj/
-**/obj/
-Obj/
-**/Obj/
-**/Bin/
-**/Fuentes - Copy/
-PuntoVtaeCF/
-PuntoVenta/Fuentes/Bck
-PuntoVenta/Fuentes -Bck8Ago2023
-PuntoVenta/Reportes - Bck8Ago2023
-PuntoVenta/Reportes/Bck
-PuntoVentaJul4.2018/**
-ThreatDelphi/
-QR_ECF/
+# ============================================================
 
-# Por si son objetos compilados (Delphi/C/C++)
-*.obj
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Delphi compiler-generated binaries (safe to delete)
-*.gdb
-*.bak
+# ============================================================
+
+# VISUAL STUDIO / RIDER / VS CODE
+
+# ============================================================
+
+.vs/
+**/.vs/
+
+.idea/
+**/.idea/
+
+.vscode/
+**/.vscode/
+
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+*.vbproj.user
+*.DotSettings.user
+
+# ============================================================
+
+# .NET - COMPILACIÓN Y PUBLICACIÓN
+
+# ============================================================
+
+[Bb]in/
+**/[Bb]in/
+
+[Oo]bj/
+**/[Oo]bj/
+
+publish/
+**/publish/
+
+artifacts/
+**/artifacts/
+
+TestResults/
+**/TestResults/
+
+coverage/
+**/coverage/
+
+BenchmarkDotNet.Artifacts/
+**/BenchmarkDotNet.Artifacts/
+
+*.nupkg
+*.snupkg
+
+packages/
+**/packages/
+
+# ============================================================
+
+# POINTSALESOFT XML SALES IMPORTER
+
+# ============================================================
+
+# Configuración local: puede contener credenciales y rutas privadas
+
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/appsettings.json
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/appsettings.*.json
+
+# Permitir archivos de configuración de ejemplo
+
+!/PuntoVenta/PointSaleSoft.XmlSalesImporter/appsettings.example.json
+!/PuntoVenta/PointSaleSoft.XmlSalesImporter/appsettings.template.json
+
+# Publicación autocontenida
+
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/publish/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/**/publish/
+
+# Reportes y resultados generados
+
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/reports/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/Reports/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/logs/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/Logs/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/output/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/Output/
+
+# XML firmados usados como datos de operación o pruebas locales
+
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/XMLFirmados/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/XmlFirmados/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/xmlfirmados/
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/**/*_signed.xml
+
+# Archivos generados por la importación y los reportes
+
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/**/carga_xml_*.csv
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/**/Ventas_XML_*.xlsx
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/**/*.log
+
+# Bases de datos locales o copias de QA
+
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/**/*.fdb
+/PuntoVenta/PointSaleSoft.XmlSalesImporter/**/*.fbk
+
+# ============================================================
+
+# DELPHI - DIRECTORIOS GENERADOS
+
+# ============================================================
+
+Win32/
+**/Win32/
+
+Win64/
+**/Win64/
+
+OSX64/
+**/OSX64/
+
+OSXARM64/
+**/OSXARM64/
+
+Android/
+**/Android/
+
+Android64/
+**/Android64/
+
+iOSDevice64/
+**/iOSDevice64/
+
+Linux64/
+**/Linux64/
+
+# ============================================================
+
+# DELPHI - ARCHIVOS COMPILADOS
+
+# ============================================================
+
+*.dcu
 *.exe
-*.ddp
 *.dll
 *.bpl
 *.bpi
@@ -73,52 +162,123 @@ QR_ECF/
 *.dres
 *.rsm
 *.tds
-*.dcu
+*.obj
 *.lib
 *.a
 *.o
 *.ocx
-*.pdf
-*.zip
-*.rar
-*.txt
-*copy.*
-*.dat
-*.ok
-*.*HOY*
-*.xls
-*.xlsx
-*.rpt
-*.log
-*.fdb
-*.csv
-*.sql
-**/*Copy/
+*.gdb
+*Copy.*
+# ============================================================
 
-# Delphi autogenerated files (duplicated info)
+# DELPHI - ARCHIVOS AUTOGENERADOS
+
+# ============================================================
+
 *.cfg
 *.hpp
 *Resource.rc
 
-# Delphi local files (user-specific info)
 *.local
 *.identcache
 *.projdata
 *.tvsconfig
 *.dsk
 *.dsv
-
-# Delphi history and backups
-__history/
-__recovery/
-*.~*
-
-GestionPlan/Fuentes/bck
-PuntoVenta/Bin/Install
-PuntoVenta/Bin/InstallFile
-
-# Castalia statistics file (since XE7 Castalia is distributed with Delphi)
 *.stat
 
-# Boss dependency manager vendor folder https://github.com/HashLoad/boss
+# ============================================================
+
+# DELPHI - HISTORIAL Y RESPALDOS
+
+# ============================================================
+
+__history/
+**/__history/
+
+__recovery/
+**/__recovery/
+
+*.~*
+*.bak
+
+# ============================================================
+
+# ARCHIVOS TEMPORALES Y DE LOG
+
+# ============================================================
+
+*.tmp
+*.temp
+*.log
+*.cache
+*.lock
+*.pid
+*.old
+*.ddp
+*.zip
+*.rar
+*.7z
+
+*.ok
+*.*HOY*
+
+# ============================================================
+
+# BASES DE DATOS Y RESPALDOS
+
+# ============================================================
+
+*.fdb
+*.fbk
+*.gbk
+
+# ============================================================
+
+# REPORTES BINARIOS GENERADOS
+
+# ============================================================
+
+*.rpt
+
+# ============================================================
+
+# CARPETAS LEGACY / RESPALDOS DEL REPOSITORIO
+
+# ============================================================
+
+/PuntoVtaeCF/
+
+/PuntoVenta/BinArea31/
+/PuntoVenta/Fuentes/OldCode/
+/PuntoVenta/Fuentes - EnRevision/
+/PuntoVenta/Preventa - Copy/
+/PuntoVenta/TestUnit/
+/PuntoVenta/Fuentes/Bck/
+/PuntoVenta/Fuentes -Bck8Ago2023/
+/PuntoVenta/Reportes - Bck8Ago2023/
+/PuntoVenta/Reportes/Bck/
+
+/PuntoVentaJul4.2018/
+
+/ThreatDelphi/
+/QR_ECF/
+
+/GestionPlan/Fuentes/bck/
+
+/PuntoVenta/Bin/Install/
+/PuntoVenta/Bin/InstallFile/
+
+# Copias de carpetas creadas manualmente
+
+**/Fuentes - Copy/
+**/* - Copy/
+
+# ============================================================
+
+# BOSS DEPENDENCY MANAGER
+
+# ============================================================
+
 modules/
+**/modules/

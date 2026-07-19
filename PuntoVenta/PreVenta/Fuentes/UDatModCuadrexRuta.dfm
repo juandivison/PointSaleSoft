@@ -1,7 +1,7 @@
 object dmCuadrexRuta: TdmCuadrexRuta
   OldCreateOrder = False
-  Left = 425
-  Top = 170
+  Left = 788
+  Top = 181
   Height = 411
   Width = 552
   object tblBalanceDespacho: TIBDataSet

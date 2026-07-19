@@ -1,8 +1,8 @@
 object frmCobroCuotasFinanciamientos: TfrmCobroCuotasFinanciamientos
-  Left = 275
-  Top = 122
+  Left = 310
+  Top = 196
   Width = 995
-  Height = 338
+  Height = 367
   Caption = 'Cobro cuota financiamientos'
   Color = 16773862
   Font.Charset = DEFAULT_CHARSET
@@ -13,8 +13,8 @@ object frmCobroCuotasFinanciamientos: TfrmCobroCuotasFinanciamientos
   OldCreateOrder = False
   Position = poDesktopCenter
   DesignSize = (
-    979
-    300)
+    987
+    336)
   PixelsPerInch = 96
   TextHeight = 13
   object Label8: TLabel
@@ -112,6 +112,7 @@ object frmCobroCuotasFinanciamientos: TfrmCobroCuotasFinanciamientos
     TitleFont.Height = -11
     TitleFont.Name = 'MS Sans Serif'
     TitleFont.Style = []
+    RowColor2 = 16776176
     Columns = <
       item
         Expanded = False
@@ -248,6 +249,7 @@ object frmCobroCuotasFinanciamientos: TfrmCobroCuotasFinanciamientos
     TitleFont.Height = -11
     TitleFont.Name = 'MS Sans Serif'
     TitleFont.Style = []
+    RowColor2 = 16776176
     Columns = <
       item
         Expanded = False
@@ -420,7 +422,7 @@ object frmCobroCuotasFinanciamientos: TfrmCobroCuotasFinanciamientos
   end
   object BitBtn1: TBitBtn
     Left = 480
-    Top = 250
+    Top = 275
     Width = 121
     Height = 35
     Anchors = [akLeft]
@@ -450,7 +452,7 @@ object frmCobroCuotasFinanciamientos: TfrmCobroCuotasFinanciamientos
   end
   object BitBtn2: TBitBtn
     Left = 607
-    Top = 250
+    Top = 275
     Width = 121
     Height = 36
     Anchors = [akLeft]
@@ -480,7 +482,7 @@ object frmCobroCuotasFinanciamientos: TfrmCobroCuotasFinanciamientos
   end
   object BitBtn3: TBitBtn
     Left = 734
-    Top = 249
+    Top = 274
     Width = 121
     Height = 35
     Anchors = [akLeft]

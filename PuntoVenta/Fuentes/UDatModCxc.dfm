@@ -1,7 +1,7 @@
 object dmCxc: TdmCxc
   OldCreateOrder = False
-  Left = 873
-  Top = 154
+  Left = 1008
+  Top = 141
   Height = 617
   Width = 727
   object qryTrancxc: TIBDataSet

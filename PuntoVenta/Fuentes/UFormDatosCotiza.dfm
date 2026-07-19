@@ -711,7 +711,9 @@ object frmCotizaciones: TfrmCotizaciones
       '  VIEW_COTIZACION_MASTER.referenciacte,'
       '  VIEW_COTIZACION_MASTER.MONTO_RECARGO,  '
       '  VIEW_COTIZACION_MASTER.TIPONCFIFISCAL,  '
-      '  VIEW_COTIZACION_MASTER.MONTO_EXONERADO_ITBIS'
+      '  VIEW_COTIZACION_MASTER.MONTO_EXONERADO_ITBIS,'
+      '  VIEW_COTIZACION_MASTER.PROPINA,'
+      '  VIEW_COTIZACION_MASTER.PROPINALEGAL'
       'FROM'
       '  CLIENTES'
       
@@ -921,6 +923,14 @@ object frmCotizaciones: TfrmCotizaciones
       FieldName = 'MONTO_EXONERADO_ITBIS'
       Origin = 'VIEW_COTIZACION_MASTER.MONTO_EXONERADO_ITBIS'
     end
+    object ibqryCotizacionMasterPROPINA: TFloatField
+      FieldName = 'PROPINA'
+      Origin = 'VIEW_COTIZACION_MASTER.PROPINA'
+    end
+    object ibqryCotizacionMasterPROPINALEGAL: TFloatField
+      FieldName = 'PROPINALEGAL'
+      Origin = 'VIEW_COTIZACION_MASTER.PROPINALEGAL'
+    end
   end
   object dsibqryCotizacionMaster: TDataSource
     DataSet = ibqryCotizacionMaster
@@ -1118,6 +1128,10 @@ object frmCotizaciones: TfrmCotizaciones
     object ibqryCotizacionDetMONTO_DEPOSITO: TFloatField
       FieldName = 'MONTO_DEPOSITO'
       Origin = 'COTIZACION_DET.MONTO_DEPOSITO'
+    end
+    object ibqryCotizacionDetLEVEL_PRECIO_VENT: TSmallintField
+      FieldName = 'LEVEL_PRECIO_VENT'
+      Origin = 'COTIZACION_DET.LEVEL_PRECIO_VENT'
     end
   end
   object dsibqryCotizacionDet: TDataSource
@@ -1467,7 +1481,9 @@ object frmCotizaciones: TfrmCotizaciones
       '  VIEW_COTIZACION_MASTER.ReferenciaCte,'
       '  VIEW_COTIZACION_MASTER.MONTO_RECARGO,  '
       '  VIEW_COTIZACION_MASTER.TIPONCFIFISCAL,  '
-      '  VIEW_COTIZACION_MASTER.MONTO_EXONERADO_ITBIS'
+      '  VIEW_COTIZACION_MASTER.MONTO_EXONERADO_ITBIS,'
+      '  VIEW_COTIZACION_MASTER.PROPINA,'
+      '  VIEW_COTIZACION_MASTER.PROPINALEGAL'
       'FROM'
       '  CLIENTES'
       
@@ -3064,6 +3080,11 @@ object frmCotizaciones: TfrmCotizaciones
       item
         DataType = ftFloat
         Name = 'CANT_VIAJES'
+        ParamType = ptInput
+      end
+      item
+        DataType = ftSmallint
+        Name = 'LEVEL_PRECIO_VENT'
         ParamType = ptInput
       end>
   end

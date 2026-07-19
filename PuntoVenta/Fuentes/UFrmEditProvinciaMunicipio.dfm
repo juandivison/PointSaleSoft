@@ -1,11 +1,11 @@
 object frmEditProvinciaMunicipio: TfrmEditProvinciaMunicipio
-  Left = 593
-  Top = 315
+  Left = 532
+  Top = 178
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Provincia y Municipio'
-  ClientHeight = 209
-  ClientWidth = 457
+  ClientHeight = 331
+  ClientWidth = 500
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -31,8 +31,8 @@ object frmEditProvinciaMunicipio: TfrmEditProvinciaMunicipio
     Caption = 'Municipio:'
   end
   object DBStatusLabel2: TDBStatusLabel
-    Left = 338
-    Top = 174
+    Left = 362
+    Top = 270
     Width = 85
     Height = 13
     DatasetName = 'Clientes'
@@ -55,8 +55,8 @@ object frmEditProvinciaMunicipio: TfrmEditProvinciaMunicipio
     FocusControl = DBEdit2
   end
   object btnGuardar: TBitBtn
-    Left = 232
-    Top = 136
+    Left = 256
+    Top = 232
     Width = 90
     Height = 25
     Caption = 'Guardar'
@@ -65,8 +65,8 @@ object frmEditProvinciaMunicipio: TfrmEditProvinciaMunicipio
     Kind = bkOK
   end
   object btnCancelar: TBitBtn
-    Left = 334
-    Top = 136
+    Left = 358
+    Top = 232
     Width = 90
     Height = 25
     Caption = 'Cancelar'
@@ -92,7 +92,7 @@ object frmEditProvinciaMunicipio: TfrmEditProvinciaMunicipio
     Top = 72
     Width = 353
     Height = 21
-    DropDownCount = 8
+    DropDownCount = 18
     DataField = 'ID_MUNICIPIO'
     DataSource = dsCliente
     LookupField = 'CODIGO'

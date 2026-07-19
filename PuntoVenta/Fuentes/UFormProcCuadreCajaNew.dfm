@@ -1,6 +1,6 @@
 object frmCuadreCajaNew: TfrmCuadreCajaNew
-  Left = 403
-  Top = 129
+  Left = 561
+  Top = 169
   Width = 851
   Height = 708
   Caption = 'Cuadre de Caja'
@@ -25,6 +25,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
     ActivePage = TabSheet1
     Align = alClient
     TabOrder = 0
+    OnExit = BitBtn10Click
     object TabSheet1: TTabSheet
       Caption = 'Record'
       object Label3: TLabel
@@ -1103,6 +1104,21 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         ParentShowHint = False
         ShowHint = True
       end
+      object Label81: TLabel
+        Left = 373
+        Top = 324
+        Width = 69
+        Height = 13
+        Caption = 'Cobro en NCR'
+      end
+      object DBText12: TDBText
+        Left = 464
+        Top = 322
+        Width = 65
+        Height = 17
+        DataField = 'PagadoConNCR'
+        DataSource = dsrxCuadre
+      end
       object DBEdit5: TDBEdit
         Left = 225
         Top = 147
@@ -1552,7 +1568,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         NumGlyphs = 2
       end
       object BitBtn3: TBitBtn
-        Left = 178
+        Left = 370
         Top = 599
         Width = 87
         Height = 29
@@ -1584,7 +1600,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         NumGlyphs = 2
       end
       object BitBtn5: TBitBtn
-        Left = 272
+        Left = 180
         Top = 599
         Width = 87
         Height = 29
@@ -1613,7 +1629,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         NumGlyphs = 2
       end
       object BitBtn2: TBitBtn
-        Left = 366
+        Left = 275
         Top = 599
         Width = 87
         Height = 29
@@ -2029,6 +2045,21 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
           Width = 65
           Height = 13
           DataField = 'CantVtaContadoTarjeta'
+          DataSource = dsrxCuadre
+        end
+        object Label82: TLabel
+          Left = 12
+          Top = 216
+          Width = 102
+          Height = 13
+          Caption = 'Cant Pagos con NCR'
+        end
+        object DBText13: TDBText
+          Left = 120
+          Top = 213
+          Width = 65
+          Height = 14
+          DataField = 'CantVtaPgdaNCR'
           DataSource = dsrxCuadre
         end
         object DBEdit37: TDBEdit
@@ -3054,6 +3085,166 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
         end
       end
     end
+    object TabSheet5: TTabSheet
+      Caption = 'Ventas Sin Pago Reg'
+      ImageIndex = 4
+      object RxDBGrid4: TRxDBGrid
+        Left = 0
+        Top = 41
+        Width = 835
+        Height = 608
+        Align = alClient
+        DataSource = dsqryVentasPorUsr
+        TabOrder = 0
+        TitleFont.Charset = DEFAULT_CHARSET
+        TitleFont.Color = clWindowText
+        TitleFont.Height = -11
+        TitleFont.Name = 'MS Sans Serif'
+        TitleFont.Style = []
+        RowColor2 = 16776176
+        Columns = <
+          item
+            Expanded = False
+            FieldName = 'NUMERO'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'FECHA'
+            Width = 83
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'CODIGO_CTE'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'MONTO_PAGADO_MASTER'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'TOTAL_DETALLE_CALCULADO'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'CANTIDAD_LINEAS'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'CANTIDAD_ARTICULOS'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'MONTO_SERVICIO_DET'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'MONTO_ITBIS_DET'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'MONTO_DESC_ITEM'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'SUBTOTAL_DETALLE'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'MONTO_TOTAL_ITBIS'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'NOMBRE_FACTURAR'
+            Width = 130
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'NOMBRE_CLIENTE_GENERAL'
+            Width = 165
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'NUMERO_FACTURA'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'NUMERO_DOC_PAGO'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'MONEDA'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'TIPO_DOC'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'STATUS'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'NOMBRE_CAJERO'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'CODIGO_CAJERO'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'PROPINA'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'PROPINALEGAL'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'VENTAARS'
+            Visible = True
+          end>
+      end
+      object Panel5: TPanel
+        Left = 0
+        Top = 0
+        Width = 835
+        Height = 41
+        Align = alTop
+        TabOrder = 1
+        object BitBtn15: TBitBtn
+          Left = 8
+          Top = 8
+          Width = 75
+          Height = 25
+          Caption = 'Datos'
+          TabOrder = 0
+          OnClick = BitBtn15Click
+        end
+      end
+    end
   end
   object rxCuadre: TRxMemoryData
     FieldDefs = <
@@ -3249,6 +3440,14 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
       end
       item
         Name = 'MontoDevolucionNoEfectivo'
+        DataType = ftCurrency
+      end
+      item
+        Name = 'CantVtaPgdaNCR'
+        DataType = ftInteger
+      end
+      item
+        Name = 'PagadoConNCR'
         DataType = ftCurrency
       end>
     OnEditError = rxCuadreEditError
@@ -3471,6 +3670,12 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
     end
     object rxCuadreMontoDevolucionNoEfectivo: TCurrencyField
       FieldName = 'MontoDevolucionNoEfectivo'
+    end
+    object rxCuadreCantVtaPgdaNCR: TIntegerField
+      FieldName = 'CantVtaPgdaNCR'
+    end
+    object rxCuadrePagadoConNCR: TCurrencyField
+      FieldName = 'PagadoConNCR'
     end
   end
   object dsrxCuadre: TDataSource
@@ -5717,13 +5922,13 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
   end
   object dsqryPrepagos: TDataSource
     DataSet = dmCxc.qryPrepagos
-    Left = 392
-    Top = 368
+    Left = 424
+    Top = 424
   end
   object dstblDistCashEnCaja: TDataSource
     DataSet = dmTransCnt.tblDistCashEnCaja
-    Left = 48
-    Top = 168
+    Left = 104
+    Top = 160
   end
   object PopupMenu1: TPopupMenu
     Left = 676
@@ -5732,5 +5937,10 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
       Caption = 'Set Email Sent'
       OnClick = SetEmailSent1Click
     end
+  end
+  object dsqryVentasPorUsr: TDataSource
+    DataSet = dmCuadrexRuta.qryVentasPorUsr
+    Left = 36
+    Top = 96
   end
 end

@@ -1,9 +1,9 @@
 object dmConectar: TdmConectar
   OldCreateOrder = False
-  Left = 1482
-  Top = 162
+  Left = 1508
+  Top = 143
   Height = 440
-  Width = 262
+  Width = 275
   object IBDatabase1: TIBDatabase
     DatabaseName = 
       'C:\Proyectos\Datos\Repositorio\PuntoVenta\Expert_Ingenieria\DBER' +
@@ -20,7 +20,7 @@ object dmConectar: TdmConectar
     BeforeConnect = IBDatabase1BeforeConnect
     OnLogin = IBDatabase1Login
     Left = 62
-    Top = 24
+    Top = 16
   end
   object IBTransaction1: TIBTransaction
     Active = False

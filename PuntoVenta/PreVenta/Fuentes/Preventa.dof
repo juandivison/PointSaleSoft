@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/GLBRUTADB="FarmGor_Prod"
+RunParams=/GLBRUTADB="ProsesurProd"
 HostApplication=
 Launcher=
 UseLauncher=0

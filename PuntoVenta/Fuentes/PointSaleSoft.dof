@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/GLBRUTADB="Electronica"
+RunParams=/GLBRUTADB="ProsesurCargaXML"
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -145,11 +145,12 @@ Item0=$(DELPHI)\Lib\Debug
 Count=1
 Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 [HistoryLists\hlOutputDirectorry]
-Count=7
+Count=8
 Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
 Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Prosesur
-Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Tapiceria
 Item3=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Farmacia
-Item4=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Galle
-Item5=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Mutur
-Item6=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Nomina
+Item4=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+Item5=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Galle
+Item6=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Mutur
+Item7=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Nomina

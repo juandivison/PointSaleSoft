@@ -133,7 +133,10 @@ begin
   if IBDataSet1.State in [dsInsert, dsEdit] then
   begin
     if MessageDlg('Seguro que desea cancelar transacción?',mtInformation, [mbyes,mbno], 0)=mryes then
-    IBDataSet1.Cancel;
+    begin
+      GlbSecECFGenerada:=False;
+      IBDataSet1.Cancel;
+    end;
   end
   else
   begin
@@ -158,6 +161,7 @@ begin
   begin
     if IBDataSet1NUMERO_NCF.IsNull then
     begin
+      GlbSecECFGenerada:=False;
       MessageDlg('Favor asignar NCF, para permitir guardar.',mtInformation, [mbOK], 0);
       exit;
     end;
@@ -331,6 +335,7 @@ begin
     end;
     if xSalir then
     begin
+      GlbSecECFGenerada:=False;
       MessageDlg(ibStpMaxNCF.Params[06].Value+' o se generó algún otro error, verifique.',mtError, [mbOK], 0);
       Result:=False;
     end else Result:=True;
@@ -341,8 +346,15 @@ begin
   if not IBDataSet1TIPO_NCF.IsNull then
   begin
     if not ProcesaNCF(IBDataSet1TIPO_NCF.Value) then
-    MessageDlg('Error generando NCF, verifique',mtInformation, [mbOK], 0)
-    else IBDataSet1NUMERO_NCF.Value:=ncfGenerado;
+    begin
+      MessageDlg('Error generando NCF, verifique',mtInformation, [mbOK], 0);
+      GlbSecECFGenerada:=False;
+    end else
+    begin
+      IBDataSet1NUMERO_NCF.Value:=ncfGenerado;
+      if (ncfGenerado <> '') then
+      GlbSecECFGenerada:=True;
+    end;
   end;
 end;
 

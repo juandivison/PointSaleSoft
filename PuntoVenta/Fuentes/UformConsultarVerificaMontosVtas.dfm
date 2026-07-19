@@ -1,6 +1,6 @@
 object frmConsultarVtasVerDiff: TfrmConsultarVtasVerDiff
-  Left = 325
-  Top = 242
+  Left = 367
+  Top = 200
   Width = 1050
   Height = 568
   Caption = 'Verificar Montos'
@@ -299,7 +299,7 @@ object frmConsultarVtasVerDiff: TfrmConsultarVtasVerDiff
       '    :fechaini,'
       '   :fechafin,'
       '    1,'
-      '    0.05'
+      '    1.0000'
       ')'
       'ORDER BY NUMERO DESC')
     Left = 232

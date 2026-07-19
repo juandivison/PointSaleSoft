@@ -2891,4 +2891,233 @@ object dmCuadrexRuta: TdmCuadrexRuta
       DisplayFormat = ',0.00'
     end
   end
+  object qryVentasPorUsr: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'SELECT'
+      '    vm.NUMERO,'
+      '    vm.FECHA,'
+      '    vm.CODIGO_CTE,'
+      '    c.NOMBRE_FACTURAR,'
+      '    vm.NOMBRE_CLIENTE_GENERAL,'
+      '    vm.NUMERO_FACTURA,'
+      '    vm.NUMERO_DOC_PAGO,'
+      '    vm.MONEDA,'
+      '    vm.FORMA_PAGO AS TIPO_DOC,'
+      '    vm.STATUS,'
+      ''
+      '    SUBSTRING('
+      '      COALESCE(e.NOMBRE, '#39#39') || '#39' '#39' || COALESCE(e.APELLIDO, '#39#39')'
+      '      FROM 1 FOR 35'
+      '    ) AS NOMBRE_CAJERO,'
+      ''
+      '    e.CODIGO AS CODIGO_CAJERO,'
+      ''
+      '    CAST(COUNT(vd.SERIE) AS INTEGER) AS CANTIDAD_LINEAS,'
+      ''
+      '    CAST('
+      '      COALESCE(SUM(vd.CANTIDAD), 0)'
+      '      AS NUMERIC(18, 3)'
+      '    ) AS CANTIDAD_ARTICULOS,'
+      ''
+      '    CAST('
+      '      COALESCE(SUM(vd.VALOR_SERVICIO_DET), 0)'
+      '      AS NUMERIC(18, 2)'
+      '    ) AS MONTO_SERVICIO_DET,'
+      ''
+      '    CAST('
+      '      COALESCE(SUM(vd.ITBI_DET), 0)'
+      '      AS NUMERIC(18, 2)'
+      '    ) AS MONTO_ITBIS_DET,'
+      ''
+      '    CAST('
+      '      COALESCE(SUM(vd.MONTO_DESC_ITEM), 0)'
+      '      AS NUMERIC(18, 2)'
+      '    ) AS MONTO_DESC_ITEM,'
+      ''
+      '    CAST('
+      '      COALESCE(SUM('
+      '        COALESCE(vd.VALOR_SERVICIO_DET, 0) -'
+      '        COALESCE(vd.MONTO_DESC_ITEM, 0)'
+      '      ), 0)'
+      '      AS NUMERIC(18, 2)'
+      '    ) AS SUBTOTAL_DETALLE,'
+      ''
+      '    CAST('
+      '      COALESCE(SUM('
+      '        COALESCE(vd.VALOR_SERVICIO_DET, 0) -'
+      '        COALESCE(vd.MONTO_DESC_ITEM, 0) +'
+      '        COALESCE(vd.ITBI_DET, 0)'
+      '      ), 0)'
+      '      AS NUMERIC(18, 2)'
+      '    ) AS TOTAL_DETALLE_CALCULADO,'
+      ''
+      '    vm.MONTO_TOTAL_ITBIS,'
+      '    vm.PROPINA,'
+      '    vm.PROPINALEGAL,'
+      '    vm.VENTAARS,'
+      ''
+      '    CAST('
+      '      IIF('
+      '        vm.FORMA_PAGO = 6,'
+      '        (ABS(vm.MONTO_PAGADO) - ABS(vm.MONTO_CAMBIO)) * -1,'
+      '        ABS(vm.MONTO_PAGADO) - ABS(vm.MONTO_CAMBIO)'
+      '      )'
+      '      AS NUMERIC(18, 2)'
+      '    ) AS MONTO_PAGADO_MASTER'
+      ''
+      'FROM VENTAS_MAST vm'
+      'INNER JOIN VENTAS_DET vd'
+      '  ON vd.NUMERO = vm.NUMERO'
+      ''
+      'LEFT JOIN CLIENTES c'
+      '  ON c.CODIGO_CTE = vm.CODIGO_CTE'
+      ''
+      'LEFT JOIN EMPLEADO e'
+      '  ON e.CODIGO = vm.COD_USR_CAJA'
+      ''
+      'LEFT JOIN DETALLE_PAGOS p'
+      '  ON p.SERIE_TRN = vm.NUMERO'
+      ''
+      'WHERE vm.CIA_KEY = 1'
+      '  AND vm.FECHA = :fecha'
+      '  AND vm.COD_USR_CAJA = :codusrcaja'
+      '  AND vm.FORMA_PAGO NOT IN (6, 7, 8)'
+      '  AND vm.STATUS IN ('#39'C'#39', '#39'A'#39', '#39'R'#39', '#39'D'#39', '#39'P'#39', '#39'E'#39')'
+      '  AND vd.STATUS_DET = '#39'A'#39
+      '  AND p.SERIE_TRN IS NULL'
+      ''
+      'GROUP BY'
+      '    vm.NUMERO,'
+      '    vm.FECHA,'
+      '    vm.CODIGO_CTE,'
+      '    c.NOMBRE_FACTURAR,'
+      '    vm.NOMBRE_CLIENTE_GENERAL,'
+      '    vm.NUMERO_FACTURA,'
+      '    vm.NUMERO_DOC_PAGO,'
+      '    vm.MONEDA,'
+      '    vm.FORMA_PAGO,'
+      '    vm.STATUS,'
+      '    e.NOMBRE,'
+      '    e.APELLIDO,'
+      '    e.CODIGO,'
+      '    vm.MONTO_TOTAL_ITBIS,'
+      '    vm.PROPINA,'
+      '    vm.PROPINALEGAL,'
+      '    vm.VENTAARS,'
+      '    vm.MONTO_PAGADO,'
+      '    vm.MONTO_CAMBIO'
+      ''
+      'ORDER BY vm.NUMERO;')
+    Left = 544
+    Top = 256
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'fecha'
+        ParamType = ptUnknown
+      end
+      item
+        DataType = ftUnknown
+        Name = 'codusrcaja'
+        ParamType = ptUnknown
+      end>
+    object qryVentasPorUsrNUMERO: TIntegerField
+      FieldName = 'NUMERO'
+      Origin = 'VENTAS_MAST.NUMERO'
+      Required = True
+    end
+    object qryVentasPorUsrFECHA: TDateTimeField
+      FieldName = 'FECHA'
+      Origin = 'VENTAS_MAST.FECHA'
+    end
+    object qryVentasPorUsrCODIGO_CTE: TIntegerField
+      FieldName = 'CODIGO_CTE'
+      Origin = 'VENTAS_MAST.CODIGO_CTE'
+    end
+    object qryVentasPorUsrNOMBRE_FACTURAR: TIBStringField
+      FieldName = 'NOMBRE_FACTURAR'
+      Origin = 'CLIENTES.NOMBRE_FACTURAR'
+      Size = 40
+    end
+    object qryVentasPorUsrNOMBRE_CLIENTE_GENERAL: TIBStringField
+      FieldName = 'NOMBRE_CLIENTE_GENERAL'
+      Origin = 'VENTAS_MAST.NOMBRE_CLIENTE_GENERAL'
+      Size = 60
+    end
+    object qryVentasPorUsrNUMERO_FACTURA: TIntegerField
+      FieldName = 'NUMERO_FACTURA'
+      Origin = 'VENTAS_MAST.NUMERO_FACTURA'
+    end
+    object qryVentasPorUsrNUMERO_DOC_PAGO: TIBStringField
+      FieldName = 'NUMERO_DOC_PAGO'
+      Origin = 'VENTAS_MAST.NUMERO_DOC_PAGO'
+    end
+    object qryVentasPorUsrMONEDA: TIBStringField
+      FieldName = 'MONEDA'
+      Origin = 'VENTAS_MAST.MONEDA'
+      FixedChar = True
+      Size = 1
+    end
+    object qryVentasPorUsrTIPO_DOC: TSmallintField
+      FieldName = 'TIPO_DOC'
+    end
+    object qryVentasPorUsrSTATUS: TIBStringField
+      FieldName = 'STATUS'
+      Origin = 'VENTAS_MAST.STATUS'
+      FixedChar = True
+      Size = 1
+    end
+    object qryVentasPorUsrNOMBRE_CAJERO: TIBStringField
+      FieldName = 'NOMBRE_CAJERO'
+      Size = 71
+    end
+    object qryVentasPorUsrCODIGO_CAJERO: TIntegerField
+      FieldName = 'CODIGO_CAJERO'
+    end
+    object qryVentasPorUsrCANTIDAD_LINEAS: TIntegerField
+      FieldName = 'CANTIDAD_LINEAS'
+      Required = True
+    end
+    object qryVentasPorUsrCANTIDAD_ARTICULOS: TFloatField
+      FieldName = 'CANTIDAD_ARTICULOS'
+    end
+    object qryVentasPorUsrMONTO_SERVICIO_DET: TFloatField
+      FieldName = 'MONTO_SERVICIO_DET'
+    end
+    object qryVentasPorUsrMONTO_ITBIS_DET: TFloatField
+      FieldName = 'MONTO_ITBIS_DET'
+    end
+    object qryVentasPorUsrMONTO_DESC_ITEM: TFloatField
+      FieldName = 'MONTO_DESC_ITEM'
+    end
+    object qryVentasPorUsrSUBTOTAL_DETALLE: TFloatField
+      FieldName = 'SUBTOTAL_DETALLE'
+    end
+    object qryVentasPorUsrTOTAL_DETALLE_CALCULADO: TFloatField
+      FieldName = 'TOTAL_DETALLE_CALCULADO'
+    end
+    object qryVentasPorUsrMONTO_TOTAL_ITBIS: TFloatField
+      FieldName = 'MONTO_TOTAL_ITBIS'
+      Origin = 'VENTAS_MAST.MONTO_TOTAL_ITBIS'
+    end
+    object qryVentasPorUsrPROPINA: TFloatField
+      FieldName = 'PROPINA'
+      Origin = 'VENTAS_MAST.PROPINA'
+    end
+    object qryVentasPorUsrPROPINALEGAL: TFloatField
+      FieldName = 'PROPINALEGAL'
+      Origin = 'VENTAS_MAST.PROPINALEGAL'
+    end
+    object qryVentasPorUsrVENTAARS: TSmallintField
+      FieldName = 'VENTAARS'
+      Origin = 'VENTAS_MAST.VENTAARS'
+    end
+    object qryVentasPorUsrMONTO_PAGADO_MASTER: TFloatField
+      FieldName = 'MONTO_PAGADO_MASTER'
+    end
+  end
 end

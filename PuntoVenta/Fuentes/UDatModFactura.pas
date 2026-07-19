@@ -1170,6 +1170,12 @@ type
     tbltrnventasmastupdREF_NCF_ORIGEN: TIBStringField;
     tbltrnventasmastupdREF_FECHA_ORIGEN: TDateTimeField;
     tbltrnventasmastupdREF_ESTADO_ORIGEN: TIBStringField;
+    qryVentaFacturaDet_BCK: TIBQuery;
+    qryVentaFacturaDetCODIGO_TEXTO: TIBStringField;
+    qryVentaFacturaDetINVENTARIAR: TIntegerField;
+    qryVentaFacturaDetMONEDA: TIBStringField;
+    qryVentaFacturaDetMONTO_TASA: TFloatField;
+    qryVentaFacturaDetIDTASAITBIS: TFloatField;
     procedure ibQryViewNCFFilterRecord(DataSet: TDataSet;
       var Accept: Boolean);
     procedure tblDgii_SerieNCFAfterScroll(DataSet: TDataSet);
@@ -1190,6 +1196,8 @@ type
       var Accept: Boolean);
     procedure qryCotizacionConduceAfterScroll(DataSet: TDataSet);
     procedure DataModuleCreate(Sender: TObject);
+    procedure ibQryViewNCFBeforeClose(DataSet: TDataSet);
+    procedure ibQryViewNCFAfterClose(DataSet: TDataSet);
   private
     { Private declarations }
   public
@@ -1373,6 +1381,20 @@ begin
   begin
     dmFactura.qryVentaFacturaDet.SQL.Text:= dmFactura.qryVentaFacturaDet_Base.SQL.Text;
   end;
+end;
+
+procedure TdmFactura.ibQryViewNCFBeforeClose(DataSet: TDataSet);
+var
+  x : smallint;
+begin
+  x:=0;
+end;
+
+procedure TdmFactura.ibQryViewNCFAfterClose(DataSet: TDataSet);
+var
+  x : smallint;
+begin
+  x:=0;
 end;
 
 end.

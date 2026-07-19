@@ -1,6 +1,6 @@
 object frmClientes: TfrmClientes
-  Left = 275
-  Top = 211
+  Left = 318
+  Top = 200
   Width = 993
   Height = 558
   Caption = 'Maestro Clientes'
@@ -11,6 +11,7 @@ object frmClientes: TfrmClientes
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnShow = FormShow

@@ -752,6 +752,7 @@ begin
   end;
   if dmInventario.tblInventarioProd.State in [dsEdit,dsInsert] then
   begin
+    dmInventario.tblInventarioProdPAGA_ITBI.Value:=1;
     if not ValidaPorcUtilidad then exit;
     if dmInventario.tblInventarioProdTIPO_UNIDAD.IsNull then
     begin

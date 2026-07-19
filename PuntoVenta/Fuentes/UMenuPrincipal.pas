@@ -1145,7 +1145,7 @@ begin
        else
        Msg.wParam := VK_TAB;
      end;
-end;
+end;            
 
 procedure TfrmMenuPrincipal.FormCreate(Sender: TObject);
 var
@@ -1742,8 +1742,8 @@ begin
       Application.Terminate;//dios es amor
     end;
   end;  }
-   //02601094028  julio
-  //  {Para evitar que me copien la aplicacion
+  //02601094028  julio
+  //{Para evitar que me copien la aplicacion
   //{activa para restringir version
   // activalo
   { if ( StrToInt(formatdatetime('mm',now)) >  9) then  //
@@ -1770,7 +1770,7 @@ begin
       Application.Terminate;//dios es amor
     end;
   end;    }
-     //131657052 - Farmacia Cristiana
+  //131657052 - Farmacia Cristiana
 
   //inicio temporal
   {
@@ -1786,8 +1786,7 @@ begin
   end;
   }
   //fin temporal 132026535
-
-
+  
   //inicio temporal
   {
   if ( strA <> '132065891') then  //GOR ADOLLY FARMACIA SRL    Ing. Amaurys Garcia Vicente Noble
@@ -1817,7 +1816,21 @@ begin
   GlbFarmacia:=0;
   GlbShowCtaBanco:=0;
   //GlBTapiceria
-                             //Expert for test
+  //Expert for test
+
+    frmConfReporte:=TfrmConfReporte.Create(Nil);
+  try
+    if Not FileExists('repconf_cr.ini') then
+    begin
+      frmConfReporte.ShowModal;
+      frmConfReporte.DatosConfiguracion;
+    end else
+    frmConfReporte.DatosConfiguracion;
+  finally
+  frmConfReporte.Free;
+  frmConfReporte:=Nil;
+  end;
+  
   if ((strA = '131764967') or (strA ='130787931')) then
   GlbProsesur:=1;
 
@@ -1826,14 +1839,15 @@ begin
   GLBMotor :=1;
 
   if (strA = '131657052') then
-  GlbFarmacia := 1
-  else
+  GlbFarmacia := 1;
+  //else
   //Tapizado y Decoraciones By J&S --santiaguito
   if (dmCompania.tblCompaniarnc_numero.value = '133-45144-1') or
      (dmCompania.tblCompaniarnc_numero.value = '133451441')
   then
   begin
     GlBTapiceria:= 1;
+    GlBAyaco := 0;
     GlbShowCtaBanco:=1;
   end
   else
@@ -1896,6 +1910,7 @@ begin
     //end;
     //Transaccionescxc1Click(Self);
   end;
+  {movido mas arriba
   frmConfReporte:=TfrmConfReporte.Create(Nil);
   try
     if Not FileExists('repconf_cr.ini') then
@@ -1907,7 +1922,7 @@ begin
   finally
   frmConfReporte.Free;
   frmConfReporte:=Nil;
-  end;
+  end;  }
   //GlBInMobi:= 0;
   // GlBInMobi:=0;  131172662
   //131704417  ESTATE HOUSES GM REAL STATE SRL

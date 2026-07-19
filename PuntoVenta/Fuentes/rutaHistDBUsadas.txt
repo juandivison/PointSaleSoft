@@ -1,0 +1,19 @@
+//F:\Datos\PuntoVenta\Cesar\Fiscal\DBDATOS_DISTProdSep12.FDB
+//C:\Proyectos\PointSaleSoftResp\PuntoVenta\Datos\Cesar\DBDATOS_DIST.GDB
+//C:\Documents and Settings\DIVISON\My Documents\My Received Files\DBDATOS_DIST.GDB anterior
+//C:\Proyectos\PointSaleSoftVH\PuntoVenta\Datos\Prod\DBDATOS.GDB actual
+//C:\Proyectos\Datos\PuntoVenta\Caraballo\DBPointSale.FDB -Jun-17-2019
+//C:\Proyectos\Datos\PuntoVenta\Sam\DB\CRM.FDB  Dic-31-2019
+//C:\Proyectos\Datos\PuntoVenta\Sam\DB\CRM.FDB
+//C:\Proyectos\Datos\PuntoVenta\EliasComm\CRM.FDB --EliasCom
+//C:\Proyectos\Datos\PuntoVenta\FarmaciaMariano\Prod\CRM_Prod.FDB --Farmacia
+//C:\Proyectos\Datos\Repositorio\PuntoVenta\Sam\prod\CRM.FDB 
+//C:\Proyectos\Datos\PuntoVenta\EliasComm\CRM.FDB -----actual developer
+//C:\Proyectos\Datos\Repositorio\PuntoVenta\CentroEnmarcado\DBErpPos.FDB actual
+//C:\Proyectos\Casino\dbDatos\DBDATOS_DIST.FDB
+//C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica\EGDBPOINTSALESOFT.FDB
+//C:\Proyectos\Datos\Repositorio\PuntoVenta\Prosesur\DBDATOSPROSESUR.FDB
+//C:\Proyectos\Datos\Repositorio\Lavanderia\DBLavanderia.FDB --actual ecf
+//C:\Proyectos\Datos\Repositorio\PuntoVenta\Electronica\prod\EGDBPOINTSALESOFT.FDB
+//C:\Proyectos\Datos\Repositorio\PuntoVenta\Electronica\prod\live\EGDBPOINTSALESOFT_Live.FDB
+//C:\Proyectos\Datos\Repositorio\PuntoVenta\ecfMariano\DBVETERINARIA.FDB

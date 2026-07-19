@@ -1064,7 +1064,7 @@ begin
   frmPresentacion.Close;
   frmPresentacion.Free;
   frmPresentacion:=Nil;       
-  try
+  try                              
     Application.Run;
   finally                                  
     GlbCerrandoSistema := True;

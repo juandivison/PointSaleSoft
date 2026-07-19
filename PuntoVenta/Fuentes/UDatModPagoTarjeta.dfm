@@ -340,8 +340,11 @@ object dmPagosTarjeta: TdmPagosTarjeta
       '  SERIE = :SERIE')
     SelectSQL.Strings = (
       'Select *  From DETALLE_PAGOS'
-      'Where  serie_trn =:serietrn'
-      'and area_trans=:areatrans')
+      'Where  (serie_trn =:serietrn'
+      'and area_trans=:areatrans)'
+      
+        'or (DETALLE_PAGOS.FECHA=:fecha and DETALLE_PAGOS.GLBNUMVTAPOS=:G' +
+        'LBNUMVTAPOS)')
     ModifySQL.Strings = (
       'update DETALLE_PAGOS'
       'set'

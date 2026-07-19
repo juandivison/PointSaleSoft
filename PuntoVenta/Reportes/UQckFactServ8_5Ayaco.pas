@@ -223,7 +223,10 @@ begin
     if SetLogoCia(_ximagen) then
     if (_ximagen <> '') then
     QRImage3.Picture.LoadFromFile(_ximagen);
-    if dmReportes.qryViewVentasMastDESC_TIPONCF.IsNull then
+
+    if (dmReportes.qryViewVentasMastFORMA_PAGO.Value = 6) then
+    QRDBText23.Caption:='DEVOLUCION'
+    else if dmReportes.qryViewVentasMastDESC_TIPONCF.IsNull then
     QRDBText23.Caption:='FACTURA';
     dmCompania.tblCompania.close;
     dmCompania.tblcompania.open;
@@ -235,6 +238,9 @@ begin
     if SetLogoCia(_ximagen) then
     if (_ximagen <> '') then
     QRImage1.Picture.LoadFromFile(_ximagen);
+    if (dmReportes.qryViewVentasMastFORMA_PAGO.Value = 6) then
+    QRDBText23.Caption:='DEVOLUCION'
+    ELSE    
     if dmReportes.qryViewVentasMastDESC_TIPONCF.IsNull then
     QRDBText23.Caption:='FACTURA';
     dmCompania.tblCompania.close;
@@ -446,28 +452,43 @@ begin
     end;
   end;
 
-  if (GlBAyaco = 0) then
+  if (GlBAyaco = 0) and (GlBTapiceria = 0) then
   begin
-    if (urlimage = '') then
-    PrintBand:=False;
-    QRMemo2.Enabled:=False;
     QRMemo1.Enabled:=False;
+    QRMemo2.Enabled:=False;
     QRMemo3.Enabled:=False;
     QRMemo4.Enabled:=False;
   end else
   if (GlbShowCtaBanco = 0) and (dmfactura.qryctabcofact.RecordCount = 0) then
   begin
-    if (urlimage = '') then
-    PrintBand:=False;
-    QRMemo2.Enabled:=False;
     QRMemo1.Enabled:=False;
+    QRMemo2.Enabled:=False;
     QRMemo3.Enabled:=False;
     QRMemo4.Enabled:=False;
   end else
   begin
-    if (dmfactura.qryctabcofact.RecordCount = 1) and (GlBAyaco = 0) then
+    if (dmfactura.qryctabcofact.RecordCount >= 1) and (GlBAyaco = 0) and (GlBTapiceria = 1) then
     begin
       QRMemo3.Visible:=False;
+      QRMemo4.Visible:=False;
+      QRMemo4.Lines.Clear;
+      QRMemo3.Lines.Clear;
+      QRMemo2.Visible:=True;
+      QRMemo2.Lines.Clear;
+      QRMemo1.Visible:=True;
+      QRMemo1.Lines.Clear;
+      dmfactura.qryctabcofact.first;
+      while not dmfactura.qryctabcofact.eof do
+      begin
+        QRMemo2.Lines.Add(dmfactura.qryctabcofactFACT_DESCBANCO.Value);
+        QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_TITLAR.Value);
+        QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_DESCNUMCTA.Value);
+        dmfactura.qryctabcofact.Next;
+      end;
+    end else
+    if (dmfactura.qryctabcofact.RecordCount = 1) and (GlBAyaco = 1) then
+    begin
+      {QRMemo3.Visible:=False;
       QRMemo4.Visible:=False;
       QRMemo4.Lines.Clear;
       QRMemo3.Lines.Clear;
@@ -478,7 +499,7 @@ begin
       QRMemo1.Visible:=True;
       QRMemo1.Lines.Clear;
       QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_TITLAR.Value);
-      QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_DESCNUMCTA.Value);
+      QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_DESCNUMCTA.Value); }
     end;
   end;
 end;

@@ -310,6 +310,17 @@ type
     bitbtnEmailReorden: TBitBtn;
     PopupMenu1: TPopupMenu;
     SetEmailSent1: TMenuItem;
+    TabSheet5: TTabSheet;
+    RxDBGrid4: TRxDBGrid;
+    Panel5: TPanel;
+    BitBtn15: TBitBtn;
+    dsqryVentasPorUsr: TDataSource;
+    Label81: TLabel;
+    DBText12: TDBText;
+    Label82: TLabel;
+    DBText13: TDBText;
+    rxCuadreCantVtaPgdaNCR: TIntegerField;
+    rxCuadrePagadoConNCR: TCurrencyField;
     procedure FormCreate(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
     procedure BitBtn3Click(Sender: TObject);
@@ -370,6 +381,7 @@ type
     procedure BitBtn14Click(Sender: TObject);
     procedure bitbtnEmailReordenClick(Sender: TObject);
     procedure SetEmailSent1Click(Sender: TObject);
+    procedure BitBtn15Click(Sender: TObject);
   private
     procedure ProcIniciaRxTotales;
     procedure ProcTotal;
@@ -747,6 +759,9 @@ begin
   rxCuadreCantVtaContadoTarjeta.Value:=0;
   rxCuadreMontoDescuento.Value:=0;
   rxCuadreMontoDevolucionNoEfectivo.Value := 0;
+
+  rxCuadreCantVtaPgdaNCR.Value:=0;
+  rxCuadrePagadoConNCR.Value:=0;
   rxNumeroTrnIng.close;
   rxNumeroTrnIng.Open;
 
@@ -820,6 +835,13 @@ begin
            if (UpperCase(dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_documento').AsString) <> 'TARJETA')
            and (UpperCase(Trim(dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_documento').AsString)) <> 'TRANSFERENCIA') then
            begin
+             if (UpperCase(dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_documento').AsString) = 'NOTA DE CREDITO') then
+             begin
+               rxCuadrePagadoConNCR.Value:=
+                       rxCuadrePagadoConNCR.Value +
+                       dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').AsCurrency;
+               rxCuadreCantVtaPgdaNCR.Value:=rxCuadreCantVtaPgdaNCR.Value + 1;
+             end else
              if ABS(dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').Value) > 0 then
              begin
                rxCuadreVentaAlContado.Value := rxCuadreVentaAlContado.Value +
@@ -1064,6 +1086,9 @@ end;
 
 procedure TfrmCuadreCajaNew.BitBtn5Click(Sender: TObject);
 begin
+  if MessageDlg('Aún tienes una transacción no guardada, desea guardar',mtWarning, [mbyes, mbNo], 0) = mrno then
+  exit;
+
   rxTotales.Close;
   rxTotales.Open;
   rxCuadre.Close;
@@ -1197,10 +1222,10 @@ begin
   qckRepCuadreCaja:= Nil;
   end;
   end;
-  rxTotales.Close;
-  rxTotales.Open;
-  rxCuadre.Close;
-  rxCuadre.Open;
+  //rxTotales.Close;
+  //rxTotales.Open;
+  //rxCuadre.Close;
+  //rxCuadre.Open;
   try
     ProcEnviaInvEnReorden;
   except
@@ -1671,6 +1696,14 @@ end;
 procedure TfrmCuadreCajaNew.SetEmailSent1Click(Sender: TObject);
 begin
   MarcarCambioPreciosEnviados(dmreportes.qryMarcarPComoEnviado,GlbFechaTrnDiaria,GlbFechaTrnDiaria);
+end;
+
+procedure TfrmCuadreCajaNew.BitBtn15Click(Sender: TObject);
+begin
+  dmCuadrexRuta.qryVentasPorUsr.Close;
+  dmCuadrexRuta.qryVentasPorUsr.Params[0].Value:= ExtraerFEcha(rxCuadreFecha.Value);
+  dmCuadrexRuta.qryVentasPorUsr.Params[1].Value:= rxCuadreCOD_EMPLEADO.Value;
+  dmCuadrexRuta.qryVentasPorUsr.Open;
 end;
 
 end.

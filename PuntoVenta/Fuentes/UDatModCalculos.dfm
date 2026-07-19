@@ -1,9 +1,9 @@
 object dmCalculos: TdmCalculos
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Left = 543
-  Top = 224
-  Height = 473
+  Left = 1035
+  Top = 142
+  Height = 543
   Width = 698
   object ibsqlGetPorcDescFctSvr: TIBSQL
     Database = dmConectar.IBDatabase1
@@ -303,6 +303,7 @@ object dmCalculos: TdmCalculos
     Transaction = dmConectar.IBTransaction1
     ForcedRefresh = True
     AfterOpen = qryConsultaPosExtraDetAfterOpen
+    Active = True
     BufferChunks = 1000
     CachedUpdates = False
     SQL.Strings = (
@@ -515,6 +516,10 @@ object dmCalculos: TdmCalculos
     object qryConsultaPosExtraDetLEVEL_PRECIO_VENT: TSmallintField
       FieldName = 'LEVEL_PRECIO_VENT'
       Origin = 'PROC_POSCONSEXTRADET.LEVEL_PRECIO_VENT'
+    end
+    object qryConsultaPosExtraDetDC_MONTONETO: TFloatField
+      FieldName = 'DC_MONTONETO'
+      Origin = 'PROC_POSCONSEXTRADET.DC_MONTONETO'
     end
   end
   object ibSqlDeletePosExtraDET: TIBSQL
@@ -754,25 +759,146 @@ object dmCalculos: TdmCalculos
     BufferChunks = 1000
     CachedUpdates = False
     SQL.Strings = (
-      'select * from proc_InseCotiVtaExtraDet(:num,:fecha,:coduser)')
+      'Select * from proc_InseCotiVtaExtraDet('
+      ':NUMEROTRN,:NUMCOTIZA,:FECHA_TRN,:COD_USUARIO_IN)'
+      ''
+      '')
     Left = 272
     Top = 40
     ParamData = <
       item
-        DataType = ftInteger
-        Name = 'num'
-        ParamType = ptInput
+        DataType = ftUnknown
+        Name = 'NUMEROTRN'
+        ParamType = ptUnknown
       end
       item
-        DataType = ftDateTime
-        Name = 'fecha'
-        ParamType = ptInput
+        DataType = ftUnknown
+        Name = 'NUMCOTIZA'
+        ParamType = ptUnknown
       end
       item
-        DataType = ftInteger
-        Name = 'coduser'
-        ParamType = ptInput
+        DataType = ftUnknown
+        Name = 'fecha_trn'
+        ParamType = ptUnknown
+      end
+      item
+        DataType = ftUnknown
+        Name = 'cod_usuario_in'
+        ParamType = ptUnknown
       end>
+    object ibstpproc_InseCotiVtaExtraDetSERIE: TIntegerField
+      FieldName = 'SERIE'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.SERIE'
+    end
+    object ibstpproc_InseCotiVtaExtraDetNUMERO: TIntegerField
+      FieldName = 'NUMERO'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.NUMERO'
+    end
+    object ibstpproc_InseCotiVtaExtraDetCODIGO_PROD: TIBStringField
+      FieldName = 'CODIGO_PROD'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.CODIGO_PROD'
+      Size = 12
+    end
+    object ibstpproc_InseCotiVtaExtraDetDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.DESCRIPCION'
+      Size = 80
+    end
+    object ibstpproc_InseCotiVtaExtraDetCANTIDAD: TFloatField
+      FieldName = 'CANTIDAD'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.CANTIDAD'
+    end
+    object ibstpproc_InseCotiVtaExtraDetPRECIO: TFloatField
+      FieldName = 'PRECIO'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.PRECIO'
+    end
+    object ibstpproc_InseCotiVtaExtraDetPORC_DESC_DET: TFloatField
+      FieldName = 'PORC_DESC_DET'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.PORC_DESC_DET'
+    end
+    object ibstpproc_InseCotiVtaExtraDetITBI_DET: TFloatField
+      FieldName = 'ITBI_DET'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.ITBI_DET'
+    end
+    object ibstpproc_InseCotiVtaExtraDetVALOR_SERVICIO_DET: TFloatField
+      FieldName = 'VALOR_SERVICIO_DET'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.VALOR_SERVICIO_DET'
+    end
+    object ibstpproc_InseCotiVtaExtraDetVALOR_TOTAL_DET: TFloatField
+      FieldName = 'VALOR_TOTAL_DET'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.VALOR_TOTAL_DET'
+    end
+    object ibstpproc_InseCotiVtaExtraDetITBIS_EXENTO: TSmallintField
+      FieldName = 'ITBIS_EXENTO'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.ITBIS_EXENTO'
+    end
+    object ibstpproc_InseCotiVtaExtraDetTIPO_VENTA: TSmallintField
+      FieldName = 'TIPO_VENTA'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.TIPO_VENTA'
+    end
+    object ibstpproc_InseCotiVtaExtraDetPORC_DESC_ITEM: TFloatField
+      FieldName = 'PORC_DESC_ITEM'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.PORC_DESC_ITEM'
+    end
+    object ibstpproc_InseCotiVtaExtraDetMONEDA: TIBStringField
+      FieldName = 'MONEDA'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.MONEDA'
+      FixedChar = True
+      Size = 1
+    end
+    object ibstpproc_InseCotiVtaExtraDetMONTO_TASA: TFloatField
+      FieldName = 'MONTO_TASA'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.MONTO_TASA'
+    end
+    object ibstpproc_InseCotiVtaExtraDetIDTASAITBIS: TFloatField
+      FieldName = 'IDTASAITBIS'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.IDTASAITBIS'
+    end
+    object ibstpproc_InseCotiVtaExtraDetTIPO_UNIDAD: TSmallintField
+      FieldName = 'TIPO_UNIDAD'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.TIPO_UNIDAD'
+    end
+    object ibstpproc_InseCotiVtaExtraDetMONTO_DESC_ITEM: TFloatField
+      FieldName = 'MONTO_DESC_ITEM'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.MONTO_DESC_ITEM'
+    end
+    object ibstpproc_InseCotiVtaExtraDetLPORC_DESADICIONAL: TFloatField
+      FieldName = 'LPORC_DESADICIONAL'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.LPORC_DESADICIONAL'
+    end
+    object ibstpproc_InseCotiVtaExtraDetLMONTO_RECARGO: TFloatField
+      FieldName = 'LMONTO_RECARGO'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.LMONTO_RECARGO'
+    end
+    object ibstpproc_InseCotiVtaExtraDetLPROPINALEGAL: TFloatField
+      FieldName = 'LPROPINALEGAL'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.LPROPINALEGAL'
+    end
+    object ibstpproc_InseCotiVtaExtraDetLPROPINA: TFloatField
+      FieldName = 'LPROPINA'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.LPROPINA'
+    end
+    object ibstpproc_InseCotiVtaExtraDetNUMERO_COTIZA: TIntegerField
+      FieldName = 'NUMERO_COTIZA'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.NUMERO_COTIZA'
+    end
+    object ibstpproc_InseCotiVtaExtraDetFECHA_COTIZA: TDateTimeField
+      FieldName = 'FECHA_COTIZA'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.FECHA_COTIZA'
+    end
+    object ibstpproc_InseCotiVtaExtraDetTRANSPITBIS: TSmallintField
+      FieldName = 'TRANSPITBIS'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.TRANSPITBIS'
+    end
+    object ibstpproc_InseCotiVtaExtraDetLEVEL_PRECIO_VENT: TSmallintField
+      FieldName = 'LEVEL_PRECIO_VENT'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.LEVEL_PRECIO_VENT'
+    end
+    object ibstpproc_InseCotiVtaExtraDetCODTEXTO: TIBStringField
+      FieldName = 'CODTEXTO'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.CODTEXTO'
+      Size = 40
+    end
   end
   object qryPosExtRrdDesc: TIBQuery
     Database = dmConectar.IBDatabase1
@@ -1505,9 +1631,105 @@ object dmCalculos: TdmCalculos
     BufferChunks = 1000
     CachedUpdates = False
     SQL.Strings = (
-      'select *  from POS_EXTRA_SUM')
+      'SELECT'
+      '    S.NUMERO,'
+      ''
+      '    SUM(COALESCE(S.DC_MONTOBRUTO, 0)) AS DC_MONTOBRUTO,'
+      ''
+      '    MAX(COALESCE(S.D_TASA_ITBIS, 0)) AS D_TASA_ITBIS,'
+      '    MAX(COALESCE(S.D_PORCDESCITEM, 0)) AS D_PORCDESCITEM,'
+      
+        '    MAX(COALESCE(S.T_PORCDESADICIONAL, 0)) AS T_PORCDESADICIONAL' +
+        ','
+      ''
+      '    MAX(COALESCE(S.T_RECARGO, 0)) AS T_RECARGO,'
+      '    MAX(COALESCE(S.T_PROPINA, 0)) AS T_PROPINA,'
+      '    MAX(COALESCE(S.T_MONTOINTERES, 0)) AS T_MONTOINTERES,'
+      
+        '    MAX(COALESCE(S.T_MONTONCRAPLICADO, 0)) AS T_MONTONCRAPLICADO' +
+        ','
+      '    MAX(COALESCE(S.T_DEVOLUCION, 0)) AS T_DEVOLUCION,'
+      ''
+      '    /*'
+      '      TC_TOTALNETO ya viene calculado desde POS_EXTRA_SUM.'
+      '      No reconstruirlo aqu'#237'.'
+      
+        '      Debe estar repetido como total general en las filas del mi' +
+        'smo NUMERO.'
+      '    */'
+      '    MAX(COALESCE(S.TC_TOTALNETO, 0)) AS TC_TOTALNETO,'
+      ''
+      '    /*'
+      '      TC_ITBIS se retorna sumado si representa valor por fila.'
+      
+        '      Si en tu tabla TC_ITBIS ya viene como total general repeti' +
+        'do,'
+      '      cambia SUM por MAX.'
+      '    */'
+      '    SUM(COALESCE(S.TC_ITBIS, 0)) AS TC_ITBIS,'
+      ''
+      '    MAX(COALESCE(S.D_TRANSPITBIS, 1)) AS D_TRANSPITBIS,'
+      ''
+      '    SUM(COALESCE(S.DC_MONTODESCITEM, 0)) AS DC_MONTODESCITEM,'
+      ''
+      '    MAX(COALESCE(S.DC_PORCPROPLEGAL, 0)) AS DC_PORCPROPLEGAL,'
+      ''
+      
+        '    SUM(COALESCE(S.TC_MONTODESCGLOBAL, 0)) AS TC_MONTODESCGLOBAL' +
+        ','
+      ''
+      '    MAX(COALESCE(S.DC_ESDESITEM, 0)) AS DC_ESDESITEM,'
+      ''
+      '    SUM(COALESCE(S.TC_MONTODESCITEMS, 0)) AS TC_MONTODESCITEMS,'
+      ''
+      
+        '    MAX(COALESCE(S.TC_FMONTODESCNIVELITEM, 0)) AS TC_FMONTODESCN' +
+        'IVELITEM,'
+      ''
+      '    MAX(COALESCE(S.TC_SUBTOTAL, 0)) AS TC_SUBTOTAL,'
+      ''
+      
+        '    MAX(COALESCE(S.TC_MONTODESCADICIONAL, 0)) AS TC_MONTODESCADI' +
+        'CIONAL,'
+      ''
+      '    MAX(COALESCE(S.DC_PROPINALEGAL, 0)) AS DC_PROPINALEGAL,'
+      ''
+      '    SUM(COALESCE(S.DC_ITBIS_CLD, 0)) AS DC_ITBIS_CLD,'
+      ''
+      '    /*'
+      '      Ya viene calculado por POS_EXTRA_SUM con la regla:'
+      '      recargo con ITBIS incluido.'
+      '    */'
+      
+        '    SUM(COALESCE(S.TC_MONTOITBISRECARGO_GLB, 0)) AS TC_MONTOITBI' +
+        'SRECARGO_GLB,'
+      ''
+      
+        '    SUM(COALESCE(S.TC_MONTOITBISRECARGO_ITM, 0)) AS TC_MONTOITBI' +
+        'SRECARGO_ITM,'
+      ''
+      '    /*'
+      '      Total ITBIS correcto:'
+      
+        '      producto + ITBIS recargo global + ajuste ITBIS descuento i' +
+        'tem.'
+      '      Todo usando valores ya calculados por POS_EXTRA_SUM.'
+      '    */'
+      '    SUM(COALESCE(S.DC_ITBIS_CLD, 0)) +'
+      '    SUM(COALESCE(S.TC_MONTOITBISRECARGO_GLB, 0)) +'
+      '    SUM(COALESCE(S.TC_MONTOITBISRECARGO_ITM, 0)) AS TOTAL_ITBIS'
+      ''
+      'FROM POS_EXTRA_SUM S'
+      'WHERE S.NUMERO = :NUMERO'
+      'GROUP BY S.NUMERO;')
     Left = 536
     Top = 344
+    ParamData = <
+      item
+        DataType = ftInteger
+        Name = 'numero'
+        ParamType = ptInput
+      end>
     object qryPosExtraSumNUMERO: TIntegerField
       FieldName = 'NUMERO'
       Origin = 'POS_EXTRA_SUM.NUMERO'
@@ -1632,6 +1854,9 @@ object dmCalculos: TdmCalculos
       FieldName = 'TC_MONTOITBISRECARGO_ITM'
       Origin = 'POS_EXTRA_SUM.TC_MONTOITBISRECARGO_ITM'
       ReadOnly = True
+    end
+    object qryPosExtraSumTOTAL_ITBIS: TFloatField
+      FieldName = 'TOTAL_ITBIS'
     end
   end
   object qryGetTotalItbis: TIBQuery
@@ -1773,5 +1998,23 @@ object dmCalculos: TdmCalculos
       FixedChar = True
       Size = 1
     end
+  end
+  object ibSqlUpdGlobalPosExtraDet: TIBSQL
+    Database = dmConectar.IBDatabase1
+    ParamCheck = True
+    SQL.Strings = (
+      'UPDATE POS_EXTRA_DET'
+      'SET'
+      '    T_RECARGO = :T_RECARGO,'
+      '    T_PORCDESADICIONAL = :T_PORCDESADICIONAL,'
+      '    T_PROPINA = :T_PROPINA,'
+      '    T_MONTOINTERES = :T_MONTOINTERES,'
+      '    T_MONTONCRAPLICADO = :T_MONTONCRAPLICADO,'
+      '    T_DEVOLUCION = :T_DEVOLUCION'
+      'WHERE NUMERO = :NUMERO'
+      '  AND COD_USUARIO = :COD_USUARIO')
+    Transaction = dmConectar.IBTransaction1
+    Left = 232
+    Top = 384
   end
 end

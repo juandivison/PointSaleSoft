@@ -1,6 +1,6 @@
 object frmVerDet: TfrmVerDet
-  Left = 171
-  Top = 11
+  Left = 254
+  Top = 141
   Width = 1149
   Height = 675
   Caption = 'Detalle de Ventas'
@@ -12,8 +12,8 @@ object frmVerDet: TfrmVerDet
   Font.Style = []
   OldCreateOrder = False
   DesignSize = (
-    1133
-    637)
+    1141
+    644)
   PixelsPerInch = 96
   TextHeight = 13
   object RxDBGrid1: TRxDBGrid
@@ -30,6 +30,7 @@ object frmVerDet: TfrmVerDet
     TitleFont.Height = -11
     TitleFont.Name = 'MS Sans Serif'
     TitleFont.Style = []
+    RowColor2 = 16776176
     Columns = <
       item
         Expanded = False
@@ -46,7 +47,6 @@ object frmVerDet: TfrmVerDet
       item
         Expanded = False
         FieldName = 'Moneda'
-        Width = 64
         Visible = True
       end
       item
@@ -83,19 +83,16 @@ object frmVerDet: TfrmVerDet
       item
         Expanded = False
         FieldName = 'IDTasaITBIS'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'PorcDescItem'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MontoDescItem'
-        Width = 64
         Visible = True
       end
       item
@@ -123,7 +120,6 @@ object frmVerDet: TfrmVerDet
       item
         Expanded = False
         FieldName = 'MonedaBase'
-        Width = 64
         Visible = True
       end
       item
@@ -142,13 +138,21 @@ object frmVerDet: TfrmVerDet
       item
         Expanded = False
         FieldName = 'MontoItbisRecargo'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MontoDesGlobal'
-        Width = 64
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'glbcodVendedor'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'LevelPrecio'
         Visible = True
       end>
   end

@@ -1,0 +1,129 @@
+# Documento Técnico: Módulo de RRHH (Candidatos, Entrevistas y Acciones de Personal)
+**Entorno:** Delphi 7 + IBX (TIBDataset, TIBQuery) | **Motor:** Firebird 2.5
+
+## 1. Estructura de Base de Datos Refactorizada (Firebird 2.5)
+
+Se han eliminado los campos `BLOB SUB_TYPE 0` para binarios. En su lugar, se utilizan campos `VARCHAR(255)` para almacenar las rutas UNC o locales de los archivos. Los campos `BLOB SUB_TYPE 1` (Texto) se mantienen para observaciones extensas.
+
+### A. Tabla de Candidatos
+Almacena la información del prospecto y la ubicación de su currículum e imagen.
+
+```sql
+CREATE TABLE RRHH_CANDIDATOS (
+    CODIGO CAMPO_ENTERO NOT NULL,
+    NOMBRE CAMPO_VARCHAR35,
+    APELLIDO CAMPO_VARCHAR35,
+    CEDULA CAMPO_VARCHAR14,
+    FECHA_NAC CAMPO_FECHA_HORA,
+    TELEFONO CAMPO_VARCHAR12,
+    EMAIL CAMPO_VARCHAR40,
+    DIRECCION CAMPO_VARCHAR60,
+    RUTA_CV VARCHAR(255),    -- Ruta al archivo PDF/Word (Ej: \\Servidor\RRHH\CVs\123.pdf)
+    RUTA_FOTO VARCHAR(255),  -- Ruta a la foto del candidato (Ej: \\Servidor\RRHH\Fotos\123.jpg)
+    CARGO_POSTULA CAMPO_ENTERO,
+    NOTAS_PERFIL BLOB SUB_TYPE 1 SEGMENT SIZE 80, -- Notas de texto libre sobre el perfil
+    STATUS CAMPO_CHAR1 DEFAULT 'A', 
+    CONSTRAINT PK_RRHH_CANDIDATOS PRIMARY KEY (CODIGO),
+    CONSTRAINT FK_CANDIDATO_CARGO FOREIGN KEY (CARGO_POSTULA) REFERENCES CARGO_EMPLEADOS(CODIGO)
+);
+```
+
+### B. Tabla de Control de Entrevistas
+Relaciona a los candidatos con las evaluaciones realizadas por los supervisores o RRHH.
+
+```sql
+CREATE TABLE RRHH_ENTREVISTAS (
+    CODIGO CAMPO_ENTERO NOT NULL,
+    COD_CANDIDATO CAMPO_ENTERO NOT NULL,
+    FECHA_ENTREVISTA CAMPO_FECHA_HORA,
+    ENTREVISTADOR CAMPO_ENTERO, 
+    PUNTUACION NUMERIC(5,2),
+    OBSERVACIONES_ENTREVISTADOR BLOB SUB_TYPE 1 SEGMENT SIZE 80, -- Notas de la entrevista
+    RESULTADO CAMPO_CHAR1, -- P: Pasó, F: Falló, E: En Espera
+    CONSTRAINT PK_RRHH_ENTREVISTAS PRIMARY KEY (CODIGO),
+    CONSTRAINT FK_ENTREVISTA_CAND FOREIGN KEY (COD_CANDIDATO) REFERENCES RRHH_CANDIDATOS(CODIGO),
+    CONSTRAINT FK_ENTREVISTA_EMP FOREIGN KEY (ENTREVISTADOR) REFERENCES EMPLEADO(CODIGO)
+);
+```
+
+### C. Tablas para Acciones de Personal (Expandido)
+Para una gestión eficiente, se recomienda normalizar los tipos de acciones y separar el registro histórico.
+
+```sql
+-- Tabla catálogo de los tipos de acciones que se pueden realizar
+CREATE TABLE RRHH_TIPOS_ACCION (
+    CODIGO CAMPO_ENTERO NOT NULL,
+    DESCRIPCION VARCHAR(50), -- Ej: Aumento Salarial, Cambio de Cargo, Suspensión, Licencia Médica, Amonestación
+    AFECTA_SALARIO CAMPO_CHAR1 DEFAULT 'N',
+    AFECTA_CARGO CAMPO_CHAR1 DEFAULT 'N',
+    CONSTRAINT PK_RRHH_TIPOS_ACCION PRIMARY KEY (CODIGO)
+);
+
+-- Tabla histórica de las acciones aplicadas a los empleados
+CREATE TABLE RRHH_ACCIONES_PERSONAL (
+    CODIGO CAMPO_ENTERO NOT NULL,
+    COD_EMPLEADO CAMPO_ENTERO NOT NULL,
+    FECHA_ACCION CAMPO_FECHA_HORA,
+    TIPO_ACCION CAMPO_ENTERO NOT NULL,
+    DATO_ANTERIOR VARCHAR(100), -- Ej: "Salario: 25,000" o "Cargo: Asistente"
+    DATO_NUEVO VARCHAR(100),    -- Ej: "Salario: 30,000" o "Cargo: Analista"
+    JUSTIFICACION BLOB SUB_TYPE 1 SEGMENT SIZE 80, -- Por qué se hizo la acción
+    APROBADO_POR CAMPO_ENTERO, -- Empleado que autoriza (Gerente)
+    RUTA_DOCUMENTO_SOPORTE VARCHAR(255), -- Ruta a una carta de despido, certificado médico, etc.
+    CONSTRAINT PK_RRHH_ACCIONES PRIMARY KEY (CODIGO),
+    CONSTRAINT FK_ACC_EMP FOREIGN KEY (COD_EMPLEADO) REFERENCES EMPLEADO(CODIGO),
+    CONSTRAINT FK_ACC_TIPO FOREIGN KEY (TIPO_ACCION) REFERENCES RRHH_TIPOS_ACCION(CODIGO),
+    CONSTRAINT FK_ACC_APROBADOR FOREIGN KEY (APROBADO_POR) REFERENCES EMPLEADO(CODIGO)
+);
+```
+
+---
+
+## 2. Estructura de Formularios en Delphi 7
+
+Para cubrir el flujo completo de Recursos Humanos, el proyecto debe integrarse en los siguientes formularios interactivos:
+
+### Formulario 1: Ficha del Candidato (Maestro de Prospectos)
+*   **Funcionalidad:** Búsqueda en un `TDBGrid` arriba, y el detalle abajo.
+*   **Componentes de Archivos:** Usar un `TOpenDialog` para que el usuario de RRHH busque el archivo PDF del CV en su computadora. Al darle "Guardar", se guarda el texto de la ruta en el campo `RUTA_CV`.
+*   **Visor de Imagen:** Si `RUTA_FOTO` no está vacío, cargar la imagen en un `TImage` usando `Image1.Picture.LoadFromFile(Dataset.FieldByName('RUTA_FOTO').AsString)`. Asegúrate de envolver esto en un bloque `try..except` por si el archivo fue borrado de la red.
+*   **Notas:** Usar un `TDBMemo` enlazado al campo `NOTAS_PERFIL`.
+
+### Formulario 2: Control de Entrevistas y Visor Dinámico
+*   **Diseño:** Un panel izquierdo con la lista de candidatos pendientes y sus entrevistas programadas (usando un `TIBQuery`). Un panel derecho con los detalles de la evaluación.
+*   **Visor de Documentos (El CV):** Un botón prominente llamado "Abrir Currículum". Al hacer clic, se ejecuta la apertura del archivo usando la ruta almacenada.
+    ```pascal
+    uses ShellAPI;
+    // ...
+    procedure TfrmEntrevistas.btnVerCVClick(Sender: TObject);
+    var
+      Ruta: string;
+    begin
+      Ruta := dsCandidatos.DataSet.FieldByName('RUTA_CV').AsString;
+      if (Ruta <> '') and FileExists(Ruta) then
+        ShellExecute(Handle, 'open', PChar(Ruta), nil, nil, SW_SHOWNORMAL)
+      else
+        ShowMessage('El archivo no se encuentra en la ruta especificada.');
+    end;
+    ```
+*   **Editor de Entrevista:** Un gran `TDBMemo` para que el entrevistador redacte sus hallazgos en el momento.
+
+### Formulario 3: Visor de Historial y Consulta de Personal
+*   **Funcionalidad:** Un formulario de "Solo Lectura" (Read-Only) muy útil para los gerentes. Permite buscar a un empleado y ver todo su historial: cuándo entró, todas las evaluaciones que ha tenido, y el listado cronológico de sus acciones de personal (aumentos, cambios de departamento).
+*   **Componente clave:** Un `TDBGrid` conectado a un `TIBQuery` que haga un `JOIN` entre `EMPLEADO` y `RRHH_ACCIONES_PERSONAL` ordenado por fecha descendente.
+
+### Formulario 4: Asistente (Wizard) de Nueva Acción de Personal
+*   **Funcionalidad:** Este es el formulario más delicado. En lugar de editar la tabla `EMPLEADO` directamente, RRHH usa este formulario para aplicar un cambio.
+*   **Flujo sugerido:**
+    1.  Se selecciona el empleado y el tipo de acción (Ej. Aumento de Sueldo).
+    2.  El formulario lee el dato actual de la tabla `EMPLEADO` (Ej. `SALARIO`) y lo pone en una variable/campo temporal de solo lectura (Dato Anterior).
+    3.  El usuario ingresa el nuevo salario y redacta la justificación en un `TMemo`.
+    4.  Puede anexar un archivo de soporte (ej. Carta firmada escaneada) usando un `TOpenDialog`, guardando la ruta.
+*   **Lógica Transaccional (Vital):** Al presionar "Procesar", se abre una `TIBTransaction` y se ejecutan dos sentencias secuenciales mediante un `TIBQuery` de comandos (o un procedimiento almacenado en Firebird):
+    *   *Paso A:* `INSERT INTO RRHH_ACCIONES_PERSONAL...`
+    *   *Paso B:* `UPDATE EMPLEADO SET SALARIO = :NuevoSalario, FECHA_MOD = CURRENT_TIMESTAMP, MOD_POR = :Usuario WHERE CODIGO = :CodEmp`
+    *   *Paso C:* `Transaction.Commit;`
+
+### Formulario 5: Gestión de Permisos, Licencias y Vacaciones (Sugerido)
+*   **Funcionalidad:** Aprovechando que la tabla `EMPLEADO` tiene campos como `LICENCIA`, `FECHA_VENCE_LICENCIA` y `FECHAVACACIONES`, este formulario permite registrar cuándo un empleado toma días libres, actualizando las fechas correspondientes en la tabla maestra, y dejando un rastro en `RRHH_ACCIONES_PERSONAL` con el tipo de acción "Vacaciones" o "Licencia Médica", adjuntando la ruta del certificado médico si aplica.
+```

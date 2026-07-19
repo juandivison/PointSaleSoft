@@ -1264,6 +1264,13 @@ begin
     MessageDlg('Venta tiene un eCF/NCF asignado. Verifique.',mtInformation,[mbok],0);
     Exit;
   end;
+
+  if (dmFactura.qryVentaFacturaSTATUS.Value <> 'A') then
+  begin
+    MessageDlg('Venta no tiene un STATUS validado, verifique',mtWarning,[mbOk],0);
+    exit;
+  end;
+    
   frmAsignarNCFAVenta:=TfrmAsignarNCFAVenta.Create(nil);
   try         
     frmAsignarNCFAVenta._totalnetoValue:=dmFactura.qryVentaFacturaVALOR_TOTAL_DET.Value;
@@ -1284,6 +1291,12 @@ begin
     dmPagosTarjeta.tblDetallePagos.Close;
     dmPagosTarjeta.tblDetallePagos.params[0].Value:= dmFactura.qryVentaFacturaNumero.Value;
     dmPagosTarjeta.tblDetallePagos.params[1].Value:= 1;
+    dmPagosTarjeta.tblDetallePagos.Params[2].Value := ExtraerFecha(DateTimePicker1.DateTime);
+    if GlbNumVtaPOS > 0 then
+    dmPagosTarjeta.tblDetallePagos.Params[3].Value := GlbNumVtaPOS
+    else
+    dmPagosTarjeta.tblDetallePagos.Params[3].Value := Null;
+    
     dmPagosTarjeta.tblDetallePagos.Open;
     dmPagosTarjeta.tblDetallePagos.First;
     if dmPagosTarjeta.tblDetallePagos.RecordCount > 0 then
@@ -1386,6 +1399,13 @@ begin
     MessageDlg('No estas en modo eCF Activo',mtInformation,[mbOk],0);
     exit;
   end;
+
+  if (dmFactura.qryVentaFacturaSTATUS.Value <> 'A') then
+  begin
+    MessageDlg('Venta no tiene un STATUS validado, verifique',mtWarning,[mBok],0);
+    exit;
+  end;
+
   if (dmFactura.qryVentaFacturaSERIE_NCF_ASIGNADO.IsNull Or
     (dmFactura.qryVentaFacturaSERIE_NCF_ASIGNADO.Value = 0)) And (GlbActivaECF = 1) then
   begin
@@ -1400,6 +1420,11 @@ begin
   if GlbActivaECF = 0 then
   begin
     MessageDlg('No estas en modo eCF Activo',mtInformation,[mbOk],0);
+    exit;
+  end;
+  if (dmFactura.qryVentaFacturaSTATUS.Value <> 'A') then
+  begin
+    MessageDlg('Venta no tiene un STATUS validado, verifique',mtWarning,[mBOk],0);
     exit;
   end;
   if not GetVerificaeCF(dmFactura.qryVentaFacturaNumero.Value) then
