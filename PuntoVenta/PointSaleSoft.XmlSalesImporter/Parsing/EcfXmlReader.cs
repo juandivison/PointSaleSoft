@@ -32,6 +32,12 @@ public sealed partial class EcfXmlReader
             if (fileSequence != sequence)
                 throw new InvalidDataException(
                     $"La secuencia del nombre ({fileSequence}) no coincide con el e-NCF ({sequence}).");
+
+            string fileType = nameMatch.Groups["type"].Value;
+            string xmlType = Text(idDoc, "TipoeCF");
+            if (!string.Equals(fileType, xmlType, StringComparison.Ordinal))
+                throw new InvalidDataException(
+                    $"El tipo del nombre (E{fileType}) no coincide con TipoeCF ({xmlType}).");
         }
         List<EcfPaymentForm> payments = idDoc
             .Element("TablaFormasPago")?
@@ -136,15 +142,17 @@ public sealed partial class EcfXmlReader
 
     private static int ParseENcfSequence(string eNcf)
     {
-        if (!ENcfPattern().IsMatch(eNcf))
-            throw new InvalidDataException($"El e-NCF no tiene el formato E32 seguido de 10 dígitos: {eNcf}");
+        Match match = ENcfPattern().Match(eNcf);
+        if (!match.Success)
+            throw new InvalidDataException(
+                $"El e-NCF no tiene el formato E seguido del tipo y 10 dígitos: {eNcf}");
 
-        return ParseInt(eNcf[3..], "secuencia e-NCF");
+        return ParseInt(match.Groups["seq"].Value, "secuencia e-NCF");
     }
 
-    [GeneratedRegex(@"^Factura_E32_(?<seq>\d+)TRN(?<trn>\d+)_signed\.xml$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^Factura_E(?<type>\d{2})_(?<seq>\d+)TRN(?<trn>\d+)_(?:signed|firmado)\.xml$", RegexOptions.IgnoreCase)]
     private static partial Regex FileNamePattern();
 
-    [GeneratedRegex(@"^E32\d{10}$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^E(?<type>\d{2})(?<seq>\d{10})$", RegexOptions.IgnoreCase)]
     private static partial Regex ENcfPattern();
 }

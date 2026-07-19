@@ -121,5 +121,70 @@ Si el lote ya fue cargado con una versión anterior que dejó `VALOR_SERVICIO_DE
 - La aplicación intenta localizar automáticamente columnas de código de barra y costo en `INVENTARIO_PRODUCTO`. Si no existen, deja los valores en cero/vacío y lo informa.
 - La firma XML debe estar presente. Esta versión no realiza validación criptográfica de la firma; carga documentos ya firmados y previamente aceptados.
 
+# Reporte Excel por período — sin base de datos
 
-C:\Proyectos\PuntoVenta\Bin\CargarVentaXML\dotnet run -- --commit
+Se agregó un proceso independiente que conserva intacta la carga a Firebird. Este modo:
+
+- No abre conexión a Firebird.
+- Usa `XmlFolder` de `appsettings.json` como ruta de búsqueda.
+- Puede buscar en subcarpetas mediante `ReportSearchSubdirectories`.
+- Filtra por `FechaEmision` del XML, incluyendo ambos extremos del rango.
+- Lee únicamente archivos XML cuyo nombre contiene `signed` o `firmado` y confirma que tengan el nodo `Signature`.
+- Ordena por fecha de emisión, fecha/hora de firma, e-NCF y TRN.
+- Detiene el reporte si detecta e-NCF duplicados, para no duplicar montos.
+- Genera un archivo `.xlsx` sin consultar productos ni ninguna tabla de la base de datos.
+
+Configuración:
+
+```json
+{
+  "XmlFolder": "C:\\Ruta\\XMLFirmados",
+  "ReportOutputFolder": ".\\reports",
+  "ReportSearchSubdirectories": true
+}
+```
+
+Ejecución usando fechas numéricas:
+
+```bat
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "06/06/2026" --to "30/06/2026"
+```
+
+También acepta fechas con mes abreviado en español:
+
+```bat
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "6/jun/2026" --to "30/jun/2026"
+```
+
+Alias en español:
+
+```bat
+PointSaleSoft.XmlSalesImporter.exe --reporte-excel --desde "6/jun/2026" --hasta "30/jun/2026"
+```
+
+Para indicar un archivo o directorio de salida diferente:
+
+```bat
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "6/jun/2026" --to "30/jun/2026" --output "C:\\Reportes\\VentasJunio.xlsx"
+```
+
+Si no se especifica `--output`, se genera:
+
+```text
+ReportOutputFolder\Ventas_XML_YYYYMMDD_YYYYMMDD.xlsx
+```
+
+La hoja `Resumen` contiene una fila por venta:
+
+- TRN obtenido del nombre del XML.
+- Fecha de emisión.
+- e-NCF.
+- Monto de venta (`MontoTotal`).
+- Monto pagado, sumando `TablaFormasPago`.
+- Suma de detalles con `IndicadorFacturacion=1` — 18 %.
+- Suma de detalles con `IndicadorFacturacion=2` — 16 %.
+- Suma de detalles exentos, indicadores 3 y 4.
+- Otros conceptos no reconocidos.
+- Total de los detalles.
+
+El libro incluye una fila final de totales, filtros, encabezado congelado, formato monetario y orientación horizontal.

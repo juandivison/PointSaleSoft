@@ -16,6 +16,44 @@ try
     options.ApplyCommandLine(args);
     options.Validate();
 
+    if (options.ExcelReportMode)
+        return RunExcelReport(options);
+
+    return RunDatabaseImport(options);
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine("ERROR FATAL");
+    Console.Error.WriteLine(ex.ToString());
+    return 1;
+}
+
+static int RunExcelReport(ImportOptions options)
+{
+    Console.WriteLine("MODO REPORTE EXCEL — NO SE UTILIZARÁ LA BASE DE DATOS");
+    Console.WriteLine(
+        $"Período: {options.ReportStartDate:dd/MM/yyyy} hasta {options.ReportEndDate:dd/MM/yyyy}");
+    Console.WriteLine();
+
+    EcfXmlReader reader = new();
+    XmlSalesExcelReportService service = new(options, reader);
+    SalesReportResult result = service.Generate();
+
+    Console.WriteLine($"XML firmados revisados: {result.FilesScanned}");
+    Console.WriteLine($"Ventas incluidas: {result.SalesIncluded}");
+    Console.WriteLine($"Monto venta: {result.TotalSales:N2}");
+    Console.WriteLine($"Monto pago: {result.TotalPayments:N2}");
+
+    foreach (string warning in result.Warnings.Distinct())
+        Console.WriteLine("ADVERTENCIA: " + warning);
+
+    Console.WriteLine();
+    Console.WriteLine($"Excel generado: {result.OutputPath}");
+    return 0;
+}
+
+static int RunDatabaseImport(ImportOptions options)
+{
     string xmlFolder = Path.GetFullPath(options.XmlFolder, Directory.GetCurrentDirectory());
     if (!Directory.Exists(xmlFolder))
         throw new DirectoryNotFoundException($"No existe la carpeta XML: {xmlFolder}");
@@ -100,12 +138,6 @@ try
     Console.WriteLine($"Log: {logPath}");
 
     return imported.Any(x => x.Status == ImportStatus.Failed) ? 4 : 0;
-}
-catch (Exception ex)
-{
-    Console.Error.WriteLine("ERROR FATAL");
-    Console.Error.WriteLine(ex.ToString());
-    return 1;
 }
 
 static void PrintResults(IEnumerable<ImportResult> results)

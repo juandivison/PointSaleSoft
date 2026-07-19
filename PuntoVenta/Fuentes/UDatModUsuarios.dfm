@@ -164,7 +164,8 @@ object dmUsuarios: TdmUsuarios
         'select ARCHIVOCONFGWIN, trim(clave) clave, CODIGO, CODIGO_EMPLEA' +
         'DO, FECHA_ENTRADA, FECHA_SALIDA, FECHA_VENCE_CLAVE, FOTO, NOMBRE' +
         'COMPLETO, NUMERO, STATUS, TIPO '
-      'from USUARIO')
+      'from USUARIO'
+      'where status ='#39'A'#39)
     ModifySQL.Strings = (
       'update USUARIO'
       'set'
