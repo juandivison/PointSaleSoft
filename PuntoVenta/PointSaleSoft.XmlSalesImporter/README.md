@@ -136,6 +136,8 @@ Este modo:
 - Lee `VENTAS_MAST.VALOR_TOTAL_DET` y `VENTAS_MAST.MONTO_PAGADO`.
 - Compara los montos del XML contra los montos registrados en PointSaleSoft.
 - Marca cada fila como `OK`, `DIFIERE MONTO VENTA`, `DIFIERE MONTO PAGO`, `DIFIERE VENTA Y PAGO` o `NO ENCONTRADO EN POS`.
+- Agrega la columna `FORMA DE PAGO` (`CONTADO`, `CREDITO`, `MIXTO`, `NO APLICA` u otra forma reportada por el XML).
+- Para ventas a crédito y notas de crédito, `MONTO PAGO XML` y `MONTO PAGADO POS` quedan en blanco y no participan en la comparación ni en los totales de pagos.
 - Presenta las notas de crédito E34 con importes negativos.
 - Deja en blanco los montos de pago para las notas de crédito.
 - Genera una tabla Excel con filtros y una fila final de total general por columna.
@@ -154,26 +156,25 @@ Configuración mínima:
 Ejecución usando fechas numéricas:
 
 ```bat
-PointSaleSoft.XmlSalesImporter.exe --excel-report --from "01/06/2026" --to "30/06/2026"
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "06/06/2026" --to "30/06/2026"
 ```
 
 También acepta fechas con mes abreviado en español:
 
 ```bat
-PointSaleSoft.XmlSalesImporter.exe --excel-report --from "01/jun/2026" --to "30/jun/2026"
-PointSaleSoft.XmlSalesImporter.exe --excel-report --from "01/jul/2026" --to "31/jul/2026"
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "6/jun/2026" --to "30/jun/2026"
 ```
 
 Alias en español:
 
 ```bat
-PointSaleSoft.XmlSalesImporter.exe --reporte-excel --desde "01/jun/2026" --hasta "30/jun/2026"
+PointSaleSoft.XmlSalesImporter.exe --reporte-excel --desde "6/jun/2026" --hasta "30/jun/2026"
 ```
 
 Para indicar un archivo o directorio de salida diferente:
 
 ```bat
-PointSaleSoft.XmlSalesImporter.exe --excel-report --from "01/jun/2026" --to "30/jun/2026" --output "C:\Reportes\VentasJunio.xlsx"
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "6/jun/2026" --to "30/jun/2026" --output "C:\Reportes\VentasJunio.xlsx"
 ```
 
 Si no se especifica `--output`, se genera:

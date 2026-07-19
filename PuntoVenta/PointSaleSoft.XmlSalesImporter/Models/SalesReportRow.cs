@@ -7,6 +7,7 @@ public sealed class SalesReportRow
     public DateTime SaleDate { get; init; }
     public DateTime SignatureDateTime { get; init; }
     public required string DocumentType { get; init; }
+    public required string PaymentMethod { get; init; }
     public required string ENcf { get; init; }
     public decimal XmlSaleAmount { get; init; }
     public decimal? PosSaleAmount { get; init; }

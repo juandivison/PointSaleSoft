@@ -30,6 +30,35 @@ public sealed class EcfInvoice
     public string DocumentType => IsCreditNote ? "NOTA DE CREDITO" : "VENTA";
     public bool IsCredit => !IsCreditNote && TipoPago == 2 && PaymentForms.Count == 1 && PaymentForms[0].FormaPago == 4;
     public bool IsCash => !IsCreditNote && TipoPago == 1 && PaymentForms.Count == 1 && PaymentForms[0].FormaPago == 1;
+
+    public string PaymentMethodDescription
+    {
+        get
+        {
+            if (IsCreditNote)
+                return "NO APLICA";
+
+            if (IsCredit)
+                return "CREDITO";
+
+            if (IsCash)
+                return "CONTADO";
+
+            if (PaymentForms.Count > 1)
+                return "MIXTO";
+
+            if (PaymentForms.Count == 1)
+                return $"FORMA {PaymentForms[0].FormaPago}";
+
+            return TipoPago switch
+            {
+                1 => "CONTADO",
+                2 => "CREDITO",
+                _ => "NO DEFINIDA"
+            };
+        }
+    }
+
     public decimal MontoPago => PaymentForms.Sum(x => x.MontoPago);
 }
 

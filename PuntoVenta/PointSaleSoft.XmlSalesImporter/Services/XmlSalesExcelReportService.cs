@@ -12,7 +12,7 @@ public sealed class XmlSalesExcelReportService
 {
     private const int HeaderRow = 4;
     private const int FirstDataRow = HeaderRow + 1;
-    private const int ColumnCount = 14;
+    private const int ColumnCount = 15;
 
     private readonly ImportOptions _options;
     private readonly EcfXmlReader _reader;
@@ -188,17 +188,17 @@ public sealed class XmlSalesExcelReportService
         }
 
         decimal xmlSaleAmount = SignedAmount(invoice.MontoTotal, sign);
-        decimal? xmlPaymentAmount = invoice.IsCreditNote
-            ? null
-            : invoice.PaymentForms.Count == 0
-                ? null
-                : SignedAmount(invoice.MontoPago, sign);
+        bool hasEffectivePayment = !invoice.IsCreditNote && !invoice.IsCredit;
+
+        decimal? xmlPaymentAmount = hasEffectivePayment && invoice.PaymentForms.Count > 0
+            ? SignedAmount(invoice.MontoPago, sign)
+            : null;
 
         decimal? posSaleAmount = persisted is null
             ? null
             : SignedAmount(persisted.SaleAmount, sign);
 
-        decimal? posPaymentAmount = invoice.IsCreditNote || persisted is null
+        decimal? posPaymentAmount = !hasEffectivePayment || persisted is null
             ? null
             : SignedAmount(persisted.PaymentAmount, sign);
 
@@ -207,7 +207,7 @@ public sealed class XmlSalesExcelReportService
             posSaleAmount,
             xmlPaymentAmount,
             posPaymentAmount,
-            invoice.IsCreditNote,
+            invoice.IsCreditNote || invoice.IsCredit,
             persisted is not null);
 
         return new SalesReportRow
@@ -218,6 +218,7 @@ public sealed class XmlSalesExcelReportService
             SaleDate = invoice.FechaEmision.Date,
             SignatureDateTime = invoice.FechaHoraFirma,
             DocumentType = invoice.DocumentType,
+            PaymentMethod = invoice.PaymentMethodDescription,
             ENcf = invoice.ENcf,
             XmlSaleAmount = xmlSaleAmount,
             PosSaleAmount = posSaleAmount,
@@ -292,7 +293,7 @@ public sealed class XmlSalesExcelReportService
         decimal? posSaleAmount,
         decimal? xmlPaymentAmount,
         decimal? posPaymentAmount,
-        bool isCreditNote,
+        bool ignorePaymentComparison,
         bool foundInPos)
     {
         if (!foundInPos || !posSaleAmount.HasValue)
@@ -304,7 +305,7 @@ public sealed class XmlSalesExcelReportService
             _options.TotalTolerance);
 
         bool paymentMatches = true;
-        bool paymentComparable = !isCreditNote && xmlPaymentAmount.HasValue;
+        bool paymentComparable = !ignorePaymentComparison && xmlPaymentAmount.HasValue;
 
         if (paymentComparable)
         {
@@ -353,6 +354,7 @@ public sealed class XmlSalesExcelReportService
             "TRN",
             "FECHA",
             "TIPO",
+            "FORMA DE PAGO",
             "e-NCF",
             "MONTO VENTA XML",
             "MONTO VENTA POS",
@@ -377,29 +379,30 @@ public sealed class XmlSalesExcelReportService
 
             worksheet.Cell(rowNumber, 2).Value = row.SaleDate;
             worksheet.Cell(rowNumber, 3).Value = row.DocumentType;
-            worksheet.Cell(rowNumber, 4).Value = row.ENcf;
-            worksheet.Cell(rowNumber, 5).Value = row.XmlSaleAmount;
+            worksheet.Cell(rowNumber, 4).Value = row.PaymentMethod;
+            worksheet.Cell(rowNumber, 5).Value = row.ENcf;
+            worksheet.Cell(rowNumber, 6).Value = row.XmlSaleAmount;
 
             if (row.PosSaleAmount.HasValue)
-                worksheet.Cell(rowNumber, 6).Value = row.PosSaleAmount.Value;
+                worksheet.Cell(rowNumber, 7).Value = row.PosSaleAmount.Value;
             if (row.XmlPaymentAmount.HasValue)
-                worksheet.Cell(rowNumber, 7).Value = row.XmlPaymentAmount.Value;
+                worksheet.Cell(rowNumber, 8).Value = row.XmlPaymentAmount.Value;
             if (row.PosPaymentAmount.HasValue)
-                worksheet.Cell(rowNumber, 8).Value = row.PosPaymentAmount.Value;
+                worksheet.Cell(rowNumber, 9).Value = row.PosPaymentAmount.Value;
 
-            worksheet.Cell(rowNumber, 9).Value = row.ComparisonStatus;
-            worksheet.Cell(rowNumber, 10).Value = row.DetailAmount18;
-            worksheet.Cell(rowNumber, 11).Value = row.DetailAmount16;
-            worksheet.Cell(rowNumber, 12).Value = row.DetailAmountExempt;
-            worksheet.Cell(rowNumber, 13).Value = row.DetailAmountOther;
-            worksheet.Cell(rowNumber, 14).Value = row.DetailAmountTotal;
+            worksheet.Cell(rowNumber, 10).Value = row.ComparisonStatus;
+            worksheet.Cell(rowNumber, 11).Value = row.DetailAmount18;
+            worksheet.Cell(rowNumber, 12).Value = row.DetailAmount16;
+            worksheet.Cell(rowNumber, 13).Value = row.DetailAmountExempt;
+            worksheet.Cell(rowNumber, 14).Value = row.DetailAmountOther;
+            worksheet.Cell(rowNumber, 15).Value = row.DetailAmountTotal;
 
             if (!string.Equals(
                     row.ComparisonStatus,
                     "OK",
                     StringComparison.Ordinal))
             {
-                worksheet.Cell(rowNumber, 9).Style.Font.Bold = true;
+                worksheet.Cell(rowNumber, 10).Style.Font.Bold = true;
             }
 
             rowNumber++;
@@ -413,7 +416,7 @@ public sealed class XmlSalesExcelReportService
         table.ShowTotalsRow = true;
         table.Field(0).TotalsRowLabel = "TOTAL GENERAL";
 
-        int[] totalFieldIndexes = [4, 5, 6, 7, 9, 10, 11, 12, 13];
+        int[] totalFieldIndexes = [5, 6, 7, 8, 10, 11, 12, 13, 14];
         foreach (int fieldIndex in totalFieldIndexes)
             table.Field(fieldIndex).TotalsRowFunction = XLTotalsRowFunction.Sum;
 
@@ -430,23 +433,24 @@ public sealed class XmlSalesExcelReportService
 
         worksheet.Range(FirstDataRow, 2, lastDataRow, 2)
             .Style.DateFormat.Format = "dd/MM/yyyy";
-        worksheet.Range(FirstDataRow, 5, lastDataRow + 1, 8)
+        worksheet.Range(FirstDataRow, 6, lastDataRow + 1, 9)
             .Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00";
-        worksheet.Range(FirstDataRow, 10, lastDataRow + 1, 14)
+        worksheet.Range(FirstDataRow, 11, lastDataRow + 1, 15)
             .Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00";
         worksheet.Range(FirstDataRow, 1, lastDataRow, 1)
             .Style.NumberFormat.Format = "0";
-        worksheet.Range(FirstDataRow, 4, lastDataRow, 4)
+        worksheet.Range(FirstDataRow, 5, lastDataRow, 5)
             .Style.NumberFormat.Format = "@";
 
         worksheet.SheetView.FreezeRows(HeaderRow);
         worksheet.Column(1).Width = 12;
         worksheet.Column(2).Width = 13;
         worksheet.Column(3).Width = 18;
-        worksheet.Column(4).Width = 19;
-        worksheet.Columns(5, 8).Width = 18;
-        worksheet.Column(9).Width = 24;
-        worksheet.Columns(10, 14).Width = 17;
+        worksheet.Column(4).Width = 18;
+        worksheet.Column(5).Width = 19;
+        worksheet.Columns(6, 9).Width = 18;
+        worksheet.Column(10).Width = 24;
+        worksheet.Columns(11, 15).Width = 17;
         worksheet.Rows(1, 3).AdjustToContents();
 
         worksheet.PageSetup.PageOrientation = XLPageOrientation.Landscape;
