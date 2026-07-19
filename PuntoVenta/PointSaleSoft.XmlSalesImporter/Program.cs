@@ -30,19 +30,24 @@ catch (Exception ex)
 
 static int RunExcelReport(ImportOptions options)
 {
-    Console.WriteLine("MODO REPORTE EXCEL — NO SE UTILIZARÁ LA BASE DE DATOS");
+    Console.WriteLine("MODO REPORTE EXCEL — XML VS POINTSALESOFT");
     Console.WriteLine(
         $"Período: {options.ReportStartDate:dd/MM/yyyy} hasta {options.ReportEndDate:dd/MM/yyyy}");
     Console.WriteLine();
 
     EcfXmlReader reader = new();
-    XmlSalesExcelReportService service = new(options, reader);
+    FirebirdSalesRepository repository = new(options);
+    XmlSalesExcelReportService service = new(options, reader, repository);
     SalesReportResult result = service.Generate();
 
     Console.WriteLine($"XML firmados revisados: {result.FilesScanned}");
-    Console.WriteLine($"Ventas incluidas: {result.SalesIncluded}");
-    Console.WriteLine($"Monto venta: {result.TotalSales:N2}");
-    Console.WriteLine($"Monto pago: {result.TotalPayments:N2}");
+    Console.WriteLine($"Documentos incluidos: {result.SalesIncluded}");
+    Console.WriteLine($"No encontrados en POS: {result.SalesNotFoundInPos}");
+    Console.WriteLine($"Con diferencias: {result.SalesWithDifferences}");
+    Console.WriteLine($"Monto venta XML: {result.TotalXmlSales:N2}");
+    Console.WriteLine($"Monto venta POS: {result.TotalPosSales:N2}");
+    Console.WriteLine($"Monto pago XML: {result.TotalXmlPayments:N2}");
+    Console.WriteLine($"Monto pagado POS: {result.TotalPosPayments:N2}");
 
     foreach (string warning in result.Warnings.Distinct())
         Console.WriteLine("ADVERTENCIA: " + warning);

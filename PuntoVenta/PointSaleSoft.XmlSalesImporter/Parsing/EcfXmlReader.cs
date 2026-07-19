@@ -76,7 +76,7 @@ public sealed partial class EcfXmlReader
             ENcfSequence = sequence,
             OriginalTransactionNumber = originalTrn,
             TipoIngreso = ParseInt(Text(idDoc, "TipoIngresos"), "TipoIngresos"),
-            TipoPago = ParseInt(Text(idDoc, "TipoPago"), "TipoPago"),
+            TipoPago = OptionalInt(idDoc, "TipoPago"),
             FechaEmision = ParseDate(Text(emitter, "FechaEmision"), "FechaEmision"),
             FechaLimitePago = string.IsNullOrWhiteSpace(dueDateText)
                 ? null
@@ -87,7 +87,7 @@ public sealed partial class EcfXmlReader
             MontoExento = OptionalDecimal(totals, "MontoExento"),
             TotalItbis = OptionalDecimal(totals, "TotalITBIS"),
             MontoTotal = ParseDecimal(Text(totals, "MontoTotal"), "MontoTotal"),
-            ValorPagar = ParseDecimal(Text(totals, "ValorPagar"), "ValorPagar"),
+            ValorPagar = OptionalDecimal(totals, "ValorPagar", ParseDecimal(Text(totals, "MontoTotal"), "MontoTotal")),
             HasSignatureNode = root.Descendants().Any(x => x.Name.LocalName == "Signature"),
             PaymentForms = payments,
             Items = items
@@ -107,6 +107,14 @@ public sealed partial class EcfXmlReader
         return string.IsNullOrWhiteSpace(value)
             ? defaultValue
             : ParseDecimal(value, name);
+    }
+
+    private static int OptionalInt(XElement parent, string name, int defaultValue = 0)
+    {
+        string? value = parent.Element(name)?.Value.Trim();
+        return string.IsNullOrWhiteSpace(value)
+            ? defaultValue
+            : ParseInt(value, name);
     }
 
     private static decimal ParseDecimal(string value, string field)

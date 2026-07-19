@@ -145,6 +145,14 @@ public sealed class ImportOptions
 
     private void ValidateExcelReport()
     {
+        if (string.IsNullOrWhiteSpace(ConnectionString))
+            throw new InvalidOperationException(
+                "ConnectionString es obligatorio para cruzar el reporte con VENTAS_MAST.");
+
+        if (CompanyKey <= 0)
+            throw new InvalidOperationException(
+                "CompanyKey debe ser mayor que cero para generar el reporte.");
+
         if (!ReportStartDate.HasValue)
             throw new InvalidOperationException(
                 "Debe indicar la fecha inicial con --from o --desde.");

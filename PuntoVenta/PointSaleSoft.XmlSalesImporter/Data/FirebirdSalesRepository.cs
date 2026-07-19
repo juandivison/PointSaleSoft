@@ -28,6 +28,134 @@ public sealed partial class FirebirdSalesRepository
         return connection;
     }
 
+    public void ValidateReportDependencies(FbConnection connection)
+    {
+        string[] tables = ["VENTAS_MAST", "NCF_ASIGNADOS"];
+
+        foreach (string table in tables)
+        {
+            int count = Convert.ToInt32(ExecuteScalar(connection, null,
+                "SELECT COUNT(*) FROM RDB$RELATIONS " +
+                "WHERE TRIM(RDB$RELATION_NAME) = @NAME",
+                ("NAME", FbDbType.VarChar, table)), CultureInfo.InvariantCulture);
+
+            if (count != 1)
+                throw new InvalidOperationException(
+                    $"No se encontró la tabla requerida para el reporte: {table}.");
+        }
+    }
+
+    public PersistedSaleReportData? GetPersistedSaleForReport(
+        FbConnection connection,
+        string eNcf,
+        int? fallbackTransactionNumber)
+    {
+        const string byENcfSql = @"
+            SELECT FIRST 2
+                   VM.NUMERO,
+                   VM.VALOR_TOTAL_DET,
+                   VM.MONTO_PAGADO
+              FROM VENTAS_MAST VM
+              LEFT JOIN NCF_ASIGNADOS N
+                ON N.SERIE = VM.SERIE_NCF_ASIGNADO
+             WHERE VM.CIA_KEY = @CIA_KEY
+               AND
+               (
+                 TRIM(COALESCE(N.NUMERO_NCF, '')) = @ENCF
+                 OR TRIM(COALESCE(VM.REFERENCIACTE, '')) = @ENCF
+               )
+             ORDER BY VM.NUMERO DESC
+            ";
+
+        List<PersistedSaleReportData> matches = ReadPersistedSales(
+            connection,
+            byENcfSql,
+            ("CIA_KEY", FbDbType.Integer, _options.CompanyKey),
+            ("ENCF", FbDbType.VarChar, eNcf));
+
+        if (matches.Count > 1)
+            throw new InvalidOperationException(
+                $"El e-NCF {eNcf} está relacionado con más de una venta en VENTAS_MAST.");
+
+        if (matches.Count == 1)
+        {
+            PersistedSaleReportData match = matches[0];
+            return new PersistedSaleReportData
+            {
+                TransactionNumber = match.TransactionNumber,
+                SaleAmount = match.SaleAmount,
+                PaymentAmount = match.PaymentAmount,
+                MatchSource = "e-NCF"
+            };
+        }
+
+        if (!fallbackTransactionNumber.HasValue || fallbackTransactionNumber.Value <= 0)
+            return null;
+
+        const string byTransactionSql = @"
+            SELECT FIRST 2
+                   VM.NUMERO,
+                   VM.VALOR_TOTAL_DET,
+                   VM.MONTO_PAGADO
+              FROM VENTAS_MAST VM
+             WHERE VM.NUMERO = @NUMERO
+               AND VM.CIA_KEY = @CIA_KEY
+            ";
+
+        matches = ReadPersistedSales(
+            connection,
+            byTransactionSql,
+            ("NUMERO", FbDbType.Integer, fallbackTransactionNumber.Value),
+            ("CIA_KEY", FbDbType.Integer, _options.CompanyKey));
+
+        if (matches.Count > 1)
+            throw new InvalidOperationException(
+                $"El TRN {fallbackTransactionNumber.Value} está duplicado en VENTAS_MAST.");
+
+        if (matches.Count == 0)
+            return null;
+
+        PersistedSaleReportData fallback = matches[0];
+        return new PersistedSaleReportData
+        {
+            TransactionNumber = fallback.TransactionNumber,
+            SaleAmount = fallback.SaleAmount,
+            PaymentAmount = fallback.PaymentAmount,
+            MatchSource = "TRN del archivo"
+        };
+    }
+
+    private static List<PersistedSaleReportData> ReadPersistedSales(
+        FbConnection connection,
+        string sql,
+        params (string Name, FbDbType Type, object? Value)[] parameters)
+    {
+        List<PersistedSaleReportData> result = [];
+
+        using FbCommand command = CreateCommand(connection, null, sql);
+        foreach ((string name, FbDbType type, object? value) in parameters)
+            Add(command, name, type, value);
+
+        using FbDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            result.Add(new PersistedSaleReportData
+            {
+                TransactionNumber = Convert.ToInt32(
+                    reader.GetValue(0), CultureInfo.InvariantCulture),
+                SaleAmount = reader.IsDBNull(1)
+                    ? 0m
+                    : Convert.ToDecimal(reader.GetValue(1), CultureInfo.InvariantCulture),
+                PaymentAmount = reader.IsDBNull(2)
+                    ? 0m
+                    : Convert.ToDecimal(reader.GetValue(2), CultureInfo.InvariantCulture),
+                MatchSource = string.Empty
+            });
+        }
+
+        return result;
+    }
+
     public void ValidateDependencies(FbConnection connection)
     {
         string[] procedures =

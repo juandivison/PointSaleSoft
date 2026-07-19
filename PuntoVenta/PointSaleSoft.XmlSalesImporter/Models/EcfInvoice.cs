@@ -23,8 +23,13 @@ public sealed class EcfInvoice
     public List<EcfPaymentForm> PaymentForms { get; init; } = [];
     public List<EcfItem> Items { get; init; } = [];
 
-    public bool IsCredit => TipoPago == 2 && PaymentForms.Count == 1 && PaymentForms[0].FormaPago == 4;
-    public bool IsCash => TipoPago == 1 && PaymentForms.Count == 1 && PaymentForms[0].FormaPago == 1;
+    public bool IsCreditNote =>
+        string.Equals(TipoEcf, "34", StringComparison.OrdinalIgnoreCase) ||
+        ENcf.StartsWith("E34", StringComparison.OrdinalIgnoreCase);
+
+    public string DocumentType => IsCreditNote ? "NOTA DE CREDITO" : "VENTA";
+    public bool IsCredit => !IsCreditNote && TipoPago == 2 && PaymentForms.Count == 1 && PaymentForms[0].FormaPago == 4;
+    public bool IsCash => !IsCreditNote && TipoPago == 1 && PaymentForms.Count == 1 && PaymentForms[0].FormaPago == 1;
     public decimal MontoPago => PaymentForms.Sum(x => x.MontoPago);
 }
 

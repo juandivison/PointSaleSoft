@@ -121,25 +121,32 @@ Si el lote ya fue cargado con una versión anterior que dejó `VALOR_SERVICIO_DE
 - La aplicación intenta localizar automáticamente columnas de código de barra y costo en `INVENTARIO_PRODUCTO`. Si no existen, deja los valores en cero/vacío y lo informa.
 - La firma XML debe estar presente. Esta versión no realiza validación criptográfica de la firma; carga documentos ya firmados y previamente aceptados.
 
-# Reporte Excel por período — sin base de datos
+# Reporte Excel por período — XML vs PointSaleSoft
 
-Se agregó un proceso independiente que conserva intacta la carga a Firebird. Este modo:
+Se conserva intacto el proceso de carga y se agrega un modo de reporte que cruza
+cada XML firmado con la venta registrada en Firebird.
 
-- No abre conexión a Firebird.
+Este modo:
+
 - Usa `XmlFolder` de `appsettings.json` como ruta de búsqueda.
 - Puede buscar en subcarpetas mediante `ReportSearchSubdirectories`.
 - Filtra por `FechaEmision` del XML, incluyendo ambos extremos del rango.
-- Lee únicamente archivos XML cuyo nombre contiene `signed` o `firmado` y confirma que tengan el nodo `Signature`.
-- Ordena por fecha de emisión, fecha/hora de firma, e-NCF y TRN.
-- Detiene el reporte si detecta e-NCF duplicados, para no duplicar montos.
-- Genera un archivo `.xlsx` sin consultar productos ni ninguna tabla de la base de datos.
+- Lee únicamente archivos cuyo nombre contiene `signed` o `firmado` y confirma el nodo `Signature`.
+- Localiza la venta en `VENTAS_MAST` mediante `NCF_ASIGNADOS.NUMERO_NCF` y, como respaldo, por el TRN del nombre del archivo.
+- Lee `VENTAS_MAST.VALOR_TOTAL_DET` y `VENTAS_MAST.MONTO_PAGADO`.
+- Compara los montos del XML contra los montos registrados en PointSaleSoft.
+- Marca cada fila como `OK`, `DIFIERE MONTO VENTA`, `DIFIERE MONTO PAGO`, `DIFIERE VENTA Y PAGO` o `NO ENCONTRADO EN POS`.
+- Presenta las notas de crédito E34 con importes negativos.
+- Deja en blanco los montos de pago para las notas de crédito.
+- Genera una tabla Excel con filtros y una fila final de total general por columna.
 
-Configuración:
+Configuración mínima:
 
 ```json
 {
-  "XmlFolder": "C:\\Ruta\\XMLFirmados",
-  "ReportOutputFolder": ".\\reports",
+  "ConnectionString": "database=...;user=...;password=...;",
+  "XmlFolder": "C:\Ruta\XMLFirmados",
+  "ReportOutputFolder": ".\reports",
   "ReportSearchSubdirectories": true
 }
 ```
@@ -147,25 +154,26 @@ Configuración:
 Ejecución usando fechas numéricas:
 
 ```bat
-PointSaleSoft.XmlSalesImporter.exe --excel-report --from "06/06/2026" --to "30/06/2026"
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "01/06/2026" --to "30/06/2026"
 ```
 
 También acepta fechas con mes abreviado en español:
 
 ```bat
-PointSaleSoft.XmlSalesImporter.exe --excel-report --from "6/jun/2026" --to "30/jun/2026"
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "01/jun/2026" --to "30/jun/2026"
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "01/jul/2026" --to "31/jul/2026"
 ```
 
 Alias en español:
 
 ```bat
-PointSaleSoft.XmlSalesImporter.exe --reporte-excel --desde "6/jun/2026" --hasta "30/jun/2026"
+PointSaleSoft.XmlSalesImporter.exe --reporte-excel --desde "01/jun/2026" --hasta "30/jun/2026"
 ```
 
 Para indicar un archivo o directorio de salida diferente:
 
 ```bat
-PointSaleSoft.XmlSalesImporter.exe --excel-report --from "6/jun/2026" --to "30/jun/2026" --output "C:\\Reportes\\VentasJunio.xlsx"
+PointSaleSoft.XmlSalesImporter.exe --excel-report --from "01/jun/2026" --to "30/jun/2026" --output "C:\Reportes\VentasJunio.xlsx"
 ```
 
 Si no se especifica `--output`, se genera:
@@ -174,17 +182,22 @@ Si no se especifica `--output`, se genera:
 ReportOutputFolder\Ventas_XML_YYYYMMDD_YYYYMMDD.xlsx
 ```
 
-La hoja `Resumen` contiene una fila por venta:
+La hoja `Resumen` contiene:
 
-- TRN obtenido del nombre del XML.
+- TRN real registrado en PointSaleSoft; si no se encuentra, usa el TRN del archivo.
 - Fecha de emisión.
+- Tipo de documento: venta o nota de crédito.
 - e-NCF.
-- Monto de venta (`MontoTotal`).
-- Monto pagado, sumando `TablaFormasPago`.
-- Suma de detalles con `IndicadorFacturacion=1` — 18 %.
-- Suma de detalles con `IndicadorFacturacion=2` — 16 %.
-- Suma de detalles exentos, indicadores 3 y 4.
-- Otros conceptos no reconocidos.
-- Total de los detalles.
+- Monto venta XML.
+- Monto venta POS (`VENTAS_MAST.VALOR_TOTAL_DET`).
+- Monto pago XML.
+- Monto pagado POS (`VENTAS_MAST.MONTO_PAGADO`).
+- Resultado de la comparación.
+- Suma de detalles al 18 %.
+- Suma de detalles al 16 %.
+- Suma de detalles exentos.
+- Otros conceptos.
+- Total de detalles.
 
-El libro incluye una fila final de totales, filtros, encabezado congelado, formato monetario y orientación horizontal.
+Las columnas monetarias tienen total general al final. Las notas de crédito se
+restan automáticamente de esos totales.
