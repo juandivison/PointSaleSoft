@@ -45,96 +45,41 @@ public sealed partial class FirebirdSalesRepository
         }
     }
 
-    public PersistedSaleReportData? GetPersistedSaleForReport(
+    public List<PersistedSaleReportData> GetPersistedSalesForReportRange(
         FbConnection connection,
-        string eNcf,
-        int? fallbackTransactionNumber)
+        DateTime startDate,
+        DateTime endDate)
     {
-        const string byENcfSql = @"
-            SELECT FIRST 2
+        DateTime start = startDate.Date;
+        DateTime endExclusive = endDate.Date.AddDays(1);
+
+        const string sql = @"
+            SELECT
                    VM.NUMERO,
-                   VM.VALOR_TOTAL_DET,
-                   VM.MONTO_PAGADO
+                   VM.FECHA,
+                   VM.VALOR_TOTAL_DET,                   
+				   COALESCE(VM.MONTO_PAGADO, 0) -
+				   COALESCE(VM.MONTO_CAMBIO, 0) AS MONTO_PAGADO,
+                   VM.FORMA_PAGO,
+                   TRIM(N.NUMERO_NCF) AS NUMERO_NCF,
+                   TRIM(COALESCE(N.NUMERO_NCF_REFERENCIA, '')) AS NUMERO_NCF_REFERENCIA,
+                   TRIM(COALESCE(N.TIPO_NCF, '')) AS TIPO_NCF
               FROM VENTAS_MAST VM
-              LEFT JOIN NCF_ASIGNADOS N
+              INNER JOIN NCF_ASIGNADOS N
                 ON N.SERIE = VM.SERIE_NCF_ASIGNADO
              WHERE VM.CIA_KEY = @CIA_KEY
-               AND
-               (
-                 TRIM(COALESCE(N.NUMERO_NCF, '')) = @ENCF
-                 OR TRIM(COALESCE(VM.REFERENCIACTE, '')) = @ENCF
-               )
-             ORDER BY VM.NUMERO DESC
+               AND VM.STATUS = 'A'
+               AND VM.FECHA >= @FECHA_INI
+               AND VM.FECHA < @FECHA_FIN_EXCLUSIVA
+               AND N.NUMERO_NCF STARTING WITH 'E'
+             ORDER BY VM.FECHA, VM.NUMERO
             ";
 
-        List<PersistedSaleReportData> matches = ReadPersistedSales(
-            connection,
-            byENcfSql,
-            ("CIA_KEY", FbDbType.Integer, _options.CompanyKey),
-            ("ENCF", FbDbType.VarChar, eNcf));
-
-        if (matches.Count > 1)
-            throw new InvalidOperationException(
-                $"El e-NCF {eNcf} está relacionado con más de una venta en VENTAS_MAST.");
-
-        if (matches.Count == 1)
-        {
-            PersistedSaleReportData match = matches[0];
-            return new PersistedSaleReportData
-            {
-                TransactionNumber = match.TransactionNumber,
-                SaleAmount = match.SaleAmount,
-                PaymentAmount = match.PaymentAmount,
-                MatchSource = "e-NCF"
-            };
-        }
-
-        if (!fallbackTransactionNumber.HasValue || fallbackTransactionNumber.Value <= 0)
-            return null;
-
-        const string byTransactionSql = @"
-            SELECT FIRST 2
-                   VM.NUMERO,
-                   VM.VALOR_TOTAL_DET,
-                   VM.MONTO_PAGADO
-              FROM VENTAS_MAST VM
-             WHERE VM.NUMERO = @NUMERO
-               AND VM.CIA_KEY = @CIA_KEY
-            ";
-
-        matches = ReadPersistedSales(
-            connection,
-            byTransactionSql,
-            ("NUMERO", FbDbType.Integer, fallbackTransactionNumber.Value),
-            ("CIA_KEY", FbDbType.Integer, _options.CompanyKey));
-
-        if (matches.Count > 1)
-            throw new InvalidOperationException(
-                $"El TRN {fallbackTransactionNumber.Value} está duplicado en VENTAS_MAST.");
-
-        if (matches.Count == 0)
-            return null;
-
-        PersistedSaleReportData fallback = matches[0];
-        return new PersistedSaleReportData
-        {
-            TransactionNumber = fallback.TransactionNumber,
-            SaleAmount = fallback.SaleAmount,
-            PaymentAmount = fallback.PaymentAmount,
-            MatchSource = "TRN del archivo"
-        };
-    }
-
-    private static List<PersistedSaleReportData> ReadPersistedSales(
-        FbConnection connection,
-        string sql,
-        params (string Name, FbDbType Type, object? Value)[] parameters)
-    {
         List<PersistedSaleReportData> result = [];
-
         using FbCommand command = CreateCommand(connection, null, sql);
-        foreach ((string name, FbDbType type, object? value) in parameters)
-            Add(command, name, type, value);
+        Add(command, "CIA_KEY", FbDbType.Integer, _options.CompanyKey);
+        Add(command, "FECHA_INI", FbDbType.TimeStamp, start);
+        Add(command, "FECHA_FIN_EXCLUSIVA", FbDbType.TimeStamp, endExclusive);
 
         using FbDataReader reader = command.ExecuteReader();
         while (reader.Read())
@@ -143,12 +88,31 @@ public sealed partial class FirebirdSalesRepository
             {
                 TransactionNumber = Convert.ToInt32(
                     reader.GetValue(0), CultureInfo.InvariantCulture),
-                SaleAmount = reader.IsDBNull(1)
+                SaleDate = reader.IsDBNull(1)
+                    ? start
+                    : Convert.ToDateTime(
+                        reader.GetValue(1), CultureInfo.InvariantCulture),
+                SaleAmount = reader.IsDBNull(2)
                     ? 0m
-                    : Convert.ToDecimal(reader.GetValue(1), CultureInfo.InvariantCulture),
-                PaymentAmount = reader.IsDBNull(2)
+                    : Convert.ToDecimal(
+                        reader.GetValue(2), CultureInfo.InvariantCulture),
+                PaymentAmount = reader.IsDBNull(3)
                     ? 0m
-                    : Convert.ToDecimal(reader.GetValue(2), CultureInfo.InvariantCulture),
+                    : Convert.ToDecimal(
+                        reader.GetValue(3), CultureInfo.InvariantCulture),
+                PaymentForm = reader.IsDBNull(4)
+                    ? 0
+                    : Convert.ToInt32(
+                        reader.GetValue(4), CultureInfo.InvariantCulture),
+                ENcf = reader.IsDBNull(5)
+                    ? string.Empty
+                    : reader.GetString(5).Trim(),
+                ReferenceENcf = reader.IsDBNull(6)
+                    ? null
+                    : NullIfWhiteSpace(reader.GetString(6)),
+                EcfType = reader.IsDBNull(7)
+                    ? string.Empty
+                    : reader.GetString(7).Trim(),
                 MatchSource = string.Empty
             });
         }
@@ -754,6 +718,12 @@ public sealed partial class FirebirdSalesRepository
         reader.IsDBNull(ordinal)
             ? null
             : Convert.ToDecimal(reader.GetValue(ordinal), CultureInfo.InvariantCulture);
+
+    private static string? NullIfWhiteSpace(string? value)
+    {
+        string? normalized = value?.Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+    }
 
     private static string? FirstExisting(HashSet<string> fields, params string[] candidates) =>
         candidates.FirstOrDefault(fields.Contains);

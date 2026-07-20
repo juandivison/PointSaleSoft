@@ -40,17 +40,31 @@ static int RunExcelReport(ImportOptions options)
     XmlSalesExcelReportService service = new(options, reader, repository);
     SalesReportResult result = service.Generate();
 
-    Console.WriteLine($"XML firmados revisados: {result.FilesScanned}");
-    Console.WriteLine($"Documentos incluidos: {result.SalesIncluded}");
-    Console.WriteLine($"No encontrados en POS: {result.SalesNotFoundInPos}");
-    Console.WriteLine($"Con diferencias: {result.SalesWithDifferences}");
+    Console.WriteLine($"Nombres XML firmados revisados: {result.FilesScanned:N0}");
+    Console.WriteLine($"Archivos candidatos del período: {result.CandidateFiles:N0}");
+    Console.WriteLine($"XML abiertos: {result.XmlFilesOpened:N0}");
+    Console.WriteLine($"Documentos POS cargados en memoria: {result.DatabaseSalesLoaded:N0}");
+    Console.WriteLine($"Documentos incluidos: {result.SalesIncluded:N0}");
+    Console.WriteLine($"Ventas/NCR sin XML firmado: {result.SalesWithoutSignedXml:N0}");
+    Console.WriteLine($"Con diferencias: {result.SalesWithDifferences:N0}");
     Console.WriteLine($"Monto venta XML: {result.TotalXmlSales:N2}");
     Console.WriteLine($"Monto venta POS: {result.TotalPosSales:N2}");
     Console.WriteLine($"Monto pago XML: {result.TotalXmlPayments:N2}");
     Console.WriteLine($"Monto pagado POS: {result.TotalPosPayments:N2}");
 
-    foreach (string warning in result.Warnings.Distinct())
+    string[] distinctWarnings = result.Warnings
+        .Distinct()
+        .ToArray();
+
+    foreach (string warning in distinctWarnings.Take(100))
         Console.WriteLine("ADVERTENCIA: " + warning);
+
+    if (distinctWarnings.Length > 100)
+    {
+        Console.WriteLine(
+            $"ADVERTENCIA: se omitieron {distinctWarnings.Length - 100:N0} " +
+            "mensajes adicionales en la consola.");
+    }
 
     Console.WriteLine();
     Console.WriteLine($"Excel generado: {result.OutputPath}");

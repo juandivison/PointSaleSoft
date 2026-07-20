@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 using PointSaleSoft.XmlSalesImporter.Models;
 
@@ -7,7 +8,74 @@ namespace PointSaleSoft.XmlSalesImporter.Parsing;
 
 public sealed partial class EcfXmlReader
 {
+    public bool TryReadFileIdentity(string filePath, out EcfFileIdentity? identity)
+    {
+        string fileName = Path.GetFileName(filePath);
+        Match match = FileNamePattern().Match(fileName);
+        if (!match.Success)
+            match = ReportFileIdentityPattern().Match(fileName);
+
+        if (!match.Success)
+        {
+            identity = null;
+            return false;
+        }
+
+        identity = new EcfFileIdentity
+        {
+            FilePath = filePath,
+            FileName = Path.GetFileName(filePath),
+            EcfType = match.Groups["type"].Value,
+            Sequence = ParseInt(
+                match.Groups["seq"].Value,
+                "secuencia e-CF del nombre del archivo"),
+            TransactionNumber = ParseInt(
+                match.Groups["trn"].Value,
+                "TRN del nombre del archivo")
+        };
+
+        return true;
+    }
+
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
+
+    public DateTime ReadFechaEmision(string filePath)
+    {
+        XmlReaderSettings settings = new()
+        {
+            DtdProcessing = DtdProcessing.Prohibit,
+            IgnoreComments = true,
+            IgnoreWhitespace = true,
+            CloseInput = true
+        };
+
+        using FileStream stream = new(
+            filePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            bufferSize: 16 * 1024,
+            options: FileOptions.SequentialScan);
+        using XmlReader reader = XmlReader.Create(stream, settings);
+
+        while (reader.Read())
+        {
+            if (reader.NodeType != XmlNodeType.Element ||
+                !string.Equals(
+                    reader.LocalName,
+                    "FechaEmision",
+                    StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string value = reader.ReadElementContentAsString().Trim();
+            return ParseDate(value, "FechaEmision");
+        }
+
+        throw new InvalidDataException(
+            "No se encontró el elemento obligatorio FechaEmision.");
+    }
 
     public EcfInvoice Read(string filePath)
     {
@@ -160,6 +228,9 @@ public sealed partial class EcfXmlReader
 
     [GeneratedRegex(@"^Factura_E(?<type>\d{2})_(?<seq>\d+)TRN(?<trn>\d+)_(?:signed|firmado)\.xml$", RegexOptions.IgnoreCase)]
     private static partial Regex FileNamePattern();
+
+    [GeneratedRegex(@"E(?<type>\d{2})[_-]?(?<seq>\d+).*TRN(?<trn>\d+).*(?:signed|firmado)\.xml$", RegexOptions.IgnoreCase)]
+    private static partial Regex ReportFileIdentityPattern();
 
     [GeneratedRegex(@"^E(?<type>\d{2})(?<seq>\d{10})$", RegexOptions.IgnoreCase)]
     private static partial Regex ENcfPattern();

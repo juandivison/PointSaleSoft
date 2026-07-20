@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using FirebirdSql.Data.FirebirdClient;
 using PointSaleSoft.XmlSalesImporter.Configuration;
@@ -12,7 +13,7 @@ public sealed class XmlSalesExcelReportService
 {
     private const int HeaderRow = 4;
     private const int FirstDataRow = HeaderRow + 1;
-    private const int ColumnCount = 15;
+    private const int ColumnCount = 17;
 
     private readonly ImportOptions _options;
     private readonly EcfXmlReader _reader;
@@ -46,91 +47,178 @@ public sealed class XmlSalesExcelReportService
             ? SearchOption.AllDirectories
             : SearchOption.TopDirectoryOnly;
 
-        string[] files = Directory
-            .GetFiles(xmlFolder, "*.xml", searchOption)
-            .Where(IsSignedXmlFile)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        if (files.Length == 0)
-            throw new InvalidOperationException(
-                $"No se encontraron XML firmados en {xmlFolder}.");
-
-        List<SalesReportRow> rows = [];
         List<string> warnings = [];
 
-        using FbConnection connection = _repository.OpenConnection();
-        _repository.ValidateReportDependencies(connection);
+        Console.WriteLine("Cargando documentos e-CF activos de PointSaleSoft...");
+
+        List<PersistedSaleReportData> persistedSales;
+        using (FbConnection connection = _repository.OpenConnection())
+        {
+            _repository.ValidateReportDependencies(connection);
+            persistedSales = _repository.GetPersistedSalesForReportRange(
+                connection,
+                startDate,
+                endDate);
+        }
+
+        if (persistedSales.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"No se encontraron documentos e-CF activos en PointSaleSoft entre " +
+                $"{startDate:dd/MM/yyyy} y {endDate:dd/MM/yyyy}.");
+        }
+
+        PersistedSalesLookup persistedLookup = new(persistedSales);
+        Dictionary<int, EcfInvoice> xmlByTransaction = [];
+        Dictionary<int, string> xmlIssueByTransaction = [];
+
+        Console.WriteLine($"Documentos POS cargados en memoria: {persistedSales.Count:N0}");
+        Console.WriteLine("Revisando nombres de XML firmados...");
+
+        int filesScanned = 0;
+        int candidateFiles = 0;
+        int xmlFilesOpened = 0;
+        int unrecognizedFileNames = 0;
+
+        IEnumerable<string> files = Directory
+            .EnumerateFiles(xmlFolder, "*.xml", searchOption)
+            .Where(IsSignedXmlFile);
 
         foreach (string file in files)
         {
+            filesScanned++;
+
+            if (filesScanned % 10000 == 0)
+            {
+                Console.WriteLine(
+                    $"  Nombres revisados: {filesScanned:N0}; " +
+                    $"candidatos del período: {candidateFiles:N0}; " +
+                    $"XML abiertos: {xmlFilesOpened:N0}");
+            }
+
+            if (!_reader.TryReadFileIdentity(file, out EcfFileIdentity? identity) ||
+                identity is null)
+            {
+                unrecognizedFileNames++;
+                continue;
+            }
+
+            PersistedSaleReportData? candidate;
+            try
+            {
+                candidate = persistedLookup.Resolve(identity);
+            }
+            catch (Exception ex)
+            {
+                warnings.Add($"{identity.FileName}: {ex.Message}");
+                continue;
+            }
+
+            // El nombre no corresponde a ningún TRN/e-NCF activo del período.
+            // No se abre el XML.
+            if (candidate is null)
+                continue;
+
+            candidateFiles++;
+            xmlFilesOpened++;
+
             try
             {
                 EcfInvoice invoice = _reader.Read(file);
 
                 if (!invoice.HasSignatureNode)
                 {
+                    SetXmlIssue(
+                        xmlIssueByTransaction,
+                        candidate.TransactionNumber,
+                        "XML SIN FIRMA");
                     warnings.Add(
-                        $"{Path.GetFileName(file)}: omitido porque no contiene Signature.");
+                        $"{identity.FileName}: contiene el nombre de un XML firmado, " +
+                        "pero no contiene el nodo Signature.");
                     continue;
                 }
 
-                DateTime saleDate = invoice.FechaEmision.Date;
-                if (saleDate < startDate || saleDate > endDate)
-                    continue;
-
-                PersistedSaleReportData? persisted = null;
-                try
+                PersistedSaleReportData? resolved = persistedLookup.Resolve(invoice);
+                if (resolved is null)
                 {
-                    persisted = _repository.GetPersistedSaleForReport(
-                        connection,
-                        invoice.ENcf,
-                        invoice.OriginalTransactionNumber);
-                }
-                catch (Exception databaseException)
-                {
+                    SetXmlIssue(
+                        xmlIssueByTransaction,
+                        candidate.TransactionNumber,
+                        "XML NO RELACIONADO");
                     warnings.Add(
-                        $"{invoice.ENcf}: no fue posible consultar VENTAS_MAST: " +
-                        databaseException.Message);
+                        $"{invoice.ENcf}: el contenido no pudo relacionarse con un " +
+                        "documento POS activo del período.");
+                    continue;
                 }
 
-                SalesReportRow row = CreateRow(invoice, persisted);
-                rows.Add(row);
+                if (resolved.TransactionNumber != candidate.TransactionNumber)
+                {
+                    SetXmlIssue(
+                        xmlIssueByTransaction,
+                        candidate.TransactionNumber,
+                        "NOMBRE Y XML NO COINCIDEN");
+                    warnings.Add(
+                        $"{identity.FileName}: el nombre apunta al TRN " +
+                        $"{candidate.TransactionNumber}, pero el contenido apunta al TRN " +
+                        $"{resolved.TransactionNumber}.");
+                    continue;
+                }
 
-                AddRowWarnings(row, persisted, warnings);
+                if (xmlByTransaction.ContainsKey(resolved.TransactionNumber))
+                {
+                    SetXmlIssue(
+                        xmlIssueByTransaction,
+                        resolved.TransactionNumber,
+                        "XML DUPLICADO");
+                    warnings.Add(
+                        $"TRN {resolved.TransactionNumber}: se encontró más de un XML firmado.");
+                    continue;
+                }
+
+                xmlByTransaction.Add(resolved.TransactionNumber, invoice);
             }
             catch (Exception ex)
             {
+                SetXmlIssue(
+                    xmlIssueByTransaction,
+                    candidate.TransactionNumber,
+                    "ERROR AL LEER XML");
                 warnings.Add($"{Path.GetFileName(file)}: {ex.Message}");
             }
         }
 
-        if (rows.Count == 0)
+        if (filesScanned == 0)
         {
             throw new InvalidOperationException(
-                $"No se encontraron ventas XML entre {startDate:dd/MM/yyyy} " +
-                $"y {endDate:dd/MM/yyyy}.");
+                $"No se encontraron archivos XML firmados en {xmlFolder}.");
         }
 
-        string[] duplicates = rows
-            .GroupBy(x => x.ENcf, StringComparer.OrdinalIgnoreCase)
-            .Where(x => x.Count() > 1)
-            .Select(x => x.Key)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        if (duplicates.Length > 0)
+        if (unrecognizedFileNames > 0)
         {
-            throw new InvalidOperationException(
-                "Se encontraron e-NCF duplicados y el reporte fue detenido para evitar " +
-                "duplicar documentos: " + string.Join(", ", duplicates));
+            warnings.Add(
+                $"{unrecognizedFileNames:N0} archivos firmados no siguieron el patrón " +
+                "E<tipo>_<secuencia>TRN<numero> y se omitieron sin abrirlos.");
         }
 
-        rows = rows
+        List<SalesReportRow> rows = persistedSales
+            .Select(persisted =>
+            {
+                xmlByTransaction.TryGetValue(
+                    persisted.TransactionNumber,
+                    out EcfInvoice? invoice);
+                xmlIssueByTransaction.TryGetValue(
+                    persisted.TransactionNumber,
+                    out string? xmlIssue);
+
+                SalesReportRow row = invoice is null
+                    ? CreateMissingXmlRow(persisted, xmlIssue)
+                    : CreateMatchedRow(persisted, invoice, xmlIssue);
+
+                AddRowWarnings(row, persisted, warnings);
+                return row;
+            })
             .OrderBy(x => x.SaleDate)
-            .ThenBy(x => x.SignatureDateTime)
-            .ThenBy(x => x.ENcf, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(x => x.TransactionNumber ?? int.MaxValue)
+            .ThenBy(x => x.TransactionNumber)
             .ToList();
 
         string outputPath = _options.ResolveReportOutputPath();
@@ -143,25 +231,108 @@ public sealed class XmlSalesExcelReportService
         return new SalesReportResult
         {
             OutputPath = outputPath,
-            FilesScanned = files.Length,
+            FilesScanned = filesScanned,
+            CandidateFiles = candidateFiles,
+            XmlFilesOpened = xmlFilesOpened,
+            DatabaseSalesLoaded = persistedSales.Count,
             SalesIncluded = rows.Count,
-            SalesNotFoundInPos = rows.Count(x => !x.FoundInPos),
+            SalesWithoutSignedXml = rows.Count(x => !x.HasSignedXml),
             SalesWithDifferences = rows.Count(x =>
-                x.FoundInPos &&
+                x.HasSignedXml &&
                 !string.Equals(x.ComparisonStatus, "OK", StringComparison.Ordinal)),
-            TotalXmlSales = DecimalMath.Round2(rows.Sum(x => x.XmlSaleAmount)),
-            TotalPosSales = DecimalMath.Round2(rows.Sum(x => x.PosSaleAmount ?? 0m)),
+            TotalXmlSales = DecimalMath.Round2(rows.Sum(x => x.XmlSaleAmount ?? 0m)),
+            TotalPosSales = DecimalMath.Round2(rows.Sum(x => x.PosSaleAmount)),
             TotalXmlPayments = DecimalMath.Round2(rows.Sum(x => x.XmlPaymentAmount ?? 0m)),
             TotalPosPayments = DecimalMath.Round2(rows.Sum(x => x.PosPaymentAmount ?? 0m)),
             Warnings = warnings
         };
     }
 
-    private SalesReportRow CreateRow(
-        EcfInvoice invoice,
-        PersistedSaleReportData? persisted)
+    private sealed class PersistedSalesLookup
     {
-        decimal sign = invoice.IsCreditNote ? -1m : 1m;
+        private readonly Dictionary<string, PersistedSaleReportData> _byENcf =
+            new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<int, PersistedSaleReportData> _byTransaction = [];
+
+        public PersistedSalesLookup(IEnumerable<PersistedSaleReportData> sales)
+        {
+            foreach (PersistedSaleReportData sale in sales)
+            {
+                if (!_byTransaction.TryAdd(sale.TransactionNumber, sale))
+                {
+                    throw new InvalidOperationException(
+                        $"El TRN {sale.TransactionNumber} está duplicado en la consulta del período.");
+                }
+
+                string eNcf = NormalizeENcf(sale.ENcf);
+                if (string.IsNullOrWhiteSpace(eNcf))
+                {
+                    throw new InvalidOperationException(
+                        $"El TRN {sale.TransactionNumber} no tiene e-NCF en NCF_ASIGNADOS.");
+                }
+
+                if (_byENcf.TryGetValue(eNcf, out PersistedSaleReportData? existing) &&
+                    existing.TransactionNumber != sale.TransactionNumber)
+                {
+                    throw new InvalidOperationException(
+                        $"El e-NCF {eNcf} está relacionado con más de una venta activa.");
+                }
+
+                _byENcf[eNcf] = sale;
+            }
+        }
+
+        public PersistedSaleReportData? Resolve(EcfFileIdentity identity)
+        {
+            _byENcf.TryGetValue(NormalizeENcf(identity.ENcf), out PersistedSaleReportData? byENcf);
+            _byTransaction.TryGetValue(identity.TransactionNumber, out PersistedSaleReportData? byTrn);
+            return ResolveConsistent(byENcf, byTrn, identity.FileName);
+        }
+
+        public PersistedSaleReportData? Resolve(EcfInvoice invoice)
+        {
+            _byENcf.TryGetValue(NormalizeENcf(invoice.ENcf), out PersistedSaleReportData? byENcf);
+
+            PersistedSaleReportData? byTrn = null;
+            if (invoice.OriginalTransactionNumber.HasValue)
+            {
+                _byTransaction.TryGetValue(
+                    invoice.OriginalTransactionNumber.Value,
+                    out byTrn);
+            }
+
+            return ResolveConsistent(byENcf, byTrn, invoice.FileName);
+        }
+
+        private static PersistedSaleReportData? ResolveConsistent(
+            PersistedSaleReportData? byENcf,
+            PersistedSaleReportData? byTrn,
+            string source)
+        {
+            if (byENcf is not null &&
+                byTrn is not null &&
+                byENcf.TransactionNumber != byTrn.TransactionNumber)
+            {
+                throw new InvalidOperationException(
+                    $"{source}: el e-NCF y el TRN identifican ventas diferentes.");
+            }
+
+            return byENcf ?? byTrn;
+        }
+
+        private static string NormalizeENcf(string? value) =>
+            value?.Trim().ToUpperInvariant() ?? string.Empty;
+    }
+
+    private SalesReportRow CreateMatchedRow(
+        PersistedSaleReportData persisted,
+        EcfInvoice invoice,
+        string? xmlIssue)
+    {
+        bool isCreditNote = IsCreditNote(persisted);
+        decimal sign = isCreditNote ? -1m : 1m;
+        bool paymentComparable = HasEffectivePayment(persisted);
+
         decimal detail18 = 0m;
         decimal detail16 = 0m;
         decimal detailExempt = 0m;
@@ -188,38 +359,35 @@ public sealed class XmlSalesExcelReportService
         }
 
         decimal xmlSaleAmount = SignedAmount(invoice.MontoTotal, sign);
-        bool hasEffectivePayment = !invoice.IsCreditNote && !invoice.IsCredit;
-
-        decimal? xmlPaymentAmount = hasEffectivePayment && invoice.PaymentForms.Count > 0
+        decimal posSaleAmount = SignedAmount(persisted.SaleAmount, sign);
+        decimal? xmlPaymentAmount = paymentComparable && invoice.PaymentForms.Count > 0
             ? SignedAmount(invoice.MontoPago, sign)
             : null;
-
-        decimal? posSaleAmount = persisted is null
-            ? null
-            : SignedAmount(persisted.SaleAmount, sign);
-
-        decimal? posPaymentAmount = !hasEffectivePayment || persisted is null
-            ? null
-            : SignedAmount(persisted.PaymentAmount, sign);
+        decimal? posPaymentAmount = paymentComparable
+            ? SignedAmount(persisted.PaymentAmount, sign)
+            : null;
 
         string comparisonStatus = ResolveComparisonStatus(
+            persisted.ENcf,
+            invoice.ENcf,
             xmlSaleAmount,
             posSaleAmount,
             xmlPaymentAmount,
             posPaymentAmount,
-            invoice.IsCreditNote || invoice.IsCredit,
-            persisted is not null);
+            paymentComparable);
 
         return new SalesReportRow
         {
-            TransactionNumber = persisted?.TransactionNumber ??
-                                invoice.OriginalTransactionNumber,
+            TransactionNumber = persisted.TransactionNumber,
             XmlTransactionNumber = invoice.OriginalTransactionNumber,
-            SaleDate = invoice.FechaEmision.Date,
+            SaleDate = persisted.SaleDate.Date,
+            XmlSaleDate = invoice.FechaEmision.Date,
             SignatureDateTime = invoice.FechaHoraFirma,
-            DocumentType = invoice.DocumentType,
-            PaymentMethod = invoice.PaymentMethodDescription,
-            ENcf = invoice.ENcf,
+            DocumentType = isCreditNote ? "NOTA DE CREDITO" : "VENTA",
+            PaymentMethod = ResolvePaymentMethod(persisted),
+            ENcf = persisted.ENcf,
+            ReferenceENcf = persisted.ReferenceENcf,
+            XmlStatus = string.IsNullOrWhiteSpace(xmlIssue) ? "ENCONTRADO" : xmlIssue,
             XmlSaleAmount = xmlSaleAmount,
             PosSaleAmount = posSaleAmount,
             XmlPaymentAmount = xmlPaymentAmount,
@@ -229,89 +397,133 @@ public sealed class XmlSalesExcelReportService
             DetailAmount16 = SignedAmount(detail16, sign),
             DetailAmountExempt = SignedAmount(detailExempt, sign),
             DetailAmountOther = SignedAmount(detailOther, sign),
-            DetailAmountTotal = SignedAmount(
-                invoice.Items.Sum(x => x.MontoItem), sign),
-            IsCreditNote = invoice.IsCreditNote,
-            FoundInPos = persisted is not null,
+            DetailAmountTotal = SignedAmount(invoice.Items.Sum(x => x.MontoItem), sign),
+            IsCreditNote = isCreditNote,
+            HasSignedXml = true,
             SourceFile = invoice.FileName
+        };
+    }
+
+    private static SalesReportRow CreateMissingXmlRow(
+        PersistedSaleReportData persisted,
+        string? xmlIssue)
+    {
+        bool isCreditNote = IsCreditNote(persisted);
+        decimal sign = isCreditNote ? -1m : 1m;
+        bool hasPayment = HasEffectivePayment(persisted);
+        string status = string.IsNullOrWhiteSpace(xmlIssue)
+            ? "SIN XML FIRMADO"
+            : xmlIssue;
+
+        return new SalesReportRow
+        {
+            TransactionNumber = persisted.TransactionNumber,
+            XmlTransactionNumber = null,
+            SaleDate = persisted.SaleDate.Date,
+            XmlSaleDate = null,
+            SignatureDateTime = null,
+            DocumentType = isCreditNote ? "NOTA DE CREDITO" : "VENTA",
+            PaymentMethod = ResolvePaymentMethod(persisted),
+            ENcf = persisted.ENcf,
+            ReferenceENcf = persisted.ReferenceENcf,
+            XmlStatus = status,
+            XmlSaleAmount = null,
+            PosSaleAmount = SignedAmount(persisted.SaleAmount, sign),
+            XmlPaymentAmount = null,
+            PosPaymentAmount = hasPayment
+                ? SignedAmount(persisted.PaymentAmount, sign)
+                : null,
+            ComparisonStatus = status,
+            DetailAmount18 = null,
+            DetailAmount16 = null,
+            DetailAmountExempt = null,
+            DetailAmountOther = null,
+            DetailAmountTotal = null,
+            IsCreditNote = isCreditNote,
+            HasSignedXml = false,
+            SourceFile = null
         };
     }
 
     private void AddRowWarnings(
         SalesReportRow row,
-        PersistedSaleReportData? persisted,
+        PersistedSaleReportData persisted,
         ICollection<string> warnings)
     {
-        if (!DecimalMath.EqualsWithin(
-                row.DetailAmountTotal,
-                row.XmlSaleAmount,
-                _options.TotalTolerance))
+        if (!row.HasSignedXml)
         {
             warnings.Add(
-                $"{row.ENcf}: suma de detalles XML={row.DetailAmountTotal:N2}; " +
-                $"MontoTotal XML={row.XmlSaleAmount:N2}.");
-        }
-
-        if (persisted is null)
-        {
-            warnings.Add(
-                $"{row.ENcf}: no se encontró la venta correspondiente en VENTAS_MAST.");
+                $"TRN {row.TransactionNumber} / {row.ENcf}: {row.XmlStatus}.");
             return;
         }
 
-        if (string.Equals(
-                persisted.MatchSource,
-                "TRN del archivo",
-                StringComparison.Ordinal))
+        if (row.DetailAmountTotal.HasValue && row.XmlSaleAmount.HasValue &&
+            !DecimalMath.EqualsWithin(
+                row.DetailAmountTotal.Value,
+                row.XmlSaleAmount.Value,
+                _options.TotalTolerance))
         {
             warnings.Add(
-                $"{row.ENcf}: la venta se localizó por TRN " +
-                $"{persisted.TransactionNumber}, no por relación de e-NCF.");
+                $"{row.ENcf}: suma de detalles XML={row.DetailAmountTotal.Value:N2}; " +
+                $"MontoTotal XML={row.XmlSaleAmount.Value:N2}.");
         }
 
         if (row.XmlTransactionNumber.HasValue &&
             row.XmlTransactionNumber.Value != persisted.TransactionNumber)
         {
             warnings.Add(
-                $"{row.ENcf}: TRN del archivo={row.XmlTransactionNumber.Value}; " +
+                $"{row.ENcf}: TRN del nombre={row.XmlTransactionNumber.Value}; " +
                 $"TRN registrado en POS={persisted.TransactionNumber}.");
+        }
+
+        if (row.XmlSaleDate.HasValue &&
+            row.XmlSaleDate.Value.Date != persisted.SaleDate.Date)
+        {
+            warnings.Add(
+                $"{row.ENcf}: FechaEmision XML={row.XmlSaleDate.Value:dd/MM/yyyy}; " +
+                $"VENTAS_MAST.FECHA={persisted.SaleDate:dd/MM/yyyy}.");
         }
 
         if (!string.Equals(row.ComparisonStatus, "OK", StringComparison.Ordinal))
         {
             warnings.Add(
                 $"{row.ENcf}: {row.ComparisonStatus}. " +
-                $"Venta XML={row.XmlSaleAmount:N2}; " +
-                $"Venta POS={FormatNullable(row.PosSaleAmount)}; " +
+                $"Venta XML={FormatNullable(row.XmlSaleAmount)}; " +
+                $"Venta POS={row.PosSaleAmount:N2}; " +
                 $"Pago XML={FormatNullable(row.XmlPaymentAmount)}; " +
                 $"Pago POS={FormatNullable(row.PosPaymentAmount)}.");
         }
     }
 
     private string ResolveComparisonStatus(
+        string posENcf,
+        string xmlENcf,
         decimal xmlSaleAmount,
-        decimal? posSaleAmount,
+        decimal posSaleAmount,
         decimal? xmlPaymentAmount,
         decimal? posPaymentAmount,
-        bool ignorePaymentComparison,
-        bool foundInPos)
+        bool paymentComparable)
     {
-        if (!foundInPos || !posSaleAmount.HasValue)
-            return "NO ENCONTRADO EN POS";
+        if (!string.Equals(
+                posENcf.Trim(),
+                xmlENcf.Trim(),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "DIFIERE e-NCF";
+        }
 
         bool saleMatches = DecimalMath.EqualsWithin(
             xmlSaleAmount,
-            posSaleAmount.Value,
+            posSaleAmount,
             _options.TotalTolerance);
 
         bool paymentMatches = true;
-        bool paymentComparable = !ignorePaymentComparison && xmlPaymentAmount.HasValue;
-
         if (paymentComparable)
         {
-            paymentMatches = posPaymentAmount.HasValue &&
+            paymentMatches = xmlPaymentAmount.HasValue &&
+                posPaymentAmount.HasValue &&
                 DecimalMath.EqualsWithin(
-                    xmlPaymentAmount!.Value,
+                    xmlPaymentAmount.Value,
                     posPaymentAmount.Value,
                     _options.TotalTolerance);
         }
@@ -325,8 +537,38 @@ public sealed class XmlSalesExcelReportService
         return "DIFIERE MONTO PAGO";
     }
 
+    private static bool IsCreditNote(PersistedSaleReportData sale) =>
+        string.Equals(sale.EcfType, "34", StringComparison.OrdinalIgnoreCase) ||
+        sale.ENcf.StartsWith("E34", StringComparison.OrdinalIgnoreCase);
+
+    private static bool HasEffectivePayment(PersistedSaleReportData sale) =>
+        !IsCreditNote(sale) && sale.PaymentForm is not (7 or 8);
+
+    private static string ResolvePaymentMethod(PersistedSaleReportData sale)
+    {
+        if (IsCreditNote(sale))
+            return "NO APLICA";
+
+        return sale.PaymentForm switch
+        {
+            1 => "CONTADO",
+            7 or 8 => "CREDITO",
+            6 => "DEVOLUCION",
+            _ => $"FORMA {sale.PaymentForm}"
+        };
+    }
+
+    private static void SetXmlIssue(
+        IDictionary<int, string> issues,
+        int transactionNumber,
+        string issue)
+    {
+        if (!issues.ContainsKey(transactionNumber))
+            issues[transactionNumber] = issue;
+    }
+
     private static decimal SignedAmount(decimal value, decimal sign) =>
-        DecimalMath.Round2(sign < 0m ? -Math.Abs(value) : value);
+        DecimalMath.Round2(sign < 0m ? -Math.Abs(value) : Math.Abs(value));
 
     private static string FormatNullable(decimal? value) =>
         value.HasValue ? value.Value.ToString("N2") : "N/A";
@@ -344,7 +586,7 @@ public sealed class XmlSalesExcelReportService
         worksheet.Cell(1, 1).Value = "RESUMEN XML VS POINTSALESOFT";
         worksheet.Range(1, 1, 1, ColumnCount).Merge();
         worksheet.Cell(2, 1).Value =
-            $"Período: {startDate:dd/MM/yyyy} hasta {endDate:dd/MM/yyyy}";
+            $"Período POS: {startDate:dd/MM/yyyy} hasta {endDate:dd/MM/yyyy}";
         worksheet.Range(2, 1, 2, ColumnCount).Merge();
         worksheet.Cell(3, 1).Value = $"Origen XML: {xmlFolder}";
         worksheet.Range(3, 1, 3, ColumnCount).Merge();
@@ -352,10 +594,12 @@ public sealed class XmlSalesExcelReportService
         string[] headers =
         [
             "TRN",
-            "FECHA",
+            "FECHA POS",
             "TIPO",
             "FORMA DE PAGO",
             "e-NCF",
+            "e-NCF REFERENCIA",
+            "ESTADO XML",
             "MONTO VENTA XML",
             "MONTO VENTA POS",
             "MONTO PAGO XML",
@@ -374,35 +618,42 @@ public sealed class XmlSalesExcelReportService
         int rowNumber = FirstDataRow;
         foreach (SalesReportRow row in rows)
         {
-            if (row.TransactionNumber.HasValue)
-                worksheet.Cell(rowNumber, 1).Value = row.TransactionNumber.Value;
-
+            worksheet.Cell(rowNumber, 1).Value = row.TransactionNumber;
             worksheet.Cell(rowNumber, 2).Value = row.SaleDate;
             worksheet.Cell(rowNumber, 3).Value = row.DocumentType;
             worksheet.Cell(rowNumber, 4).Value = row.PaymentMethod;
             worksheet.Cell(rowNumber, 5).Value = row.ENcf;
-            worksheet.Cell(rowNumber, 6).Value = row.XmlSaleAmount;
+            worksheet.Cell(rowNumber, 6).Value = row.ReferenceENcf ?? string.Empty;
+            worksheet.Cell(rowNumber, 7).Value = row.XmlStatus;
 
-            if (row.PosSaleAmount.HasValue)
-                worksheet.Cell(rowNumber, 7).Value = row.PosSaleAmount.Value;
+            if (row.XmlSaleAmount.HasValue)
+                worksheet.Cell(rowNumber, 8).Value = row.XmlSaleAmount.Value;
+
+            worksheet.Cell(rowNumber, 9).Value = row.PosSaleAmount;
+
             if (row.XmlPaymentAmount.HasValue)
-                worksheet.Cell(rowNumber, 8).Value = row.XmlPaymentAmount.Value;
+                worksheet.Cell(rowNumber, 10).Value = row.XmlPaymentAmount.Value;
             if (row.PosPaymentAmount.HasValue)
-                worksheet.Cell(rowNumber, 9).Value = row.PosPaymentAmount.Value;
+                worksheet.Cell(rowNumber, 11).Value = row.PosPaymentAmount.Value;
 
-            worksheet.Cell(rowNumber, 10).Value = row.ComparisonStatus;
-            worksheet.Cell(rowNumber, 11).Value = row.DetailAmount18;
-            worksheet.Cell(rowNumber, 12).Value = row.DetailAmount16;
-            worksheet.Cell(rowNumber, 13).Value = row.DetailAmountExempt;
-            worksheet.Cell(rowNumber, 14).Value = row.DetailAmountOther;
-            worksheet.Cell(rowNumber, 15).Value = row.DetailAmountTotal;
+            worksheet.Cell(rowNumber, 12).Value = row.ComparisonStatus;
 
-            if (!string.Equals(
-                    row.ComparisonStatus,
-                    "OK",
-                    StringComparison.Ordinal))
+            if (row.DetailAmount18.HasValue)
+                worksheet.Cell(rowNumber, 13).Value = row.DetailAmount18.Value;
+            if (row.DetailAmount16.HasValue)
+                worksheet.Cell(rowNumber, 14).Value = row.DetailAmount16.Value;
+            if (row.DetailAmountExempt.HasValue)
+                worksheet.Cell(rowNumber, 15).Value = row.DetailAmountExempt.Value;
+            if (row.DetailAmountOther.HasValue)
+                worksheet.Cell(rowNumber, 16).Value = row.DetailAmountOther.Value;
+            if (row.DetailAmountTotal.HasValue)
+                worksheet.Cell(rowNumber, 17).Value = row.DetailAmountTotal.Value;
+
+            if (!row.HasSignedXml ||
+                !string.Equals(row.ComparisonStatus, "OK", StringComparison.Ordinal))
             {
-                worksheet.Cell(rowNumber, 10).Style.Font.Bold = true;
+                worksheet.Cell(rowNumber, 7).Style.Font.Bold = true;
+                worksheet.Cell(rowNumber, 12).Style.Font.Bold = true;
             }
 
             rowNumber++;
@@ -416,7 +667,7 @@ public sealed class XmlSalesExcelReportService
         table.ShowTotalsRow = true;
         table.Field(0).TotalsRowLabel = "TOTAL GENERAL";
 
-        int[] totalFieldIndexes = [5, 6, 7, 8, 10, 11, 12, 13, 14];
+        int[] totalFieldIndexes = [7, 8, 9, 10, 12, 13, 14, 15, 16];
         foreach (int fieldIndex in totalFieldIndexes)
             table.Field(fieldIndex).TotalsRowFunction = XLTotalsRowFunction.Sum;
 
@@ -433,13 +684,13 @@ public sealed class XmlSalesExcelReportService
 
         worksheet.Range(FirstDataRow, 2, lastDataRow, 2)
             .Style.DateFormat.Format = "dd/MM/yyyy";
-        worksheet.Range(FirstDataRow, 6, lastDataRow + 1, 9)
+        worksheet.Range(FirstDataRow, 8, lastDataRow + 1, 11)
             .Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00";
-        worksheet.Range(FirstDataRow, 11, lastDataRow + 1, 15)
+        worksheet.Range(FirstDataRow, 13, lastDataRow + 1, 17)
             .Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00";
         worksheet.Range(FirstDataRow, 1, lastDataRow, 1)
             .Style.NumberFormat.Format = "0";
-        worksheet.Range(FirstDataRow, 5, lastDataRow, 5)
+        worksheet.Range(FirstDataRow, 5, lastDataRow, 6)
             .Style.NumberFormat.Format = "@";
 
         worksheet.SheetView.FreezeRows(HeaderRow);
@@ -447,10 +698,11 @@ public sealed class XmlSalesExcelReportService
         worksheet.Column(2).Width = 13;
         worksheet.Column(3).Width = 18;
         worksheet.Column(4).Width = 18;
-        worksheet.Column(5).Width = 19;
-        worksheet.Columns(6, 9).Width = 18;
-        worksheet.Column(10).Width = 24;
-        worksheet.Columns(11, 15).Width = 17;
+        worksheet.Columns(5, 6).Width = 20;
+        worksheet.Column(7).Width = 22;
+        worksheet.Columns(8, 11).Width = 18;
+        worksheet.Column(12).Width = 24;
+        worksheet.Columns(13, 17).Width = 17;
         worksheet.Rows(1, 3).AdjustToContents();
 
         worksheet.PageSetup.PageOrientation = XLPageOrientation.Landscape;

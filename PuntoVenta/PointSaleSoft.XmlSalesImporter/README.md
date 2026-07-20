@@ -141,6 +141,23 @@ Este modo:
 - Presenta las notas de crédito E34 con importes negativos.
 - Deja en blanco los montos de pago para las notas de crédito.
 - Genera una tabla Excel con filtros y una fila final de total general por columna.
+- Consulta Firebird una sola vez para cargar en memoria todas las ventas activas (`VENTAS_MAST.STATUS = 'A'`) del período solicitado.
+- Cruza los XML contra diccionarios en memoria por e-NCF y, como respaldo, por TRN; no ejecuta una consulta por documento.
+- Recorre la carpeta con `Directory.EnumerateFiles`, sin cargar las más de 50,000 rutas simultáneamente.
+- Para cada archivo realiza primero una lectura XML secuencial mínima de `FechaEmision`; solamente carga completamente los XML que pertenecen al período.
+- Muestra progreso cada 5,000 XML revisados.
+
+## Estrategia para carpetas de gran volumen
+
+Para una carpeta de 50,734 XML y un período mensual de aproximadamente 5,950 documentos:
+
+1. Firebird devuelve en una sola consulta las ventas activas del rango usando `FECHA >= inicio` y `FECHA < día siguiente a la fecha final`.
+2. Los registros POS se indexan en memoria por e-NCF y TRN.
+3. Los 50,734 archivos se enumeran en flujo; no se crea un arreglo con todas las rutas.
+4. Cada XML se abre inicialmente solo hasta encontrar `FechaEmision`.
+5. Únicamente los XML del mes se deserializan completamente y se agregan al Excel.
+
+El proceso no realiza escrituras en la base de datos.
 
 Configuración mínima:
 
@@ -202,3 +219,26 @@ La hoja `Resumen` contiene:
 
 Las columnas monetarias tienen total general al final. Las notas de crédito se
 restan automáticamente de esos totales.
+
+## Estrategia eficiente para carpetas masivas de XML
+
+El modo `--excel-report` toma `VENTAS_MAST.FECHA` como criterio principal del período.
+
+1. Ejecuta una sola consulta Firebird para cargar los documentos e-CF activos del rango.
+2. La consulta usa `VENTAS_MAST.STATUS = 'A'` y la relación oficial
+   `VENTAS_MAST.SERIE_NCF_ASIGNADO -> NCF_ASIGNADOS.SERIE`.
+3. Carga en memoria diccionarios por `VENTAS_MAST.NUMERO` y
+   `NCF_ASIGNADOS.NUMERO_NCF`.
+4. Recorre los nombres con `Directory.EnumerateFiles` y extrae e-CF/TRN del nombre
+   sin abrir el contenido.
+5. Solo abre los XML cuyo e-NCF o TRN pertenece al conjunto cargado para el período.
+6. El reporte parte de los registros POS; por ello puede indicar
+   `SIN XML FIRMADO` cuando una venta o NCR activa no tiene archivo correspondiente.
+
+No se usa la fecha de creación del archivo para filtrar. Esa fecha puede cambiar al
+copiar, restaurar, descargar o mover los XML y no representa necesariamente
+`FechaEmision`.
+
+`VENTAS_MAST.REFERENCIACTE` no se usa como vínculo principal del reporte. El vínculo
+canónico es `NCF_ASIGNADOS.NUMERO_NCF`. Para NCR, el reporte incluye
+`NCF_ASIGNADOS.NUMERO_NCF_REFERENCIA` como e-NCF del documento afectado.
