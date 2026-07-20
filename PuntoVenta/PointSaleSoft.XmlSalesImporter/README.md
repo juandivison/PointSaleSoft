@@ -242,3 +242,30 @@ copiar, restaurar, descargar o mover los XML y no representa necesariamente
 `VENTAS_MAST.REFERENCIACTE` no se usa como vínculo principal del reporte. El vínculo
 canónico es `NCF_ASIGNADOS.NUMERO_NCF`. Para NCR, el reporte incluye
 `NCF_ASIGNADOS.NUMERO_NCF_REFERENCIA` como e-NCF del documento afectado.
+
+## Nombres alternativos de XML firmados
+
+El reporte reconoce dos convenciones de nombre sin abrir el XML:
+
+```text
+Factura_E32_50907TRN51248_signed.xml
+Factura_E32_320000035097_signed.xml
+```
+
+En el formato normal se extraen el e-NCF y el TRN. En el formato alternativo de
+recuperación, el bloque `320000035097` representa el e-NCF sin la letra inicial
+`E`; por tanto, se reconstruye como `E320000035097` y el documento se relaciona
+contra `NCF_ASIGNADOS.NUMERO_NCF`.
+
+El formato alternativo no contiene TRN. En ese caso el reporte no intenta
+inventarlo ni abre el archivo para buscarlo: primero localiza la venta en el
+diccionario de registros POS por e-NCF y solamente abre el XML cuando ese e-NCF
+pertenece al período consultado.
+
+La misma regla aplica a todos los tipos `E[XX]`, incluyendo E34. Por ejemplo:
+
+```text
+Factura_E34_340000000123_signed.xml
+```
+
+se interpreta como el e-NCF `E340000000123`.

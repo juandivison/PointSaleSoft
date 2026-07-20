@@ -77,6 +77,7 @@ public sealed class XmlSalesExcelReportService
 
         int filesScanned = 0;
         int candidateFiles = 0;
+        int recoveryNameFiles = 0;
         int xmlFilesOpened = 0;
         int unrecognizedFileNames = 0;
 
@@ -102,6 +103,9 @@ public sealed class XmlSalesExcelReportService
                 unrecognizedFileNames++;
                 continue;
             }
+
+            if (identity.IsRecoveryName)
+                recoveryNameFiles++;
 
             PersistedSaleReportData? candidate;
             try
@@ -196,8 +200,8 @@ public sealed class XmlSalesExcelReportService
         if (unrecognizedFileNames > 0)
         {
             warnings.Add(
-                $"{unrecognizedFileNames:N0} archivos firmados no siguieron el patrón " +
-                "E<tipo>_<secuencia>TRN<numero> y se omitieron sin abrirlos.");
+                $"{unrecognizedFileNames:N0} archivos firmados no siguieron ninguno de " +
+                "los patrones reconocidos y se omitieron sin abrirlos.");
         }
 
         List<SalesReportRow> rows = persistedSales
@@ -233,6 +237,7 @@ public sealed class XmlSalesExcelReportService
             OutputPath = outputPath,
             FilesScanned = filesScanned,
             CandidateFiles = candidateFiles,
+            RecoveryNameFiles = recoveryNameFiles,
             XmlFilesOpened = xmlFilesOpened,
             DatabaseSalesLoaded = persistedSales.Count,
             SalesIncluded = rows.Count,
@@ -284,8 +289,18 @@ public sealed class XmlSalesExcelReportService
 
         public PersistedSaleReportData? Resolve(EcfFileIdentity identity)
         {
-            _byENcf.TryGetValue(NormalizeENcf(identity.ENcf), out PersistedSaleReportData? byENcf);
-            _byTransaction.TryGetValue(identity.TransactionNumber, out PersistedSaleReportData? byTrn);
+            _byENcf.TryGetValue(
+                NormalizeENcf(identity.ENcf),
+                out PersistedSaleReportData? byENcf);
+
+            PersistedSaleReportData? byTrn = null;
+            if (identity.TransactionNumber.HasValue)
+            {
+                _byTransaction.TryGetValue(
+                    identity.TransactionNumber.Value,
+                    out byTrn);
+            }
+
             return ResolveConsistent(byENcf, byTrn, identity.FileName);
         }
 

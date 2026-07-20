@@ -11,30 +11,84 @@ public sealed partial class EcfXmlReader
     public bool TryReadFileIdentity(string filePath, out EcfFileIdentity? identity)
     {
         string fileName = Path.GetFileName(filePath);
-        Match match = FileNamePattern().Match(fileName);
-        if (!match.Success)
-            match = ReportFileIdentityPattern().Match(fileName);
 
-        if (!match.Success)
+        // Formato normal:
+        // Factura_E32_50907TRN51248_signed.xml
+        Match standardMatch = FileNamePattern().Match(fileName);
+        if (standardMatch.Success)
         {
-            identity = null;
-            return false;
+            identity = CreateIdentity(
+                filePath,
+                standardMatch.Groups["type"].Value,
+                standardMatch.Groups["seq"].Value,
+                standardMatch.Groups["trn"].Value);
+            return true;
         }
 
-        identity = new EcfFileIdentity
+        // Formato alternativo usado por la descarga de recuperación:
+        // Factura_E32_320000035097_signed.xml
+        // El bloque numérico equivale al e-NCF sin la letra inicial E:
+        // 32 + secuencia de 10 dígitos.
+        Match recoveryMatch = RecoveryFileNamePattern().Match(fileName);
+        if (recoveryMatch.Success)
+        {
+            string declaredType = recoveryMatch.Groups["type"].Value;
+            string embeddedType = recoveryMatch.Groups["embeddedType"].Value;
+
+            if (!string.Equals(
+                    declaredType,
+                    embeddedType,
+                    StringComparison.Ordinal))
+            {
+                identity = null;
+                return false;
+            }
+
+            identity = CreateIdentity(
+                filePath,
+                declaredType,
+                recoveryMatch.Groups["seq"].Value,
+                transactionText: null);
+            return true;
+        }
+
+        // Compatibilidad con nombres históricos que contienen e-NCF y TRN,
+        // aunque agreguen otros textos entre ambos valores.
+        Match reportMatch = ReportFileIdentityPattern().Match(fileName);
+        if (reportMatch.Success)
+        {
+            identity = CreateIdentity(
+                filePath,
+                reportMatch.Groups["type"].Value,
+                reportMatch.Groups["seq"].Value,
+                reportMatch.Groups["trn"].Value);
+            return true;
+        }
+
+        identity = null;
+        return false;
+    }
+
+    private static EcfFileIdentity CreateIdentity(
+        string filePath,
+        string ecfType,
+        string sequenceText,
+        string? transactionText)
+    {
+        return new EcfFileIdentity
         {
             FilePath = filePath,
             FileName = Path.GetFileName(filePath),
-            EcfType = match.Groups["type"].Value,
+            EcfType = ecfType,
             Sequence = ParseInt(
-                match.Groups["seq"].Value,
+                sequenceText,
                 "secuencia e-CF del nombre del archivo"),
-            TransactionNumber = ParseInt(
-                match.Groups["trn"].Value,
-                "TRN del nombre del archivo")
+            TransactionNumber = string.IsNullOrWhiteSpace(transactionText)
+                ? null
+                : ParseInt(
+                    transactionText,
+                    "TRN del nombre del archivo")
         };
-
-        return true;
     }
 
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
@@ -87,25 +141,39 @@ public sealed partial class EcfXmlReader
         XElement totals = Required(header, "Totales");
 
         string eNcf = Text(idDoc, "eNCF");
-        Match nameMatch = FileNamePattern().Match(Path.GetFileName(filePath));
-        int? originalTrn = nameMatch.Success
-            ? ParseInt(nameMatch.Groups["trn"].Value, "TRN del nombre del archivo")
-            : null;
+        TryReadFileIdentity(filePath, out EcfFileIdentity? fileIdentity);
+        int? originalTrn = fileIdentity?.TransactionNumber;
 
         int sequence = ParseENcfSequence(eNcf);
-        if (nameMatch.Success)
+        if (fileIdentity is not null)
         {
-            int fileSequence = ParseInt(nameMatch.Groups["seq"].Value,
-                "secuencia e-NCF del nombre del archivo");
-            if (fileSequence != sequence)
+            if (fileIdentity.Sequence != sequence)
+            {
                 throw new InvalidDataException(
-                    $"La secuencia del nombre ({fileSequence}) no coincide con el e-NCF ({sequence}).");
+                    $"La secuencia del nombre ({fileIdentity.Sequence}) no coincide " +
+                    $"con el e-NCF ({sequence}).");
+            }
 
-            string fileType = nameMatch.Groups["type"].Value;
             string xmlType = Text(idDoc, "TipoeCF");
-            if (!string.Equals(fileType, xmlType, StringComparison.Ordinal))
+            if (!string.Equals(
+                    fileIdentity.EcfType,
+                    xmlType,
+                    StringComparison.Ordinal))
+            {
                 throw new InvalidDataException(
-                    $"El tipo del nombre (E{fileType}) no coincide con TipoeCF ({xmlType}).");
+                    $"El tipo del nombre (E{fileIdentity.EcfType}) no coincide " +
+                    $"con TipoeCF ({xmlType}).");
+            }
+
+            if (!string.Equals(
+                    fileIdentity.ENcf,
+                    eNcf,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidDataException(
+                    $"El e-NCF derivado del nombre ({fileIdentity.ENcf}) no coincide " +
+                    $"con el e-NCF del XML ({eNcf}).");
+            }
         }
         List<EcfPaymentForm> payments = idDoc
             .Element("TablaFormasPago")?
@@ -228,6 +296,9 @@ public sealed partial class EcfXmlReader
 
     [GeneratedRegex(@"^Factura_E(?<type>\d{2})_(?<seq>\d+)TRN(?<trn>\d+)_(?:signed|firmado)\.xml$", RegexOptions.IgnoreCase)]
     private static partial Regex FileNamePattern();
+
+    [GeneratedRegex(@"^Factura_E(?<type>\d{2})_(?<embeddedType>\d{2})(?<seq>\d{10})_(?:signed|firmado)\.xml$", RegexOptions.IgnoreCase)]
+    private static partial Regex RecoveryFileNamePattern();
 
     [GeneratedRegex(@"E(?<type>\d{2})[_-]?(?<seq>\d+).*TRN(?<trn>\d+).*(?:signed|firmado)\.xml$", RegexOptions.IgnoreCase)]
     private static partial Regex ReportFileIdentityPattern();

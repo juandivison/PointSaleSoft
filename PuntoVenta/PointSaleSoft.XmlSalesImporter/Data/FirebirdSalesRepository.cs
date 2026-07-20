@@ -57,9 +57,8 @@ public sealed partial class FirebirdSalesRepository
             SELECT
                    VM.NUMERO,
                    VM.FECHA,
-                   VM.VALOR_TOTAL_DET,                   
-				   COALESCE(VM.MONTO_PAGADO, 0) -
-				   COALESCE(VM.MONTO_CAMBIO, 0) AS MONTO_PAGADO,
+                   VM.VALOR_TOTAL_DET,
+                   COALESCE(VM.MONTO_PAGADO, 0)- COALESCE(VM.MONTO_CAMBIO, 0) AS MONTO_PAGADO,
                    VM.FORMA_PAGO,
                    TRIM(N.NUMERO_NCF) AS NUMERO_NCF,
                    TRIM(COALESCE(N.NUMERO_NCF_REFERENCIA, '')) AS NUMERO_NCF_REFERENCIA,

@@ -46,9 +46,11 @@ public sealed class EcfFileIdentity
     public required string FileName { get; init; }
     public required string EcfType { get; init; }
     public int Sequence { get; init; }
-    public int TransactionNumber { get; init; }
+    public int? TransactionNumber { get; init; }
 
     public string ENcf => $"E{EcfType}{Sequence:D10}";
+    public bool HasTransactionNumber => TransactionNumber.HasValue;
+    public bool IsRecoveryName => !TransactionNumber.HasValue;
 }
 
 public sealed class SalesReportResult
@@ -56,6 +58,7 @@ public sealed class SalesReportResult
     public required string OutputPath { get; init; }
     public int FilesScanned { get; init; }
     public int CandidateFiles { get; init; }
+    public int RecoveryNameFiles { get; init; }
     public int XmlFilesOpened { get; init; }
     public int DatabaseSalesLoaded { get; init; }
     public int SalesIncluded { get; init; }

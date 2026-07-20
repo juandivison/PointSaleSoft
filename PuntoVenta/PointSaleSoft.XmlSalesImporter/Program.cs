@@ -42,6 +42,7 @@ static int RunExcelReport(ImportOptions options)
 
     Console.WriteLine($"Nombres XML firmados revisados: {result.FilesScanned:N0}");
     Console.WriteLine($"Archivos candidatos del período: {result.CandidateFiles:N0}");
+    Console.WriteLine($"Nombres alternativos de recuperación: {result.RecoveryNameFiles:N0}");
     Console.WriteLine($"XML abiertos: {result.XmlFilesOpened:N0}");
     Console.WriteLine($"Documentos POS cargados en memoria: {result.DatabaseSalesLoaded:N0}");
     Console.WriteLine($"Documentos incluidos: {result.SalesIncluded:N0}");
