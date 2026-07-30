@@ -76,22 +76,24 @@ begin
     StrRuta:='';
     if (GLBRUTADB2 <> '') then
     begin
-    StrRuta:=  FIniFile.ReadString(SECTION, GLBRUTADB2, '');
-    IF (StrRuta <> '') THEN
-    begin
-      dmConectar.IBDatabase2.Connected    := False;
-      dmConectar.IBDatabase2.DatabaseName := Trim(StrRuta);
-      GlbRutaDBActual2 :=dmConectar.IBDatabase1.DatabaseName;
-      if dmConectar.IBDatabase2.TestConnected = False then
+      StrRuta:=  FIniFile.ReadString(SECTION, GLBRUTADB2, '');
+      IF (StrRuta <> '') THEN
       begin
-        close;
-      end else
-      begin
-        MessageDlg('La conección a la base de datos falló, verifique', mtInformation, [mbOK], 0);
-        Halt;
+        dmConectar.IBDatabase2.Connected    := False;
+        dmConectar.IBDatabase2.DatabaseName := Trim(StrRuta);
+        LogInformacionTxt('Ruta actual dmConectar.IBDatabase2 ->'+strRuta);
+        GlbRutaDBActual2 :=dmConectar.IBDatabase2.DatabaseName;
+        if dmConectar.IBDatabase2.TestConnected = False then
+        begin
+          Close;
+        end else
+        begin
+          MessageDlg('La conección a la base de datos falló, verifique', mtInformation, [mbOK], 0);
+          Halt;
+        end;
       end;
-    end;
-  end;
+    end else
+    GlbRutaDBActual2:='';
   except
     MessageDlg('No tienes acceso a la DB secundaria, verifique', mtInformation, [mbOK], 0);
   end;

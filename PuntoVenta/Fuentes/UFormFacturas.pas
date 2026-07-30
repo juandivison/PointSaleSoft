@@ -118,6 +118,7 @@ type
     CheckBox3: TCheckBox;
     VerificarMontos1: TMenuItem;
     chkImpenPDF: TCheckBox;
+    XMLFirmados1: TMenuItem;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure cboxClientesChange(Sender: TObject);
@@ -164,6 +165,7 @@ type
     procedure BitBtn16Click(Sender: TObject);
     procedure CartadeSaldo1Click(Sender: TObject);
     procedure VerificarMontos1Click(Sender: TObject);
+    procedure XMLFirmados1Click(Sender: TObject);
   private
     { Private declarations }
     procedure VerificaVendedor;
@@ -207,7 +209,7 @@ USES UDatModFactura, uglobal, UDatModClientes, UFormCambiarCteFact,
   UfrmlECF_TIMBRE_LOG, UFormAsignareCFAVentasSineCF, UModoConsumoToCredito,
   UBuscarClientesPersonasP, UFormNCFAsignados, USetClaveMaestra,
   UFrmCartaRutaTemplate, UFrmCartaSaldoTemplate,
-  UformConsultarVerificaMontosVtas;
+  UformConsultarVerificaMontosVtas, UXmlSalesImporter;
 {$R *.dfm}
 
 procedure TfrmConsultaFacturas.BitBtn1Click(Sender: TObject);
@@ -2000,6 +2002,33 @@ begin
   finally
   freeAndNil(frmConsultarVtasVerDiff);
   end;
+end;
+
+procedure TfrmConsultaFacturas.XMLFirmados1Click(Sender: TObject);
+var
+  LImporterExe: string;
+  LConnectionString: string;
+  LXmlFolder: string;
+begin
+  LImporterExe :=
+    IncludeTrailingPathDelimiter(
+      ExtractFilePath(Application.ExeName)
+    ) +
+    'PointSaleSoft.XmlSalesImporter.exe';
+
+  LConnectionString :=
+    TfrmXmlSalesImporter.BuildConnectionString(
+      dmConectar.IBDatabase1
+    );
+
+  LXmlFolder := '';
+
+  TfrmXmlSalesImporter.Execute(
+    Self,
+    LImporterExe,
+    LConnectionString,
+    LXmlFolder
+  );
 end;
 
 end.

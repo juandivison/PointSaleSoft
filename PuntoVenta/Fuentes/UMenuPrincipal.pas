@@ -931,7 +931,7 @@ UInventarioProd, UTipoInventario,UConfirmaLicencia,
   UProyeccionRegalia, UOrdenDespEmpleados, UCreditosFrmCoop, UDatModNomina,
   URepNominaGral, UFrmTssExportCenter, UFrmTssNovedadManual,
   UFrmEmpleadoPensionAlimenticia, UNOmHistorico, UCalculoBonificaciones,
-  URepIR13;//, UFormLoadDatosDGII;
+  URepIR13, USetClaveMaestra;//, UFormLoadDatosDGII;
 
 {$R *.dfm}
 procedure TfrmMenuPrincipal.Salir1Click(Sender: TObject);
@@ -1028,7 +1028,7 @@ begin
   end;
   Application.Terminate;
 end;
-
+                    
 {
 procedure TfrmMenuPrincipal.Salir1Click(Sender: TObject);
 var
@@ -1181,6 +1181,7 @@ begin
     GLBRUTADBINI := Ini.ReadString('DataBase', 'GLBRUTADB', '');
     GLBRUTADBLOAN:= Ini.ReadString('DataBase', 'GLBRUTADBLOAN', '');
     GLBRUTADB2:= Ini.ReadString('DataBase', 'GLBRUTADB2', '');
+    LogInformacionTxt('Valor de GLBRUTADB2->'+GLBRUTADB2);
     GLBRUTADBDGII:= Ini.ReadString('DataBase', 'GLBRUTADBDGII', '');
     GLBRUTABDGIITXT:= Ini.ReadString('DataBase', 'GLBRUTABDGIITXT', '');
     GlbUsaBalanza :=Ini.ReadInteger('Venta', 'GlbUsaBalanza', 0);
@@ -1684,14 +1685,31 @@ begin
 end;
 
 procedure TfrmMenuPrincipal.Acercade1Click(Sender: TObject);
+var
+  valorE : string;
 begin
   //dmInventario.ProcInsertKardexBlc(StrToDate('01/31/2021'));
+
+  frmConfClaveMaestra:=TfrmConfClaveMaestra.Create(nil);
+   try
+     frmConfClaveMaestra.showmodal;
+     frmConfClaveMaestra.Edit1.Text:=clave;
+     //frmConfClaveMaestra.Edit2.Text:=clave;
+     frmConfClaveMaestra.Button1Click(self);
+     valorE :=frmConfClaveMaestra.Edit2.Text;
+
+   finally
+   freeAndNil(frmConfClaveMaestra);
+   end;
+
+
   frmEncrypt:=TfrmEncrypt.Create(nil);
   try
     frmEncrypt.Showmodal;
   finally
   FreeAndNil(frmEncrypt);
   end;
+
 
   AboutBox := TAboutBox.Create(nil);
   Try

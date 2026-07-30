@@ -303,6 +303,15 @@ object frmNCFAsignados: TfrmNCFAsignados
     TabOrder = 6
     OnClick = BitBtn2Click
   end
+  object btnDescargaMasiva: TBitBtn
+    Left = 1044
+    Top = 0
+    Width = 27
+    Height = 25
+    Caption = 'TQR'
+    TabOrder = 7
+    OnClick = btnDescargaMasivaClick
+  end
   object tblNCFAsignados: TIBDataSet
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1

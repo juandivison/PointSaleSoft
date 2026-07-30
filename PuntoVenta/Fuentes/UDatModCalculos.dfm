@@ -899,6 +899,10 @@ object dmCalculos: TdmCalculos
       Origin = 'PROC_INSECOTIVTAEXTRADET.CODTEXTO'
       Size = 40
     end
+    object ibstpproc_InseCotiVtaExtraDetINVENTARIAR: TSmallintField
+      FieldName = 'INVENTARIAR'
+      Origin = 'PROC_INSECOTIVTAEXTRADET.INVENTARIAR'
+    end
   end
   object qryPosExtRrdDesc: TIBQuery
     Database = dmConectar.IBDatabase1

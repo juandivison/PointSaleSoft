@@ -627,7 +627,8 @@ begin
         Lugar := GetFieldText(Q, 'LUGAR_EMISION', 'Vicente Noble, Barahona, R.D.');
 
       R.LugarEmision := Lugar;
-      R.FechaCortaTexto := FechaCorta(F);
+      //temporal R.FechaCortaTexto := FechaCorta(F);
+      R.FechaCortaTexto := FechaCorta(date);
       R.TituloDocumento := Trim(edtTituloDocumento.Text);
       //R.CuerpoTexto := ExpandTemplate(memCuerpoTemplate.Lines.Text, Q);
       R.CuerpoTexto := ExpandTemplateRichCuerpo(memCuerpoTemplate.Lines.Text, Q);

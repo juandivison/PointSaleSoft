@@ -476,7 +476,7 @@ object frmInventarioProd: TfrmInventarioProd
         Height = 239
         DataSource = dmInventario.dsInventarioProd
         FixedColor = 13434879
-        Options = [dgEditing, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgConfirmDelete, dgCancelOnExit, dgMultiSelect]
+        Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgConfirmDelete, dgCancelOnExit]
         TabOrder = 43
         TitleFont.Charset = DEFAULT_CHARSET
         TitleFont.Color = clWindowText
@@ -486,7 +486,6 @@ object frmInventarioProd: TfrmInventarioProd
         OnKeyDown = RxDBGrid4KeyDown
         OnMouseMove = RxDBGrid4MouseMove
         OnTitleClick = RxDBGrid4TitleClick
-        MultiSelect = True
         RowColor2 = 16776176
         OnGetCellParams = RxDBGrid4GetCellParams
         Columns = <
@@ -583,43 +582,36 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'PRECIOVENTA2'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PRECIOVENTA3'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PRECIOVENTA4'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORCUTILIDAD1'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORCUTILIDAD2'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORCUTILIDAD3'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PORCUTILIDAD4'
-            Width = 64
             Visible = True
           end
           item
@@ -632,7 +624,6 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'PRECIO_ALQUILER'
-            Width = 64
             Visible = True
           end
           item
@@ -652,7 +643,6 @@ object frmInventarioProd: TfrmInventarioProd
             Expanded = False
             FieldName = 'STATUS'
             Title.Caption = 'Status'
-            Width = 64
             Visible = True
           end
           item
@@ -665,7 +655,6 @@ object frmInventarioProd: TfrmInventarioProd
             Expanded = False
             FieldName = 'CODIGO_PRECIO'
             Title.Caption = 'CodPrecio'
-            Width = 64
             Visible = True
           end
           item
@@ -687,25 +676,21 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'CODFABRICANTE'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODCATEGORIA'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODSUBCATEGORIA'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'APLICAIMPTOCOMPRA'
-            Width = 64
             Visible = True
           end
           item
@@ -717,13 +702,11 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'SITUACIONPROD'
-            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'PAGACOMISION'
-            Width = 64
             Visible = True
           end>
       end
@@ -1983,7 +1966,6 @@ object frmInventarioProd: TfrmInventarioProd
           item
             Expanded = False
             FieldName = 'CODIGO_CTE'
-            Width = 64
             Visible = True
           end
           item

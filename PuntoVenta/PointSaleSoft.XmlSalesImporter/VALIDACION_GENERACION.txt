@@ -1,0 +1,29 @@
+VALIDACION REALIZADA DURANTE LA GENERACION
+==========================================
+
+1. Sintaxis C# analizada con parser Tree-sitter C#: sin nodos de error.
+2. PROC_INS_VENTAS_MAST: 47 argumentos en el código, en el mismo orden del SP entregado.
+3. PROC_INS_VENTAS_DET: 43 argumentos en el código, en el mismo orden del SP entregado.
+4. XML E320000050907:
+   - 25 líneas
+   - Total detalle: 3970.00
+   - Base calculada: 3364.41
+   - ITBIS calculado: 605.59
+   - Coincide con el encabezado.
+5. XML E320000050916:
+   - 3 líneas
+   - Total detalle: 220.00
+   - Base calculada: 186.87
+   - ITBIS calculado: 33.13
+   - Coincide con el encabezado.
+6. No se ejecutó compilación .NET ni conexión Firebird en este entorno porque no dispone del SDK .NET ni de la base de datos del cliente.
+
+7. DETALLE_PAGOS.SERIE se obtiene directamente con GEN_ID(GEN_SERIE_DET_PAGO, 1).
+8. Se eliminó la estrategia configurable/trigger para evitar ambigüedad durante esta carga.
+9. GEN_NUM_FACTURA se invoca únicamente para XML a crédito.
+10. Para contado, NUMERO_FACTURA se envía y normaliza como NULL.
+11. VENTAS_MAST se normaliza dentro de la misma transacción: COD_USR_CAJA=40, CODIGO_VENDEDOR=NULL, TIPONCFIFISCAL=2 y observación según forma de pago.
+12. Para crédito, NUMERO_DOC_PAGO se restablece a NULL después de PROC_INS_VENTAS_MAST, evitando el efecto de SEC_NUM_REC_IGUAL.
+13. Para contado, NUMERO_DOC_PAGO se obtiene ejecutando PROC_SECUENCIA(1, 4) dentro de la misma transacción; NUMERO_FACTURA permanece NULL.
+
+15. En VENTAS_DET, ITBI_DET debe ser igual a ITBIS_FISCAL_DET para cada linea importada.

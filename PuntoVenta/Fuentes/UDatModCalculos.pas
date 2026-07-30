@@ -292,6 +292,7 @@ type
     ibstpproc_InseCotiVtaExtraDetCODTEXTO: TIBStringField;
     ibSqlUpdGlobalPosExtraDet: TIBSQL;
     qryConsultaPosExtraDetDC_MONTONETO: TFloatField;
+    ibstpproc_InseCotiVtaExtraDetINVENTARIAR: TSmallintField;
     procedure DataModuleCreate(Sender: TObject);
     procedure Totales_xxxAfterPost(DataSet: TDataSet);
     procedure qryPosExtraDetBeforePost(DataSet: TDataSet);

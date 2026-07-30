@@ -487,6 +487,7 @@ begin
         else
           R.FechaEmisionTexto := '';
 
+        R.FechaEmisionTexto:=FechaEmisionEs(date);
         R.TituloDocumento := Trim(edtTituloDocumento.Text);
         R.Destinatario := ExpandTemplate(memDestinatario.Lines.Text, Q);
         R.NumeroControl := 'C/' + GetFieldText(Q, 'NUMERO', '');

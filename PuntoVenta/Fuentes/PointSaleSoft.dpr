@@ -1063,7 +1063,7 @@ begin
   Application.Title := 'ERP Enterprise System';
   frmPresentacion.Close;
   frmPresentacion.Free;
-  frmPresentacion:=Nil;       
+  frmPresentacion:=Nil;                     
   try                              
     Application.Run;
   finally                                  

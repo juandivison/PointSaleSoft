@@ -1,6 +1,6 @@
 object frmEncrypt: TfrmEncrypt
-  Left = 470
-  Top = 238
+  Left = 649
+  Top = 261
   BorderStyle = bsDialog
   Caption = 'Encriptar cadena'
   ClientHeight = 207

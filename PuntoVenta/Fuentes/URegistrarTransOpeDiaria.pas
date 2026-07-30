@@ -1,5 +1,5 @@
 unit URegistrarTransOpeDiaria;
-
+                             ss
 interface
 
 uses
@@ -10,7 +10,7 @@ uses
   IBQuery, IBTable;
 
 type
-  TfrmRegTransOpeDiaria = class(TForm)
+  TfrmRegTransOpeDiaria = class(TForm)                                             
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;

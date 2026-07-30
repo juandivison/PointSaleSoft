@@ -136,13 +136,15 @@ begin
 
   if not dmConectar.IBDatabase1.Connected then
     dmConectar.IBDatabase1.Connected := True;
-
+    
+  if (GlbRutaDBActual2 <> '') then
   if not dmConectar.IBDatabase2.Connected then
     dmConectar.IBDatabase2.Connected := True;
 
   if not dmConectar.IBTransaction1.InTransaction then
     dmConectar.IBTransaction1.StartTransaction;
 
+  if (GlbRutaDBActual2 <> '') then
   if not dmConectar.IBTransaction2.InTransaction then
     dmConectar.IBTransaction2.StartTransaction;
 end;

@@ -93,6 +93,8 @@ procedure TfrmConfClaveMaestra.btnDesencriptarClick(Sender: TObject);
 begin
    //edit3.Text := Desencriptar(edit2.Text,2005);
    Edit3.Text := DesencriptarHex(edit2.Text, 2005);
+   Edit3.Enabled:=True;
+   Edit3.Visible:=True;
 end;
 function TfrmConfClaveMaestra.EncriptarRaw(const S: AnsiString; Key: Longword): AnsiString;
 var

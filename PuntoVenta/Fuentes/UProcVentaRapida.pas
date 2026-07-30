@@ -1814,7 +1814,11 @@ begin
     ValidaSubTotal ya no recalcula. Solo valida el resultado persistente.
   }
   if not ValidaSubTotal then
+  begin
+    BitBtn6.Enabled := True;
+    BitBtn4.Enabled := True;
     Exit;
+  end;
 
   FTotalNetoFiscalConfirmado := Totalestotalneto.Value;
   FTotalesCongeladosFiscalmente := True;
@@ -3521,7 +3525,7 @@ end;
         if (rxVentaInvetariar.Value <> 0) and (GlbCodDivInventario = 1) then
         begin
           try
-            Sleep(50);
+            Sleep(30);
             ibStpActualizaInvProd.ExecProc;
           except
             on E: Exception do
@@ -5821,7 +5825,7 @@ begin
   begin                             
     frmProcVentaRapida.Hint:= IntToStr(frmProcVentaRapida.Width);
   end;           
-  flagSolLote:=False;                
+  flagSolLote:=False;                  
   rxLote.close;                  
   rxLote.Open;                         
    EntManual:=False;                               
@@ -6582,6 +6586,8 @@ begin
            lblProcDev.SendToBack else
         lblProcDev.BringToFront;
         panel2.Visible:=False;
+        BitBtn6.Enabled:=True;
+        BitBtn4.Enabled:=True;
         panel2.Height:=87;
         dmcalculos.ProcDeletePosExtraDet(GlbNumVtaPOS);
         GlbNumVtaPOS:=-1;
@@ -8300,7 +8306,12 @@ begin
   if GlbFactRecurrente then
   CalcularTotalesInterno;
 
-  if not ValidaSubTotal then exit;
+  if not ValidaSubTotal then
+  begin
+    BitBtn6.Enabled := True;
+    BitBtn4.Enabled := True;  
+    exit;
+  end;
   
   if Not rxVentaNumeroCotiza.IsNull AND (Label36.VISIBLE)then
   begin
@@ -10529,6 +10540,10 @@ end;
               0
             );
 
+
+          if Assigned(dmCalculos.ibstpproc_InseCotiVtaExtraDet.FindField('INVENTARIAR')) then
+          rxVentaInvetariar.Value:= dmCalculos.ibstpproc_InseCotiVtaExtraDet.FieldByName('INVENTARIAR').AsInteger;
+
           if Assigned(
             dmCalculos.ibstpproc_InseCotiVtaExtraDet.FindField('CODTEXTO')
           ) then
@@ -10744,7 +10759,7 @@ end;
 
           rxVentaMontoNeto.Value :=
           dmCalculos.qryConsultaPosExtraDetDC_MONTONETO.Value;
-
+                 
           rxVenta.Post;
         end;
                   
@@ -10875,7 +10890,9 @@ dmCalculos.esFeedback := True;
   finally
     frmCotizaciones.Free;
     frmCotizaciones := nil;
-  end;  
+  end;
+  if edtcodigo.CanFocus then
+  edtCodigo.setFocus;
 end;
 
 procedure TfrmProcVentaRapida.ProcesaFacturar(tipo : smallint; numdoc:Integer; codcte:Integer);
@@ -11952,7 +11969,7 @@ begin
   if frmEntrreClave.showmodal=mrOk then
   Clave:= frmEntrreClave.Edit1.Text
   else Result := False;
-  frmentrreClave.Free;
+  frmentrreClave.Free;                
   frmentrreClave:=Nil;
   frmConfClaveMaestra:=TfrmConfClaveMaestra.Create(nil);
    try
@@ -11960,7 +11977,7 @@ begin
      //frmConfClaveMaestra.Edit2.Text:=clave;
      frmConfClaveMaestra.Button1Click(self);
      valorE :=frmConfClaveMaestra.Edit2.Text;
-
+           
    finally
    freeAndNil(frmConfClaveMaestra);
    end;
@@ -21237,14 +21254,14 @@ begin
     qryVence.Close;
     qryVence.Open
   end;
-  EnProcesoCalculo:=True;
+  //t EnProcesoCalculo:=False;
 
   {temporal hoy
   if rxVenta.State = dsBrowse then  if Not rxVentaSerie.IsNull then
   if not rxVenta.BOF then
   rxVenta.Last;
   }
-  procCalc := True;
+  //t procCalc := False;
   rxLabelVence.Visible:= False;
   if LectorCodBarra1.Checked then Exit;
   BuscandoPorDesc:=False;
@@ -21462,6 +21479,10 @@ var
 begin
   //LogProcedure('TfrmProcVentaRapida.edtCodigoExit');
   edtCodigo.Color := clWindow;
+  if StatusBar.Panels.Count > 0 then
+  StatusBar.Panels[0].Text :=
+    '';
+
   if qryVence.State = dsInactive then
   begin
     qryVence.Close;
@@ -22455,8 +22476,31 @@ begin
 end;
 
 procedure TfrmProcVentaRapida.ActualizaConduce1Click(Sender: TObject);
+  var
+  LSender: string;
 begin
+  //Temporal exit
+  Exit;
   LogProcedure('TfrmProcVentaRapida.ActualizaConduce1Click');
+  if Sender = nil then
+    LSender := 'nil'
+  else
+  if Sender is TComponent then
+    LSender :=
+      TComponent(Sender).Name + ':' + Sender.ClassName
+  else
+    LSender := Sender.ClassName;
+
+  LogInformacionTxt(
+    'ENTRA ActualizaConduce1Click' +
+    ' | Sender=' + LSender +
+    ' | EsConduce=' + BoolToStr(EsConduce, True) +
+    ' | EsModificandoCotiza=' +
+      BoolToStr(EsModificandoCotiza, True) +
+    ' | NumeroCotiza=' + rxVentaNumeroCotiza.AsString
+  );
+  if not EsConduce then
+  exit;
   if EsConduce then
   begin
       dmVentas.tblDatosConduce.Close;
@@ -25012,6 +25056,8 @@ begin
       qryVerificaInv.Open;
       WriteToLog(' ');
       WriteToLog('****************************************');
+      if rxVentaInvetariar.Value = 0 then
+      WriteToLog('Inventariar tiene No(0) en Inventario:' + IntToStr(rxVentaInvetariar.Value));
       WriteToLog('Numero Trn Venta:' + IntToStr(numtrn));
       WriteToLog('Codigo Producto:'  + qryVerificaInv.Params[0].AsString);
       WriteToLog('Cant antes venta: '+ FloatToStr(CantidadAnterior));
@@ -26408,7 +26454,7 @@ end;
               ibStpActualizaInvProd.ExecProc;
             end;
 
-            {
+            {                                                        
               Esta llamada se mantenía solamente en la devolución
               cash/no fiscal. Conservamos esa regla.
             }
@@ -27449,7 +27495,7 @@ begin
   begin
     if MessageDlg(
         'Desea asignar vendedor?',
-        mtWarning,[mbYes,mbNo],0) = mrNo then
+        mtWarning,[mbYes,mbNo],0) = mrYes then
     begin
       RxDBLookupCombo4.SetFocus;
       exit;
@@ -28279,6 +28325,7 @@ begin
 
     except
       GlbCalculado := False;
+      EnProcesoCalculo := False;
       procCalc := True;
       raise;
     end;
@@ -28424,6 +28471,7 @@ begin
     dmCalculos.DatCambio := True;
 
     CalcularTotalesInterno;
+    EnProcesoCalculo:=False;
   finally
 
   end;
@@ -29012,7 +29060,7 @@ begin
      (Trim(rxVentaDescUnidadMedida.AsString) = '') then
     rxVentaDescUnidadMedida.Value := 'UNIDAD';
 
-  { Moneda }
+  { Moneda }                             
   LMoneda := '';
 
   if qryProductos.Active and
@@ -29045,7 +29093,9 @@ begin
     else
       LMoneda := '1';
   end;
-
+  if rxVentaInvetariar.IsNull or (rxVentaInvetariar.Value = 0) then
+     rxVentaInvetariar.Value := qryProductosINVENTARIAR.Value;
+     
   rxVentaMoneda.Value := LMoneda;
   
 end;  
@@ -29106,7 +29156,6 @@ begin
       '|Shift=' + BoolToStr(ssShift in Shift, True)
     );
   end;
-
   {
     No modificar Key.
     No llamar SetFocus.

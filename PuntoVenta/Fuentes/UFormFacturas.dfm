@@ -2720,6 +2720,10 @@ object frmConsultaFacturas: TfrmConsultaFacturas
         Caption = 'Cambiar Tipo_ECF'
         OnClick = CambiarTipoECF1Click
       end
+      object XMLFirmados1: TMenuItem
+        Caption = 'XML Firmados'
+        OnClick = XMLFirmados1Click
+      end
       object VerificarMontos1: TMenuItem
         Caption = 'Verificar Montos'
         OnClick = VerificarMontos1Click

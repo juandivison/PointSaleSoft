@@ -18,6 +18,13 @@ function SincronizarInventarioProductoPorCodigo(
 
 implementation
 
+type
+  TProductoDestinoInfo = record
+    Codigo: Integer;
+    CodigoBarra: string;
+    Descripcion: string;
+  end;
+
 function FieldExists(ADataSet: TDataSet; const AFieldName: string): Boolean;
 begin
   Result := (ADataSet <> nil) and (ADataSet.FindField(AFieldName) <> nil);
@@ -72,7 +79,7 @@ end;
 
 function CodigoBarraEsReal(const ACodigoBarra: string): Boolean;
 begin
-  // Regla acordada: solo aplica regla de codigo de barra si la longitud es mayor de 7.
+  // Solo se usa como identificador cuando tiene mas de 7 caracteres.
   Result := Length(Trim(ACodigoBarra)) > 7;
 end;
 
@@ -118,7 +125,8 @@ begin
     AIBDataSet.Transaction.StartTransaction;
 end;
 
-procedure SetQueryParamFromField(AQuery: TIBQuery; AOrigen: TDataSet; const AParamName, AFieldName: string);
+procedure SetQueryParamFromField(AQuery: TIBQuery; AOrigen: TDataSet;
+  const AParamName, AFieldName: string);
 begin
   if not FieldExists(AOrigen, AFieldName) then
     Exit;
@@ -129,13 +137,15 @@ begin
     AQuery.ParamByName(AParamName).Value := AOrigen.FieldByName(AFieldName).Value;
 end;
 
-procedure AddMirrorField(AList: TStrings; AOrigen, ADestino: TDataSet; const AFieldName: string);
+procedure AddMirrorField(AList: TStrings; AOrigen, ADestino: TDataSet;
+  const AFieldName: string);
 begin
   if FieldExists(AOrigen, AFieldName) and FieldExists(ADestino, AFieldName) then
     AList.Add(AFieldName);
 end;
 
-procedure BuildMirrorFields(AList: TStrings; AOrigen, ADestino: TDataSet; AIncludeCodigo: Boolean);
+procedure BuildMirrorFields(AList: TStrings; AOrigen, ADestino: TDataSet;
+  AIncludeCodigo: Boolean);
 var
   I: Integer;
   FieldName: string;
@@ -152,17 +162,17 @@ begin
     if not FieldExists(ADestino, FieldName) then
       Continue;
 
-    // Campos calculados o readonly no deben ser forzados por SQL si el dataset los marca asi.
-    // Excepcion: CODIGO/CODIGO_TEXTO/CODIGO_BARRA se copian en modo espejo si existen.
+    // Campos calculados o readonly no deben ser forzados por SQL.
+    // Los campos de identidad se copian si existen en ambos datasets.
     if ADestino.FieldByName(FieldName).ReadOnly and
-       (not FieldNameInArray(FieldName, ['CODIGO', 'CODIGO_TEXTO', 'CODIGO_BARRA'])) then
+       (not FieldNameInArray(FieldName,
+         ['CODIGO', 'CODIGO_TEXTO', 'CODIGO_BARRA'])) then
       Continue;
 
     if AList.IndexOf(FieldName) < 0 then
       AList.Add(FieldName);
   end;
 
-  // Garantizar que los campos de identidad espejo entren si existen.
   if AIncludeCodigo and (AList.IndexOf('CODIGO') < 0) then
     AddMirrorField(AList, AOrigen, ADestino, 'CODIGO');
 
@@ -173,7 +183,8 @@ begin
     AddMirrorField(AList, AOrigen, ADestino, 'CODIGO_BARRA');
 end;
 
-procedure NormalizarValoresEspejo(AQuery: TIBQuery; AOrigen: TDataSet; const AFieldName: string; ACodigoOrigen: Integer);
+procedure NormalizarValoresEspejo(AQuery: TIBQuery; AOrigen: TDataSet;
+  const AFieldName: string; ACodigoOrigen: Integer);
 var
   CodigoTextoOrigen: string;
   CodigoBarraOrigen: string;
@@ -186,9 +197,11 @@ begin
 
   if SameTextD7(AFieldName, 'CODIGO_TEXTO') then
   begin
+    // CODIGO_TEXTO se copia, pero no participa en la decision INSERT/UPDATE.
     CodigoTextoOrigen := GetFieldStr(AOrigen, 'CODIGO_TEXTO');
     if CodigoTextoOrigen = '' then
       CodigoTextoOrigen := IntToStr(ACodigoOrigen);
+
     AQuery.ParamByName(AFieldName).AsString := CodigoTextoOrigen;
     Exit;
   end;
@@ -198,6 +211,7 @@ begin
     CodigoBarraOrigen := GetFieldStr(AOrigen, 'CODIGO_BARRA');
     if CodigoBarraOrigen = '' then
       CodigoBarraOrigen := IntToStr(ACodigoOrigen);
+
     AQuery.ParamByName(AFieldName).AsString := CodigoBarraOrigen;
     Exit;
   end;
@@ -205,12 +219,29 @@ begin
   SetQueryParamFromField(AQuery, AOrigen, AFieldName, AFieldName);
 end;
 
-function ProductoExistePorCodigoDestino(ADestino: TDataSet; ACodigo: Integer): Boolean;
+procedure LimpiarProductoDestinoInfo(var AProducto: TProductoDestinoInfo);
+begin
+  AProducto.Codigo := 0;
+  AProducto.CodigoBarra := '';
+  AProducto.Descripcion := '';
+end;
+
+procedure CargarProductoDestinoInfo(AQuery: TIBQuery;
+  var AProducto: TProductoDestinoInfo);
+begin
+  AProducto.Codigo := AQuery.FieldByName('CODIGO').AsInteger;
+  AProducto.CodigoBarra := Trim(AQuery.FieldByName('CODIGO_BARRA').AsString);
+  AProducto.Descripcion := Trim(AQuery.FieldByName('DESCRIPCION').AsString);
+end;
+
+function BuscarProductoDestinoPorCodigo(ADestino: TDataSet; ACodigo: Integer;
+  out AProducto: TProductoDestinoInfo): Boolean;
 var
   IBDestino: TIBDataSet;
   Q: TIBQuery;
 begin
   Result := False;
+  LimpiarProductoDestinoInfo(AProducto);
 
   IBDestino := DatasetAsIBDataSet(ADestino, 'INVENTARIO_PRODUCTO destino');
   EnsureTransaction(IBDestino, 'INVENTARIO_PRODUCTO destino');
@@ -220,23 +251,38 @@ begin
     Q.Database := IBDestino.Database;
     Q.Transaction := IBDestino.Transaction;
     Q.SQL.Text :=
-      'select first 1 CODIGO ' +
+      'select CODIGO, CODIGO_BARRA, DESCRIPCION ' +
       'from INVENTARIO_PRODUCTO ' +
       'where CODIGO = :CODIGO';
     Q.ParamByName('CODIGO').AsInteger := ACodigo;
     Q.Open;
-    Result := not Q.IsEmpty;
+
+    if Q.IsEmpty then
+      Exit;
+
+    CargarProductoDestinoInfo(Q, AProducto);
+
+    Q.Next;
+    if not Q.Eof then
+      raise Exception.Create(
+        'Inconsistencia en INVENTARIO_PRODUCTO destino. Existe mas de un registro ' +
+        'con CODIGO=' + IntToStr(ACodigo) + '.'
+      );
+
+    Result := True;
   finally
     Q.Free;
   end;
 end;
 
-function ExisteOtroProductoConCodigoBarraReal(ADestino: TDataSet; ACodigo: Integer; const ACodigoBarra: string): Boolean;
+function BuscarProductoDestinoPorCodigoBarraReal(ADestino: TDataSet;
+  const ACodigoBarra: string; out AProducto: TProductoDestinoInfo): Boolean;
 var
   IBDestino: TIBDataSet;
   Q: TIBQuery;
 begin
   Result := False;
+  LimpiarProductoDestinoInfo(AProducto);
 
   if not CodigoBarraEsReal(ACodigoBarra) then
     Exit;
@@ -249,74 +295,110 @@ begin
     Q.Database := IBDestino.Database;
     Q.Transaction := IBDestino.Transaction;
     Q.SQL.Text :=
-      'select first 1 CODIGO ' +
+      'select CODIGO, CODIGO_BARRA, DESCRIPCION ' +
       'from INVENTARIO_PRODUCTO ' +
-      'where CODIGO_BARRA = :CODIGO_BARRA ' +
-      '  and CODIGO <> :CODIGO';
+      'where trim(CODIGO_BARRA) = :CODIGO_BARRA ' +
+      'order by CODIGO';
     Q.ParamByName('CODIGO_BARRA').AsString := Trim(ACodigoBarra);
-    Q.ParamByName('CODIGO').AsInteger := ACodigo;
     Q.Open;
-    Result := not Q.IsEmpty;
+
+    if Q.IsEmpty then
+      Exit;
+
+    CargarProductoDestinoInfo(Q, AProducto);
+
+    Q.Next;
+    if not Q.Eof then
+      raise Exception.Create(
+        'Inconsistencia en INVENTARIO_PRODUCTO destino. El CODIGO_BARRA=' +
+        Trim(ACodigoBarra) + ' esta asignado a mas de un producto.'
+      );
+
+    Result := True;
   finally
     Q.Free;
   end;
 end;
 
-function ExisteOtroProductoConDescripcion(ADestino: TDataSet; ACodigo: Integer; const ADescripcion: string): Boolean;
-var
-  IBDestino: TIBDataSet;
-  Q: TIBQuery;
-begin
-  Result := False;
-
-  if Trim(ADescripcion) = '' then
-    Exit;
-
-  IBDestino := DatasetAsIBDataSet(ADestino, 'INVENTARIO_PRODUCTO destino');
-  EnsureTransaction(IBDestino, 'INVENTARIO_PRODUCTO destino');
-
-  Q := TIBQuery.Create(nil);
-  try
-    Q.Database := IBDestino.Database;
-    Q.Transaction := IBDestino.Transaction;
-    Q.SQL.Text :=
-      'select first 1 CODIGO ' +
-      'from INVENTARIO_PRODUCTO ' +
-      'where upper(trim(DESCRIPCION)) = upper(trim(:DESCRIPCION)) ' +
-      '  and CODIGO <> :CODIGO';
-    Q.ParamByName('DESCRIPCION').AsString := Trim(ADescripcion);
-    Q.ParamByName('CODIGO').AsInteger := ACodigo;
-    Q.Open;
-    Result := not Q.IsEmpty;
-  finally
-    Q.Free;
-  end;
-end;
-
-procedure ValidarConflictosEspejo(AOrigen, ADestino: TDataSet; ACodigoOrigen: Integer);
+procedure ResolverExistenciaProductoDestino(AOrigen, ADestino: TDataSet;
+  ACodigoOrigen: Integer; out AExisteDestino: Boolean);
 var
   CodigoBarraOrigen: string;
   DescripcionOrigen: string;
+  ExistePorCodigo: Boolean;
+  ExistePorCodigoBarra: Boolean;
+  ProductoPorCodigo: TProductoDestinoInfo;
+  ProductoPorCodigoBarra: TProductoDestinoInfo;
 begin
-  CodigoBarraOrigen := GetFieldStr(AOrigen, 'CODIGO_BARRA');
+  AExisteDestino := False;
+
   DescripcionOrigen := GetFieldStr(AOrigen, 'DESCRIPCION');
+  CodigoBarraOrigen := GetFieldStr(AOrigen, 'CODIGO_BARRA');
 
-  if ExisteOtroProductoConCodigoBarraReal(ADestino, ACodigoOrigen, CodigoBarraOrigen) then
+  if DescripcionOrigen = '' then
     raise Exception.Create(
-      'Conflicto de codigo de barra en INVENTARIO_PRODUCTO destino. CODIGO_BARRA=' +
-      CodigoBarraOrigen + ' ya existe en otro producto. No se sincronizo CODIGO=' +
+      'DESCRIPCION vacia en INVENTARIO_PRODUCTO origen. CODIGO=' +
       IntToStr(ACodigoOrigen) + '.'
     );
 
-  if ExisteOtroProductoConDescripcion(ADestino, ACodigoOrigen, DescripcionOrigen) then
+  ExistePorCodigo := BuscarProductoDestinoPorCodigo(
+    ADestino,
+    ACodigoOrigen,
+    ProductoPorCodigo
+  );
+
+  ExistePorCodigoBarra := BuscarProductoDestinoPorCodigoBarraReal(
+    ADestino,
+    CodigoBarraOrigen,
+    ProductoPorCodigoBarra
+  );
+
+  if ExistePorCodigo then
+  begin
+    // CODIGO solo no identifica el producto. La DESCRIPCION debe coincidir.
+    if not SameTextD7(ProductoPorCodigo.Descripcion, DescripcionOrigen) then
+      raise Exception.Create(
+        'Conflicto de codigo en INVENTARIO_PRODUCTO destino. CODIGO=' +
+        IntToStr(ACodigoOrigen) + ' pertenece al producto "' +
+        ProductoPorCodigo.Descripcion + '" y el origen contiene "' +
+        DescripcionOrigen + '". No se actualizo el registro destino.'
+      );
+
+    // Si el codigo de barra real existe, debe pertenecer al mismo CODIGO.
+    if ExistePorCodigoBarra and
+       (ProductoPorCodigoBarra.Codigo <> ACodigoOrigen) then
+      raise Exception.Create(
+        'Conflicto de codigo de barra en INVENTARIO_PRODUCTO destino. ' +
+        'CODIGO_BARRA=' + CodigoBarraOrigen + ' pertenece al CODIGO=' +
+        IntToStr(ProductoPorCodigoBarra.Codigo) + ' "' +
+        ProductoPorCodigoBarra.Descripcion + '". No se sincronizo CODIGO=' +
+        IntToStr(ACodigoOrigen) + '.'
+      );
+
+    // Mismo CODIGO y misma DESCRIPCION: se actualiza el producto.
+    // El CODIGO_BARRA puede ser corregido si no pertenece a otro producto.
+    AExisteDestino := True;
+    Exit;
+  end;
+
+  // Si el CODIGO no existe, un codigo de barra real ya usado impide insertar.
+  // No se actualiza otro CODIGO solamente por coincidir el codigo de barra.
+  if ExistePorCodigoBarra then
     raise Exception.Create(
-      'Conflicto de descripcion en INVENTARIO_PRODUCTO destino. DESCRIPCION="' +
-      DescripcionOrigen + '" ya existe en otro producto. No se sincronizo CODIGO=' +
+      'Conflicto de codigo de barra en INVENTARIO_PRODUCTO destino. ' +
+      'CODIGO_BARRA=' + CodigoBarraOrigen + ' ya pertenece al CODIGO=' +
+      IntToStr(ProductoPorCodigoBarra.Codigo) + ' "' +
+      ProductoPorCodigoBarra.Descripcion + '". No se inserto CODIGO=' +
       IntToStr(ACodigoOrigen) + '.'
     );
+
+  // Una DESCRIPCION repetida no es conflicto. Si CODIGO y CODIGO_BARRA
+  // son diferentes, se trata como otro producto valido y se inserta.
+  AExisteDestino := False;
 end;
 
-procedure EjecutarUpdateInventarioDestino(AOrigen, ADestino: TDataSet; ACodigoOrigen: Integer);
+procedure EjecutarUpdateInventarioDestino(AOrigen, ADestino: TDataSet;
+  ACodigoOrigen: Integer);
 var
   IBDestino: TIBDataSet;
   Q: TIBQuery;
@@ -343,6 +425,7 @@ begin
 
       if SQLSet <> '' then
         SQLSet := SQLSet + ', ';
+
       SQLSet := SQLSet + Campos[I] + ' = :' + Campos[I];
     end;
 
@@ -359,6 +442,7 @@ begin
     begin
       if SameTextD7(Campos[I], 'CODIGO') then
         Continue;
+
       NormalizarValoresEspejo(Q, AOrigen, Campos[I], ACodigoOrigen);
     end;
 
@@ -370,7 +454,8 @@ begin
   end;
 end;
 
-procedure EjecutarInsertInventarioDestino(AOrigen, ADestino: TDataSet; ACodigoOrigen: Integer);
+procedure EjecutarInsertInventarioDestino(AOrigen, ADestino: TDataSet;
+  ACodigoOrigen: Integer);
 var
   IBDestino: TIBDataSet;
   Q: TIBQuery;
@@ -421,7 +506,8 @@ begin
   end;
 end;
 
-procedure ReabrirDestinoPorCodigoSiAplica(ADestino: TDataSet; ACodigoOrigen: Integer);
+procedure ReabrirDestinoPorCodigoSiAplica(ADestino: TDataSet;
+  ACodigoDestino: Integer);
 var
   IBDestino: TIBDataSet;
 begin
@@ -438,7 +524,7 @@ begin
       IBDestino.Close;
 
     try
-      IBDestino.Params[0].Value := ACodigoOrigen;
+      IBDestino.Params[0].Value := ACodigoDestino;
     except
       // Si el dataset no usa parametros, no detenemos la sincronizacion SQL directa.
     end;
@@ -449,7 +535,8 @@ begin
   end;
 end;
 
-function SincronizarInventarioProducto(AOrigen: TDataSet; ADestino: TDataSet): Boolean;
+function SincronizarInventarioProducto(AOrigen: TDataSet;
+  ADestino: TDataSet): Boolean;
 var
   CodigoOrigen: Integer;
   ExisteDestino: Boolean;
@@ -469,6 +556,8 @@ begin
   RequiredField(AOrigen, 'DESCRIPCION', 'INVENTARIO_PRODUCTO origen');
 
   RequiredField(ADestino, 'CODIGO', 'INVENTARIO_PRODUCTO destino');
+  RequiredField(ADestino, 'CODIGO_BARRA', 'INVENTARIO_PRODUCTO destino');
+  RequiredField(ADestino, 'DESCRIPCION', 'INVENTARIO_PRODUCTO destino');
 
   if AOrigen.State in [dsEdit, dsInsert] then
     AOrigen.Post;
@@ -478,16 +567,25 @@ begin
   if CodigoOrigen <= 0 then
     raise Exception.Create('CODIGO invalido en INVENTARIO_PRODUCTO origen.');
 
-  // Modo espejo: la clave de sincronizacion es CODIGO.
-  // CODIGO_BARRA y DESCRIPCION se validan como unicos, pero NO deciden el registro destino.
-  ValidarConflictosEspejo(AOrigen, ADestino, CodigoOrigen);
-
-  ExisteDestino := ProductoExistePorCodigoDestino(ADestino, CodigoOrigen);
+  ResolverExistenciaProductoDestino(
+    AOrigen,
+    ADestino,
+    CodigoOrigen,
+    ExisteDestino
+  );
 
   if ExisteDestino then
-    EjecutarUpdateInventarioDestino(AOrigen, ADestino, CodigoOrigen)
+    EjecutarUpdateInventarioDestino(
+      AOrigen,
+      ADestino,
+      CodigoOrigen
+    )
   else
-    EjecutarInsertInventarioDestino(AOrigen, ADestino, CodigoOrigen);
+    EjecutarInsertInventarioDestino(
+      AOrigen,
+      ADestino,
+      CodigoOrigen
+    );
 
   IBDestino := DatasetAsIBDataSet(ADestino, 'INVENTARIO_PRODUCTO destino');
   if IBDestino.Transaction.InTransaction then
@@ -521,4 +619,5 @@ begin
 end;
 
 end.
+
 

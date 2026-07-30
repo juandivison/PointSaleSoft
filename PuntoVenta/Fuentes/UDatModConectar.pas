@@ -34,7 +34,7 @@ type
     { Public declarations }
   end;
 
-var
+var                             
   dmConectar: TdmConectar;
 
 implementation

@@ -56,6 +56,7 @@ type
     tblNCFAsignadosURL_IMAGE: TIBStringField;
     tblNCFAsignadosNUMERO_TRN: TIntegerField;
     SpeedButton1: TSpeedButton;
+    btnDescargaMasiva: TBitBtn;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure CheckListBox1Click(Sender: TObject);
@@ -67,6 +68,7 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure RxDBGrid1TitleClick(Column: TColumn);
     procedure SpeedButton1Click(Sender: TObject);
+    procedure btnDescargaMasivaClick(Sender: TObject);
   private
     { Private declarations }
     FSqlBaseNCF: string;
@@ -82,7 +84,7 @@ var
   frmNCFAsignados: TfrmNCFAsignados;
 
 implementation
-  uses UDatModConectar, UUtilecf, Uglobal;
+  uses UDatModConectar, UUtilecf, Uglobal, UfrmDescargaMasivaECF;
 
 {$R *.dfm}
 
@@ -269,6 +271,28 @@ begin
       LogInformacionTxt(PChar(' -Rutina Descargar QR y XML Firmado- ' + _smg));
   if (_smg <> '') then
   ShowMessage(_smg);
+end;
+
+procedure TfrmNCFAsignados.btnDescargaMasivaClick(Sender: TObject);
+var
+  LFrmDescargaMasiva: TfrmDescargaMasivaECF;
+begin
+  LFrmDescargaMasiva := TfrmDescargaMasivaECF.Create(Self);
+  try
+    LFrmDescargaMasiva.RutaEcf := GlbRutaEcf;
+    LFrmDescargaMasiva.OnLogInformacion := @LogInformacionTxt;
+
+    { Opcional: agregar el e-NCF activo como primera l?nea. }
+    if (not tblNCFAsignadosNUMERO_NCF.IsNull) and
+       (Trim(tblNCFAsignadosNUMERO_NCF.AsString) <> '') then
+      LFrmDescargaMasiva.AgregarENCF(
+        tblNCFAsignadosNUMERO_NCF.AsString
+      );
+
+    LFrmDescargaMasiva.ShowModal;
+  finally
+    LFrmDescargaMasiva.Free;
+  end;
 end;
 
 end.
