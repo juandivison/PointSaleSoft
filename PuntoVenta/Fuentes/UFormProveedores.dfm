@@ -631,13 +631,11 @@ object frmProveedores: TfrmProveedores
       item
         Expanded = False
         FieldName = 'EXTENSIONES'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FAX'
-        Width = 64
         Visible = True
       end
       item
@@ -655,79 +653,66 @@ object frmProveedores: TfrmProveedores
       item
         Expanded = False
         FieldName = 'CIUDAD'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'CALYYNUM'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'CODIGOPOSTAL'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'EMAIL'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'DIRECCIONWEB'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'STATUS'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_IN'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'IN_POR'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_MOD'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MOD_POR'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'RNC_PROVEEDOR'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'ID_PROVINCIA'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'ID_MUNICIPIO'
-        Width = 64
         Visible = True
       end>
   end

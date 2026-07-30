@@ -2780,8 +2780,8 @@ object dmInventario: TdmInventario
       '  IDITBISECF = :IDITBISECF'
       'where'
       '  IDTASAITBIS = :OLD_IDTASAITBIS')
-    Left = 664
-    Top = 200
+    Left = 672
+    Top = 176
     object tblTasaITBISIDTASAITBIS: TSmallintField
       DisplayLabel = 'IDTasa'
       FieldName = 'IDTASAITBIS'

@@ -1,6 +1,6 @@
 object qckCartaSaldoTpl: TqckCartaSaldoTpl
   Left = 0
-  Top = -306
+  Top = 0
   Width = 816
   Height = 1056
   Frame.Color = clBlack

@@ -1,5 +1,5 @@
 unit URegistrarTransOpeDiaria;
-                             ss
+
 interface
 
 uses

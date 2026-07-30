@@ -407,8 +407,17 @@ begin
     '  vm.cia_key ' +
     'from ventas_mast vm ' +
     'left join datosventavehiculo dv on dv.num_serie = vm.numero ' +
-    'left join vehiculo v on ((vm.idnumerodveh is not null and v.ficha = vm.idnumerodveh) ' +
-    '                     or (coalesce(trim(v.chassis), '''') <> '''' and trim(v.chassis) = trim(dv.chassis))) ' +
+    //'left join vehiculo v on ((vm.idnumerodveh is not null and v.ficha = vm.idnumerodveh) ' +
+    //'                     or (coalesce(trim(v.chassis), '''') <> '''' and trim(v.chassis) = trim(dv.chassis))) ' +
+    'left join vehiculo v on ( ' +
+    '       (coalesce(trim(dv.chassis), '''') <> '''' ' +
+    '        and coalesce(trim(v.chassis), '''') <> '''' ' +
+    '        and trim(v.chassis) = trim(dv.chassis)) ' +
+    '       or ' +
+    '       (coalesce(trim(dv.chassis), '''') = '''' ' +
+    '        and coalesce(vm.idnumerodveh, 0) > 0 ' +
+    '        and v.ficha = vm.idnumerodveh) ' +
+    '     ) ' +
     'left join clientes c on c.codigo_cte = vm.codigo_cte ' +
     'where vm.numero = :PNUMERO';
 end;
