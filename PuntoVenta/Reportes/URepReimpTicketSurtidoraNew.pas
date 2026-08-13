@@ -4,7 +4,7 @@ interface
 
 uses Windows, SysUtils, Messages, Classes, Graphics, Controls,
   db,StdCtrls, ExtCtrls, Forms, QuickRpt, QRCtrls, jpeg, TBXGraphics;
-
+         
 type
   TqckRepReciboReimpTicketSurtidoraNew = class(TQuickRep)
     PageHeaderBand1: TQRBand;

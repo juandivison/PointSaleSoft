@@ -1,6 +1,6 @@
 object frmEnviarEmail: TfrmEnviarEmail
-  Left = 872
-  Top = 488
+  Left = 752
+  Top = 298
   Width = 591
   Height = 377
   Caption = 'Enviar Email'

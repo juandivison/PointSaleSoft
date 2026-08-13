@@ -1,6 +1,6 @@
 object frmSelNCFGastos: TfrmSelNCFGastos
-  Left = 343
-  Top = 177
+  Left = 478
+  Top = 198
   BorderStyle = bsDialog
   Caption = 'Selecionar NCF Gastos'
   ClientHeight = 318
@@ -13,7 +13,7 @@ object frmSelNCFGastos: TfrmSelNCFGastos
   Font.Style = []
   KeyPreview = True
   OldCreateOrder = False
-  Position = poDesktopCenter
+  Position = poOwnerFormCenter
   OnCreate = FormCreate
   OnShow = FormShow
   PixelsPerInch = 96
@@ -42,7 +42,7 @@ object frmSelNCFGastos: TfrmSelNCFGastos
       item
         Expanded = False
         FieldName = 'DESCRIPCION'
-        Width = 293
+        Width = 286
         Visible = True
       end
       item
@@ -53,25 +53,8 @@ object frmSelNCFGastos: TfrmSelNCFGastos
       end
       item
         Expanded = False
-        FieldName = 'DIV_NEGOCIO'
-        Width = 82
-        Visible = True
-      end
-      item
-        Expanded = False
-        FieldName = 'PECF'
-        Width = 34
-        Visible = True
-      end
-      item
-        Expanded = False
-        FieldName = 'AICF'
-        Width = 31
-        Visible = True
-      end
-      item
-        Expanded = False
         FieldName = 'NCF'
+        Width = 161
         Visible = True
       end>
   end

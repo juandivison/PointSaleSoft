@@ -181,6 +181,7 @@ uses UDatModConectar, UGlobal, UDatModClientes, UMaestroClientes,
 
 procedure TfrmProcBuscarProv.FormCreate(Sender: TObject);
 begin
+  qryClienteStd.Close;
   dmproveedor.qryProveCxp.Close;
   dmproveedor.qryProveCxp.params[0].Value:=glbCia_Key;
   dmproveedor.qryProveCxp.Open;
@@ -245,7 +246,7 @@ begin
     begin
       AsignarSqlText(GlbcampoFilterCte,chr(39) +GlbValueFilterCte+'%'+chr(39), GlbOrderBy);
       Texto:= qryClienteStd.Text;
-      if (GlbValueFilterCte <> '') then
+      if (GlbValueFilterCte <> '') or (qryClienteStd.State = dsInactive) then
       qryClienteStd.Open;
       DataSource1.DataSet:= QryClienteStd;
       DBGrid2.DataSource := DataSource1;

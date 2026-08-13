@@ -4107,7 +4107,7 @@ begin
 
   if ANumero <= 0 then
   begin
-    AMensaje := 'Numero de transaccion invalido para validacion persistida.';
+    AMensaje := 'Número de transacción inválido para validación persistida.';
     Exit;
   end;
 
@@ -5817,7 +5817,7 @@ begin
   dmVentas.qryPrecioMaxInv.Open;
   GlbNumVtaPOSTmp:=-1;
   tbltipoDeIngresos.Close;     
-  tbltipoDeIngresos.Open;
+  tbltipoDeIngresos.Open;            
   if GlbCantCopias > 0 then
   rxspinImpCantCopias.Value :=GlbCantCopias;
   //rxspinImpCantCopias.
@@ -10199,46 +10199,46 @@ begin
     LTotalesAfterPost := Totales.AfterPost;
     LConsultaDetAfterOpen := dmCalculos.qryConsultaPosExtraDet.AfterOpen;
 
-LlenandoDatos := True;
-EnProcesoCalculo := True;
+    LlenandoDatos := True;
+    EnProcesoCalculo := True;
 
-{
-  Todavía se está cargando. Solo al finalizar correctamente
-  se marca como cotización en modificación.
-}
-EsModificandoFactura := False;
-EsModificandoCotiza := False;
-EsDevolucion := False;
-EsEditando := False;
-EsFactura := False;
+    {
+      Todavía se está cargando. Solo al finalizar correctamente
+      se marca como cotización en modificación.
+    }
+    EsModificandoFactura := False;
+    EsModificandoCotiza := False;
+    EsDevolucion := False;
+    EsEditando := False;
+    EsFactura := False;
 
-{
-  Mantiene los precios y reglas de una cotización cargada.
-}
-GlbUsandoCotiza := True;
+    {
+      Mantiene los precios y reglas de una cotización cargada.
+    }
+    GlbUsandoCotiza := True;
 
-{
-  No heredar estado de una venta anterior.
-}
-GlbNumeroTrn := -1;
-GlbNumVtaPOSTmp := -1;
-NumeroTrn := -1;
-isMasterSave := False;
+    {
+      No heredar estado de una venta anterior.
+    }
+    GlbNumeroTrn := -1;
+    GlbNumVtaPOSTmp := -1;
+    NumeroTrn := -1;
+    isMasterSave := False;
 
-_NumeroCotiza := -1;
+    _NumeroCotiza := -1;
 
-FTotalesCongeladosFiscalmente := False;
-FTotalNetoFiscalConfirmado := 0;
+    FTotalesCongeladosFiscalmente := False;
+    FTotalNetoFiscalConfirmado := 0;
 
-FTotalesCongeladosParaCobro := False;
-FPagoConfirmado := False;
-FTotalNetoCobro := 0;
+    FTotalesCongeladosParaCobro := False;
+    FPagoConfirmado := False;
+    FTotalNetoCobro := 0;
 
-DatosModificados := False;
-CalculoPendiente := False;
-CalculoMsgPendiente := False;
-GlbCalculado := False;
-procCalc := False;
+    DatosModificados := False;
+    CalculoPendiente := False;
+    CalculoMsgPendiente := False;
+    GlbCalculado := False;
+    procCalc := False;
 
     bitBtn9.Caption := 'Espere...';
 
@@ -10300,7 +10300,7 @@ procCalc := False;
       tablaPropietario.EmptyTable;
       tablaPropietario.Append;
       tablaPropietarioCodigoPropietario.Value :=
-        frmCotizaciones.ibqryCotizacionMasterCODIGO_CTE.Value;
+      frmCotizaciones.ibqryCotizacionMasterCODIGO_CTE.Value;
       tablaPropietario.Post;
       Edit1.Clear;
       Totales.Close;
@@ -10311,7 +10311,7 @@ procCalc := False;
         La cotización cargada no es una venta persistida.
       }
       TotalesVentaGuardada.Value := 0;
-      TotalesNumeroTrn.Value := -1;
+      TotalesNumeroTrn.Value     := -1;
 
       TotalesNCF.Clear;
       Totalesncf_numero.Clear;
@@ -10343,9 +10343,8 @@ procCalc := False;
       TotalesMontoInteres.Value := 0;
       TotalesMontoNCRAplicado.Value := 0;
       TotalesTotalNeto.Value := 0;
-      TotalesFechaCotizacion.Value:=frmCotizaciones.ibqryCotizacionMasterFECHA.Value;
-      TotalesComentario.Value :=
-        frmCotizaciones.ibqryCotizacionMasterCOMENTARIO.Value;
+      TotalesFechaCotizacion.Value:= frmCotizaciones.ibqryCotizacionMasterFECHA.Value;
+      TotalesComentario.Value := frmCotizaciones.ibqryCotizacionMasterCOMENTARIO.Value;
 
       TotalesMontoExoneraITBIS.Value :=
         frmCotizaciones.ibqryCotizacionMasterMONTO_EXONERADO_ITBIS.Value;
@@ -10363,97 +10362,97 @@ procCalc := False;
         frmCotizaciones.ibqryCotizacionMasterPROPINALEGAL.Value;
 
       {
-  Tipo NCF de la cotización.
+        Tipo NCF de la cotización.
 
-  Nunca asignar TotalesTipoNCF y TotalesTipoNCFIFiscal por separado.
-  Ambos deben provenir del mismo registro de ibQryViewNCF.
+        Nunca asignar TotalesTipoNCF y TotalesTipoNCFIFiscal por separado.
+        Ambos deben provenir del mismo registro de ibQryViewNCF.
 
-  La cotización solamente guarda TIPONCFIFISCAL, por lo que se usa
-  para localizar el tipo equivalente en el catálogo vigente.
-}
-TotalesTipoNCF.Clear;
-TotalesTipoNCFIFiscal.Clear;
+        La cotización solamente guarda TIPONCFIFISCAL, por lo que se usa
+        para localizar el tipo equivalente en el catálogo vigente.
+      }
+        TotalesTipoNCF.Clear;
+        TotalesTipoNCFIFiscal.Clear;
 
-if not dmFactura.ibQryViewNCF.Active then
-  dmFactura.ibQryViewNCF.Open;
+        if not dmFactura.ibQryViewNCF.Active then
+          dmFactura.ibQryViewNCF.Open;
 
-if (not frmCotizaciones.ibqryCotizacionMasterTIPONCFIFISCAL.IsNull) and
-   (frmCotizaciones.ibqryCotizacionMasterTIPONCFIFISCAL.Value > 0) then
-begin
-  if dmFactura.ibQryViewNCF.Locate(
-       'TIPO_NCF_IFISCAL',
-       frmCotizaciones.ibqryCotizacionMasterTIPONCFIFISCAL.Value,
-       []
-     ) then
-  begin
-    {
-      La cotización tenía un tipo fiscal configurado.
-      Se recupera el par completo desde el catálogo.
-    }
-    CheckBox1.Checked := True;
+        if (not frmCotizaciones.ibqryCotizacionMasterTIPONCFIFISCAL.IsNull) and
+           (frmCotizaciones.ibqryCotizacionMasterTIPONCFIFISCAL.Value > 0) then
+        begin
+          if dmFactura.ibQryViewNCF.Locate(
+               'TIPO_NCF_IFISCAL',
+               frmCotizaciones.ibqryCotizacionMasterTIPONCFIFISCAL.Value,
+               []
+             ) then
+          begin
+            {
+              La cotización tenía un tipo fiscal configurado.
+              Se recupera el par completo desde el catálogo.
+            }
+            CheckBox1.Checked := True;
 
-    TotalesTipoNCF.AsVariant :=
-      dmFactura.ibQryViewNCFTIPO_CF.AsVariant;
+            TotalesTipoNCF.AsVariant :=
+              dmFactura.ibQryViewNCFTIPO_CF.AsVariant;
 
-    TotalesTipoNCFIFiscal.AsVariant :=
-      dmFactura.ibQryViewNCFTIPO_NCF_IFISCAL.AsVariant;
-  end
-  else
-  begin
-    {
-      El tipo fiscal registrado en la cotización ya no existe
-      o no está configurado en el catálogo actual.
+            TotalesTipoNCFIFiscal.AsVariant :=
+              dmFactura.ibQryViewNCFTIPO_NCF_IFISCAL.AsVariant;
+          end
+          else
+          begin
+            {
+              El tipo fiscal registrado en la cotización ya no existe
+              o no está configurado en el catálogo actual.
 
-      No se debe inventar E31 ni otro tipo. Se obliga al usuario
-      a seleccionar el comprobante antes de facturar.
-    }
-    CheckBox1.Checked := False;
+              No se debe inventar E31 ni otro tipo. Se obliga al usuario
+              a seleccionar el comprobante antes de facturar.
+            }
+            CheckBox1.Checked := False;
 
-    TotalesTipoNCF.Clear;
-    TotalesTipoNCFIFiscal.Clear;
+            TotalesTipoNCF.Clear;
+            TotalesTipoNCFIFiscal.Clear;
 
-    LogInformacionTxt(
-      'Cotización #' + IntToStr(LNumeroCotiza) +
-      ' tiene TIPONCFIFISCAL=' +
-      frmCotizaciones.ibqryCotizacionMasterTIPONCFIFISCAL.AsString +
-      ' no localizado en catálogo NCF.'
-    );
+            LogInformacionTxt(
+              'Cotización #' + IntToStr(LNumeroCotiza) +
+              ' tiene TIPONCFIFISCAL=' +
+              frmCotizaciones.ibqryCotizacionMasterTIPONCFIFISCAL.AsString +
+              ' no localizado en catálogo NCF.'
+            );
 
-    MessageDlg(
-      'La cotización tiene un tipo fiscal que no está configurado.' +
-      #13 +
-      'Seleccione el tipo de comprobante antes de facturar.',
-      mtWarning,
-      [mbOk],
-      0
-    );
-  end;
-end
-else
-begin
-  {
-    La cotización no tiene tipo fiscal definido.
-    Se respeta la opción NCF actual del formulario.
+            MessageDlg(
+              'La cotización tiene un tipo fiscal que no está configurado.' +
+              #13 +
+              'Seleccione el tipo de comprobante antes de facturar.',
+              mtWarning,
+              [mbOk],
+              0
+            );
+          end;
+        end
+        else
+        begin
+          {
+            La cotización no tiene tipo fiscal definido.
+            Se respeta la opción NCF actual del formulario.
 
-    Si el usuario tiene NCF activo, se carga el tipo por defecto:
-      E32 para e-CF.
-      B02 para NCF convencional.
+            Si el usuario tiene NCF activo, se carga el tipo por defecto:
+              E32 para e-CF.
+              B02 para NCF convencional.
 
-    Si NCF está desactivado, ambos campos deben permanecer Null.
-  }
-  if CheckBox1.Checked then
-  begin
-    if GlbActivaECF = 1 then
-      AsignarTipoNCF('32')
-    else
-      AsignarTipoNCF('02');
-  end
-  else
-  begin
-    TotalesTipoNCF.Clear;
-    TotalesTipoNCFIFiscal.Clear;
-  end;
-end;
+            Si NCF está desactivado, ambos campos deben permanecer Null.
+          }
+          if CheckBox1.Checked then
+          begin
+            if GlbActivaECF = 1 then
+              AsignarTipoNCF('32')
+            else
+              AsignarTipoNCF('02');
+          end
+          else
+          begin
+            TotalesTipoNCF.Clear;
+            TotalesTipoNCFIFiscal.Clear;
+          end;
+        end;
 
       chKDescuentoGlobal.Checked :=
         TotalesPorcDesAdicional.Value > 0;
@@ -10610,25 +10609,25 @@ end;
           if rxVentaStatus.IsNull then
             rxVentaStatus.Value := 'A';
 
-  if UpperCase(rxVentaDescripcion.Value) = 'RECARGO' then
-    rxVentaTipoVenta.Value := 3;
+          if UpperCase(rxVentaDescripcion.Value) = 'RECARGO' then
+              rxVentaTipoVenta.Value := 3;
 
-  if UpperCase(rxVentaDescripcion.Value) = 'DESCUENTO' then
-    rxVentaTipoVenta.Value := 2;
+          if UpperCase(rxVentaDescripcion.Value) = 'DESCUENTO' then
+              rxVentaTipoVenta.Value := 2;
 
-  if rxVentaIDTasaITBIS.IsNull then
-    rxVentaIDTasaITBIS.Value := GlbIDTasa;
+          if rxVentaIDTasaITBIS.IsNull then
+             rxVentaIDTasaITBIS.Value := GlbIDTasa;
 
-  if (GlbIgI = 1) and
-     (UpperCase(GLBFormatoFactura) = 'FORMAFACOCO') and
-     (GlbCalcItbis = 0) then
-    rxVentaIDTasaITBIS.Value := 1;
+          if (GlbIgI = 1) and
+             (UpperCase(GLBFormatoFactura) = 'FORMAFACOCO') and
+             (GlbCalcItbis = 0) then
+              rxVentaIDTasaITBIS.Value := 1;
 
-    SincronizarPorcTasaItbisCld;
-    
-    rxVentaTipoUnidad.Value :=
-    dmCalculos.ibstpproc_InseCotiVtaExtraDet.
-    FieldByName('TIPO_UNIDAD').AsInteger;
+          SincronizarPorcTasaItbisCld;
+
+          rxVentaTipoUnidad.Value :=
+          dmCalculos.ibstpproc_InseCotiVtaExtraDet.
+          FieldByName('TIPO_UNIDAD').AsInteger;
 
     if rxVentaTipoUnidad.IsNull then
        rxVentaTipoUnidad.Value := 1;
@@ -15007,8 +15006,7 @@ begin
 
     tablaPropietario.EmptyTable;
     tablaPropietario.Append;
-    tablaPropietarioCodigoPropietario.Value :=
-      dmFactura.qryVentaFacturaCODIGO_CTE.Value;
+    tablaPropietarioCodigoPropietario.Value :=dmFactura.qryVentaFacturaCODIGO_CTE.Value;
     tablaPropietario.Post;
 
     {
@@ -15019,8 +15017,7 @@ begin
     if GlbFactRecurrente then
       TotalesPreAbono.Value := _MontoPrepago;
 
-    TotalesFechaIniciaPoliza.Value :=
-      dmFactura.qryVentaFacturaFechaIniciaPoliza.Value;
+    TotalesFechaIniciaPoliza.Value :=dmFactura.qryVentaFacturaFechaIniciaPoliza.Value;
 
     TotalesMoneda.Value :=
       Trim(dmFactura.qryVentaFacturaMONEDA.Value);
@@ -15039,34 +15036,25 @@ begin
     TotalesMontoDesc.Value := 0;
     TotalesTotalNeto.Value := 0;
 
-    TotalesMontoRecibido.Value :=
-      dmFactura.qryVentaFacturaMONTO_PAGADO.Value;
+    TotalesMontoRecibido.Value :=dmFactura.qryVentaFacturaMONTO_PAGADO.Value;
 
     TotalesDevolucion.Value := 0;
 
-    TotalesFechaVence.Value :=
-      dmFactura.qryVentaFacturaFechaVence.Value;
+    TotalesFechaVence.Value :=dmFactura.qryVentaFacturaFechaVence.Value;
 
-    TotalesPropina.Value :=
-      dmFactura.qryVentaFacturaPROPINA.Value;
+    TotalesPropina.Value := dmFactura.qryVentaFacturaPROPINA.Value;
 
-    TotalesPropinaLegal.Value :=
-      dmFactura.qryVentaFacturaPROPINALEGAL.Value;
+    TotalesPropinaLegal.Value :=dmFactura.qryVentaFacturaPROPINALEGAL.Value;
 
-    TotalesIdNumeroDVeh.Value :=
-      dmFactura.qryVentaFacturaIDNUMERODVEH.Value;
+    TotalesIdNumeroDVeh.Value :=dmFactura.qryVentaFacturaIDNUMERODVEH.Value;
 
-    TotalesCodCliente.Value :=
-      dmFactura.qryVentaFacturaCODIGO_CTE.Value;
+    TotalesCodCliente.Value :=dmFactura.qryVentaFacturaCODIGO_CTE.Value;
 
-    TotalesComentario.Value :=
-      dmFactura.qryVentaFacturaCOMENTARIO.Value;
+    TotalesComentario.Value :=dmFactura.qryVentaFacturaCOMENTARIO.Value;
 
-    TotalesPorcDesAdicional.Value :=
-      dmFactura.qryVentaFacturaPORC_DESCUENTO.Value;
+    TotalesPorcDesAdicional.Value :=dmFactura.qryVentaFacturaPORC_DESCUENTO.Value;
 
-    TotalesRecargo.Value :=
-      dmFactura.qryVentaFacturaMONTO_RECARGO.Value;
+    TotalesRecargo.Value :=dmFactura.qryVentaFacturaMONTO_RECARGO.Value;
 
     if EsDevolucion then
       TotalesRecargo.Value := TotalesRecargo.Value * 1;
@@ -15167,13 +15155,10 @@ begin
     dmFactura.qryVentaFacturaDet.First;
 
     dmReportes.qryViewVentasMast.Close;
-    dmReportes.qryViewVentasMast.Params[0].Value :=
-      dmFactura.qryVentaFacturaDetNUMERO.Value;
+    dmReportes.qryViewVentasMast.Params[0].Value :=dmFactura.qryVentaFacturaDetNUMERO.Value;
     dmReportes.qryViewVentasMast.Open;
 
-    UImpresionVentas.ProcSetPathlogoTipoServicio(
-      dmReportes.qryViewVentasMastTIPO_AFILIADO.Value
-    );
+    UImpresionVentas.ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
 
     {
       Se preserva el comportamiento de seleccionar todas las líneas
@@ -15194,8 +15179,7 @@ begin
       begin
         for x := 0 to frmConsultaFacturas.RxDBGrid2.SelectedRows.Count - 1 do
         begin
-          GotoBookmark(
-            Pointer(frmConsultaFacturas.RxDBGrid2.SelectedRows.Items[x])
+          GotoBookmark(Pointer(frmConsultaFacturas.RxDBGrid2.SelectedRows.Items[x])
           );
 
           {
@@ -15214,104 +15198,77 @@ begin
 
           rxVentaglbcodVendedor.Value:=GlbcodVendedor;
 
-          rxVentaNumeroFactura.Value :=
-            dmFactura.qryVentaFacturaNUMERO_FACTURA.Value;
+          rxVentaNumeroFactura.Value := dmFactura.qryVentaFacturaNUMERO_FACTURA.Value;
 
           if EsContado then
-            rxVentaNumeroFactura.Value :=
-              dmFactura.qryVentaFacturaNUMERO.AsInteger;
+            rxVentaNumeroFactura.Value :=dmFactura.qryVentaFacturaNUMERO.AsInteger;
 
           if dmFactura.qryVentaFacturaDetSTATUS_DET.IsNull then
             rxVentaStatus.Value := 'A'
           else
-            rxVentaStatus.Value :=
-              dmFactura.qryVentaFacturaDetSTATUS_DET.Value;
+            rxVentaStatus.Value := dmFactura.qryVentaFacturaDetSTATUS_DET.Value;
 
-          rxVentaSerieOriginal.Value :=
-            dmFactura.qryVentaFacturaDetSERIE.Value;
+          rxVentaSerieOriginal.Value := dmFactura.qryVentaFacturaDetSERIE.Value;
 
-          rxVentaNumeroTrnOriginal.Value :=
-            dmFactura.qryVentaFacturaDetNUMERO.Value;
+          rxVentaNumeroTrnOriginal.Value := dmFactura.qryVentaFacturaDetNUMERO.Value;
 
-          rxVentaSerie.Value :=
-            dmFactura.qryVentaFacturaDetSERIE.Value;
+          rxVentaSerie.Value := dmFactura.qryVentaFacturaDetSERIE.Value;
 
-          rxVentaCodArticulo.Value :=
-            dmFactura.qryVentaFacturaDetCODIGO_PROD.AsInteger;
+          rxVentaCodArticulo.Value := dmFactura.qryVentaFacturaDetCODIGO_PROD.AsInteger;
 
-          rxVentaCodTexto.Value :=
-            dmFactura.qryVentaFacturaDetCODIGO_TEXTO.Value;
+          rxVentaCodTexto.Value := dmFactura.qryVentaFacturaDetCODIGO_TEXTO.Value;
 
-          rxVentaCostoProducto.Value :=
-            dmFactura.qryVentaFacturaDetPRECIO_COMPRA.Value;
+          rxVentaCostoProducto.Value := dmFactura.qryVentaFacturaDetPRECIO_COMPRA.Value;
 
-          rxVentaFecha.Value :=
-            dmFactura.qryVentaFacturaFECHA.Value;
+          rxVentaFecha.Value := dmFactura.qryVentaFacturaFECHA.Value;
 
-          rxVentaNCF.Value :=
-            dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+          rxVentaNCF.Value := dmFactura.qryVentaFacturaNUMERO_NCF.Value;
           if dmFactura.qryVentaFacturaNUMERO_NCF.IsNull then
           begin
             CheckBox1.Visible:=true;
             CheckBox1.checked:=false;
           end;
 
-          rxVentaReferencia.Value :=
-            dmFactura.qryVentaFacturaDetREFERENCIA.Value;
+          rxVentaReferencia.Value := dmFactura.qryVentaFacturaDetREFERENCIA.Value;
 
-          rxVentaInvetariar.Value :=
-            dmFactura.qryVentaFacturaDetINVENTARIAR.Value;
+          rxVentaInvetariar.Value := dmFactura.qryVentaFacturaDetINVENTARIAR.Value;
 
-          rxVentaMoneda.Value :=
-            Trim(dmFactura.qryVentaFacturaDetMONEDA.Value);
+          rxVentaMoneda.Value := Trim(dmFactura.qryVentaFacturaDetMONEDA.Value);
 
           if Trim(rxVentaMoneda.Value) = '' then
             rxVentaMoneda.Value := TotalesMoneda.Value;
 
           rxVentaMonedaBase.AsInteger := GlbMonedaBase;
 
-          rxVentaMonto_Tasa.Value :=
-            dmFactura.qryVentaFacturaDetMONTO_TASA.Value;
+          rxVentaMonto_Tasa.Value := dmFactura.qryVentaFacturaDetMONTO_TASA.Value;
 
-          rxVentaIDTasaITBIS.Value :=
-            dmFactura.qryVentaFacturaDetIDTASAITBIS.AsInteger;
+          rxVentaIDTasaITBIS.Value := dmFactura.qryVentaFacturaDetIDTASAITBIS.AsInteger;
 
           SincronizarPorcTasaItbisCld;
 
-          rxVentaCant.Value :=
-            Abs(dmFactura.qryVentaFacturaDetCANTIDAD.Value);
+          rxVentaCant.Value := Abs(dmFactura.qryVentaFacturaDetCANTIDAD.Value);
 
-          rxVentaCantPax.Value :=
-            Abs(dmFactura.qryVentaFacturaDetCANT_VIAJES.AsInteger);
+          rxVentaCantPax.Value := Abs(dmFactura.qryVentaFacturaDetCANT_VIAJES.AsInteger);
 
-          rxVentaPrecio.Value :=
-            Abs(dmFactura.qryVentaFacturaDetPRECIO.Value);
+          rxVentaPrecio.Value := Abs(dmFactura.qryVentaFacturaDetPRECIO.Value);
 
-          rxVentaPorc_Desc.Value :=
-            Abs(dmFactura.qryVentaFacturaDetPORC_DESC_DET.Value);
+          rxVentaPorc_Desc.Value := Abs(dmFactura.qryVentaFacturaDetPORC_DESC_DET.Value);
 
-          rxVentaPorcDescItem.Value :=
-            Abs(dmFactura.qryVentaFacturaDetPORC_DESC_ITEM.Value);
+          rxVentaPorcDescItem.Value := Abs(dmFactura.qryVentaFacturaDetPORC_DESC_ITEM.Value);
 
-          rxVentaMontoDescItem.Value :=
-            Abs(dmFactura.qryVentaFacturaDetMONTO_DESC_ITEM.Value);
+          rxVentaMontoDescItem.Value := Abs(dmFactura.qryVentaFacturaDetMONTO_DESC_ITEM.Value);
 
-          rxVentaMontoBruto.Value :=
-            Abs(dmFactura.qryVentaFacturaDetVALOR_SERVICIO_DET.Value);
+          rxVentaMontoBruto.Value := Abs(dmFactura.qryVentaFacturaDetVALOR_SERVICIO_DET.Value);
 
-          rxVentaMontoNeto.Value :=
-            Abs(dmFactura.qryVentaFacturaDetVALOR_TOTAL_DET.Value);
+          rxVentaMontoNeto.Value := Abs(dmFactura.qryVentaFacturaDetVALOR_TOTAL_DET.Value);
 
-          rxVentaItbi.Value :=
-            Abs(dmFactura.qryVentaFacturaDetITBI_DET.Value);
+          rxVentaItbi.Value := Abs(dmFactura.qryVentaFacturaDetITBI_DET.Value);
 
-          rxVentaDescripcion.Value :=
-            dmFactura.qryVentaFacturaDetDESCRIPCION.Value;
+          rxVentaDescripcion.Value := dmFactura.qryVentaFacturaDetDESCRIPCION.Value;
 
           if not GlbFactRecurrente then
           begin
-            rxVentaDescripcionEspecial.Value :=
-              dmFactura.qryVentaFacturaDetDESCRIPCIONADICIONAL.Value;
+            rxVentaDescripcionEspecial.Value := dmFactura.qryVentaFacturaDetDESCRIPCIONADICIONAL.Value;
           end;
 
           if GlBExpert = 0 then
@@ -15332,8 +15289,7 @@ begin
               rxVentaDescripcionEspecial.Value := '';
           end;
 
-          rxVentaTipoVenta.Value :=
-            dmFactura.qryVentaFacturaDetTIPO_VENTA.Value;
+          rxVentaTipoVenta.Value := dmFactura.qryVentaFacturaDetTIPO_VENTA.Value;
 
           rxVentaTipoUnidad.Value :=
             dmFactura.qryVentaFacturaDetTIPO_UNIDAD.Value;
@@ -15341,27 +15297,20 @@ begin
           if rxVentaTipoUnidad.IsNull then
             rxVentaTipoUnidad.Value := 1;
 
-          rxVentaLevelPrecio.Value :=
-            dmFactura.qryVentaFacturaDetLEVEL_PRECIO_VENTA.Value;
+          rxVentaLevelPrecio.Value := dmFactura.qryVentaFacturaDetLEVEL_PRECIO_VENTA.Value;
 
-          rxVentaItbisExento.Value :=
-            Abs(dmFactura.qryVentaFacturaDetITBIS_EXENTO.Value);
+          rxVentaItbisExento.Value := Abs(dmFactura.qryVentaFacturaDetITBIS_EXENTO.Value);
 
-          rxVentaFICHA_VEH.Value :=
-            dmFactura.qryVentaFacturaDetFICHA_VEH.Value;
+          rxVentaFICHA_VEH.Value := dmFactura.qryVentaFacturaDetFICHA_VEH.Value;
 
-          rxVentaNUM_CONDUCE_CTE.Value :=
-            dmFactura.qryVentaFacturaDetNUM_CONDUCE_CTE.Value;
+          rxVentaNUM_CONDUCE_CTE.Value := dmFactura.qryVentaFacturaDetNUM_CONDUCE_CTE.Value;
 
-          rxVentaNUM_IDENT.Value :=
-            dmFactura.qryVentaFacturaDetNUM_IDENT.Value;
+          rxVentaNUM_IDENT.Value := dmFactura.qryVentaFacturaDetNUM_IDENT.Value;
 
           if dmFactura.qryVentaFacturaDetCODIGO_VENDEDOR.IsNull then
-            rxVentaGlbCodVendedor.Value :=
-              dmFactura.qryVentaFacturaCODIGO_VENDEDOR.Value
+            rxVentaGlbCodVendedor.Value := dmFactura.qryVentaFacturaCODIGO_VENDEDOR.Value
           else
-            rxVentaGlbCodVendedor.Value :=
-              dmFactura.qryVentaFacturaDetCODIGO_VENDEDOR.Value;
+            rxVentaGlbCodVendedor.Value := dmFactura.qryVentaFacturaDetCODIGO_VENDEDOR.Value;
 
           if GlbCodVendedor > 0 then
             rxVentaCodUsuario.Value := GlbCodVendedor
@@ -15372,11 +15321,9 @@ begin
             Solo actualización visual de unidad.
             No se busca en dmInventario.qryTipoUnidad.
           }
-          cboxTipoUnidad.Text :=
-            dmFactura.qryVentaFacturaDetDESCUNIDADMEDIDA.Value;
+          cboxTipoUnidad.Text := dmFactura.qryVentaFacturaDetDESCUNIDADMEDIDA.Value;
 
-          cantUnidad :=
-            dmFactura.qryVentaFacturaDetCANTXUNIDAD.Value;
+          cantUnidad := dmFactura.qryVentaFacturaDetCANTXUNIDAD.Value;
 
           rxVenta.Post;
 
@@ -29098,7 +29045,7 @@ begin
      
   rxVentaMoneda.Value := LMoneda;
   
-end;  
+end;
 end;
 
 procedure TfrmProcVentaRapida.RxDBGrid1KeyDown(

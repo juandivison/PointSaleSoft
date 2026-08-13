@@ -479,6 +479,11 @@ type
     NovedadesTSS1: TMenuItem;
     PensionAlimenticia1: TMenuItem;
     HistricoNmina1: TMenuItem;
+    RegistroGastosECF1: TMenuItem;
+    PopupCostosYGRep: TPopupMenu;
+    RelaciondeGastos1: TMenuItem;
+    RelacinGastos6062: TMenuItem;
+    ExportaraExcel6061: TMenuItem;
     procedure Salir1Click(Sender: TObject);
     
     procedure ransaccionesDiarias1Click(Sender: TObject);
@@ -787,6 +792,10 @@ type
     procedure Integrar2Click(Sender: TObject);
     procedure IR131Click(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure RegistroGastosECF1Click(Sender: TObject);
+    procedure RelaciondeGastos1Click(Sender: TObject);
+    procedure RelacinGastos6062Click(Sender: TObject);
+    procedure ExportaraExcel6061Click(Sender: TObject);
   private
     { Private declarations }
      procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
@@ -930,8 +939,8 @@ UInventarioProd, UTipoInventario,UConfirmaLicencia,
   UFrmOrders2EcfRunner,UReptEmpleados, UFormSecFact,UFormPersonalRep,
   UProyeccionRegalia, UOrdenDespEmpleados, UCreditosFrmCoop, UDatModNomina,
   URepNominaGral, UFrmTssExportCenter, UFrmTssNovedadManual,
-  UFrmEmpleadoPensionAlimenticia, UNOmHistorico, UCalculoBonificaciones,
-  URepIR13, USetClaveMaestra;//, UFormLoadDatosDGII;
+  UFrmEmpleadoPensionAlimenticia, UNOmHistorico, UCalculoBonificaciones,UReporte606Excel,
+  URepIR13, USetClaveMaestra, URegistrarTransOpeDiariaECF;//, UFormLoadDatosDGII;
 
 {$R *.dfm}
 procedure TfrmMenuPrincipal.Salir1Click(Sender: TObject);
@@ -2078,6 +2087,32 @@ begin
   if (GlBExpert = 1) and (GlbActivaECF = 1) then
   BitBtn10.Enabled:=True else BitBtn10.Enabled:=False;
 
+  if GlbExpert = 1 then
+  begin
+    GlbActivaNomina := 0;
+    BitBtn1.Enabled:=False;
+    TabSheet1.TabVisible:=False;
+    TabSheet2.TabVisible:=False;//Nomina
+    //PageControl1.Pages[1].Visible:=False;
+    //PageControl1.Pages[3].Visible:=False;
+    TabSheet3.TabVisible:=True;
+    TabSheet4.TabVisible:=False;
+    PageControl1.Pages[4].Visible:=False;
+    TabSheet5.TabVisible:=False;
+    PageControl1.Pages[5].Visible:=True;
+    TabSheet6.TabVisible:=False;
+    PageControl1.Pages[6].Visible:=False;
+    TabSheet7.TabVisible:=False;
+    PageControl1.Pages[7].Visible:=False;
+    TabSheet8.TabVisible:=False;
+    PageControl1.Pages[8].Visible:=False;
+    TabSheet9.TabVisible:=False;
+    PageControl1.Pages[9].Visible:=True;
+    tabCtaXCobrar.TabVisible:=True;//Costos y Gastos
+    BitBtn6.Visible:=False;
+    BitBtn7.Visible:=False;
+    Reportes1.Visible:=False;
+  end;
   if (GlbActivaNomina = 1) then
   begin
     Application.MainForm.Caption := 'PayRoll System';
@@ -7816,8 +7851,8 @@ begin
       if frmSelFEcha.showmodal = mrOk then
       begin
         dmReportes.qryRepTransOpeDiaria.close;
-        dmReportes.qryRepTransOpeDiaria.params[0].Value:= ExtraerFecha(frmSelfecha.FechaIni.Date);
-        dmReportes.qryRepTransOpeDiaria.params[1].Value:= ExtraerFecha(frmSelfecha.FechaFin.Date);
+        dmReportes.qryRepTransOpeDiaria.params[0].Value:= ExtraerFecha(frmSelFEcha.FechaIni.Date);
+        dmReportes.qryRepTransOpeDiaria.params[1].Value:= ExtraerFecha(frmSelFEcha.FechaFin.Date);
         dmReportes.qryRepTransOpeDiaria.open;
 
         qckTransOpeDiaria:=TqckTransOpeDiaria.Create(nil);
@@ -7842,8 +7877,8 @@ begin
       if frmDatosRepCostos.ShowModal = mrOk then
       begin
         dmReportes.qryRepTransOpeDiaria.close;
-        dmReportes.qryRepTransOpeDiaria.params[0].Value:= ExtraerFecha(frmDatosRepCostos.DateTimePicker1.Date);
-        dmReportes.qryRepTransOpeDiaria.params[1].Value:= ExtraerFecha(frmDatosRepCostos.DateTimePicker2.Date);
+        dmReportes.qryRepTransOpeDiaria.params[0].Value:= ExtraerFecha(GlbFechaTrnDiaria);
+        dmReportes.qryRepTransOpeDiaria.params[1].Value:= ExtraerFecha(GlbFechaTrnDiaria);
         dmReportes.qryRepTransOpeDiaria.open;
 
         dmReportes._FPago := frmDatosRepCostos._FPago;
@@ -7917,8 +7952,8 @@ begin
       if frmDatosRepCostos.ShowModal = mrOk then
       begin
         dmReportes.qryRepTransOpeDiaria.close;
-        dmReportes.qryRepTransOpeDiaria.params[0].Value:= ExtraerFecha(frmDatosRepCostos.DateTimePicker1.Date);
-        dmReportes.qryRepTransOpeDiaria.params[1].Value:= ExtraerFecha(frmDatosRepCostos.DateTimePicker2.Date);
+        dmReportes.qryRepTransOpeDiaria.params[0].Value:= ExtraerFecha(GlbFechaTrnDiaria);
+        dmReportes.qryRepTransOpeDiaria.params[1].Value:= ExtraerFecha(GlbFechaTrnDiaria);
         dmReportes.qryRepTransOpeDiaria.open;
 
         dmReportes._FPago := frmDatosRepCostos._FPago;
@@ -9125,12 +9160,110 @@ begin
     dmConectar.IBTransaction1.RollbackRetaining; 
     end;
   end;
-
 end;
 
 procedure TfrmMenuPrincipal.FormDestroy(Sender: TObject);
 begin
   frmMenuPrincipal := nil;
+end;
+
+procedure TfrmMenuPrincipal.RegistroGastosECF1Click(Sender: TObject);
+begin
+  frmRegTransOpeDiariaECF := TfrmRegTransOpeDiariaECF.Create(Self);
+  try
+    frmRegTransOpeDiariaECF.ShowModal;
+  finally
+    frmRegTransOpeDiariaECF.Free;
+    frmRegTransOpeDiariaECF := nil;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.RelaciondeGastos1Click(Sender: TObject);
+begin
+   RelacinGastos1Click(Self);
+end;
+
+procedure TfrmMenuPrincipal.RelacinGastos6062Click(Sender: TObject);
+begin
+  if GlbFormatoConduce = 444 then
+  begin
+    frmSelFEcha:=TfrmSelFEcha.create(nil);
+    try
+      if frmSelFEcha.showmodal = mrOk then
+      begin
+        dmReportes.qryRepTransOpeDiaria.close;
+        dmReportes.qryRepTransOpeDiaria.params[0].Value:= ExtraerFecha(frmSelfecha.FechaIni.Date);
+        dmReportes.qryRepTransOpeDiaria.params[1].Value:= ExtraerFecha(frmSelfecha.FechaFin.Date);
+        dmReportes.qryRepTransOpeDiaria.open;
+
+        qckTransOpeDiaria:=TqckTransOpeDiaria.Create(nil);
+        try
+          qckTransOpeDiaria.PrinterSettings.PrinterIndex:=GetImpresorarpt(2,12);
+          qckTransOpeDiaria.Prepare;
+          qckTransOpeDiaria.TPag.Caption:= IntToStr(qckTransOpeDiaria.PageNumber);
+          qckTransOpeDiaria.Preview;
+        finally
+        qckTransOpeDiaria.Free;
+        qckTransOpeDiaria:=Nil;
+        end;
+      end;
+    finally
+    frmSelFEcha.Free;
+    frmSelFEcha:=Nil;
+    end;
+  end else
+  begin
+    frmDatosRepCostos:=TfrmDatosRepCostos.Create(nil);
+    try
+      if frmDatosRepCostos.ShowModal = mrOk then
+      begin
+        dmReportes.qryRepTransOpeDiaria.close;
+        dmReportes.qryRepTransOpeDiaria.params[0].Value:= ExtraerFecha(GlbFechaTrnDiaria);
+        dmReportes.qryRepTransOpeDiaria.params[1].Value:= ExtraerFecha(GlbFechaTrnDiaria);
+        dmReportes.qryRepTransOpeDiaria.open;
+
+        dmReportes._FPago := frmDatosRepCostos._FPago;
+        dmReportes._FCodProv := frmDatosRepCostos._FCodProv;
+        if (frmDatosRepCostos._FPago > 0) or (frmDatosRepCostos._FCodProv > 0) then
+        dmReportes.qryRepTransOpeDiaria.Filtered:= True
+        else
+        dmReportes.qryRepTransOpeDiaria.Filtered:= False;
+
+        qckTransCostosGastos:=TqckTransCostosGastos.Create(nil);
+        try
+          qckTransCostosGastos.PrinterSettings.PrinterIndex:=GetImpresorarpt(2,12);
+          qckTransCostosGastos.Prepare;
+          qckTransCostosGastos.TPag.Caption:= IntToStr(qckTransCostosGastos.PageNumber);        
+          qckTransCostosGastos.Preview;
+
+          if frmDatosRepCostos.chboxExportExcel.Checked then
+          begin
+            dmCompania.tblCompania.Close;
+            dmCompania.tblCompania.Open;
+            dmCompania.tblCompania.Locate('codigo',glbCia_Key,[]);
+            GLBMostrarArchivo:=True;
+            ExporToExcel(dmreportes.qryRepTransOpeDiaria, ExtractFilePath(Application.ExeName)+
+            'Informes\RelacionGastosRep606'+
+            FormatDateTime('ddmmyyyy',dmreportes.qryRepTransOpeDiaria.Params[0].Value)+'_'
+            +FormatDateTime('ddmmyyyy',dmreportes.qryRepTransOpeDiaria.Params[1].Value),false);
+            GLBMostrarArchivo:=False;
+          end;
+                    
+        finally
+        qckTransCostosGastos.Free;
+        qckTransCostosGastos:=Nil;
+        end;
+      end;
+    finally
+    frmDatosRepCostos.free;
+    frmDatosRepCostos:=nil;
+    end;
+  end;
+end;
+
+procedure TfrmMenuPrincipal.ExportaraExcel6061Click(Sender: TObject);
+begin
+  TfrmReporte606Excel.Ejecutar(Self);
 end;
 
 end.

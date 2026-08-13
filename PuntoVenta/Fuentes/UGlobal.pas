@@ -537,6 +537,7 @@ interface
    procedure ExporNCFListToExcelFPago(mTabla : TIBQuery; NombreArchivo : String);
    procedure ExporToExcel(mTabla : TIBQuery; NombreArchivo : String;addFechaF:Boolean);overload;
    procedure ExporToExcel(mTabla : TIBQuery; NombreArchivo : String;addFechaF:Boolean;emailAuto:Boolean);overload;
+   procedure ExporToExcelFormateado(mTabla: TIBQuery;NombreArchivo: String;addFechaF: Boolean;emailAuto: Boolean);
 
    procedure ExporToExcelCert(mTabla : TIBDataSet; NombreArchivo : String);
    procedure ExporToExcelCertQ(mTabla : TIBQuery; NombreArchivo : String);
@@ -5118,6 +5119,640 @@ begin
   end;
 
   //Application.ProcessMessages;
+end;
+
+procedure ExporToExcelFormateado(
+  mTabla: TIBQuery;
+  NombreArchivo: String;
+  addFechaF: Boolean;
+  emailAuto: Boolean
+);
+const
+  xlWBATWorksheet = -4167;
+  xlSrcRange = 1;
+  xlYes = 1;
+  xlContinuous = 1;
+  xlThin = 2;
+var
+  AplicacionExcel: OleVariant;
+  WorkbooksExcel: OleVariant;
+  WorkbookExcel: OleVariant;
+  WorksheetExcel: OleVariant;
+  RangoDatos: OleVariant;
+  RangoColumna: OleVariant;
+  TablaExcel: OleVariant;
+  Datos: Variant;
+
+  Frm: TForm;
+  LblEstado: TLabel;
+  ProgressBar1: TProgressBar;
+  ProgressBar2: TProgressBar;
+
+  i: Integer;
+  fila: Integer;
+  TotalFilas: Integer;
+  TotalColumnas: Integer;
+  FilaTotalGeneral: Integer;
+
+  mMarcador: TBookmarkStr;
+  TieneMarcador: Boolean;
+  ControlsDisabled: Boolean;
+  ExcelCreado: Boolean;
+  WorkbookCreado: Boolean;
+  ArchivoGuardado: Boolean;
+
+  targetFile: string;
+  UltimaCelda: string;
+
+  function NombreColumnaExcel(AColumna: Integer): string;
+  var
+    N: Integer;
+  begin
+    Result := '';
+    N := AColumna;
+
+    while N > 0 do
+    begin
+      Dec(N);
+      Result := Chr(Ord('A') + (N mod 26)) + Result;
+      N := N div 26;
+    end;
+  end;
+
+  function EsCampoEntero(AField: TField): Boolean;
+  begin
+    Result :=
+      AField.DataType in
+      [ftSmallint, ftInteger, ftWord, ftAutoInc, ftLargeint];
+  end;
+
+  function EsCampoFecha(AField: TField): Boolean;
+  begin
+    Result := AField.DataType = ftDate;
+  end;
+
+  function EsCampoHora(AField: TField): Boolean;
+  begin
+    Result := AField.DataType = ftTime;
+  end;
+
+  function EsCampoFechaHora(AField: TField): Boolean;
+  begin
+    Result := AField.DataType = ftDateTime;
+  end;
+
+  function ValorCampoExcel(AField: TField): Variant;
+  begin
+    if AField.IsNull then
+    begin
+      Result := '';
+      Exit;
+    end;
+
+    if AField is TNumericField then
+    begin
+      Result := AField.AsFloat;
+      Exit;
+    end;
+
+    if EsCampoFecha(AField) or
+       EsCampoHora(AField) or
+       EsCampoFechaHora(AField) then
+    begin
+      Result := AField.AsDateTime;
+      Exit;
+    end;
+
+    if AField.DataType = ftBoolean then
+    begin
+      Result := AField.AsBoolean;
+      Exit;
+    end;
+
+    {
+      Los campos de texto se envían como String y la columna se preformatea
+      como texto antes de asignar el array. Esto protege RNC, cédula,
+      NCF/e-NCF y códigos con ceros a la izquierda.
+    }
+    Result := AField.AsString;
+  end;
+
+  function FilaContieneTotalGeneral(ADataRow: Integer): Boolean;
+  var
+    C: Integer;
+    S: string;
+  begin
+    Result := False;
+
+    for C := 1 to TotalColumnas do
+    begin
+      try
+        S := UpperCase(Trim(VarToStr(Datos[ADataRow, C])));
+      except
+        S := '';
+      end;
+
+      if S = 'TOTAL GENERAL' then
+      begin
+        Result := True;
+        Exit;
+      end;
+    end;
+  end;
+
+  procedure LiberarVariant(var V: OleVariant);
+  begin
+    try
+      if not VarIsEmpty(V) then
+        VarClear(V);
+    except
+      V := Unassigned;
+    end;
+  end;
+
+begin
+  AplicacionExcel := Unassigned;
+  WorkbooksExcel := Unassigned;
+  WorkbookExcel := Unassigned;
+  WorksheetExcel := Unassigned;
+  RangoDatos := Unassigned;
+  RangoColumna := Unassigned;
+  TablaExcel := Unassigned;
+  Datos := Unassigned;
+
+  Frm := nil;
+  LblEstado := nil;
+  ProgressBar1 := nil;
+  ProgressBar2 := nil;
+
+  TieneMarcador := False;
+  ControlsDisabled := False;
+  ExcelCreado := False;
+  WorkbookCreado := False;
+  ArchivoGuardado := False;
+  FilaTotalGeneral := 0;
+
+  {
+    Construir el nombre final ANTES de abrir Excel. Si el directorio falla,
+    no dejamos Excel.Application creado en memoria.
+  }
+  if addFechaF then
+    NombreArchivo :=
+      NombreArchivo +
+      FormatDateTime('ddmmyy_hhmm', Now) +
+      '.xls';
+
+  if Trim(ExtractFilePath(NombreArchivo)) <> '' then
+  begin
+    if not DirectoryExists(ExtractFilePath(NombreArchivo)) then
+    begin
+      if not ForceDirectories(ExtractFilePath(NombreArchivo)) then
+      begin
+        LogInformacionTxt(
+          'ExporToExcelFormateado. ' +
+          strUserName +
+          '. Usuario: ' +
+          VarNombreUsuario +
+          '. Fecha: ' +
+          DateTimeToStr(Now) +
+          '. Error creando directorio: ' +
+          ExtractFileDir(NombreArchivo)
+        );
+        Exit;
+      end;
+    end;
+  end;
+
+  if (mTabla = nil) or (not mTabla.Active) then
+    raise Exception.Create(
+      'ExporToExcelFormateado: el dataset no está activo.'
+    );
+
+  TotalColumnas := mTabla.Fields.Count;
+
+  if TotalColumnas <= 0 then
+    raise Exception.Create(
+      'ExporToExcelFormateado: el dataset no contiene columnas.'
+    );
+
+  {
+    El formulario es dueño de Label y ProgressBars.
+    Al liberar Frm se liberan automáticamente los tres controles.
+  }
+  Frm := TForm.Create(nil);
+  try
+    Frm.Color := clCream;
+    Frm.Position := poScreenCenter;
+    Frm.BorderStyle := bsNone;
+    Frm.Caption := 'Generando Excel';
+    Frm.Height := 118;
+    Frm.Width := 760;
+
+    LblEstado := TLabel.Create(Frm);
+    LblEstado.Parent := Frm;
+    LblEstado.Caption := 'Preparando reporte Excel...';
+    LblEstado.Left := 8;
+    LblEstado.Top := 8;
+    LblEstado.Height := 16;
+    LblEstado.Width := 700;
+
+    ProgressBar1 := TProgressBar.Create(Frm);
+    ProgressBar1.Parent := Frm;
+    ProgressBar1.Left := 8;
+    ProgressBar1.Top := 30;
+    ProgressBar1.Width := 720;
+    ProgressBar1.Min := 0;
+    ProgressBar1.Position := 0;
+
+    ProgressBar2 := TProgressBar.Create(Frm);
+    ProgressBar2.Parent := Frm;
+    ProgressBar2.Left := 8;
+    ProgressBar2.Top := 66;
+    ProgressBar2.Width := 720;
+    ProgressBar2.Min := 0;
+    ProgressBar2.Max := TotalColumnas;
+    ProgressBar2.Position := 0;
+
+    Frm.Show;
+    Application.ProcessMessages;
+
+    {
+      Preservar posición actual y cargar el RecordCount real.
+    }
+    mTabla.DisableControls;
+    ControlsDisabled := True;
+
+    try
+      if not mTabla.IsEmpty then
+      begin
+        mMarcador := mTabla.Bookmark;
+        TieneMarcador := True;
+
+        mTabla.Last;
+        TotalFilas := mTabla.RecordCount;
+        mTabla.First;
+      end
+      else
+        TotalFilas := 0;
+
+      ProgressBar1.Max := TotalFilas;
+      ProgressBar1.Position := 0;
+
+      {
+        Array 2D:
+          fila 1 = encabezados
+          fila 2..N = datos
+
+        La asignación de todo el array a Excel es muchísimo más rápida
+        que escribir celda por celda.
+      }
+      Datos :=
+        VarArrayCreate(
+          [1, TotalFilas + 1, 1, TotalColumnas],
+          varVariant
+        );
+
+      for i := 1 to TotalColumnas do
+        Datos[1, i] := mTabla.Fields[i - 1].DisplayLabel;
+
+      fila := 2;
+
+      while not mTabla.Eof do
+      begin
+        ProgressBar2.Position := 0;
+
+        for i := 1 to TotalColumnas do
+        begin
+          try
+            Datos[fila, i] :=
+              ValorCampoExcel(mTabla.Fields[i - 1]);
+          except
+            on E: Exception do
+            begin
+              WriteToLog(
+                E.ClassName +
+                ' Error. Mensaje: ' +
+                E.Message
+              );
+              WriteToLog(
+                'Campo: ' +
+                mTabla.Fields[i - 1].DisplayLabel
+              );
+
+              Datos[fila, i] := '';
+            end;
+          end;
+
+          ProgressBar2.StepIt;
+        end;
+
+        if FilaContieneTotalGeneral(fila) then
+          FilaTotalGeneral := fila;
+
+        ProgressBar1.StepIt;
+        mTabla.Next;
+        Inc(fila);
+
+        Application.ProcessMessages;
+      end;
+
+    finally
+      if TieneMarcador and (not mTabla.IsEmpty) then
+      begin
+        try
+          mTabla.Bookmark := mMarcador;
+        except
+          {
+            Si el dataset cambió mientras se exportaba, no dejar que
+            un bookmark inválido impida liberar Excel.
+          }
+        end;
+      end;
+
+      if ControlsDisabled then
+      begin
+        mTabla.EnableControls;
+        ControlsDisabled := False;
+      end;
+    end;
+
+    LblEstado.Caption := 'Creando tabla y aplicando formato...';
+    Application.ProcessMessages;
+
+    {
+      Crear Excel solamente cuando los datos ya están preparados.
+    }
+    AplicacionExcel := CreateOleObject('Excel.Application');
+    ExcelCreado := True;
+
+    AplicacionExcel.Visible := False;
+    AplicacionExcel.DisplayAlerts := False;
+
+    WorkbooksExcel := AplicacionExcel.Workbooks;
+    WorkbookExcel := WorkbooksExcel.Add(xlWBATWorksheet);
+    WorkbookCreado := True;
+    WorksheetExcel := WorkbookExcel.Worksheets[1];
+
+    UltimaCelda :=
+      NombreColumnaExcel(TotalColumnas) +
+      IntToStr(TotalFilas + 1);
+
+    {
+      Preformatear las columnas ANTES de colocar los datos.
+      De ese modo Excel no convierte NCF/RNC/códigos de texto a números.
+    }
+    for i := 1 to TotalColumnas do
+    begin
+      RangoColumna := WorksheetExcel.Columns[i];
+
+      if mTabla.Fields[i - 1] is TNumericField then
+      begin
+        if EsCampoEntero(mTabla.Fields[i - 1]) then
+          RangoColumna.NumberFormat := '#,##0'
+        else
+          RangoColumna.NumberFormat := '#,##0.00';
+      end
+      else if EsCampoFecha(mTabla.Fields[i - 1]) then
+        RangoColumna.NumberFormat := 'dd/mm/yyyy'
+      else if EsCampoHora(mTabla.Fields[i - 1]) then
+        RangoColumna.NumberFormat := 'hh:mm'
+      else if EsCampoFechaHora(mTabla.Fields[i - 1]) then
+        RangoColumna.NumberFormat := 'dd/mm/yyyy hh:mm'
+      else
+        RangoColumna.NumberFormat := '@';
+
+      LiberarVariant(RangoColumna);
+    end;
+
+    RangoDatos :=
+      WorksheetExcel.Range['A1', UltimaCelda];
+
+    RangoDatos.Value := Datos;
+
+    {
+      Formato de tabla.
+      Primero intentamos crear una tabla real de Excel (ListObject).
+      Si la versión de Excel no lo soporta, dejamos una tabla visual
+      compatible con versiones antiguas.
+    }
+    try
+      TablaExcel :=
+        WorksheetExcel.ListObjects.Add(
+          xlSrcRange,
+          RangoDatos,
+          EmptyParam,
+          xlYes
+        );
+
+      try
+        TablaExcel.Name :=
+          'Tabla_' +
+          FormatDateTime('hhnnss', Now);
+      except
+      end;
+
+      try
+        TablaExcel.TableStyle := 'TableStyleMedium2';
+      except
+      end;
+    except
+      {
+        Fallback compatible:
+        encabezado en negrita + bordes + autofiltro.
+      }
+      WorksheetExcel.Range[
+        'A1',
+        NombreColumnaExcel(TotalColumnas) + '1'
+      ].Font.Bold := True;
+
+      try
+        RangoDatos.AutoFilter;
+      except
+      end;
+
+      try
+        RangoDatos.Borders.LineStyle := xlContinuous;
+        RangoDatos.Borders.Weight := xlThin;
+      except
+      end;
+    end;
+
+    {
+      Si el dataset ya trae TOTAL GENERAL, resaltarlo.
+      No calculamos totales aquí para no alterar la semántica del query.
+    }
+    if FilaTotalGeneral > 0 then
+    begin
+      try
+        WorksheetExcel.Range[
+          'A' + IntToStr(FilaTotalGeneral),
+          NombreColumnaExcel(TotalColumnas) +
+          IntToStr(FilaTotalGeneral)
+        ].Font.Bold := True;
+      except
+      end;
+    end;
+
+    {
+      El ancho queda exactamente determinado por el contenido más largo
+      visible de cada columna.
+    }
+    RangoDatos.Columns.AutoFit;
+
+    {
+      Encabezado visible al desplazarse.
+    }
+    try
+      WorksheetExcel.Activate;
+      AplicacionExcel.ActiveWindow.SplitRow := 1;
+      AplicacionExcel.ActiveWindow.FreezePanes := True;
+    except
+    end;
+
+    {
+      Guardar.
+    }
+    WorkbookExcel.SaveAs(NombreArchivo);
+    ArchivoGuardado := True;
+
+    GlbNombreArchivo := NombreArchivo;
+    glbZipFile := GlbNombreArchivo;
+
+  finally
+    {
+      Liberación COM en orden inverso.
+      Ningún error de Excel debe impedir Quit ni liberar Variants.
+    }
+    try
+      LiberarVariant(TablaExcel);
+      LiberarVariant(RangoColumna);
+      LiberarVariant(RangoDatos);
+      LiberarVariant(WorksheetExcel);
+
+      if WorkbookCreado and (not VarIsEmpty(WorkbookExcel)) then
+      begin
+        try
+          WorkbookExcel.Close(False);
+        except
+        end;
+      end;
+
+      LiberarVariant(WorkbookExcel);
+      LiberarVariant(WorkbooksExcel);
+
+      if ExcelCreado and (not VarIsEmpty(AplicacionExcel)) then
+      begin
+        try
+          AplicacionExcel.Quit;
+        except
+        end;
+      end;
+
+      LiberarVariant(AplicacionExcel);
+
+      try
+        if not VarIsEmpty(Datos) then
+          VarClear(Datos);
+      except
+        Datos := Unassigned;
+      end;
+
+    finally
+      {
+        Frm es Owner de LblEstado/ProgressBars.
+        No liberar esos controles por separado.
+      }
+      FreeAndNil(Frm);
+    end;
+  end;
+
+  {
+    Abrir el archivo después de que Excel ya fue cerrado y liberado.
+  }
+  if ArchivoGuardado and GLBMostrarArchivo then
+  begin
+    if FileExists(NombreArchivo) then
+      ShellExecute(
+        0,
+        'open',
+        PChar(NombreArchivo),
+        '',
+        '',
+        SW_SHOWNORMAL
+      );
+
+    GLBMostrarArchivo := False;
+  end;
+
+  {
+    Se conserva el comportamiento de email del procedimiento original.
+  }
+  if ArchivoGuardado and GlbEnviaEmail and emailAuto then
+  begin
+    dmdatos.qryEmailProceso.Close;
+    dmdatos.qryEmailProceso.Params[0].Value := GlbIDTipoEmail;
+    dmdatos.qryEmailProceso.Open;
+    dmdatos.qryEmailProceso.First;
+
+    if dmdatos.qryEmailProcesoSTATUS.Value = 'A' then
+    begin
+      if ProcZipFile(NombreArchivo, targetFile) then
+      begin
+        if dmdatos.qryEmailProceso.RecordCount = 1 then
+        begin
+          if dmCompania.tblCompania.State = dsInactive then
+            dmCompania.tblCompania.Open;
+
+          dmCompania.tblCompania.Locate(
+            'codigo',
+            GlbCia_Key,
+            []
+          );
+
+          ProcLogTrackingEmail(
+            GlbIDTipoEmail,
+            dmdatos.qryEmailProcesoEMAIL_SERVER.Value,
+            dmdatos.qryEmailProcesoPORT.AsString,
+            dmdatos.qryEmailProcesoUSER_EMAIL.Value,
+            Desencriptar(
+              dmdatos.qryEmailProcesoUSER_PASSWORD.Value,
+              2005
+            ),
+            Now,
+            dmdatos.qryEmailProcesoTOEMAIL.Value,
+            dmdatos.qryEmailProcesoFROMEMAIL.Value,
+            dmdatos.qryEmailProcesoSUBJECT.Value +
+              ' -CIA:' +
+              dmCompania.tblCompaniaNOMBRE.Value +
+              #13#10 +
+              'Sucursal : ' +
+              dmCompania.tblCompaniaNUM_SUCURSAL.AsString +
+              ' ' +
+              FormatDateTime(
+                'dd/mm/yyyy hh:mm a/p',
+                Now
+              ),
+            #13#10 + 'Reporte',
+            VarUsuarioGlb,
+            'A',
+            '',
+            Now,
+            strUserName,
+            FormatDateTime(
+              'dd/mm/yyyy hh:mm a/p',
+              Now
+            ),
+            strUserName,
+            targetFile,
+            dmCompania.tblCompaniaEMAIL.Value,
+            dmCompania.tblCompaniaNOMBRE.Value
+          );
+        end;
+      end;
+
+      GlbEnviaEmail := False;
+    end;
+  end;
 end;
 
 

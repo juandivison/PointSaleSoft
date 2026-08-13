@@ -93,6 +93,7 @@ type
     qryTasaItbisSTATUS: TIBStringField;
     qryTasaItbisFECHA_UPDATE: TDateTimeField;
     qryTasaItbisSIMBOLO_TASA: TIBStringField;
+    qryTasaItbisIDITBISECF: TSmallintField;
     dsqryTasaItbis: TDataSource;
     RxDBLookupCombo7: TRxDBLookupCombo;
     Label20: TLabel;
@@ -119,6 +120,23 @@ type
     BitBtn19: TBitBtn;
     BitBtn20: TBitBtn;
     BitBtn21: TBitBtn;
+    TabSheet3: TTabSheet;
+    LabelEcfTipo: TLabel;
+    LabelEcfNumero: TLabel;
+    LabelEcfSerie: TLabel;
+    LabelEcfMonto: TLabel;
+    LabelEcfItbisRet: TLabel;
+    LabelEcfIsrRet: TLabel;
+    LabelEcfReglas: TLabel;
+    DBEditEcfTipo: TDBEdit;
+    DBEditEcfNumero: TDBEdit;
+    DBEditEcfSerie: TDBEdit;
+    DBEditEcfMonto: TDBEdit;
+    DBRadioGroupIndMontoGravado: TDBRadioGroup;
+    DBRadioGroupBienServicio: TDBRadioGroup;
+    DBEditEcfItbisRetenido: TDBEdit;
+    DBEditEcfIsrRetenido: TDBEdit;
+    BitBtnEnviarEcfGasto: TBitBtn;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure BitBtn5Click(Sender: TObject);
@@ -150,6 +168,7 @@ type
     procedure BitBtn19Click(Sender: TObject);
     procedure BitBtn20Click(Sender: TObject);
     procedure BitBtn21Click(Sender: TObject);
+    procedure BitBtnEnviarEcfGastoClick(Sender: TObject);
   private
     { Private declarations }
     procedure sumar;
@@ -172,7 +191,8 @@ uses UDatModRegOpeDiaria, UFormSelFecha, UGlobal, URepTransOpeDiaria,
   UDatModReportes, UDatModConectar, UDatModCxp,
   UDatModFactura, uFormAsignarNCFVentaGastos, USeleccionarNCFGastos,
   URepTransCostoGastos, UFormDatosRepCostosGastos, UDatModCompania,
-  UBuscarProveedores, UFormCentroDeCostos, UFormProductosServicios;
+  UBuscarProveedores, UFormCentroDeCostos, UFormProductosServicios,
+  UEcfReservaGastos, UUtilecfGastos, UEcfEnvioGastos;
 
 {$R *.dfm}
 
@@ -819,10 +839,38 @@ begin
 end;
 
 function TfrmRegTransOpeDiaria.ProcVerificaNCF:Boolean;
+var
+  TipoCF: string;
+  ENCF: string;
 begin
   result:= True;
   if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State In [dsInsert, dsEdit] then
   begin
+  TipoCF := Trim(dtmTransOpeDiaria.tblRegTransOpeDiariaMastTIPO_CF.AsString);
+
+  { E41/E43 utilizan el campo ECF. NUMERO_NCF queda reservado para NCF B. }
+  if (TipoCF = '41') or (TipoCF = '43') then
+  begin
+    ENCF := UpperCase(Trim(dtmTransOpeDiaria.tblRegTransOpeDiariaMastECF.AsString));
+    if ENCF = '' then
+      Exit;
+
+    if (Length(ENCF) <> 13) or (Copy(ENCF, 1, 3) <> 'E' + TipoCF) then
+    begin
+      MessageDlg(
+        'El e-NCF asignado no coincide con el tipo de comprobante.',
+        mtInformation,
+        [mbOK],
+        0
+      );
+      result := False;
+    end;
+    Exit;
+  end;
+
+  if Trim(dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO_NCF.AsString) = '' then
+    Exit;
+
   if Length(dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO_NCF.Value) > 11 then
   begin
     if (dtmTransOpeDiaria.tblRegTransOpeDiariaMastTIPO_CF.Value <>
@@ -872,91 +920,139 @@ var
   genNcf : Boolean;
   serie_asignadoncf : Integer;
   valorNCF : String;
+  ReservaEcf: TReservaEcfGastoResult;
+  MsgReserva: string;
+  TipoSeleccionado: string;
 begin
+  genNcf := False;
   if dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO.IsNull then Exit;
-  
-  if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State = dsbrowse then
-  dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Edit;
+
   if not Assigned(frmSelNCFGastos) then
-  frmSelNCFGastos:=TfrmSelNCFGastos.Create(Self);
-  try
+    frmSelNCFGastos := TfrmSelNCFGastos.Create(Self);
 
-    if (frmSelNCFGastos.ShowModal = mrOK) then
+  if frmSelNCFGastos.ShowModal <> mrOK then
+    Exit;
+
+  genNcf := True;
+  TipoSeleccionado := Trim(dmFactura.ibQryViewNCFGastosTIPO_CF.AsString);
+
+  if (GlbUsaSecNCF2018 = 0) then
+    GlbDescNCF := dmFactura.ibQryViewNCFGastosDESCRIPCION.Value
+  else
+    GlbDescNCF := dmFactura.ibQryViewNCFGastosDESCRIPCION_2018.Value;
+
+  { Ruta electronica de gastos. No utiliza la asignacion legacy de NCF B. }
+  if (TipoSeleccionado = '41') or (TipoSeleccionado = '43') then
+  begin
+    if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State <> dsBrowse then
     begin
-      genNcf := True;
-      if (GlbUsaSecNCF2018 = 0) then
-      GlbDescNCF:=dmFactura.ibQryViewNCFGastosDESCRIPCION.Value
-      else
-      GlbDescNCF:=dmFactura.ibQryViewNCFGastosDESCRIPCION_2018.Value;
-      //dmFactura.ibQryViewNCFTIPO_CF.Value, ValorNCF, serieDoc, serie_asignadoncf);
-      //ProcVenta(valorNCF, Serie_Asignadoncf,serieDoc);//Aqui voy
-      //ProcesaFacturar(1, serieDoc, xcodigocte);
+      MessageDlg(
+        'Guarde la operacion antes de reservar el e-NCF.',
+        mtInformation,
+        [mbOK],
+        0
+      );
+      Exit;
     end;
-    if genNcf then
+
+    if dtmTransOpeDiaria.tblRegTransOpeDiariaDet.State <> dsBrowse then
     begin
-      if (GlbUsaSecNCF2018 = 0) then
-      GlbDescNCF   := dmFactura.ibQryViewNCFGastosDESCRIPCION.Value
-      else
-      GlbDescNCF:=dmFactura.ibQryViewNCFGastosDESCRIPCION_2018.Value;
-
-      frmAsignarNCFGastos:= TfrmAsignarNCFGastos.Create(self);
-       try
-         frmAsignarNCFGastos.IBDataSet1.Close;
-         frmAsignarNCFGastos.IBDataSet1.Open;
-         frmAsignarNCFGastos.IBDataSet1.Insert;
-         frmAsignarNCFGastos.IBDataSet1FECHA_INSERT.Value := Now;
-         frmAsignarNCFGastos.IBDataSet1FECHA.Value := ExtraerFEcha(GlbFechaTrnDiaria);
-         if GlbcodVendedor > 0 then
-            frmAsignarNCFGastos.IBDataSet1CODIGO_USUARIO.Value := GlbcodVendedor
-         else
-         frmAsignarNCFGastos.IBDataSet1CODIGO_USUARIO.Value := VarUsuarioGlb;
-         frmAsignarNCFGastos.IBDataSet1STATUS.Value := 'A';
-
-         frmAsignarNCFGastos.IBDataSet1TIPO_NCF.Value := dmFactura.ibQryViewNCFGastosTIPO_CF.Value;
-
-         valorNCF:= frmAsignarNCFGastos.ncfGenerado;
-         dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO_NCF.Value:=frmAsignarNCFGastos.ncfGenerado;
-         dtmTransOpeDiaria.tblRegTransOpeDiariaMastTIPO_CF.Value:= frmAsignarNCFGastos.IBDataSet1TIPO_NCF.Value;
-                  
-         frmAsignarNCFGastos.BitBtn13Click(Self);
-
-         frmAsignarNCFGastos.Asginarncf := frmAsignarNCFGastos.ncfGenerado;
-
-         if (frmAsignarNCFGastos.ncfGenerado <> '') then
-         begin
-           frmAsignarNCFGastos.IBDataSet1NUMERO_NCF.Value := frmAsignarNCFGastos.ncfGenerado;
-           frmAsignarNCFGastos.IBDataSet1MONTO.Value      := dtmTransOpeDiaria.tblRegTransOpeDiariaMastMONTO.Value;
-
-           frmAsignarNCFGastos.BitBtn4Click(Self); //Guardar
-
-         //if (frmAsignarNCFGastos.ncfGenerado = '') then
-         //begin
-         //  if MessageDlg('NCF no fue generado, desea continuar?', mtWarning, [mbYes, mbNo], 0) = mrNO then
-         //  Exit;
-         //end;
-
-         serie_asignadoncf := frmAsignarNCFGastos.IBDataSet1SERIE.Value;
-         valorNCF:= frmAsignarNCFGastos.ncfGenerado;
-         dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO_NCF.Value:=frmAsignarNCFGastos.ncfGenerado;
-         dtmTransOpeDiaria.tblRegTransOpeDiariaMastTIPO_CF.Value:= frmAsignarNCFGastos.IBDataSet1TIPO_NCF.Value;
-         end else
-         frmAsignarNCFGastos.IBDataSet1.Cancel;
-         //t  RxDBLookupCombo3Change(Self);
-         //t if Totales.State = dsBrowse then
-         //t Totales.Edit;
-
-         //t if Totales.State In [dsInsert, dsEdit] then
-         //t begin
-         //t   Totales.Edit;
-         //t   Totalesncf_numero.Value := valorNCF;
-         //t   TotalesqrLabelNcfDesc.Value:=GlbDescNCF;
-         //t   Totales.Post;
-         //t end;
-         finally
-         end;
-       end;//if genNcf
-     finally
+      MessageDlg(
+        'Guarde el detalle antes de reservar el e-NCF.',
+        mtInformation,
+        [mbOK],
+        0
+      );
+      Exit;
     end;
+
+    if not ReservarOReutilizarEcfGasto(
+             dmConectar.IBDatabase1,
+             dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO.AsInteger,
+             VarUsuarioGlb,
+             dmFactura.ibQryViewNCFGastosSERIE.AsString,
+             dmFactura.ibQryViewNCFGastosDIV_NEGOCIO.AsString,
+             dmFactura.ibQryViewNCFGastosPECF.AsString,
+             dmFactura.ibQryViewNCFGastosAICF.AsString,
+             TipoSeleccionado,
+             ReservaEcf,
+             MsgReserva
+           ) then
+    begin
+      MessageDlg(MsgReserva, mtError, [mbOK], 0);
+      Exit;
+    end;
+
+    { La reserva actualiza el maestro directamente. Refrescar evita que una
+      edicion posterior sobrescriba ECF/SERIE_NCF_ASIGNADO con valores viejos. }
+    dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Refresh;
+    PageControl1.ActivePage := TabSheet3;
+
+    MessageDlg(
+      MsgReserva + #13#10 +
+      'Vencimiento de secuencia: ' +
+      DateToStr(ReservaEcf.FechaVencimientoSecuencia),
+      mtInformation,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  { Ruta legacy para comprobantes B. }
+  if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State = dsBrowse then
+    dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Edit;
+
+  if genNcf then
+  begin
+    frmAsignarNCFGastos := TfrmAsignarNCFGastos.Create(Self);
+    try
+      frmAsignarNCFGastos.IBDataSet1.Close;
+      frmAsignarNCFGastos.IBDataSet1.Open;
+      frmAsignarNCFGastos.IBDataSet1.Insert;
+      frmAsignarNCFGastos.IBDataSet1FECHA_INSERT.Value := Now;
+      frmAsignarNCFGastos.IBDataSet1FECHA.Value := ExtraerFEcha(GlbFechaTrnDiaria);
+
+      if GlbcodVendedor > 0 then
+        frmAsignarNCFGastos.IBDataSet1CODIGO_USUARIO.Value := GlbcodVendedor
+      else
+        frmAsignarNCFGastos.IBDataSet1CODIGO_USUARIO.Value := VarUsuarioGlb;
+
+      frmAsignarNCFGastos.IBDataSet1STATUS.Value := 'A';
+      frmAsignarNCFGastos.IBDataSet1TIPO_NCF.Value := TipoSeleccionado;
+
+      valorNCF := frmAsignarNCFGastos.ncfGenerado;
+      dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO_NCF.Value :=
+        frmAsignarNCFGastos.ncfGenerado;
+      dtmTransOpeDiaria.tblRegTransOpeDiariaMastTIPO_CF.Value :=
+        frmAsignarNCFGastos.IBDataSet1TIPO_NCF.Value;
+
+      frmAsignarNCFGastos.BitBtn13Click(Self);
+      frmAsignarNCFGastos.Asginarncf := frmAsignarNCFGastos.ncfGenerado;
+
+      if frmAsignarNCFGastos.ncfGenerado <> '' then
+      begin
+        frmAsignarNCFGastos.IBDataSet1NUMERO_NCF.Value :=
+          frmAsignarNCFGastos.ncfGenerado;
+        frmAsignarNCFGastos.IBDataSet1MONTO.Value :=
+          dtmTransOpeDiaria.tblRegTransOpeDiariaMastMONTO.Value;
+
+        frmAsignarNCFGastos.BitBtn4Click(Self);
+
+        serie_asignadoncf := frmAsignarNCFGastos.IBDataSet1SERIE.Value;
+        valorNCF := frmAsignarNCFGastos.ncfGenerado;
+        dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO_NCF.Value :=
+          frmAsignarNCFGastos.ncfGenerado;
+        dtmTransOpeDiaria.tblRegTransOpeDiariaMastTIPO_CF.Value :=
+          frmAsignarNCFGastos.IBDataSet1TIPO_NCF.Value;
+      end
+      else
+        frmAsignarNCFGastos.IBDataSet1.Cancel;
+    finally
+      frmAsignarNCFGastos.Free;
+      frmAsignarNCFGastos := Nil;
+    end;
+  end;
 end;
 
 procedure TfrmRegTransOpeDiaria.BitBtn18Click(Sender: TObject);
@@ -1036,6 +1132,150 @@ begin
   dtmTransOpeDiaria.tblProductosServicios.Close;
   dtmTransOpeDiaria.tblProductosServicios.Open;  
 end;
+
+procedure TfrmRegTransOpeDiaria.BitBtnEnviarEcfGastoClick(Sender: TObject);
+var
+  ExePath: string;
+  ErrorPath: string;
+  Mensaje: string;
+  Resultado: TGastoEcfCliResult;
+  Estado: string;
+  Trn: Integer;
+begin
+  if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State = dsInactive then
+    Exit;
+
+  if dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO.IsNull then
+  begin
+    MessageDlg(
+      'No hay una operacion de gastos seleccionada.',
+      mtInformation,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State <> dsBrowse then
+  begin
+    MessageDlg(
+      'Guarde la operacion antes de enviar el e-CF.',
+      mtInformation,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  if dtmTransOpeDiaria.tblRegTransOpeDiariaDet.State <> dsBrowse then
+  begin
+    MessageDlg(
+      'Guarde el detalle antes de enviar el e-CF.',
+      mtInformation,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  if not (
+       (Trim(dtmTransOpeDiaria.tblRegTransOpeDiariaMastTIPO_CF.AsString) = '41') or
+       (Trim(dtmTransOpeDiaria.tblRegTransOpeDiariaMastTIPO_CF.AsString) = '43')
+     ) then
+  begin
+    MessageDlg(
+      'La operacion debe tener reservado un comprobante E41 o E43.',
+      mtInformation,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  if Trim(dtmTransOpeDiaria.tblRegTransOpeDiariaMastECF.AsString) = '' then
+  begin
+    MessageDlg(
+      'Primero reserve el e-NCF mediante el boton de asignacion de comprobante.',
+      mtInformation,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  if not ResolverEjecutableEcfGastos(ExePath, ErrorPath) then
+  begin
+    MessageDlg(ErrorPath, mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  Trn := dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO.AsInteger;
+
+  BitBtnEnviarEcfGasto.Enabled := False;
+  Screen.Cursor := crHourGlass;
+  try
+    if not ProcesarEnvioEcfGasto(
+             dmConectar.IBDatabase1,
+             ExePath,
+             Trn,
+             Resultado,
+             Mensaje
+           ) then
+    begin
+      MessageDlg(
+        'No fue posible completar el envio del e-CF.' + #13#10 + Mensaje,
+        mtError,
+        [mbOK],
+        0
+      );
+      Exit;
+    end;
+  finally
+    Screen.Cursor := crDefault;
+    BitBtnEnviarEcfGasto.Enabled := True;
+  end;
+
+  Estado := UpperCase(Trim(Resultado.Estado));
+
+  if Pos('ACEPTADO', Estado) > 0 then
+  begin
+    MessageDlg(
+      'e-CF de gastos ACEPTADO.' + #13#10 +
+      'e-NCF: ' + Resultado.ENCF + #13#10 +
+      'TrackId: ' + Resultado.TrackId + #13#10 +
+      Resultado.Mensaje,
+      mtInformation,
+      [mbOK],
+      0
+    );
+  end
+  else if (Pos('IN_PROCESS', Estado) > 0) or
+          (Pos('EN PROCESO', Estado) > 0) then
+  begin
+    MessageDlg(
+      'El e-CF de gastos permanece EN PROCESO.' + #13#10 +
+      'e-NCF: ' + Resultado.ENCF + #13#10 +
+      'TrackId: ' + Resultado.TrackId + #13#10 +
+      Resultado.Mensaje,
+      mtInformation,
+      [mbOK],
+      0
+    );
+  end
+  else
+  begin
+    MessageDlg(
+      'El e-CF de gastos no fue aceptado.' + #13#10 +
+      'Estado: ' + Resultado.Estado + #13#10 +
+      'e-NCF: ' + Resultado.ENCF + #13#10 +
+      Resultado.Mensaje,
+      mtError,
+      [mbOK],
+      0
+    );
+  end;
+end;
+
 
 end.
 

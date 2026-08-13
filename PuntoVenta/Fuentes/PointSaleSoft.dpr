@@ -1061,7 +1061,7 @@ begin
   Application.CreateForm(TfrmMenuPrincipal, frmMenuPrincipal);
   //Application.CreateForm(TqckCartaRutaVehTpl, qckCartaRutaVehTpl);
   Application.Title := 'ERP Enterprise System';
-  frmPresentacion.Close;
+  frmPresentacion.Close;  
   frmPresentacion.Free;
   frmPresentacion:=Nil;                     
   try                              

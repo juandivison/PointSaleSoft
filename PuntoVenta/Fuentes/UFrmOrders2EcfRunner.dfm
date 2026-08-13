@@ -624,11 +624,11 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
       'TOVCNUMERICFIELD=Edit'
       'TOVCDBNUMERICFIELD=Edit')
     SkinStore = '(none)'
-    SkinFormtype = sfMainform
+    SkinFormtype = sfOnlyThisForm
     Version = '2.65.7.03'
     MenuUpdate = True
-    Left = 1088
-    Top = 24
+    Left = 712
+    Top = 104
     SkinStream = {00000000}
   end
   object MainMenu1: TMainMenu

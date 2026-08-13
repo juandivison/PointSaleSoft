@@ -1,8 +1,8 @@
 object dmDatos: TdmDatos
   OldCreateOrder = False
   OnDestroy = DataModuleDestroy
-  Left = 390
-  Top = 142
+  Left = 623
+  Top = 226
   Height = 769
   Width = 1023
   object qryTasa: TIBQuery

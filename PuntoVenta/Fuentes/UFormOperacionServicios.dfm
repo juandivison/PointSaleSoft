@@ -1,6 +1,6 @@
 object frmOperacionServicios: TfrmOperacionServicios
-  Left = 282
-  Top = 117
+  Left = 426
+  Top = 235
   Width = 792
   Height = 540
   Caption = 'Mantenimiento Operacion de Servicios'
@@ -227,6 +227,7 @@ object frmOperacionServicios: TfrmOperacionServicios
     TitleFont.Height = -11
     TitleFont.Name = 'MS Sans Serif'
     TitleFont.Style = []
+    RowColor2 = 16776176
     Columns = <
       item
         Expanded = False
@@ -248,16 +249,19 @@ object frmOperacionServicios: TfrmOperacionServicios
       item
         Expanded = False
         FieldName = 'NUMERO_TRN'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'CODIGO_OPERARIO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MONTO_SERVICIO'
+        Width = 64
         Visible = True
       end
       item
@@ -269,21 +273,25 @@ object frmOperacionServicios: TfrmOperacionServicios
       item
         Expanded = False
         FieldName = 'PORC_COMISION'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MONTO_DESCUENTO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'PORC_DESCUENTO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'CODIGO_SERVICIO'
+        Width = 64
         Visible = True
       end
       item
@@ -295,36 +303,43 @@ object frmOperacionServicios: TfrmOperacionServicios
       item
         Expanded = False
         FieldName = 'FECHA_IN'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'IN_POR'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_MOD'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MOD_POR'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'COMENTARIO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'STATUS'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'COD_USUARIO'
+        Width = 64
         Visible = True
       end>
   end

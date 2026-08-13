@@ -1176,6 +1176,7 @@ type
     qryVentaFacturaDetMONEDA: TIBStringField;
     qryVentaFacturaDetMONTO_TASA: TFloatField;
     qryVentaFacturaDetIDTASAITBIS: TFloatField;
+    ibQryViewNCFGastos_0: TIBQuery;
     procedure ibQryViewNCFFilterRecord(DataSet: TDataSet;
       var Accept: Boolean);
     procedure tblDgii_SerieNCFAfterScroll(DataSet: TDataSet);

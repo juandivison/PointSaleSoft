@@ -16,6 +16,7 @@ type
     procedure FormShow(Sender: TObject);
   private
     { Private declarations }
+    procedure ProcAsignaQuery;
   public
     { Public declarations }
   end;
@@ -27,10 +28,25 @@ implementation
   uses UDatModFactura, uglobal;
 {$R *.dfm}
 
+procedure TfrmSelNCFGastos.ProcAsignaQuery;
+begin
+  dmFactura.ibQryViewNCFGastos.Close;
+  dmFactura.ibQryViewNCFGastos.SQL.Text := dmFactura.ibQryViewNCFGastos_0.SQL.Text;
+  if GlbActivaECF = 1 then
+    begin
+      dmFactura.ibQryViewNCFGastos.SQL.Add(Format('Where v.TIPO_CF in (%s,%s)',['41','43']));
+      dmFactura.ibQryViewNCFGastos.SQL.Add('order by v.TIPO_CF');
+    end else
+    begin
+      dmFactura.ibQryViewNCFGastos.SQL.Add(Format('Where v.TIPO_CF in (%s)',['11']));
+      dmFactura.ibQryViewNCFGastos.SQL.Add('order by v.TIPO_CF');
+    end;
+  dmFactura.ibQryViewNCFGastos.Open;
+end;
 
 procedure TfrmSelNCFGastos.FormCreate(Sender: TObject);
 begin
-  dmFactura.ibQryViewNCF.Close;
+  //dmFactura.ibQryViewNCF.Close;
 
   {if (GlbActivaIFiscal = 1 ) then
   dmFactura.ibQryViewNCF.SQL.Text := dmFactura.ibQryViewNCF_0.SQL.Text
@@ -40,18 +56,21 @@ begin
   dmFactura.ibQryViewNCF.Prepare;
   dmFactura.ibQryViewNCF.Open;}
 
-  //t if (GlbActivaIFiscal = 1 ) then
-  //t begin
-    //t if dmFactura.ibQryViewNCF.Prepared then
-    //t dmFactura.ibQryViewNCF.UnPrepare;
-    //t dmFactura.ibQryViewNCF.SQL.Text := dmFactura.ibQryViewNCF_0.SQL.Text;
-  //t end;// else
-  //dmFactura.ibQryViewNCF.SQL.Text := 'select v.*, -1 as TIPO_NCF_IFISCAL, 1000 as tipo_ncfNCR  from view_nfc v';
+  {if GlbActivaECF = 1 then
+  begin
+    if dmFactura.ibQryViewNCF.Prepared then
+       dmFactura.ibQryViewNCF.UnPrepare;
+    dmFactura.ibQryViewNCF.SQL.Text := dmFactura.ibQryViewNCF_0.SQL.Text;
+  end else
+  dmFactura.ibQryViewNCF.SQL.Text := 'select v.*, -1 as TIPO_NCF_IFISCAL, 1000 as tipo_ncfNCR  from view_nfc v';
+
   if Not dmFactura.ibQryViewNCFGastos.Prepared then
   dmFactura.ibQryViewNCFGastos.Prepare;
   dmFactura.ibQryViewNCFGastos.Open;
 
   dmFactura.ibQryViewNCFGastos.Open;
+  }
+  ProcAsignaQuery;
 end;
 
 procedure TfrmSelNCFGastos.FormShow(Sender: TObject);

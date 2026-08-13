@@ -19,7 +19,7 @@ object dmConectar: TdmConectar
     AllowStreamedConnected = False
     BeforeConnect = IBDatabase1BeforeConnect
     OnLogin = IBDatabase1Login
-    Left = 62
+    Left = 56
     Top = 16
   end
   object IBTransaction1: TIBTransaction

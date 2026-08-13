@@ -742,7 +742,18 @@ begin
           Exit;
         end;
       end;
-      2, 12, 13, 20, 21: // Tarjeta, Tarjeta Débito, Propia, Travel, etc.
+      20: // Transferencia
+      begin
+        // No debe tener datos de tarjeta, aprobación, cheque, banco, etc.
+        if (dmPagosTarjeta.tblDetallePagosNUMERO_CHEQUE.IsNull) or
+           (dmPagosTarjeta.tblDetallePagosCOD_BANCO_CHEQUE.IsNull) then
+        begin
+          MsgError('Favor completar banco y/o número de transferencia.');
+          break;
+          Exit;
+        end;
+      end;
+      2, 12, 13, 21: // Tarjeta, Tarjeta Débito, Propia, Travel, etc.
       begin
         // Datos obligatorios para tarjetas
         if (dmPagosTarjeta.tblDetallePagosTIPO_TARJETA.IsNull) or

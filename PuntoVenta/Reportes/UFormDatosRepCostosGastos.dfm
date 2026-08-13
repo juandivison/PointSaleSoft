@@ -1,6 +1,6 @@
 object frmDatosRepCostos: TfrmDatosRepCostos
-  Left = 421
-  Top = 146
+  Left = 441
+  Top = 186
   Width = 396
   Height = 245
   Caption = 'Reporte Costos/Gastos'

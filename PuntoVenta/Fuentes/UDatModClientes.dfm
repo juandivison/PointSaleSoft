@@ -1505,8 +1505,8 @@ object dmClientes: TdmClientes
     CachedUpdates = False
     SQL.Strings = (
       'Select  * From RUTA_VTA')
-    Left = 304
-    Top = 392
+    Left = 272
+    Top = 400
     object qryRutaCODIGO: TIntegerField
       FieldName = 'CODIGO'
       Origin = 'RUTA_VTA.CODIGO'
@@ -1546,8 +1546,8 @@ object dmClientes: TdmClientes
       'select c.descripcion ciudad, s.*  from SECTORES s'
       'left outer join ciudad c on c.codigo = s.cod_ciudad'
       'where s.cod_ciudad=:codciudad')
-    Left = 504
-    Top = 400
+    Left = 520
+    Top = 424
     ParamData = <
       item
         DataType = ftInteger
@@ -1667,8 +1667,8 @@ object dmClientes: TdmClientes
         'left outer join view_CLIENTES_POLIZASEXT x on x.CHASSIS = d.CHAS' +
         'SIS')
     OnFilterRecord = qryRepCertificadoSamFilterRecord
-    Left = 424
-    Top = 392
+    Left = 448
+    Top = 384
     object qryRepCertificadoSamCODIGO_CTE: TIntegerField
       FieldName = 'CODIGO_CTE'
       Origin = 'CLIENTES.CODIGO_CTE'
@@ -3324,7 +3324,7 @@ object dmClientes: TdmClientes
         '  LEFT OUTER JOIN MOTORES M ON M.CHASIS = H.CHASSIS AND M.FECHA_' +
         'ASIGNADO IS NOT NULL')
     OnFilterRecord = qryRepVehiculosFilterRecord
-    Left = 360
+    Left = 344
     Top = 384
     object qryRepVehiculosNUM_TRNVTA: TIntegerField
       FieldName = 'NUM_TRNVTA'

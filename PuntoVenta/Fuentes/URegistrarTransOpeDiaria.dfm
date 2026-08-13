@@ -873,6 +873,27 @@ object frmRegTransOpeDiaria: TfrmRegTransOpeDiaria
           end
           item
             Expanded = False
+            FieldName = 'IND_BIEN_SERVICIO'
+            Title.Caption = 'BIEN/SERV.'
+            Width = 64
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'MONTO_ITBIS_RETENIDO'
+            Title.Caption = 'ITBIS RET.'
+            Width = 70
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'MONTO_ISR_RETENIDO'
+            Title.Caption = 'ISR RET.'
+            Width = 70
+            Visible = True
+          end
+          item
+            Expanded = False
             FieldName = 'NUMERO_FACTURA'
             Width = 64
             Visible = True
@@ -1033,7 +1054,7 @@ object frmRegTransOpeDiaria: TfrmRegTransOpeDiaria
         Width = 75
         Height = 25
         Hint = 'Asignar Comprobante informal'
-        Caption = 'NCF Informal'
+        Caption = 'Asignar NCF'
         TabOrder = 42
         OnClick = BitBtn16Click
       end
@@ -1282,6 +1303,24 @@ object frmRegTransOpeDiaria: TfrmRegTransOpeDiaria
           end
           item
             Expanded = False
+            FieldName = 'ECF'
+            Width = 105
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'SERIE_NCF_ASIGNADO'
+            Title.Caption = 'SERIE ECF'
+            Visible = True
+          end
+          item
+            Expanded = False
+            FieldName = 'IND_MONTO_GRAVADO'
+            Title.Caption = 'ITBIS INC.'
+            Visible = True
+          end
+          item
+            Expanded = False
             FieldName = 'IDCODIGO_TPAGODGII'
             Width = 64
             Visible = True
@@ -1292,6 +1331,166 @@ object frmRegTransOpeDiaria: TfrmRegTransOpeDiaria
             Width = 64
             Visible = True
           end>
+      end
+    end
+    object TabSheet3: TTabSheet
+      Caption = 'e-CF Gastos'
+      ImageIndex = 2
+      object LabelEcfTipo: TLabel
+        Left = 24
+        Top = 24
+        Width = 46
+        Height = 13
+        Caption = 'Tipo e-CF'
+      end
+      object LabelEcfNumero: TLabel
+        Left = 160
+        Top = 24
+        Width = 76
+        Height = 13
+        Caption = 'e-NCF asignado'
+      end
+      object LabelEcfSerie: TLabel
+        Left = 360
+        Top = 24
+        Width = 70
+        Height = 13
+        Caption = 'Serie asignada'
+      end
+      object LabelEcfMonto: TLabel
+        Left = 496
+        Top = 24
+        Width = 99
+        Height = 13
+        Caption = 'Pagado al proveedor'
+      end
+      object LabelEcfItbisRet: TLabel
+        Left = 360
+        Top = 202
+        Width = 68
+        Height = 13
+        Caption = 'ITBIS retenido'
+      end
+      object LabelEcfIsrRet: TLabel
+        Left = 496
+        Top = 202
+        Width = 59
+        Height = 13
+        Caption = 'ISR retenido'
+      end
+      object LabelEcfReglas: TLabel
+        Left = 24
+        Top = 288
+        Width = 760
+        Height = 65
+        AutoSize = False
+        Caption = 
+          'E41: indicar si el precio incluye ITBIS, clasificar cada linea c' +
+          'omo bien o servicio y registrar retenciones cuando correspondan.' +
+          #13#10'E43: todos los detalles deben ser exentos; no corresponde comp' +
+          'rador, ITBIS ni retenciones.'#13#10'El monto del maestro representa el' +
+          ' total pagado al proveedor; el total fiscal se construira desde ' +
+          'el detalle.'
+        WordWrap = True
+      end
+      object DBEditEcfTipo: TDBEdit
+        Left = 24
+        Top = 40
+        Width = 105
+        Height = 21
+        DataField = 'TIPO_CF'
+        DataSource = dtmTransOpeDiaria.dstblRegTransOpeDiariaMast
+        ReadOnly = True
+        TabOrder = 0
+      end
+      object DBEditEcfNumero: TDBEdit
+        Left = 160
+        Top = 40
+        Width = 169
+        Height = 21
+        DataField = 'ECF'
+        DataSource = dtmTransOpeDiaria.dstblRegTransOpeDiariaMast
+        ReadOnly = True
+        TabOrder = 1
+      end
+      object DBEditEcfSerie: TDBEdit
+        Left = 360
+        Top = 40
+        Width = 105
+        Height = 21
+        DataField = 'SERIE_NCF_ASIGNADO'
+        DataSource = dtmTransOpeDiaria.dstblRegTransOpeDiariaMast
+        ReadOnly = True
+        TabOrder = 2
+      end
+      object DBEditEcfMonto: TDBEdit
+        Left = 496
+        Top = 40
+        Width = 129
+        Height = 21
+        DataField = 'MONTO'
+        DataSource = dtmTransOpeDiaria.dstblRegTransOpeDiariaMast
+        ReadOnly = True
+        TabOrder = 3
+      end
+      object DBRadioGroupIndMontoGravado: TDBRadioGroup
+        Left = 24
+        Top = 88
+        Width = 273
+        Height = 81
+        Caption = 'Precio de las lineas E41'
+        DataField = 'IND_MONTO_GRAVADO'
+        DataSource = dtmTransOpeDiaria.dstblRegTransOpeDiariaMast
+        Items.Strings = (
+          'No incluye ITBIS'
+          'Incluye ITBIS')
+        TabOrder = 4
+        Values.Strings = (
+          '0'
+          '1')
+      end
+      object DBRadioGroupBienServicio: TDBRadioGroup
+        Left = 328
+        Top = 88
+        Width = 273
+        Height = 81
+        Caption = 'Clasificacion de la linea seleccionada'
+        DataField = 'IND_BIEN_SERVICIO'
+        DataSource = dtmTransOpeDiaria.dstblRegTransOpeDiariaDet
+        Items.Strings = (
+          'Bien'
+          'Servicio')
+        TabOrder = 5
+        Values.Strings = (
+          '1'
+          '2')
+      end
+      object DBEditEcfItbisRetenido: TDBEdit
+        Left = 360
+        Top = 218
+        Width = 105
+        Height = 21
+        DataField = 'MONTO_ITBIS_RETENIDO'
+        DataSource = dtmTransOpeDiaria.dstblRegTransOpeDiariaDet
+        TabOrder = 6
+      end
+      object DBEditEcfIsrRetenido: TDBEdit
+        Left = 496
+        Top = 218
+        Width = 105
+        Height = 21
+        DataField = 'MONTO_ISR_RETENIDO'
+        DataSource = dtmTransOpeDiaria.dstblRegTransOpeDiariaDet
+        TabOrder = 7
+      end
+      object BitBtnEnviarEcfGasto: TBitBtn
+        Left = 24
+        Top = 208
+        Width = 273
+        Height = 41
+        Caption = 'Enviar e-CF a DGII'
+        TabOrder = 8
+        OnClick = BitBtnEnviarEcfGastoClick
       end
     end
   end
@@ -2579,8 +2778,8 @@ object frmRegTransOpeDiaria: TfrmRegTransOpeDiaria
       'rcxp=:statuscxp'
       'Where numero=:numero')
     Transaction = dmConectar.IBTransaction1
-    Left = 356
-    Top = 287
+    Left = 372
+    Top = 263
   end
   object ibSqlUpdateTransCostoStatusDet: TIBSQL
     Database = dmConectar.IBDatabase1
@@ -2798,6 +2997,10 @@ object frmRegTransOpeDiaria: TfrmRegTransOpeDiaria
       Origin = 'TASA_ITBIS.SIMBOLO_TASA'
       FixedChar = True
       Size = 6
+    end
+    object qryTasaItbisIDITBISECF: TSmallintField
+      FieldName = 'IDITBISECF'
+      Origin = 'TASA_ITBIS.IDITBISECF'
     end
   end
   object dsqryTasaItbis: TDataSource

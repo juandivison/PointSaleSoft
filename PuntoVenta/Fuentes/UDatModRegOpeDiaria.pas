@@ -87,6 +87,7 @@ type
     dstblProductosServicios: TDataSource;
     tblProductosServiciosCODIGO: TIntegerField;
     tblProductosServiciosDESCRIPCION: TIBStringField;
+    tblProductosServiciosIND_BIEN_SERVICIO: TSmallintField;
     tblCentroDeCostos: TIBTable;
     tblCentroDeCostosCODIGO: TIntegerField;
     tblCentroDeCostosNOMBRE: TIBStringField;
@@ -256,7 +257,13 @@ type
     tblOrdenCompraMasterMONTO_RETENER_ITBIS: TFloatField;
     tblOrdenCompraMasterIDTIPO_COMPRA: TIntegerField;
     tblRegTransOpeDiariaDetFICHA_VEH: TIntegerField;
+    tblRegTransOpeDiariaDetIND_BIEN_SERVICIO: TSmallintField;
+    tblRegTransOpeDiariaDetMONTO_ITBIS_RETENIDO: TFloatField;
+    tblRegTransOpeDiariaDetMONTO_ISR_RETENIDO: TFloatField;
     tblRegTransOpeDiariaMastIDCODIGO_TPAGODGII: TSmallintField;
+    tblRegTransOpeDiariaMastECF: TIBStringField;
+    tblRegTransOpeDiariaMastSERIE_NCF_ASIGNADO: TIntegerField;
+    tblRegTransOpeDiariaMastIND_MONTO_GRAVADO: TSmallintField;
     tblOrdenCompraDetCANT_OFERTA: TIntegerField;
     tblOrdenCompraDetIDUNIDAD: TIntegerField;
     tblOrdenCompraDetCOD_USUARIO_RECIBE: TIntegerField;

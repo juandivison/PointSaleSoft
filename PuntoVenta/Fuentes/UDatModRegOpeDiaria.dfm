@@ -274,59 +274,37 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
       '  SERIE = :OLD_SERIE')
     InsertSQL.Strings = (
       'insert into TRANS_OPERACION_DET'
-      
-        '  (SERIE, NUMERO, COD_SERV_PROD, DEPARTAMENTO, OBSERVACION, CANT' +
-        'IDAD, PRECIO, '
-      
-        '   VALOR, NUMERO_DOCUMENTO, NUMERO_FACTURA, COD_CTA_CONCEPTO, CO' +
-        'DIGO_USUARIO, '
-      
-        '   STATUS, IN_POR, FECHA_IN, MOD_POR, FECHA_MOD, MONTO_ITBIS, ID' +
-        'TASAITBIS, '
-      '   FICHA_VEH)'
+      '  (SERIE, NUMERO, COD_SERV_PROD, DEPARTAMENTO, OBSERVACION,'
+      '   CANTIDAD, PRECIO, VALOR, NUMERO_DOCUMENTO, NUMERO_FACTURA,'
+      '   COD_CTA_CONCEPTO, CODIGO_USUARIO, STATUS, IN_POR, FECHA_IN,'
+      '   MOD_POR, FECHA_MOD, MONTO_ITBIS, IDTASAITBIS, FICHA_VEH,'
+      '   IND_BIEN_SERVICIO, MONTO_ITBIS_RETENIDO, MONTO_ISR_RETENIDO)'
       'values'
+      '  (:SERIE, :NUMERO, :COD_SERV_PROD, :DEPARTAMENTO, :OBSERVACION,'
       
-        '  (:SERIE, :NUMERO, :COD_SERV_PROD, :DEPARTAMENTO, :OBSERVACION,' +
-        ' :CANTIDAD, '
+        '   :CANTIDAD, :PRECIO, :VALOR, :NUMERO_DOCUMENTO, :NUMERO_FACTUR' +
+        'A,'
       
-        '   :PRECIO, :VALOR, :NUMERO_DOCUMENTO, :NUMERO_FACTURA, :COD_CTA' +
-        '_CONCEPTO, '
+        '   :COD_CTA_CONCEPTO, :CODIGO_USUARIO, :STATUS, :IN_POR, :FECHA_' +
+        'IN,'
+      '   :MOD_POR, :FECHA_MOD, :MONTO_ITBIS, :IDTASAITBIS, :FICHA_VEH,'
       
-        '   :CODIGO_USUARIO, :STATUS, :IN_POR, :FECHA_IN, :MOD_POR, :FECH' +
-        'A_MOD, '
-      '   :MONTO_ITBIS, :IDTASAITBIS, :FICHA_VEH)')
+        '   :IND_BIEN_SERVICIO, :MONTO_ITBIS_RETENIDO, :MONTO_ISR_RETENID' +
+        'O)')
     RefreshSQL.Strings = (
-      'Select '
-      '  SERIE,'
-      '  NUMERO,'
-      '  COD_SERV_PROD,'
-      '  DEPARTAMENTO,'
-      '  OBSERVACION,'
-      '  CANTIDAD,'
-      '  PRECIO,'
-      '  VALOR,'
-      '  NUMERO_DOCUMENTO,'
-      '  NUMERO_FACTURA,'
-      '  COD_CTA_CONCEPTO,'
-      '  CODIGO_USUARIO,'
-      '  STATUS,'
-      '  IN_POR,'
-      '  FECHA_IN,'
-      '  MOD_POR,'
-      '  FECHA_MOD,'
-      '  RCXP,'
-      '  MONTO_ITBIS,'
-      '  IDTASAITBIS,'
-      '  FICHA_VEH'
-      'from TRANS_OPERACION_DET '
-      'where'
-      '  SERIE = :SERIE')
+      'select'
+      '  SERIE, NUMERO, COD_SERV_PROD, DEPARTAMENTO, OBSERVACION,'
+      '  CANTIDAD, PRECIO, VALOR, NUMERO_DOCUMENTO, NUMERO_FACTURA,'
+      '  COD_CTA_CONCEPTO, CODIGO_USUARIO, STATUS, IN_POR, FECHA_IN,'
+      '  MOD_POR, FECHA_MOD, RCXP, MONTO_ITBIS, IDTASAITBIS, FICHA_VEH,'
+      '  IND_BIEN_SERVICIO, MONTO_ITBIS_RETENIDO, MONTO_ISR_RETENIDO'
+      'from TRANS_OPERACION_DET'
+      'where SERIE = :SERIE')
     SelectSQL.Strings = (
       'SELECT * FROM TRANS_OPERACION_DET'
       'WHERE  Numero =:Numero')
     ModifySQL.Strings = (
-      'update TRANS_OPERACION_DET'
-      'set'
+      'update TRANS_OPERACION_DET set'
       '  SERIE = :SERIE,'
       '  NUMERO = :NUMERO,'
       '  COD_SERV_PROD = :COD_SERV_PROD,'
@@ -346,9 +324,11 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
       '  FECHA_MOD = :FECHA_MOD,'
       '  MONTO_ITBIS = :MONTO_ITBIS,'
       '  IDTASAITBIS = :IDTASAITBIS,'
-      '  FICHA_VEH = :FICHA_VEH'
-      'where'
-      '  SERIE = :OLD_SERIE')
+      '  FICHA_VEH = :FICHA_VEH,'
+      '  IND_BIEN_SERVICIO = :IND_BIEN_SERVICIO,'
+      '  MONTO_ITBIS_RETENIDO = :MONTO_ITBIS_RETENIDO,'
+      '  MONTO_ISR_RETENIDO = :MONTO_ISR_RETENIDO'
+      'where SERIE = :OLD_SERIE')
     GeneratorField.Field = 'SERIE'
     GeneratorField.Generator = 'GEN_num_ope_det'
     GeneratorField.ApplyEvent = gamOnPost
@@ -445,6 +425,20 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
     object tblRegTransOpeDiariaDetFICHA_VEH: TIntegerField
       FieldName = 'FICHA_VEH'
       Origin = 'TRANS_OPERACION_DET.FICHA_VEH'
+    end
+    object tblRegTransOpeDiariaDetIND_BIEN_SERVICIO: TSmallintField
+      FieldName = 'IND_BIEN_SERVICIO'
+      Origin = 'TRANS_OPERACION_DET.IND_BIEN_SERVICIO'
+    end
+    object tblRegTransOpeDiariaDetMONTO_ITBIS_RETENIDO: TFloatField
+      FieldName = 'MONTO_ITBIS_RETENIDO'
+      Origin = 'TRANS_OPERACION_DET.MONTO_ITBIS_RETENIDO'
+      DisplayFormat = ',0.00'
+    end
+    object tblRegTransOpeDiariaDetMONTO_ISR_RETENIDO: TFloatField
+      FieldName = 'MONTO_ISR_RETENIDO'
+      Origin = 'TRANS_OPERACION_DET.MONTO_ISR_RETENIDO'
+      DisplayFormat = ',0.00'
     end
   end
   object dstblRegTransOpeDiariaDet: TDataSource
@@ -1027,13 +1021,14 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
       '  CODIGO = :OLD_CODIGO')
     InsertSQL.Strings = (
       'insert into PRODUCTOS'
-      '  (CODIGO, DESCRIPCION)'
+      '  (CODIGO, DESCRIPCION, IND_BIEN_SERVICIO)'
       'values'
-      '  (:CODIGO, :DESCRIPCION)')
+      '  (:CODIGO, :DESCRIPCION, :IND_BIEN_SERVICIO)')
     RefreshSQL.Strings = (
       'Select '
       '  CODIGO,'
-      '  DESCRIPCION'
+      '  DESCRIPCION,'
+      '  IND_BIEN_SERVICIO'
       'from PRODUCTOS '
       'where'
       '  CODIGO = :CODIGO')
@@ -1043,7 +1038,8 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
       'update PRODUCTOS'
       'set'
       '  CODIGO = :CODIGO,'
-      '  DESCRIPCION = :DESCRIPCION'
+      '  DESCRIPCION = :DESCRIPCION,'
+      '  IND_BIEN_SERVICIO = :IND_BIEN_SERVICIO'
       'where'
       '  CODIGO = :OLD_CODIGO')
     GeneratorField.Field = 'CODIGO'
@@ -1060,6 +1056,10 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
       FieldName = 'DESCRIPCION'
       Origin = 'PRODUCTOS.DESCRIPCION'
       Size = 40
+    end
+    object tblProductosServiciosIND_BIEN_SERVICIO: TSmallintField
+      FieldName = 'IND_BIEN_SERVICIO'
+      Origin = 'PRODUCTOS.IND_BIEN_SERVICIO'
     end
   end
   object dstblProductosServicios: TDataSource
@@ -1309,53 +1309,38 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
       'insert into TRANS_OPERACION_MASTER'
       
         '  (NUMERO, COD_PROVEEDOR, FECHA, CIA_KEY, FPAGO, OBSERVACION, MO' +
-        'NTO, STATUS, '
+        'NTO,'
+      '   STATUS, STATUS_CNT, IN_POR, FECHA_IN, MOD_POR, FECHA_MOD,'
+      '   FECHA_VENCE, NUMERO_NCF, TIPO_CF, RCNT, RCXP, IDTIPO_COMPRA,'
       
-        '   STATUS_CNT, IN_POR, FECHA_IN, MOD_POR, FECHA_MOD, FECHA_VENCE' +
-        ', NUMERO_NCF, '
-      '   TIPO_CF, RCNT, RCXP, IDTIPO_COMPRA, IDCODIGO_TPAGODGII)'
+        '   IDCODIGO_TPAGODGII, ECF, SERIE_NCF_ASIGNADO, IND_MONTO_GRAVAD' +
+        'O)'
       'values'
       
         '  (:NUMERO, :COD_PROVEEDOR, :FECHA, :CIA_KEY, :FPAGO, :OBSERVACI' +
-        'ON, :MONTO, '
+        'ON,'
+      '   :MONTO, :STATUS, :STATUS_CNT, :IN_POR, :FECHA_IN, :MOD_POR,'
       
-        '   :STATUS, :STATUS_CNT, :IN_POR, :FECHA_IN, :MOD_POR, :FECHA_MO' +
-        'D, :FECHA_VENCE, '
-      
-        '   :NUMERO_NCF, :TIPO_CF, :RCNT, :RCXP, :IDTIPO_COMPRA, :IDCODIG' +
-        'O_TPAGODGII)')
+        '   :FECHA_MOD, :FECHA_VENCE, :NUMERO_NCF, :TIPO_CF, :RCNT, :RCXP' +
+        ','
+      '   :IDTIPO_COMPRA, :IDCODIGO_TPAGODGII, :ECF,'
+      '   :SERIE_NCF_ASIGNADO, :IND_MONTO_GRAVADO)')
     RefreshSQL.Strings = (
-      'Select '
-      '  NUMERO,'
-      '  COD_PROVEEDOR,'
-      '  FECHA,'
-      '  CIA_KEY,'
-      '  FPAGO,'
-      '  OBSERVACION,'
-      '  MONTO,'
-      '  STATUS,'
-      '  STATUS_CNT,'
-      '  IN_POR,'
-      '  FECHA_IN,'
-      '  MOD_POR,'
-      '  FECHA_MOD,'
-      '  FECHA_VENCE,'
-      '  NUMERO_NCF,'
-      '  TIPO_CF,'
-      '  RCNT,'
-      '  RCXP,'
-      '  IDTIPO_COMPRA,'
-      '  IDCODIGO_TPAGODGII'
-      'from TRANS_OPERACION_MASTER '
-      'where'
-      '  NUMERO = :NUMERO')
+      'select'
+      
+        '  NUMERO, COD_PROVEEDOR, FECHA, CIA_KEY, FPAGO, OBSERVACION, MON' +
+        'TO,'
+      '  STATUS, STATUS_CNT, IN_POR, FECHA_IN, MOD_POR, FECHA_MOD,'
+      '  FECHA_VENCE, NUMERO_NCF, TIPO_CF, RCNT, RCXP, IDTIPO_COMPRA,'
+      '  IDCODIGO_TPAGODGII, ECF, SERIE_NCF_ASIGNADO, IND_MONTO_GRAVADO'
+      'from TRANS_OPERACION_MASTER'
+      'where NUMERO = :NUMERO')
     SelectSQL.Strings = (
       'select * from TRANS_OPERACION_MASTER'
       'Where fecha between :fechaini and :fechafin'
       'order by cia_key, fecha, numero')
     ModifySQL.Strings = (
-      'update TRANS_OPERACION_MASTER'
-      'set'
+      'update TRANS_OPERACION_MASTER set'
       '  NUMERO = :NUMERO,'
       '  COD_PROVEEDOR = :COD_PROVEEDOR,'
       '  FECHA = :FECHA,'
@@ -1375,9 +1360,11 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
       '  RCNT = :RCNT,'
       '  RCXP = :RCXP,'
       '  IDTIPO_COMPRA = :IDTIPO_COMPRA,'
-      '  IDCODIGO_TPAGODGII = :IDCODIGO_TPAGODGII'
-      'where'
-      '  NUMERO = :OLD_NUMERO')
+      '  IDCODIGO_TPAGODGII = :IDCODIGO_TPAGODGII,'
+      '  ECF = :ECF,'
+      '  SERIE_NCF_ASIGNADO = :SERIE_NCF_ASIGNADO,'
+      '  IND_MONTO_GRAVADO = :IND_MONTO_GRAVADO'
+      'where NUMERO = :OLD_NUMERO')
     GeneratorField.Field = 'NUMERO'
     GeneratorField.Generator = 'GEN_num_ope_master'
     GeneratorField.ApplyEvent = gamOnPost
@@ -1479,6 +1466,19 @@ object dtmTransOpeDiaria: TdtmTransOpeDiaria
     object tblRegTransOpeDiariaMastIDCODIGO_TPAGODGII: TSmallintField
       FieldName = 'IDCODIGO_TPAGODGII'
       Origin = 'TRANS_OPERACION_MASTER.IDCODIGO_TPAGODGII'
+    end
+    object tblRegTransOpeDiariaMastECF: TIBStringField
+      FieldName = 'ECF'
+      Origin = 'TRANS_OPERACION_MASTER.ECF'
+      Size = 13
+    end
+    object tblRegTransOpeDiariaMastSERIE_NCF_ASIGNADO: TIntegerField
+      FieldName = 'SERIE_NCF_ASIGNADO'
+      Origin = 'TRANS_OPERACION_MASTER.SERIE_NCF_ASIGNADO'
+    end
+    object tblRegTransOpeDiariaMastIND_MONTO_GRAVADO: TSmallintField
+      FieldName = 'IND_MONTO_GRAVADO'
+      Origin = 'TRANS_OPERACION_MASTER.IND_MONTO_GRAVADO'
     end
   end
   object tblOrdenCompraDet: TIBDataSet

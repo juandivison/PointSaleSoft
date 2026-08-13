@@ -1,6 +1,6 @@
 object frmProveedores: TfrmProveedores
-  Left = 391
-  Top = 120
+  Left = 364
+  Top = 123
   Width = 1076
   Height = 567
   Caption = 'Proveedores'

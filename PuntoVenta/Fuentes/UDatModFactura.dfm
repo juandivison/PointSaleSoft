@@ -403,7 +403,7 @@ object dmFactura: TdmFactura
       'From View_nfc v '
       'Left Outer join NCF_TIPO_IFISCAL n on v.TIPO_CF = n.TIPO_NCF')
     OnFilterRecord = ibQryViewNCFFilterRecord
-    Left = 296
+    Left = 304
     Top = 508
     object ibQryViewNCFID: TIBStringField
       FieldKind = fkInternalCalc
@@ -7000,7 +7000,8 @@ object dmFactura: TdmFactura
       
         'v.TIPO_CF,v.NCF, v.DESCRIPCION, -1 TIPO_NCF_IFISCAL,-1 tipo_ncfN' +
         'CR '
-      'From View_nfc v Where v.TIPO_CF in ('#39'11'#39')')
+      'From View_nfc v '
+      '')
     Left = 232
     Top = 480
     object ibQryViewNCFGastosID: TIBStringField
@@ -9633,5 +9634,20 @@ object dmFactura: TdmFactura
         Name = 'numero'
         ParamType = ptUnknown
       end>
+  end
+  object ibQryViewNCFGastos_0: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select v.id, v.SERIE,v.DIV_NEGOCIO,v.PECF,v.AICF,'
+      'v.IDSEC_2018,v.DESCRIPCION_2018,v.FECHA_VENCE,'
+      
+        'v.TIPO_CF,v.NCF, v.DESCRIPCION, -1 TIPO_NCF_IFISCAL,-1 tipo_ncfN' +
+        'CR '
+      'From View_nfc v ')
+    Left = 232
+    Top = 544
   end
 end

@@ -90,7 +90,7 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
 UnitOutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 PackageDLLOutputDir=
 PackageDCPOutputDir=
@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/GLBRUTADB="Electronica"
+RunParams=/GLBRUTADB="ExpertQA"
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -146,11 +146,11 @@ Count=1
 Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 [HistoryLists\hlOutputDirectorry]
 Count=8
-Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
-Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Prosesur
-Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Tapiceria
-Item3=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Farmacia
-Item4=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Prosesur
+Item3=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Tapiceria
+Item4=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Farmacia
 Item5=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Galle
 Item6=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Mutur
 Item7=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Nomina
