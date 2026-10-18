@@ -162,7 +162,7 @@ begin
   Value:='NOMBRE O RAZON SOCIAL:'+dmReportes.qryViewVentasMastNOMBRE_CLIENTE_GENERAL.Value;
   }
   if Length(dmFactura.qryRepCotizaNewNOMBRE_CLIENTE_GENERAL.Value) = 0  then
-  Value:=dmFactura.qryRepCotizaNewNombre_Facturar.Value
+  Value:=dmFactura.qryRepCotizaNewNOMBRE_CTE.Value
   else
   Value:=dmFactura.qryRepCotizaNewNOMBRE_CLIENTE_GENERAL.Value;
 end;

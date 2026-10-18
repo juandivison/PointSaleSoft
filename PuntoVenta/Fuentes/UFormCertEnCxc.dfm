@@ -476,7 +476,7 @@ object frmCertificadosEnCxc: TfrmCertificadosEnCxc
     object tblCertNoAsignadosNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object dstblCertNoAsignados: TDataSource
@@ -502,7 +502,7 @@ object frmCertificadosEnCxc: TfrmCertificadosEnCxc
     object qryClientesNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object SkinData1: TSkinData

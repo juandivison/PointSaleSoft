@@ -1895,7 +1895,7 @@ object frmCertAsigAgente: TfrmCertAsigAgente
     object qryRelacionCertNOMBRE_CLIENTE: TIBStringField
       FieldName = 'NOMBRE_CLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRelacionCertESTADO: TIBStringField
       FieldName = 'ESTADO'

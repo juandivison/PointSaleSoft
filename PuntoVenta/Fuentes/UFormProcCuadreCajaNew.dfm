@@ -1,6 +1,6 @@
 object frmCuadreCajaNew: TfrmCuadreCajaNew
-  Left = 561
-  Top = 169
+  Left = 554
+  Top = 167
   Width = 851
   Height = 708
   Caption = 'Cuadre de Caja'
@@ -3122,46 +3122,55 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
           item
             Expanded = False
             FieldName = 'MONTO_PAGADO_MASTER'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'TOTAL_DETALLE_CALCULADO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CANTIDAD_LINEAS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CANTIDAD_ARTICULOS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTO_SERVICIO_DET'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTO_ITBIS_DET'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTO_DESC_ITEM'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'SUBTOTAL_DETALLE'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONTO_TOTAL_ITBIS'
+            Width = 64
             Visible = True
           end
           item
@@ -3179,16 +3188,19 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
           item
             Expanded = False
             FieldName = 'NUMERO_FACTURA'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'NUMERO_DOC_PAGO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'MONEDA'
+            Width = 64
             Visible = True
           end
           item
@@ -3199,16 +3211,19 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
           item
             Expanded = False
             FieldName = 'STATUS'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'NOMBRE_CAJERO'
+            Width = 64
             Visible = True
           end
           item
             Expanded = False
             FieldName = 'CODIGO_CAJERO'
+            Width = 64
             Visible = True
           end
           item
@@ -3219,6 +3234,7 @@ object frmCuadreCajaNew: TfrmCuadreCajaNew
           item
             Expanded = False
             FieldName = 'PROPINALEGAL'
+            Width = 64
             Visible = True
           end
           item

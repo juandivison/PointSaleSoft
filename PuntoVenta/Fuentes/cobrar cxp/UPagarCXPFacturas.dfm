@@ -2400,7 +2400,7 @@ object frmCobrarFacturas: TfrmCobrarFacturas
       DisplayWidth = 30
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryFactPendienteTIPO: TIntegerField
       DisplayLabel = 'Tipo'

@@ -528,9 +528,10 @@ object dmClientes: TdmClientes
       Size = 60
     end
     object qryReferenciaclienteNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryReferenciaclienteDESCRIPCION: TIBStringField
       FieldName = 'DESCRIPCION'
@@ -1075,7 +1076,7 @@ object dmClientes: TdmClientes
     object qryClientesNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClientesCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -1311,7 +1312,7 @@ object dmClientes: TdmClientes
     object qryCteExpNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryCteExpCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -1706,7 +1707,7 @@ object dmClientes: TdmClientes
     object qryRepCertificadoSamNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepCertificadoSamCOLOR: TIBStringField
       FieldName = 'COLOR'
@@ -2078,7 +2079,7 @@ object dmClientes: TdmClientes
     object qryRepCumpleanioCteNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepCumpleanioCteDIRECCION_CONT: TIBStringField
       FieldName = 'DIRECCION_CONT'
@@ -2330,7 +2331,7 @@ object dmClientes: TdmClientes
     object tblContractWisProNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object tblContractWisProCODIGO_CTE: TIntegerField
       FieldName = 'CODIGO_CTE'
@@ -2390,7 +2391,7 @@ object dmClientes: TdmClientes
     object tblClientwisProNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object qryClientWisPro: TIBQuery
@@ -2415,9 +2416,10 @@ object dmClientes: TdmClientes
       Size = 80
     end
     object qryClientWisProNOMBRECLIENTE: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object ibsqlDupCliente: TIBSQL
@@ -2971,7 +2973,7 @@ object dmClientes: TdmClientes
     object qryRepCertificadoSamGNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepCertificadoSamGGARANTIANUM: TIBStringField
       FieldName = 'GARANTIANUM'
@@ -3366,7 +3368,7 @@ object dmClientes: TdmClientes
     object qryRepVehiculosNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepVehiculosSERIE: TIntegerField
       FieldName = 'SERIE'
@@ -3723,9 +3725,10 @@ object dmClientes: TdmClientes
       Size = 1
     end
     object tblClientesNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object tblClientesCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -4063,7 +4066,7 @@ object dmClientes: TdmClientes
       '  ID_PROVINCIA = :ID_PROVINCIA'
       'where'
       '  CODIGO_CTE = :OLD_CODIGO_CTE')
-    Left = 232
+    Left = 240
     Top = 152
     object tblClienteTerritorioCODIGO_CTE: TIntegerField
       FieldName = 'CODIGO_CTE'
@@ -4071,9 +4074,10 @@ object dmClientes: TdmClientes
       Required = True
     end
     object tblClienteTerritorioNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object tblClienteTerritorioPROVINCIA: TIBStringField
       FieldName = 'PROVINCIA'
@@ -4093,5 +4097,19 @@ object dmClientes: TdmClientes
       FieldName = 'ID_PROVINCIA'
       Origin = 'CLIENTES.ID_PROVINCIA'
     end
+  end
+  object qryTipoECF: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select v.TIPO_CF, n.DESCRIPCION,  '
+      'n.TIPO_NCF_IFISCAL, n.tipo_ncfNCR '
+      'From View_nfc v '
+      'Left Outer join NCF_TIPO_IFISCAL n on v.TIPO_CF = n.TIPO_NCF'
+      'where v.TIPO_CF > 30')
+    Left = 352
+    Top = 432
   end
 end

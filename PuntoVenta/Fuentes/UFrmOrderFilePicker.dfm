@@ -170,6 +170,7 @@ object frmOrderFilePicker: TfrmOrderFilePicker
       Width = 85
       Height = 25
       Caption = 'Aceptar'
+      ModalResult = 1
       TabOrder = 0
       OnClick = btnOkClick
     end

@@ -41,10 +41,71 @@ uses Variants, Db, Dialogs, SysUtils, IBStoredProc, IBSQL, IBquery;
   procedure ActBalaceCteP(operacion:smallint);
   procedure EditarBalanceP(monto : Real);
   procedure InsertaBalanceP(monto: Real);
-
+  procedure ValidarNCFElectronicoNCR(const ASerieNCF: Integer);
+  
 implementation
 
 uses UDatModFactura, uGlobal, UDatModCxc, UDatModReportes;
+
+procedure ValidarNCFElectronicoNCR(const ASerieNCF: Integer);
+var
+  LQry: TIBQuery;
+  LNumeroNCF: String;
+  LTipoNCF: String;
+begin
+  if ASerieNCF <= 0 then
+    raise Exception.Create(
+      'No se pudo determinar la serie NCF de la Nota de Crédito.'
+    );
+
+  LQry := TIBQuery.Create(nil);
+  try
+    LQry.Database := dmfactura.stpProcDevolucion.Database;
+    LQry.Transaction := dmfactura.stpProcDevolucion.Transaction;
+
+    LQry.SQL.Text :=
+      'SELECT TIPO_NCF, NUMERO_NCF ' +
+      'FROM NCF_ASIGNADOS ' +
+      'WHERE SERIE = :SERIE';
+
+    LQry.ParamByName('SERIE').AsInteger := ASerieNCF;
+    LQry.Open;
+
+    if LQry.IsEmpty then
+      raise Exception.Create(
+        'No existe el NCF asignado a la Nota de Crédito.'
+      );
+
+    LTipoNCF :=
+      UpperCase(Trim(LQry.FieldByName('TIPO_NCF').AsString));
+
+    LNumeroNCF :=
+      UpperCase(Trim(LQry.FieldByName('NUMERO_NCF').AsString));
+
+    {
+      Solo aplica al comprobante electrónico.
+      B04 convencional continúa siendo válido.
+    }
+    if Copy(LNumeroNCF, 1, 1) = 'E' then
+    begin
+      if (Copy(LNumeroNCF, 1, 3) <> 'E34') or
+         (LTipoNCF <> '34') or
+         (Trim(tipoCF) <> '34') then
+      begin
+        raise Exception.Create(
+          'NCR electrónica inválida. ' +
+          'Toda Nota de Crédito electrónica debe ser E34 ' +
+          'y TIPO_NCF debe ser 34. ' +
+          'NCF generado: ' + LNumeroNCF +
+          ', TIPO_NCF: ' + LTipoNCF
+        );
+      end;
+    end;
+
+  finally
+    LQry.Free;
+  end;
+end;
 
 procedure ActBalaceCteP(operacion: smallint);
 var
@@ -151,15 +212,16 @@ end;
 procedure ProcInsertarTransCXC(Serie_Asignadoncf: integer;numerotrnorg:integer);
 var
   xNumDoc : Integer;
+  LNumeroFacturaOrigen: Integer;
 begin
-  //t if (Codigo_Cte = 0) then Exit;
   xNumDoc :=-1;
+  LNumeroFacturaOrigen := numeroFactura;
 
-    dmcxc.stpProcNumDoc.Params[1].Value:= 5;
-    dmcxc.stpProcNumDoc.ExecProc;
-    xNumDoc := dmcxc.stpProcNumDoc.Params[0].Value;
-  //end;
-  UProcesarDevolucion.numeroFactura := dmcxc.stpProcNumDoc.Params[0].Value;
+  dmcxc.stpProcNumDoc.Params[1].Value:= 5;
+  dmcxc.stpProcNumDoc.ExecProc;
+  xNumDoc := dmcxc.stpProcNumDoc.Params[0].Value;
+  
+  //UProcesarDevolucion.numeroFactura := dmcxc.stpProcNumDoc.Params[0].Value;
 
   if dmcxc.tblTransCxc.State = dsInactive then
   begin
@@ -175,10 +237,10 @@ begin
     Moneda := '1';
     dmcxc.tblTransCxcmoneda.Value         := Moneda;
     dmcxc.tblTransCxcfecha.Value          := fechaTrn;//ExtraerFecha(GlbFechaTrnDiaria);
-    if numeroFactura <= 0 then
-    dmcxc.tblTransCxcnumero_doc.Value     := xNumDoc
-    else
-    dmcxc.tblTransCxcnumero_doc.Value     := numeroFactura;//rxFacturaACobrarNumFactura.Value;
+    //if numeroFactura <= 0 then
+    dmcxc.tblTransCxcnumero_doc.Value     := xNumDoc;
+    //else
+    //dmcxc.tblTransCxcnumero_doc.Value     := numeroFactura;//rxFacturaACobrarNumFactura.Value;
     dmcxc.tblTransCxctipo_serv.Value      := 1;
     dmcxc.tblTransCxccodigo_cliente.Value := Codigo_Cte;//rxFacturaACobrarCodCte.Value;
     dmcxc.tblTransCxccodigo_serv.Value    := 0;
@@ -202,7 +264,7 @@ begin
     dmcxc.transCxcNotaCredito.Insert;
     //dmcxc.transCxcNotaCreditoSERIE.Value := dmcxc.tblTransCxcserie.AsInteger;
     dmcxc.transCxcNotaCreditoNUM_DOC.Value := xNumDoc;
-    dmcxc.transCxcNotaCreditoNUMERO_FACT.Value := numerofactura;//rxFacturaACobrarNumFactura.Value;
+    dmcxc.transCxcNotaCreditoNUMERO_FACT.Value := LNumeroFacturaOrigen;//rxFacturaACobrarNumFactura.Value;
     dmcxc.transCxcNotaCreditoNUMERO_TRN_ORIGEN.Value:= numerotrnorg;
 
     if (Serie_Asignadoncf > 0 ) then
@@ -240,11 +302,55 @@ begin
 
     //Aqui actualizar balance cxc
     //EsModificandoFactura
-    if (dmcxc.tblTransCxcStatus.Value = 'R') then
+    {if (dmcxc.tblTransCxcStatus.Value = 'R') then
     begin
       if UpdateBLCCXC then
       ActBalaceCteP(2);
     end;
+    }
+    {
+    Factura a crédito:
+    - aplicar NCR a FACTURAS_PENDIENTES
+    - actualizar BALANCE_CTE mediante PROC_UPDATECXC
+    - NO crear DEVOLUCION_PENDIENTE
+
+      Otros casos:
+        - conservar devolución pendiente
+    }
+if UpdateBLCCXC then
+begin
+  {
+    Venta a crédito:
+    la NCR se aplica directamente a FACTURAS_PENDIENTES.
+    No genera crédito en DEVOLUCIONES_PENDIENTE.
+  }
+  numeroFactura := LNumeroFacturaOrigen;
+
+  ProcUpdateFactPendiente(
+    dmcxc.tblTransCxcSERIE.AsInteger
+  );
+end
+else
+if codigo_cte > 0 then
+begin
+  {
+    Venta cash con cliente identificado:
+    el monto de la NCR queda disponible para ser utilizado
+    posteriormente como forma de pago Nota de Crédito.
+  }
+  ProcInsertaDevolucionPend(2);
+end
+else
+begin
+  {
+    Venta cash sin cliente:
+    NO crear DEVOLUCIONES_PENDIENTE.
+
+    El monto se considera una devolución/reembolso inmediato.
+    El histórico de cuánto se ha devuelto contra la venta original
+    se controla mediante VENTAS_MAST.REF_TRN_ORIGEN.
+  }
+end;
 
     dmcxc.qryRepTransCxcNDB_NCR.Close;
     dmcxc.qryRepTransCxcNDB_NCR.Params[0].Value:= dmcxc.transCxcNotaCreditoSERIE.Value;
@@ -254,7 +360,7 @@ begin
     dmreportes.qryDatosRepTranscxcIFiscal.Close;
     dmreportes.qryDatosRepTranscxcIFiscal.Params[0].value:= dmcxc.transCxcNotaCreditoSERIE.Value;
     dmreportes.qryDatosRepTranscxcIFiscal.Open;
-    ProcInsertaDevolucionPend(2);//insert;
+    //ProcInsertaDevolucionPend(2);//insert;
 
     //rxFacturaACobrar.Next;
     //end;
@@ -262,6 +368,18 @@ end;
 
 procedure ProcInsertaDevolucionPend(accion : smallint);
 begin
+  if dmcxc.tblTransCxcCODIGO_CLIENTE.Value <= 0 then
+  begin
+    raise Exception.Create(
+    'No se puede generar crédito pendiente de una Nota de Crédito ' +
+    'sin un cliente identificado.'
+   );
+  end;
+  if numeroTrnVta <= 0 then
+    raise Exception.Create(
+      'No se pudo determinar la venta original de la Nota de Crédito.'
+    );
+
   //Output parameters
   {dmfactura.stpProcDevolPendiente.Params[0].Value:= numero devolucon
   dmfactura.stpProcDevolPendiente.Params[1].Value:= moneda
@@ -285,7 +403,7 @@ begin
   dmfactura.stpProcDevolPendiente.Params[19].Value:= null;
   dmfactura.stpProcDevolPendiente.Params[20].Value:= numeroTrnVta;
   dmfactura.stpProcDevolPendiente.Params[21].Value:= dmcxc.tblTransCxcSERIE.Value;
-  dmfactura.stpProcDevolPendiente.Params[22].Value:= 2; //Insert
+  dmfactura.stpProcDevolPendiente.Params[22].Value:= accion; //Insert
   dmfactura.stpProcDevolPendiente.ExecProc;
   if Not dmfactura.stpProcDevolPendiente.Transaction.InTransaction then
   dmfactura.stpProcDevolPendiente.Transaction.StartTransaction;
@@ -293,6 +411,7 @@ begin
     dmfactura.stpProcDevolPendiente.Transaction.CommitRetaining
   except
   dmfactura.stpProcDevolPendiente.Transaction.RollbackRetaining;
+  raise;
   end;
 end;
 procedure ProcUpdateBalanceCte(tipo : smallint);
@@ -311,7 +430,8 @@ procedure ProcUpdateFactPendiente(serie : integer);
 begin
   //stp_UpdateCxc.Params[0].Value:= //Valor_Pendiente;
   dmcxc.stp_UpdateCxc.Params[1].Value:= 2;//tipo
-  dmcxc.stp_UpdateCxc.Params[2].Value:= '1';//moneda
+  //dmcxc.stp_UpdateCxc.Params[2].Value:= '1';//moneda
+  dmcxc.stp_UpdateCxc.Params[2].Value := Moneda;
   dmcxc.stp_UpdateCxc.Params[3].Value:= numeroFactura;
   dmcxc.stp_UpdateCxc.Params[4].Value:= Monto;
   dmcxc.stp_UpdateCxc.Params[5].Value:= 'A';//status
@@ -328,6 +448,7 @@ begin
     dmcxc.stp_UpdateCxc.transaction.CommitRetaining;
   except
   dmcxc.stp_UpdateCxc.transaction.RollbackRetaining;
+  raise
   end;
 end;
 
@@ -336,6 +457,25 @@ var
 //  ibStpMaxNCF : TIBStoredProc;
   strnametipocf : string;
 begin
+{
+  NCR sin NCF.
+
+  No tocar catálogo fiscal ni stpProcDevolucion.
+  Sí necesitamos TRANS_CXC y DEVOLUCIONES_PENDIENTE
+  cuando existe cliente identificado.
+}
+if not GeneraNCF then
+begin
+  seriencfasignado := 0;
+
+  ProcInsertarTransCXC(
+    0,
+    numerotrnorg
+  );
+
+  Exit;
+end;
+
   dmfactura.ibqryViewNCF.Close;
   dmFactura.ibQryViewNCF.Close;
   if dmFactura.ibQryViewNCF.Prepared then
@@ -433,11 +573,26 @@ begin
   except
   dmfactura.stpProcDevolucion.Transaction.RollbackRetaining;
   end;
+
   if dmfactura.stpProcDevolucion.Params[0].IsNull And GeneraNCF then
   begin
-    MessageDlg(dmfactura.stpProcDevolucion.Params[7].Value, mtError, [mbok],0);
-    CancelaProceso:=True;
+    MessageDlg(dmfactura.stpProcDevolucion.Params[7].Value,mtError,[mbok],0);
+    CancelaProceso := True;
   end else
-  ProcInsertarTransCXC(dmfactura.stpProcDevolucion.Params[0].Value,numerotrnorg);
+  begin
+    {
+      Segunda barrera fiscal.
+
+      Si realmente se generó un comprobante fiscal electrónico,
+      comprobamos en NCF_ASIGNADOS que sea E34 / TIPO_NCF=34
+      antes de crear TRANS_CXC.
+    }
+    if GeneraNCF then
+    begin
+      ValidarNCFElectronicoNCR(
+      dmfactura.stpProcDevolucion.Params[0].AsInteger);
+    end;
+    ProcInsertarTransCXC(dmfactura.stpProcDevolucion.Params[0].Value,numerotrnorg);
+end;
 end;
 end.

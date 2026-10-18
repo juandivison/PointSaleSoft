@@ -2175,7 +2175,7 @@ object frmConciliacionDeFctSeguro: TfrmConciliacionDeFctSeguro
     object qryDatosConciliacionNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatosConciliacionNOMBRE_DEPENDIENTE: TIBStringField
       FieldName = 'NOMBRE_DEPENDIENTE'
@@ -2454,7 +2454,7 @@ object frmConciliacionDeFctSeguro: TfrmConciliacionDeFctSeguro
     object qryRepConcFactReclamNOMBREAFILIADO: TIBStringField
       FieldName = 'NOMBREAFILIADO'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepConcFactReclamDEPENDIENTEFARMACIA: TIBStringField
       FieldName = 'DEPENDIENTEFARMACIA'
@@ -2527,7 +2527,7 @@ object frmConciliacionDeFctSeguro: TfrmConciliacionDeFctSeguro
     object qryClienteNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClienteRNC_NUMERO: TIBStringField
       FieldName = 'RNC_NUMERO'

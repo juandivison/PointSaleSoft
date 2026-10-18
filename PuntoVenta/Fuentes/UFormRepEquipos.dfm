@@ -269,7 +269,7 @@ object frmReporteEquipos: TfrmReporteEquipos
     object qryClientesNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object SkinData1: TSkinData

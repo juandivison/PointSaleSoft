@@ -315,7 +315,7 @@ object frmTransCxcNCdbDev: TfrmTransCxcNCdbDev
       DisplayLabel = 'Nombre Facturar'
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryFacturasMONTO_PENDIENTE: TFloatField
       DisplayLabel = 'Monto Pendiente'

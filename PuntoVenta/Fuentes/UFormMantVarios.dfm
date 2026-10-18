@@ -301,7 +301,7 @@ object frmMantVarios: TfrmMantVarios
     object tblClientesNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object tblClientesCONTACTO: TIBStringField
       FieldName = 'CONTACTO'

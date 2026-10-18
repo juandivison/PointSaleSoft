@@ -1,6 +1,6 @@
 object frmConsultarVtasVerDiff: TfrmConsultarVtasVerDiff
-  Left = 367
-  Top = 200
+  Left = 375
+  Top = 192
   Width = 1050
   Height = 568
   Caption = 'Verificar Montos'

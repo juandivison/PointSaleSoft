@@ -1,6 +1,6 @@
 object frmPagosCombinados: TfrmPagosCombinados
-  Left = 756
-  Top = 160
+  Left = 719
+  Top = 203
   Width = 643
   Height = 389
   Caption = 'Pagos Combinados'
@@ -465,6 +465,7 @@ object frmPagosCombinados: TfrmPagosCombinados
         item
           Expanded = False
           FieldName = 'CODIGO_PROVEEDOR'
+          Width = 64
           Visible = True
         end
         item
@@ -486,7 +487,7 @@ object frmPagosCombinados: TfrmPagosCombinados
     object BitBtn18: TBitBtn
       Left = 422
       Top = 76
-      Width = 38
+      Width = 43
       Height = 25
       Hint = 'Insertar'
       Caption = 'F2'

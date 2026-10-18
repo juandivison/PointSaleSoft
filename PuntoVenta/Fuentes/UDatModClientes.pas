@@ -578,6 +578,7 @@ type
     tblClienteTerritorioID_PROVINCIA: TIntegerField;
     qryClientesRNC_CED_ACTIVO: TSmallintField;
     tblClientesSHOWPRECIOCONITBIS: TSmallintField;
+    qryTipoECF: TIBQuery;
     procedure tblCteReferenciaMasterAfterScroll(DataSet: TDataSet);
     procedure qryTipoContactoRepAfterScroll(DataSet: TDataSet);
     procedure tblCiudadesAfterScroll(DataSet: TDataSet);

@@ -597,6 +597,20 @@ type
     procedure GuardarProducto;
     procedure ConfigurarDatasetsSincronizacion;
     function VerificaClave: Boolean;
+
+    function CalcularMovimientoKardexManual(
+  const ACantidadAnterior,
+        ACantidadNueva: Double;
+  out ATipo: Smallint;
+  out ACantidadKardex: Double): Boolean;
+
+  procedure RegistrarKardexAjusteManual(
+  const ACodigoProducto: Integer;
+  const ATipo: Smallint;
+  const ACantidadKardex,
+        ACostoProducto,
+        APrecioVenta: Double);
+
   public
     { Public declarations }
   end;
@@ -618,7 +632,7 @@ uses UDatModInventario, uglobal, UTipoInventario, UCambiarPrecios,
   UFormFiltrarTasaItbis, URegistro, UFormLote, UFormDimensionProd,
   UDatModPanaderia, UfrmInvPrecioAudit, UFormAuditoriaInv,
   ULabelImpCodBarra, USincronizarTablaInv,USincronizarPrecioUnidadSurtidora,
-  UFormEntreClave, USetClaveMaestra;
+  UFormEntreClave, USetClaveMaestra, UDatosVentas;
 
 {$R *.dfm}
 
@@ -732,6 +746,500 @@ begin
       end;
     end;
 end;
+procedure TfrmInventarioProd.BitBtn4Click(Sender: TObject);
+var
+  _codProd, _idTasa: Integer;
+
+  LEsInsert: Boolean;
+  LRegistrarKardex: Boolean;
+
+  LCantidadAnterior: Double;
+  LCantidadNueva: Double;
+  LCantidadKardex: Double;
+
+  LCostoProducto: Double;
+  LPrecioVenta: Double;
+
+  LTipoKardex: Smallint;
+
+  LOldCantidad: Variant;
+begin
+  _codProd := -1;
+
+  LEsInsert := False;
+  LRegistrarKardex := False;
+
+  LCantidadAnterior := 0;
+  LCantidadNueva := 0;
+  LCantidadKardex := 0;
+
+  LCostoProducto := 0;
+  LPrecioVenta := 0;
+
+  LTipoKardex := 0;
+
+  {
+    ==========================================================
+    CAPTURAR CANTIDAD ANTERIOR Y NUEVA
+    ANTES DE POST / APPLYUPDATES
+    ==========================================================
+  }
+  if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
+  begin
+    LEsInsert :=
+      dmInventario.tblInventarioProd.State = dsInsert;
+
+    if dmInventario.tblInventarioProdCANTIDAD.IsNull then
+      LCantidadNueva := 0
+    else
+      LCantidadNueva :=
+        dmInventario.tblInventarioProdCANTIDAD.Value;
+
+    if LEsInsert then
+    begin
+      {
+        Producto nuevo.
+
+        Se considera que parte de existencia 0.
+        Ejemplo:
+          0 -> 4 = Entrada 4
+      }
+      LCantidadAnterior := 0;
+    end
+    else
+    begin
+      {
+        OldValue todavía está disponible antes de GlbSalvarQuery.
+      }
+      LOldCantidad :=
+        dmInventario.tblInventarioProdCANTIDAD.OldValue;
+
+      if VarIsNull(LOldCantidad) or
+         VarIsEmpty(LOldCantidad) then
+        LCantidadAnterior := 0
+      else
+        LCantidadAnterior := LOldCantidad;
+    end;
+  end;
+
+  {
+    ==========================================================
+    AUDITORIA EXISTENTE
+    ==========================================================
+  }
+  if (dmInventario.tblInventarioProd.State in [dsEdit]) and
+     (PrecioAnterior > 0.01) then
+  begin
+    if dmInventario.tblInventarioProd.FindField(
+         'AUD_COD_USUARIO') <> nil then
+      dmInventario.tblInventarioProd.FieldByName(
+        'AUD_COD_USUARIO').AsInteger :=
+        VarUsuarioGlb;
+
+    if dmInventario.tblInventarioProd.FindField(
+         'AUD_APP_USER') <> nil then
+      dmInventario.tblInventarioProd.FieldByName(
+        'AUD_APP_USER').AsString :=
+        GlbUsuarioLogueado;
+
+    if dmInventario.tblInventarioProd.FindField(
+         'AUD_PC_NAME') <> nil then
+      dmInventario.tblInventarioProd.FieldByName(
+        'AUD_PC_NAME').AsString :=
+        GetComputerNameStr;
+  end;
+
+  if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
+  begin
+    dmInventario.tblInventarioProdPAGA_ITBI.Value := 1;
+
+    if not ValidaPorcUtilidad then
+      Exit;
+
+    if dmInventario.tblInventarioProdTIPO_UNIDAD.IsNull then
+    begin
+      MessageDlg(
+        'Favor indicar tipo unidad',
+        mtInformation,
+        [mbOK],
+        0
+      );
+
+      RxDBLookupCombo5.SetFocus;
+      Exit;
+    end;
+
+    if dmInventario.tblInventarioProdPRECIO.IsNull then
+    begin
+      MessageDlg(
+        'Favor indicar precio',
+        mtInformation,
+        [mbOK],
+        0
+      );
+
+      Exit;
+    end;
+
+    if (dmInventario.tblInventarioProdPRECIO_COMPRA.IsNull) or
+       (dmInventario.tblInventarioProdPRECIO_COMPRA.Value <= 0) then
+    begin
+      MessageDlg(
+        'Favor indicar costo del producto.',
+        mtWarning,
+        [mbOK],
+        0
+      );
+
+      if Showing then
+        DBEdit11.SetFocus;
+
+      Exit;
+    end;
+
+    if dmInventario.tblInventarioProdTIPO.IsNull then
+    begin
+      MessageDlg(
+        'Favor indicar tipo inventario.',
+        mtInformation,
+        [mbOK],
+        0
+      );
+
+      RxDBLookupCombo1.SetFocus;
+      Exit;
+    end;
+
+    if dmInventario.tblInventarioProdIDTASAITBIS.IsNull then
+    begin
+      MessageDlg(
+        'Favor indicar tasa itbis aplica para producto.',
+        mtInformation,
+        [mbOK],
+        0
+      );
+
+      RxDBLookupCombo7.SetFocus;
+      Exit;
+    end;
+
+    if dmInventario.tblInventarioProdDESCRIPCION.IsNull or
+       (dmInventario.tblInventarioProdDESCRIPCION.Value = '') then
+    begin
+      MessageDlg(
+        'Favor indicar descripción del producto.',
+        mtError,
+        [mbOK],
+        0
+      );
+
+      Exit;
+    end;
+
+    if dmInventario.tblInventarioProd.State = dsInsert then
+    begin
+      if dmInventario.tblInventarioProdPRECIOVENTA1.Value > 0 then
+      begin
+        if dmInventario.tblInventarioProdPRECIO_MINIMO.Value >
+           dmInventario.tblInventarioProdPRECIOVENTA1.Value then
+          dmInventario.tblInventarioProdPRECIO_MINIMO.Value :=
+            dmInventario.tblInventarioProdPRECIOVENTA1.Value;
+      end;
+
+      if dmInventario.tblInventarioProdPRECIOVENTA4.Value > 0 then
+      begin
+        if dmInventario.tblInventarioProdPRECIO.Value <
+           dmInventario.tblInventarioProdPRECIOVENTA4.Value then
+          dmInventario.tblInventarioProdPRECIO.Value :=
+            dmInventario.tblInventarioProdPRECIOVENTA4.Value;
+      end;
+    end;
+
+    if (GlbCuadros = 1) and
+       (dmInventario.tblInventarioProdPRECIOVENTA1.Value > 0) then
+      dmInventario.tblInventarioProdPRECIO_MINIMO.Value :=
+        GetPrecioMinimo(
+          dmInventario.tblInventarioProdPRECIOVENTA1.Value,
+          dmInventario.tblInventarioProdPRECIOVENTA2.Value,
+          dmInventario.tblInventarioProdPRECIOVENTA3.Value,
+          dmInventario.tblInventarioProdPRECIOVENTA4.Value
+        );
+
+    if dmInventario.tblInventarioProdPRECIO.Value <=
+       dmInventario.tblInventarioProdPRECIO_COMPRA.Value then
+    begin
+      MessageDlg(
+        'Precio Detalle no puede ser menor o igual a precio compra, verifique.',
+        mtInformation,
+        [mbOK],
+        0
+      );
+
+      Exit;
+    end;
+
+    if dmInventario.tblInventarioProdPRECIO_MINIMO.Value <=
+       dmInventario.tblInventarioProdPRECIO_COMPRA.Value then
+    begin
+      MessageDlg(
+        'Precio Minimo no puede ser menor igual a precio compra, verifique.',
+        mtInformation,
+        [mbOK],
+        0
+      );
+
+      Exit;
+    end;
+
+    if (dmInventario.tblInventarioProdPRECIOVENTA1.Value > 0) and
+       (dmInventario.tblInventarioProdPRECIOVENTA2.Value > 0) then
+    begin
+      if Abs(
+           dmInventario.tblInventarioProdPRECIO_MINIMO.Value -
+           AsignarValorMinimo
+         ) > 0.10 then
+      begin
+        MessageDlg(
+          'Verifica que el precio minimo "' +
+          InsertarComa(
+            dmInventario.tblInventarioProdPRECIO_MINIMO.AsString
+          ) +
+          '" ' + #13#10 +
+          ' no sea mayor a uno de los precios 1..4.',
+          mtInformation,
+          [mbOK],
+          0
+        );
+
+        DBEdit13.SetFocus;
+        Exit;
+      end;
+    end;
+
+    if dmInventario.tblInventarioProdCOD_MONEDA.IsNull then
+    begin
+      MessageDlg(
+        'Favor indicar codigo moneda',
+        mtInformation,
+        [mbOK],
+        0
+      );
+
+      Exit;
+    end;
+
+    _idTasa :=
+      dmInventario.tblInventarioProdIDTASAITBIS.Value;
+
+    if dmInventario.tblInventarioProd.State = dsEdit then
+      _codProd :=
+        dmInventario.tblInventarioProdCODIGO.Value;
+
+    {
+      ==========================================================
+      DETERMINAR SI HAY MOVIMIENTO MANUAL DE KARDEX
+      ==========================================================
+
+      Todavía NO insertamos el Kardex.
+      Primero debemos guardar correctamente INVENTARIO_PRODUCTO.
+    }
+    LRegistrarKardex :=
+      CalcularMovimientoKardexManual(
+        LCantidadAnterior,
+        LCantidadNueva,
+        LTipoKardex,
+        LCantidadKardex
+      );
+
+    {
+      Capturar costo/precio antes del Post.
+    }
+    if dmInventario.tblInventarioProdPRECIO_COMPRA.IsNull then
+      LCostoProducto := 0
+    else
+      LCostoProducto :=
+        dmInventario.tblInventarioProdPRECIO_COMPRA.Value;
+
+    if dmInventario.tblInventarioProdPRECIO.IsNull then
+      LPrecioVenta := 0
+    else
+      LPrecioVenta :=
+        dmInventario.tblInventarioProdPRECIO.Value;
+
+    {
+      ==========================================================
+      GUARDAR INVENTARIO_PRODUCTO
+      ==========================================================
+    }
+    GlbSalvarQuery(dmInventario.tblInventarioProd);
+
+    {
+      Para INSERT, obtener el CODIGO generado después del guardado.
+    }
+    if _codProd <= 0 then
+    begin
+      if not dmInventario.tblInventarioProdCODIGO.IsNull then
+        _codProd :=
+          dmInventario.tblInventarioProdCODIGO.Value;
+    end;
+
+    {
+      ==========================================================
+      KARDEX POR AJUSTE MANUAL
+      ==========================================================
+
+      Este código sólo existe en frmInventarioProd.
+
+      Por tanto:
+        Ventas          -> NO pasan por aquí
+        Compras         -> NO pasan por aquí
+        Devoluciones    -> NO pasan por aquí
+        Transferencias  -> NO pasan por aquí
+
+      No se duplica el Kardex generado por otros procesos.
+    }
+    if LRegistrarKardex then
+    begin
+      try
+        RegistrarKardexAjusteManual(
+          _codProd,
+          LTipoKardex,
+          LCantidadKardex,
+          LCostoProducto,
+          LPrecioVenta
+        );
+      except
+        on E: Exception do
+        begin
+          LogInformacionTxt(
+            'ERROR KARDEX AJUSTE MANUAL. ' +
+            'Producto=' + IntToStr(_codProd) +
+            ', CantAnterior=' + FloatToStr(LCantidadAnterior) +
+            ', CantNueva=' + FloatToStr(LCantidadNueva) +
+            ', CantKardex=' + FloatToStr(LCantidadKardex) +
+            ', Tipo=' + IntToStr(LTipoKardex) +
+            ', Error=' + E.Message
+          );
+
+          MessageDlg(
+            'El producto fue guardado, pero ocurrió un error ' +
+            'registrando el movimiento de Kardex.' +
+            #13#10#13#10 +
+            'Producto: ' + IntToStr(_codProd) + #13#10 +
+            'Cantidad anterior: ' +
+              FloatToStr(LCantidadAnterior) + #13#10 +
+            'Cantidad nueva: ' +
+              FloatToStr(LCantidadNueva) + #13#10 +
+            'Movimiento Kardex: ' +
+              FloatToStr(LCantidadKardex) + #13#10#13#10 +
+            E.Message,
+            mtError,
+            [mbOK],
+            0
+          );
+
+          Exit;
+        end;
+      end;
+    end;
+
+    edtCodBarra.Clear;
+
+    {
+      ==========================================================
+      UPDATE IDTASAITBIS EXISTENTE
+      ==========================================================
+    }
+    ibsqlUpdateIdTasa.Params[0].Value := _idTasa;
+    ibsqlUpdateIdTasa.Params[1].Value := _codProd;
+
+    if _codProd > 0 then
+    begin
+      ibsqlUpdateIdTasa.ExecQuery;
+
+      if not ibsqlUpdateIdTasa.Transaction.InTransaction then
+        ibsqlUpdateIdTasa.Transaction.StartTransaction;
+
+      try
+        ibsqlUpdateIdTasa.Transaction.CommitRetaining;
+      except
+        ibsqlUpdateIdTasa.Transaction.RollbackRetaining;
+      end;
+    end;
+
+    {
+      ==========================================================
+      CODIGO_TEXTO / CODIGO_BARRA
+      ==========================================================
+    }
+    if dmInventario.tblInventarioProdCodigo_texto.IsNull then
+    begin
+      dmInventario.tblInventarioProd.Edit;
+
+      dmInventario.tblInventarioProdCodigo_texto.Value :=
+        dmInventario.tblInventarioProdCodigo.AsString;
+
+      if dmInventario.tblInventarioProdCODIGO_BARRA.IsNull then
+        dmInventario.tblInventarioProdCODIGO_BARRA.Value :=
+          dmInventario.tblInventarioProdCodigo_texto.Value;
+
+      dmInventario.tblInventarioProd.Post;
+      dmInventario.tblInventarioProd.ApplyUpdates;
+
+      if not dmInventario.tblInventarioProd.Transaction.InTransaction then
+        dmInventario.tblInventarioProd.Transaction.StartTransaction;
+
+      try
+        dmInventario.tblInventarioProd.Transaction.CommitRetaining;
+      except
+        dmInventario.tblInventarioProd.Transaction.RollbackRetaining;
+      end;
+
+      edtCodBarra.Clear;
+    end;
+
+    {
+      ==========================================================
+      SINCRONIZACION DB DESTINO
+      ==========================================================
+    }
+    try
+      if GlbProsesur = 1 then
+      begin
+        ConfigurarDatasetsSincronizacion;
+
+        tblInvComer1ro.Close;
+        tblInvComer1ro.Params[0].Value :=
+          dmInventario.tblInventarioProdCODIGO.Value;
+        tblInvComer1ro.Open;
+
+        lblReplicado.Visible :=
+          not tblInvComer1ro.IsEmpty;
+
+        SincronizarProductoActual;
+
+        lblReplicado.Visible := False;
+      end;
+    except
+      on E: Exception do
+      begin
+        lblReplicado.Visible := True;
+
+        LogInformacionTxt(
+          'Error sincronizando INVENTARIO_PRODUCTO hacia DB destino: ' +
+          E.Message
+        );
+
+        raise;
+      end;
+    end;
+
+    edtCodBarra.SetFocus;
+    edtCodBarra.SelectAll;
+  end;
+end;
+
+{antes
 procedure TfrmInventarioProd.BitBtn4Click(Sender: TObject);
 var
   _codProd, _idTasa : integer;
@@ -925,7 +1433,7 @@ end;
     edtCodBarra.SelectAll;
   end;
 end;
-
+     } //antes
 procedure TfrmInventarioProd.BitBtn5Click(Sender: TObject);
 begin
   if dmInventario.tblInventarioProd.State in [dsInactive, dsBrowse] then
@@ -1423,6 +1931,125 @@ begin
   // Asegurar transacción destino
   if not dmConectar.IBTransaction2.InTransaction then
     dmConectar.IBTransaction2.StartTransaction;
+end;
+
+function TfrmInventarioProd.CalcularMovimientoKardexManual(
+  const ACantidadAnterior,
+        ACantidadNueva: Double;
+  out ATipo: Smallint;
+  out ACantidadKardex: Double
+): Boolean;
+const
+  TOLERANCIA_CANTIDAD = 0.0001;
+begin
+  Result := False;
+
+  ATipo := 0;
+  ACantidadKardex := 0;
+
+  { No hubo cambio real }
+  if Abs(ACantidadNueva - ACantidadAnterior) <= TOLERANCIA_CANTIDAD then
+    Exit;
+
+  {
+    Caso especial:
+      existencia negativa -> existencia positiva
+
+      -10 -> 15
+
+    No registramos entrada de 25.
+    Registramos solamente la nueva existencia positiva: 15.
+  }
+  if (ACantidadAnterior < 0) and
+     (ACantidadNueva > 0) then
+  begin
+    ATipo := 1; { Entrada }
+    ACantidadKardex := ACantidadNueva;
+
+    Result := True;
+    Exit;
+  end;
+
+  {
+    Caso inverso:
+      existencia positiva -> existencia negativa
+
+      8 -> -6
+
+    No registramos salida de 14.
+    Registramos solamente la nueva cantidad negativa como
+    una salida positiva de 6.
+  }
+  if (ACantidadAnterior > 0) and
+     (ACantidadNueva < 0) then
+  begin
+    ATipo := 2; { Salida }
+    ACantidadKardex := Abs(ACantidadNueva);
+
+    Result := True;
+    Exit;
+  end;
+
+  {
+    Movimiento normal.
+
+      8  -> 10 = Entrada 2
+     -8  -> -6 = Entrada 2
+     -6  -> -8 = Salida 2
+     10  ->  8 = Salida 2
+      0  ->  4 = Entrada 4
+      4  ->  0 = Salida 4
+  }
+  if ACantidadNueva > ACantidadAnterior then
+  begin
+    ATipo := 1; { Entrada }
+
+    ACantidadKardex :=
+      Abs(ACantidadNueva - ACantidadAnterior);
+  end
+  else
+  begin
+    ATipo := 2; { Salida }
+
+    ACantidadKardex :=
+      Abs(ACantidadNueva - ACantidadAnterior);
+  end;
+
+  Result := ACantidadKardex > TOLERANCIA_CANTIDAD;
+end;
+
+
+procedure TfrmInventarioProd.RegistrarKardexAjusteManual(
+  const ACodigoProducto: Integer;
+  const ATipo: Smallint;
+  const ACantidadKardex,
+        ACostoProducto,
+        APrecioVenta: Double
+);
+begin
+  if ACodigoProducto <= 0 then
+    raise Exception.Create(
+      'No se puede registrar el ajuste manual de Kardex: ' +
+      'código de producto inválido.'
+    );
+
+  if ACantidadKardex <= 0 then
+    Exit;
+
+  dmVentas.Proc_InsertarKardexDet(
+    GlbCia_Key,
+    ATipo,                  // 1=Entrada, 2=Salida
+    7,                      // TIPO_OPE=7 -> Otro
+    Date,                   // FECHA_TRN
+    ACodigoProducto,
+    ACantidadKardex,
+    ACostoProducto,
+    APrecioVenta,
+    VarUsuarioGlb,
+    0,                      // No corresponde a TRN de venta
+    'A',
+    'Ajuste Manual Inventario'
+  );
 end;
 
 procedure TfrmInventarioProd.qryClasifPrecioCalcFields(DataSet: TDataSet);

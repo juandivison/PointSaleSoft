@@ -331,37 +331,31 @@ object frmMantNumCombFiscal: TfrmMantNumCombFiscal
       item
         Expanded = False
         FieldName = 'DIV_NEGOCIO'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'PECF'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'AICF'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'TIPO_CF'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'CANT_MIN_AVISO1'
-        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'CANT_MIN_AVISO2'
-        Width = 64
         Visible = True
       end
       item

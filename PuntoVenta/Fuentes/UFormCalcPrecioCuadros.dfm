@@ -3180,7 +3180,7 @@ object frmCalcPrecioArticulo: TfrmCalcPrecioArticulo
     object qryClienteNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClientePORC_BENEFICIO: TFloatField
       FieldName = 'PORC_BENEFICIO'

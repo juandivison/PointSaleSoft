@@ -488,6 +488,7 @@ object dmVentas: TdmVentas
   object qryClientes: TIBQuery
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
+    Active = True
     BufferChunks = 1000
     CachedUpdates = False
     SQL.Strings = (
@@ -517,15 +518,15 @@ object dmVentas: TdmVentas
       Origin = 'CLIENTES.CIUDAD'
       Size = 30
     end
+    object qryClientesNOMBRE_FACTURAR: TIBStringField
+      FieldName = 'NOMBRE_FACTURAR'
+      Origin = 'CLIENTES.NOMBRE_FACTURAR'
+      Size = 150
+    end
     object qryClientesDIRECCION_CONT: TIBStringField
       FieldName = 'DIRECCION_CONT'
       Origin = 'CLIENTES.DIRECCION_CONT'
       Size = 60
-    end
-    object qryClientesNOMBRE_FACTURAR: TIBStringField
-      FieldName = 'NOMBRE_FACTURAR'
-      Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
     end
     object qryClientesPAIS: TIBStringField
       FieldName = 'PAIS'
@@ -834,7 +835,7 @@ object dmVentas: TdmVentas
     object IBStringField4: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object IBStringField5: TIBStringField
       FieldName = 'PAIS'
@@ -3821,9 +3822,10 @@ object dmVentas: TdmVentas
       Origin = 'VENTAS_MAST.FECHA'
     end
     object qryVentaConduceMasterNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryVentaConduceMasterVALOR_TOTAL_DET: TFloatField
       FieldName = 'VALOR_TOTAL_DET'
@@ -3913,7 +3915,7 @@ object dmVentas: TdmVentas
     object qryRepOrdenConduceNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepOrdenConduceNOMBREVENDEDOR: TIBStringField
       FieldName = 'NOMBREVENDEDOR'
@@ -4536,7 +4538,7 @@ object dmVentas: TdmVentas
     object qryVentaVocadosNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryVentaVocadosDIRECCION_CONT: TIBStringField
       FieldName = 'DIRECCION_CONT'

@@ -4,10 +4,9 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, FileCtrl, ShellApi, ComCtrls, IniFiles,
-  WinSkinData,
-  Buttons,
-  Menus;
+  DB, IBDatabase, Dialogs, StdCtrls, ExtCtrls, FileCtrl, ShellApi, ComCtrls, IniFiles,
+  WinSkinData, IBCustomDataSet, IBUpdateSQL, IBQuery,
+  IBTable, IBStoredProc, IBSQL, Buttons, Menus;
 
 type
   TfrmOrders2EcfRunner = class(TForm)
@@ -71,6 +70,10 @@ type
     Mantenimiento1: TMenuItem;
     ablas1: TMenuItem;
     chkNcrFinalize: TCheckBox;
+    lblEnvironment: TLabel;
+    lblLastEcfCaption: TLabel;
+    lblLastEcfValue: TLabel;
+    chkRedondear: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnBrowseExeClick(Sender: TObject);
@@ -93,13 +96,23 @@ type
     procedure btnCreateNcrClick(Sender: TObject);
     procedure ablas1Click(Sender: TObject);
     procedure chkNcrFinalizeClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     FIniPath: string;
     FUpdatingUi: Boolean;
+	FIsRunning: Boolean;
     FOldLbFoldersWndProc: TWndMethod;
     FOldGbFoldersWndProc: TWndMethod;
     FNcrRequestJsonPath: string;
     FNcrSummaryText: string;
+    FStartupNoticeShown: Boolean;
+    FEnvironmentType: string;
+
+    procedure ShowStartupFiscalNotice;
+    procedure RefreshEnvironmentInfo;
+    procedure RefreshLastEcfSequence;
+    function ReadConfiguredEnvironment: string;
+
     function BuildCommandLine: string;
     function BuildCommandPreview: string;
     function GetJoinedFolders: string;
@@ -139,6 +152,9 @@ type
     function GetSelectedEcfType: string;
     function GetSelectedOutputCurrency: string;
     function GetSelectedSaleCondition: string;
+    function IsFxUsdRoundedCandidate: Boolean;
+    function IsFxUsdV9NormalTest: Boolean;
+    function ExtraArgsTieneOpcionFiscalConflictiva: Boolean;
     function GetSelectedPaymentMethodCode: Integer;
     procedure SelectPaymentMethodCode(const ACode: Integer);
     procedure AddOrderFile(const AFileName: string);
@@ -162,7 +178,7 @@ type
     function ExtractJsonStringValue(const AJson, AName: string; out AValue: string): Boolean;
     procedure EnsureNcrJsonReferenceMatchesEdit(const AJsonPath, AExpectedNcf: string);
   public
-    procedure PrepareNcrFromFacturaActual;
+    procedure PrepareNcrFromFacturaActual;                                                    
   end;
 
 var
@@ -214,12 +230,31 @@ begin
     Result := StrToIntDef(Digits, 0);
 end;
 
+procedure SaveStringsAsUtf8(const FileName: string; Strings: TStrings);
+var
+  FS: TFileStream;
+  U8: UTF8String;
+begin
+  U8 := UTF8Encode(WideString(Strings.Text));
+
+  FS := TFileStream.Create(FileName, fmCreate);
+  try
+    if Length(U8) > 0 then
+      FS.WriteBuffer(U8[1], Length(U8));
+  finally
+    FS.Free;
+  end;
+end;
+
 procedure TfrmOrders2EcfRunner.FormCreate(Sender: TObject);
 begin
+  FStartupNoticeShown := False;
+  FEnvironmentType := 'NO DETERMINADO';
   Caption := 'Orders2Ecf Runner';
   dtpkFechaTrnDiaria.DateTime := ExtraerFecha(GlbFechaTrnDiaria);
   FIniPath := GetDefaultIniPath;
   FUpdatingUi := False;
+  FIsRunning := False;
   FNcrRequestJsonPath := '';
   FNcrSummaryText := '';
   if Assigned(chkNcrDummy) then
@@ -252,6 +287,7 @@ begin
   StatusBar1.SimpleText := 'Listo';
 
   LoadSettings;
+  chkRedondear.OnClick := AnyParamControlChange;
   SyncProcessTypeControls;
   SyncModeControls;
   UpdatePaymentUi;
@@ -265,6 +301,8 @@ begin
   lblModeHelp.Caption := 'Normal: flujo regular. Recover Timbre: recupera timbre/XML firmado para un e-NCF existente; opcionalmente permite indicar los archivos de orden usados.';																													
   EnableDragDropTargets;
   ProcMostrarTasa;
+  RefreshEnvironmentInfo;
+  RefreshLastEcfSequence;
 end;
 
 procedure TfrmOrders2EcfRunner.FormDestroy(Sender: TObject);
@@ -296,8 +334,8 @@ begin
 
     cbPaymentMethod.Items.Clear;
     cbPaymentMethod.Items.Add('1 - Efectivo');
-    cbPaymentMethod.Items.Add('2 - Cheque / Transferencia / Dep'#243'sito');
-    cbPaymentMethod.Items.Add('3 - Tarjeta Débito / Cr'#233'dito');
+    cbPaymentMethod.Items.Add('2 - Cheque / Transferencia / Depósito');
+    cbPaymentMethod.Items.Add('3 - Tarjeta Débito / Crédito');
     cbPaymentMethod.Items.Add('4 - Venta a crédito');
     cbPaymentMethod.Items.Add('5 - Bonos / Certificados');
     cbPaymentMethod.Items.Add('6 - Permuta');
@@ -336,7 +374,7 @@ begin
     chkOpenOutputFolder.Checked := Ini.ReadBool(INI_SECTION_MAIN, 'OpenOutputFolder', False);
     chkShowTotalDop.Checked := Ini.ReadBool(INI_SECTION_MAIN, 'ShowTotalDop', True);
     if Assigned(chkNcrDummy) then
-      chkNcrDummy.Checked := Ini.ReadBool(INI_SECTION_MAIN, 'NcrDummy', True);
+      chkNcrDummy.Checked := Ini.ReadBool(INI_SECTION_MAIN, 'NcrDummy', False);
 
     if Assigned(chkNcrFinalize) then
     chkNcrFinalize.Checked := Ini.ReadBool(INI_SECTION_MAIN, 'NcrFinalize', False);
@@ -610,11 +648,14 @@ end;
 
 procedure TfrmOrders2EcfRunner.SetRunningUI(const ARunning: Boolean);
 begin
+  FIsRunning := ARunning;
   btnRun.Enabled := not ARunning;
   btnClose.Enabled := not ARunning;
   btnBrowseExe.Enabled := not ARunning;
   btnAddFolder.Enabled := not ARunning;
   btnRemoveFolder.Enabled := not ARunning;
+  gbFolders.Enabled := not ARunning and (not IsProcessingNcr);
+  lbFolders.Enabled := not ARunning and (not IsProcessingNcr);
   btnClearFolders.Enabled := not ARunning;
   rgMode.Enabled := not ARunning;
   edtExePath.Enabled := not ARunning;
@@ -634,6 +675,7 @@ begin
 
   if not ARunning then
   begin
+    SyncProcessTypeControls;
     SyncModeControls;
     UpdatePaymentUi;
   end
@@ -669,6 +711,7 @@ var
   InitialPath: string;
   I: Integer;
 begin
+  if FIsRunning or IsProcessingNcr then Exit;
   Files := TStringList.Create;
   try
     if lbFolders.Items.Count > 0 then
@@ -689,6 +732,7 @@ end;
 
 procedure TfrmOrders2EcfRunner.btnRemoveFolderClick(Sender: TObject);
 begin
+  if FIsRunning or IsProcessingNcr then Exit;
   if lbFolders.ItemIndex >= 0 then
     lbFolders.Items.Delete(lbFolders.ItemIndex);
   UpdateCommandPreview;
@@ -696,6 +740,7 @@ end;
 
 procedure TfrmOrders2EcfRunner.btnClearFoldersClick(Sender: TObject);
 begin
+  if FIsRunning or IsProcessingNcr then Exit;
   lbFolders.Items.Clear;
   edtNcf.Text:='';
   UpdateCommandPreview;
@@ -741,6 +786,47 @@ begin
     Result := 'contado'
   else
     Result := 'credito';
+end;
+
+// V10: E31/E32/E45 USD, contado o credito (segun tipo/pago permitido).
+// El CLI valida por su cuenta la moneda fiscal y el ambiente TEST.
+function TfrmOrders2EcfRunner.IsFxUsdRoundedCandidate: Boolean;
+begin
+  Result := (not IsProcessingNcr) and
+    (IsModeNormal or IsModeDummy) and
+    ((GetSelectedEcfType = 'E31') or
+     (GetSelectedEcfType = 'E32') or
+     (GetSelectedEcfType = 'E45')) and
+    SameText(GetSelectedOutputCurrency, 'USD') and
+    (SameText(GetSelectedSaleCondition, 'contado') or
+     SameText(GetSelectedSaleCondition, 'credito'));
+end;
+
+function TfrmOrders2EcfRunner.IsFxUsdV9NormalTest: Boolean;
+begin
+  Result := IsModeNormal and IsFxUsdRoundedCandidate and
+    SameText(FEnvironmentType, 'TEST');
+end;
+
+// Evita que un argumento manual sobrescriba la seleccion automatica.
+// Esta comprobacion se utiliza solo en venta E31/E32/E45 USD contado/credito.
+function TfrmOrders2EcfRunner.ExtraArgsTieneOpcionFiscalConflictiva: Boolean;
+var
+  Extra: string;
+begin
+  Extra := LowerCase(Trim(edtExtraArgs.Text));
+  Result := (Pos('--mode=', Extra) > 0) or
+    (Pos('--fx-usd-round-first', Extra) > 0) or
+    (Pos('--fx-usd-fiscal-rounded', Extra) > 0) or
+    (Pos('--fx-usd-normal-test', Extra) > 0) or
+    (Pos('--fiscal-gross-reconcile', Extra) > 0) or
+    (Pos('--ecf-type=', Extra) > 0) or
+    (Pos('--output-currency=', Extra) > 0) or
+    (Pos('--sale-condition=', Extra) > 0) or
+    (Pos('--payment-method=', Extra) > 0) or
+    (Pos('--show-total-dop=', Extra) > 0) or
+    (Pos('--fecha-factura=', Extra) > 0) or
+    (Pos('--input-list=', Extra) > 0);
 end;
 
 function TfrmOrders2EcfRunner.GetSelectedPaymentMethodCode: Integer;
@@ -831,6 +917,7 @@ procedure TfrmOrders2EcfRunner.SyncProcessTypeControls;
 var
   IsNcr: Boolean;
 begin
+  if FIsRunning then Exit;
   IsNcr := IsProcessingNcr;
 
   lblNcrNcfRef.Visible := IsNcr;
@@ -845,32 +932,35 @@ begin
   cbNcrReason.Enabled := IsNcr;
   btnCreateNcr.Enabled := IsNcr;
 
-if Assigned(chkNcrFinalize) then
-begin
-  chkNcrFinalize.Visible := IsNcr;
-  chkNcrFinalize.Enabled := IsNcr;
+  if Assigned(chkNcrFinalize) then
+  begin
+    chkNcrFinalize.Visible := IsNcr;
+    chkNcrFinalize.Enabled := IsNcr;
 
-  if not IsNcr then
+    if not IsNcr then
     chkNcrFinalize.Checked := False;
-end;
+  end;
 
-if Assigned(chkNcrDummy) then
-begin
-  chkNcrDummy.Visible := IsNcr;
-  chkNcrDummy.Enabled := IsNcr and (not IsNcrFinalize);
+  if Assigned(chkNcrDummy) then
+  begin
+    chkNcrDummy.Visible := IsNcr;
+    chkNcrDummy.Enabled := IsNcr and (not IsNcrFinalize);
 
-  if not IsNcr then
-    chkNcrDummy.Checked := False
-  else if IsNcrFinalize then
-    chkNcrDummy.Checked := False
-  else if Trim(FNcrRequestJsonPath) = '' then
-    chkNcrDummy.Checked := True;
-end;
+    if not IsNcr then
+      chkNcrDummy.Checked := False
+    else if IsNcrFinalize then
+      chkNcrDummy.Checked := False;
+
+    // No forzar Dummy.
+    // El usuario decide si desea vista previa o emisión real.
+  end;
+  
 
   rgMode.Enabled := not IsNcr;
   //btnRun.Enabled := not IsNcr;
   btnRun.Enabled := (not IsNcr) or IsNcrFinalize;
   gbFolders.Enabled := not IsNcr;
+  lbFolders.Enabled := not IsNcr;
   btnAddFolder.Enabled := not IsNcr;
   btnRemoveFolder.Enabled := not IsNcr;
   btnClearFolders.Enabled := not IsNcr;
@@ -885,25 +975,33 @@ end;
   chkLegacyNumbering.Enabled := (not IsNcr) and (not (IsModeReprint or IsModeRecoverTimbre));
   chkShowTotalDop.Enabled := not IsNcr;
 
-if IsNcr then
-begin
-  if IsNcrFinalize then
-    lblModeHelp.Caption := 'NCR Finalize: repara/finaliza legacy de una E34 ya aceptada. No envia DGII ni reserva secuencia.'
-  else
-    lblModeHelp.Caption := 'NCR: crea Nota de Crédito Electrónica E34 para anulación total del e-NCF indicado.';
+  if IsNcr then
+  begin
+    if IsNcrFinalize then
+      lblModeHelp.Caption := 'NCR Finalize: repara/finaliza legacy de una E34 ya aceptada. No envia DGII ni reserva secuencia.'
+    else
+      lblModeHelp.Caption := 'NCR: crea Nota de Crédito Electrónica E34 para anulación total del e-NCF indicado.';
 
-  StatusBar1.SimpleText := 'Modo: Procesar NCR';
-end
+    StatusBar1.SimpleText := 'Modo: Procesar NCR';
+  end
   else
     SyncModeControls;
-  edtNcf.Enabled := IsNcr and IsNcrFinalize;
-lblNcf.Enabled := IsNcr and IsNcrFinalize;
 
-if IsNcr and IsNcrFinalize then
-  lblNcf.Caption := 'E34 a finalizar:'
-else
-  lblNcf.Caption := 'NCF / e-NCF:';
-                                                   
+  if IsNcr then
+  begin
+    edtNcf.Enabled := IsNcrFinalize;
+    lblNcf.Enabled := IsNcrFinalize;
+
+    if IsNcrFinalize then
+      lblNcf.Caption := 'E34 a finalizar:'
+    else
+      lblNcf.Caption := 'NCF / e-NCF:';
+  end else
+  begin
+    // Para Venta, SyncModeControls decide si edtNcf debe estar habilitado.
+    lblNcf.Caption := 'NCF / e-NCF:';
+  end;
+
   UpdateCommandPreview;
 end;
 
@@ -984,6 +1082,14 @@ if IsNcrFinalize then
       Lines.Add('Proceso: Venta');
       Lines.Add('Modo: ' + rgMode.Items[rgMode.ItemIndex]);
 
+      if IsFxUsdV9NormalTest then
+      begin
+        Lines.Add('*** V10 E31/E32/E45 USD CONTADO: EMISION REAL EN TEST ***');
+        Lines.Add('Se activan automaticamente --mode=normal,');
+        Lines.Add('--fx-usd-fiscal-rounded y --fx-usd-normal-test.');
+        Lines.Add('Puede reservar e-NCF, enviar a ASOTECH y persistir legacy.');
+      end;
+
       if IsModeReportOnly then
       begin
         Lines.Add('Report Only: solo genera reporte.');
@@ -999,10 +1105,34 @@ if IsNcrFinalize then
         Lines.Add('Forma de pago: ' + cbPaymentMethod.Text);
         Lines.Add('Fecha operación: ' + DateToStr(dtpkFechaTrnDiaria.Date));
         Lines.Add('Archivos: ' + IntToStr(lbFolders.Items.Count));
+
+        // Confirmacion previa para evitar interpretar montos DOP como USD.
+        Lines.Add('');
+        Lines.Add('*** IMPORTANTE: VERIFIQUE LA MONEDA DE LAS ORDENES ***');
+        Lines.Add('Confirme que los PRECIOS y TOTALES digitados en Excel');
+        Lines.Add('estan en la MONEDA DE ENTRADA configurada en Orders2Ecf.');
+        Lines.Add('La moneda de SALIDA: ' + cbOutputCurrency.Text + ' solo controla la impresion.');
+        Lines.Add('El indicador USD del Excel NO garantiza que los montos sean USD.');
+        Lines.Add('Si digitó importes en RD$ y el sistema espera USD,');
+        Lines.Add('la factura DGII podria multiplicarse por la tasa de cambio.');
+        Lines.Add('Si tiene dudas, seleccione NO y revise las ordenes.');
       end
       else
         Lines.Add('NCF / e-NCF: ' + Trim(edtNcf.Text));
     end;
+
+    Lines.Add('');
+    Lines.Add(
+      'AMBIENTE CONFIGURADO: ' +
+      FEnvironmentType
+    );
+
+    if FEnvironmentType = 'PRODUCCION' then
+      Lines.Add(
+        '*** ATENCION: ESTA OPERACION AFECTARA PRODUCCION ***'
+      );
+
+    Lines.Add('');
 
     Lines.Add('');
     Lines.Add('Comando a ejecutar:');
@@ -1106,7 +1236,30 @@ end;
 
   if IsNcrFinalize and IsNcrDummy then
   raise Exception.Create('No se puede combinar NCR Dummy con NCR Finalize.');
-  
+
+  // Solo V10 E31/E32/E45/E32/E45 USD contado/credito. El CLI tambien valida AmbienteTipo y URL,
+  // por lo que el indicador visual del Runner nunca autoriza el envio por si solo.
+  if IsFxUsdRoundedCandidate then
+  begin
+    if ExtraArgsTieneOpcionFiscalConflictiva then
+      raise Exception.Create(
+        'Retire argumentos de modo, fiscales, moneda, tipo, pago o fecha de Argumentos Extra. ' +
+        'El Runner las construye automaticamente para E31/E32/E45 USD contado/credito.');
+
+    if IsModeNormal then
+    begin
+      RefreshEnvironmentInfo;
+      if not IsFxUsdV9NormalTest then
+        raise Exception.Create(
+          'V10 E31/E32/E45/E32/E45 USD contado/credito solo esta habilitada en ambiente TEST. ' +
+          'Revise appsettings.json del ejecutable seleccionado. ' +
+          'No se invocara el CLI ni se reservara e-NCF.');
+      if not chkShowTotalDop.Checked then
+        raise Exception.Create(
+          'V10 E31/E32/E45/E32/E45 USD contado/credito requiere Mostrar total DOP. ' +
+          'Active la casilla para imprimir el total fiscal canonico.');
+    end;
+  end;
 end;
 
 function TfrmOrders2EcfRunner.BuildCommandPreview: string;
@@ -1164,11 +1317,26 @@ else
       Parts.Add('--payment-method=' + IntToStr(GetSelectedPaymentMethodCode));
 
 if IsModeDummy then
-  Parts.Add('--mode=dummy')
+begin
+  Parts.Add('--mode=dummy');
+  if chkRedondear.Checked then
+  begin
+    if IsFxUsdRoundedCandidate then
+      Parts.Add('--fx-usd-fiscal-rounded')
+    else
+      Parts.Add('--fx-usd-round-first');
+  end;
+end
 else if IsModeReportOnly then
   Parts.Add('--mode=report-only')
+else if IsFxUsdV9NormalTest then
+begin
+  Parts.Add('--mode=normal');
+  Parts.Add('--fx-usd-fiscal-rounded');
+  Parts.Add('--fx-usd-normal-test');
+end
 else
-  Parts.Add('--mode=(normal)');
+  Parts.Add('--mode=(normal, sin V9)');
   
       if not IsModeReportOnly then
 begin
@@ -1277,9 +1445,20 @@ if HasFiles and (IsModeNormal or IsModeDummy or IsModeReportOnly or IsModeRecove
     Result := Result + ' --payment-method=' + IntToStr(GetSelectedPaymentMethodCode);
 
 if IsModeDummy then
-  Result := Result + ' --mode=dummy'
+begin
+  Result := Result + ' --mode=dummy';
+  if chkRedondear.Checked then
+  begin
+    if IsFxUsdRoundedCandidate then
+      Result := Result + ' --fx-usd-fiscal-rounded'
+    else
+      Result := Result + ' --fx-usd-round-first';
+  end;
+end
 else if IsModeReportOnly then
-  Result := Result + ' --mode=report-only';
+  Result := Result + ' --mode=report-only'
+else if IsFxUsdV9NormalTest then
+  Result := Result + ' --mode=normal --fx-usd-fiscal-rounded --fx-usd-normal-test';
 
   if not IsModeReportOnly then
 begin
@@ -1307,6 +1486,9 @@ procedure TfrmOrders2EcfRunner.AnyParamControlChange(Sender: TObject);
 begin
   if FUpdatingUi then Exit;
 
+  if Sender = edtExePath then
+    RefreshEnvironmentInfo;
+
   if Sender = chkNcrDummy then
   begin
     if Assigned(chkNcrDummy) and chkNcrDummy.Checked and Assigned(chkNcrFinalize) then
@@ -1324,10 +1506,12 @@ begin
   UpdateCommandPreview;
 end;
 
-
 procedure TfrmOrders2EcfRunner.cbEcfTypeChange(Sender: TObject);
 begin
   ApplySuggestedOptionsFromEcfType(True);
+
+  RefreshLastEcfSequence;
+
   UpdateCommandPreview;
 end;
 
@@ -1412,7 +1596,7 @@ end;
 procedure TfrmOrders2EcfRunner.WMDropFiles(var Msg: TWMDropFiles);
 begin
   try
-    if btnRun.Enabled then
+    if (not FIsRunning) and (not IsProcessingNcr) then
       AddDroppedFilesFromHandle(Msg.Drop);
   finally
     DragFinish(Msg.Drop);
@@ -1627,7 +1811,7 @@ begin
 
   if ReportPath = '' then
   begin
-    Log('No se encontr'#243' el reporte XLSX para abrir autom'#225'ticamente.');
+    Log('No se encontró el reporte XLSX para abrir automáticamente.');
     Exit;
   end;
 
@@ -1663,7 +1847,7 @@ begin
   end;
 
   if Integer(OpenRes) <= 32 then
-    Log('No fue posible abrir el reporte autom'#225'ticamente. ShellExecute=' + IntToStr(Integer(OpenRes)));
+    Log('No fue posible abrir el reporte automáticamente. ShellExecute=' + IntToStr(Integer(OpenRes)));
 end;
 
 function TfrmOrders2EcfRunner.OpenFileWithAssociatedExe(const AFileName: string): Boolean;
@@ -1756,6 +1940,7 @@ end;
 
 procedure TfrmOrders2EcfRunner.btnRunClick(Sender: TObject);
 begin
+ if FIsRunning then Exit;
   ExecuteCurrentProcess;
 end;
 
@@ -1880,6 +2065,7 @@ var
   HelpText: string;
   NeedNcf: Boolean;
 begin
+  if FIsRunning then Exit;
   NeedNcf := IsModeReprint or IsModeReplay or IsModeRecoverTimbre;
 
   edtNcf.Enabled := NeedNcf and (not IsProcessingNcr);
@@ -1964,8 +2150,16 @@ end
 
   lblModeHelp.Caption := HelpText;
 
+  if IsFxUsdV9NormalTest then
+    lblModeHelp.Caption :=
+      'V9 TEST: E31/E32/E45 USD contado/credito. El Runner agrega los 3 flags fiscales automaticamente.';
+
   if not IsProcessingNcr then
   begin
+    gbFolders.Enabled := True;
+    lbFolders.Enabled := True;
+    btnAddFolder.Enabled := True;
+	
     gbFolders.Enabled := IsModeNormal or IsModeDummy or IsModeRecoverTimbre;
     btnAddFolder.Enabled := gbFolders.Enabled and btnRun.Enabled;
     btnRemoveFolder.Enabled := gbFolders.Enabled and btnRun.Enabled;
@@ -2071,7 +2265,8 @@ begin
     SL.Add('  ]');
     SL.Add('}');
 
-    SL.SaveToFile(FileName);
+    //SL.SaveToFile(FileName);
+    SaveStringsAsUtf8(FileName, SL);
   finally
     SL.Free;
   end;
@@ -2124,7 +2319,7 @@ begin
   if Msg.Msg = WM_DROPFILES then
   begin
     try
-      if btnRun.Enabled then
+	 if (not FIsRunning) and (not IsProcessingNcr) then     
         AddDroppedFilesFromHandle(Msg.WParam);
     finally
       DragFinish(Msg.WParam);
@@ -2144,7 +2339,7 @@ begin
   if Msg.Msg = WM_DROPFILES then
   begin
     try
-      if btnRun.Enabled then
+      if (not FIsRunning) and (not IsProcessingNcr) then
         AddDroppedFilesFromHandle(Msg.WParam);
     finally
       DragFinish(Msg.WParam);
@@ -2173,10 +2368,17 @@ begin
 end;
 
 procedure TfrmOrders2EcfRunner.ProcMostrarTasa;
+var
+  Tasa: Double;
 begin
-  edtTasa.ReadOnly:=False;
-  edtTasa.Text:=FloattoStr(GlbMontoTasaByFecha('2',dtpkFechaTrnDiaria.Date));
-  edtTasa.ReadOnly:=True;
+  Tasa := GlbMontoTasaByFecha(
+    '2',
+    dtpkFechaTrnDiaria.Date
+  );
+
+  edtTasa.ReadOnly := False;
+  edtTasa.Text := FormatFloat('0.00', Tasa);
+  edtTasa.ReadOnly := True;
 end;
 
 procedure TfrmOrders2EcfRunner.dtpkFechaTrnDiariaExit(Sender: TObject);
@@ -2193,6 +2395,23 @@ begin
   frmMantNumCombFiscal.Free;
   frmMantNumCombFiscal:=Nil;
   end;
+
+  if (dmFactura.tblDgii_SerieNCF.State in [dsEdit, dsInsert]) or
+  (dmFactura.tblDgii_SerieNCF.UpdatesPending) then
+  begin
+    dmFactura.tblDgii_SerieNCF.Post;
+    dmFactura.tblDgii_SerieNCF.ApplyUpdates;
+
+    if not dmFactura.tblDgii_SerieNCF.Transaction.InTransaction then
+      dmFactura.tblDgii_SerieNCF.Transaction.StartTransaction;
+    try
+      dmFactura.tblDgii_SerieNCF.Transaction.CommitRetaining;
+    except
+    dmFactura.tblDgii_SerieNCF.Transaction.RollbackRetaining;
+    end;
+  end;
+
+  RefreshLastEcfSequence;
 end;
 
 procedure TfrmOrders2EcfRunner.Button2Click(Sender: TObject);
@@ -2247,7 +2466,242 @@ begin
   UpdateCommandPreview;
 end;
 
+procedure TfrmOrders2EcfRunner.ShowStartupFiscalNotice;
+var
+  Msg: string;
+begin
+  Msg :=
+    'Fecha de operacion: ' +
+    FormatDateTime('dd/mm/yyyy', dtpkFechaTrnDiaria.Date) + #13#10 +
+    #13#10 +
+    'Tasa USD vigente: RD$ ' + edtTasa.Text + #13#10 +
+    'Ambiente configurado: ' + FEnvironmentType + #13#10 +
+    #13#10 +
+    'Verifique estos datos antes de procesar facturas.' + #13#10 +
+    #13#10 +
+    'Desea abrir ahora la ventana de actualizacion de tasa?';
+
+  if MessageDlg(
+       Msg,
+       mtWarning,
+       [mbYes, mbNo],
+       0
+     ) = mrYes then
+  begin
+    Button1Click(nil);
+  end;
+end;
+
+procedure TfrmOrders2EcfRunner.FormShow(Sender: TObject);
+begin
+  if FStartupNoticeShown then
+    Exit;
+
+  FStartupNoticeShown := True;
+
+  ProcMostrarTasa;
+  RefreshEnvironmentInfo;
+  RefreshLastEcfSequence;
+
+  ShowStartupFiscalNotice;
+end;
+
+function TfrmOrders2EcfRunner.ReadConfiguredEnvironment: string;
+var
+  FileName: string;
+  SL: TStringList;
+  I, P: Integer;
+  S, Value: string;
+begin
+  Result := 'NO DETERMINADO';
+
+  if Trim(edtExePath.Text) = '' then
+    Exit;
+
+  FileName :=
+    ExtractFilePath(Trim(edtExePath.Text)) +
+    'appsettings.json';
+
+  if not FileExists(FileName) then
+  begin
+    Result := 'APPSETTINGS NO ENCONTRADO';
+    Exit;
+  end;
+
+  SL := TStringList.Create;
+  try
+    SL.LoadFromFile(FileName);
+
+    for I := 0 to SL.Count - 1 do
+    begin
+      S := Trim(SL[I]);
+
+      if Pos(
+           '"AMBIENTETIPO"',
+           UpperCase(S)
+         ) = 0 then
+        Continue;
+
+      P := Pos(':', S);
+
+      if P <= 0 then
+        Continue;
+
+      Value := Trim(Copy(S, P + 1, MaxInt));
+
+      if (Value <> '') and
+         (Value[Length(Value)] = ',') then
+        Delete(Value, Length(Value), 1);
+
+      Value := StringReplace(
+        Value,
+        '"',
+        '',
+        [rfReplaceAll]
+      );
+
+      Value := Trim(Value);
+
+      if Pos('PROD', UpperCase(Value)) = 1 then
+        Result := 'PRODUCCION'
+      else if (SameText(Value, 'TEST')) or
+              (SameText(Value, 'PRUEBA')) or
+              (SameText(Value, 'CERTIFICACION')) then
+        Result := 'TEST'
+      else
+        Result := UpperCase(Value);
+
+      Exit;
+    end;
+  finally
+    SL.Free;
+  end;
+end;
+
+procedure TfrmOrders2EcfRunner.RefreshLastEcfSequence;
+var
+  Qry: TIBQuery;
+  Trn: TIBTransaction;
+  TipoCf: Integer;
+  Seq: Int64;
+  SeqText: string;
+begin
+  lblLastEcfValue.Caption := '-';
+
+  TipoCf :=
+    StrToIntDef(
+      Copy(GetSelectedEcfType, 2, 2),
+      0
+    );
+
+  if TipoCf <= 0 then
+    Exit;
+
+  Qry := TIBQuery.Create(nil);
+  Trn := TIBTransaction.Create(nil);
+
+  try
+    Trn.DefaultDatabase := dmConectar.IBDatabase1;
+
+    Trn.Params.Clear;
+    Trn.Params.Add('read_committed');
+    Trn.Params.Add('rec_version');
+    Trn.Params.Add('nowait');
+    Trn.Params.Add('read');
+
+    Qry.Database := dmConectar.IBDatabase1;
+    Qry.Transaction := Trn;
+
+    Qry.SQL.Text :=
+      'select NCF ' +
+      'from DGII_SERIE_NFC ' +
+      'where SERIE = :SERIE ' +
+      '  and TIPO_CF = :TIPO_CF';
+
+    Qry.ParamByName('SERIE').AsString := 'E';
+    Qry.ParamByName('TIPO_CF').AsInteger := TipoCf;
+
+    Trn.StartTransaction;
+
+    try
+      Qry.Open;
+
+      if not Qry.IsEmpty then
+      begin
+        Seq := Trunc(
+          Qry.FieldByName('NCF').AsFloat
+        );
+
+        if Seq <= 0 then
+          lblLastEcfValue.Caption := 'Sin secuencias generadas'
+        else
+        begin
+          SeqText := IntToStr(Seq);
+
+          while Length(SeqText) < 10 do
+            SeqText := '0' + SeqText;
+
+          lblLastEcfValue.Caption :=
+            GetSelectedEcfType + SeqText;
+        end;
+      end
+      else
+        lblLastEcfValue.Caption := 'Serie no configurada';
+
+      Qry.Close;
+
+      Trn.Commit;
+    except
+      if Trn.InTransaction then
+        Trn.Rollback;
+
+      raise;
+    end;
+
+  except
+    on E: Exception do
+    begin
+      lblLastEcfValue.Caption := 'Error consultando secuencia';
+
+      if Trn.InTransaction then
+        Trn.Rollback;
+    end;
+  end;
+
+  Qry.Free;
+  Trn.Free;
+end;
+
+procedure TfrmOrders2EcfRunner.RefreshEnvironmentInfo;
+begin
+  FEnvironmentType := ReadConfiguredEnvironment;
+
+  lblEnvironment.Caption :=
+    'AMBIENTE: ' + FEnvironmentType;
+
+  // TLabel transparente no pinta el color de fondo.
+  lblEnvironment.ParentColor := False;
+  lblEnvironment.Transparent := False;
+
+  if FEnvironmentType = 'PRODUCCION' then
+  begin
+    lblEnvironment.Color := TColor(RGB(230, 230, 230)); // Gris claro
+    lblEnvironment.Font.Color := clNavy;
+  end
+  else if FEnvironmentType = 'TEST' then
+  begin
+    lblEnvironment.Color := TColor(RGB(221, 240, 221)); // Verde suave
+    lblEnvironment.Font.Color := clNavy;
+  end
+  else
+  begin
+    lblEnvironment.Color := clYellow;
+    lblEnvironment.Font.Color := clBlack;
+  end;
+end;
+
 end.
+
 
 
 

@@ -1531,7 +1531,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   end
   object SummaryBand1: TQRBand
     Left = 19
-    Top = 471
+    Top = 490
     Width = 249
     Height = 22
     Frame.Color = clBlack
@@ -1616,7 +1616,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   end
   object ChildBand11: TQRChildBand
     Left = 19
-    Top = 493
+    Top = 512
     Width = 249
     Height = 53
     Frame.Color = clBlack
@@ -1757,7 +1757,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   end
   object ChildBand10: TQRChildBand
     Left = 19
-    Top = 546
+    Top = 565
     Width = 249
     Height = 51
     Frame.Color = clBlack
@@ -1831,7 +1831,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   end
   object ChildBand12: TQRChildBand
     Left = 19
-    Top = 597
+    Top = 616
     Width = 249
     Height = 36
     Frame.Color = clBlack
@@ -1961,7 +1961,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   end
   object ChildBand13: TQRChildBand
     Left = 19
-    Top = 633
+    Top = 652
     Width = 249
     Height = 17
     Frame.Color = clBlack
@@ -2037,7 +2037,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   end
   object QRLoopBand1: TQRLoopBand
     Left = 19
-    Top = 451
+    Top = 470
     Width = 249
     Height = 20
     Frame.Color = clBlack
@@ -2148,74 +2148,22 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
     Left = 19
     Top = 410
     Width = 249
-    Height = 24
+    Height = 19
     Frame.Color = clBlack
     Frame.DrawTop = False
-    Frame.DrawBottom = False
+    Frame.DrawBottom = True
     Frame.DrawLeft = False
     Frame.DrawRight = False
+    Frame.Style = psDot
     AlignToBottom = False
     BeforePrint = ChildBand2BeforePrint
     Color = clWindow
     ForceNewColumn = False
     ForceNewPage = False
     Size.Values = (
-      63.500000000000000000
+      50.270833333333330000
       658.812500000000000000)
     ParentBand = PageFooterBand1
-    object QRDBText9: TQRDBText
-      Left = 147
-      Top = 3
-      Width = 100
-      Height = 17
-      Frame.Color = clBlack
-      Frame.DrawTop = False
-      Frame.DrawBottom = False
-      Frame.DrawLeft = False
-      Frame.DrawRight = False
-      Size.Values = (
-        44.979166666666670000
-        388.937500000000000000
-        7.937500000000000000
-        264.583333333333300000)
-      Alignment = taRightJustify
-      AlignToBand = False
-      AutoSize = False
-      AutoStretch = False
-      Color = clWhite
-      DataSet = dmFactura.qryVentaFactura
-      DataField = 'VALOR_TOTAL_DET'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -13
-      Font.Name = 'Default'
-      Font.Style = [fsBold]
-      Mask = ',0.00'
-      OnPrint = QRDBText9Print
-      ParentFont = False
-      Transparent = False
-      WordWrap = True
-      FontSize = 10
-    end
-    object QRShape2: TQRShape
-      Left = 136
-      Top = 20
-      Width = 114
-      Height = 1
-      Frame.Color = clBlack
-      Frame.DrawTop = False
-      Frame.DrawBottom = False
-      Frame.DrawLeft = False
-      Frame.DrawRight = False
-      Size.Values = (
-        2.645833333333333000
-        359.833333333333300000
-        52.916666666666670000
-        301.625000000000000000)
-      Pen.Style = psDot
-      Shape = qrsHorLine
-      VertAdjust = 0
-    end
     object QRShape1: TQRShape
       Left = 136
       Top = 0
@@ -2235,6 +2183,77 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       Shape = qrsHorLine
       VertAdjust = 0
     end
+    object QRLabel34: TQRLabel
+      Left = 100
+      Top = 3
+      Width = 42
+      Height = 15
+      Frame.Color = clBlack
+      Frame.DrawTop = False
+      Frame.DrawBottom = False
+      Frame.DrawLeft = False
+      Frame.DrawRight = False
+      Size.Values = (
+        39.687500000000000000
+        264.583333333333300000
+        7.937500000000000000
+        111.125000000000000000)
+      Alignment = taLeftJustify
+      AlignToBand = False
+      AutoSize = True
+      AutoStretch = False
+      Caption = 'Recargo'
+      Color = clWhite
+      Transparent = False
+      WordWrap = True
+      FontSize = 8
+    end
+    object QRDBText25: TQRDBText
+      Left = 152
+      Top = 3
+      Width = 95
+      Height = 15
+      Frame.Color = clBlack
+      Frame.DrawTop = False
+      Frame.DrawBottom = False
+      Frame.DrawLeft = False
+      Frame.DrawRight = False
+      Size.Values = (
+        39.687500000000000000
+        402.166666666666700000
+        7.937500000000000000
+        251.354166666666700000)
+      Alignment = taRightJustify
+      AlignToBand = False
+      AutoSize = False
+      AutoStretch = False
+      Color = clWhite
+      DataSet = dmFactura.qryVentaFactura
+      DataField = 'MONTO_RECARGO'
+      Mask = ',0.00'
+      Transparent = False
+      WordWrap = True
+      FontSize = 8
+    end
+  end
+  object ChildBand3: TQRChildBand
+    Left = 19
+    Top = 429
+    Width = 249
+    Height = 24
+    Frame.Color = clBlack
+    Frame.DrawTop = False
+    Frame.DrawBottom = False
+    Frame.DrawLeft = False
+    Frame.DrawRight = False
+    AlignToBottom = False
+    Color = clWhite
+    ForceNewColumn = False
+    ForceNewPage = False
+    Size.Values = (
+      63.500000000000000000
+      658.812500000000000000)
+    ParentBand = ChildBand2
     object QRLabel25: TQRLabel
       Left = 77
       Top = 4
@@ -2266,93 +2285,44 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
       WordWrap = True
       FontSize = 10
     end
-  end
-  object ChildBand3: TQRChildBand
-    Left = 19
-    Top = 434
-    Width = 249
-    Height = 17
-    Frame.Color = clBlack
-    Frame.DrawTop = False
-    Frame.DrawBottom = False
-    Frame.DrawLeft = False
-    Frame.DrawRight = False
-    AlignToBottom = False
-    Color = clWhite
-    ForceNewColumn = False
-    ForceNewPage = False
-    Size.Values = (
-      44.979166666666670000
-      658.812500000000000000)
-    ParentBand = ChildBand2
-    object QRLabel26: TQRLabel
-      Left = 58
-      Top = 0
-      Width = 86
-      Height = 15
+    object QRDBText9: TQRDBText
+      Left = 147
+      Top = 4
+      Width = 100
+      Height = 17
       Frame.Color = clBlack
       Frame.DrawTop = False
       Frame.DrawBottom = False
       Frame.DrawLeft = False
       Frame.DrawRight = False
       Size.Values = (
-        39.687500000000000000
-        153.458333333333300000
-        0.000000000000000000
-        227.541666666666700000)
-      Alignment = taLeftJustify
-      AlignToBand = False
-      AutoSize = True
-      AutoStretch = False
-      Caption = 'Monto Recibido'
-      Color = clWhite
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Arial'
-      Font.Style = [fsBold]
-      ParentFont = False
-      Transparent = False
-      WordWrap = True
-      FontSize = 8
-    end
-    object QRDBText23: TQRDBText
-      Left = 152
-      Top = 0
-      Width = 95
-      Height = 15
-      Frame.Color = clBlack
-      Frame.DrawTop = False
-      Frame.DrawBottom = False
-      Frame.DrawLeft = False
-      Frame.DrawRight = False
-      Size.Values = (
-        39.687500000000000000
-        402.166666666666700000
-        0.000000000000000000
-        251.354166666666700000)
+        44.979166666666670000
+        388.937500000000000000
+        10.583333333333330000
+        264.583333333333300000)
       Alignment = taRightJustify
       AlignToBand = False
       AutoSize = False
       AutoStretch = False
       Color = clWhite
       DataSet = dmFactura.qryVentaFactura
-      DataField = 'MONTO_PAGADO'
+      DataField = 'VALOR_TOTAL_DET'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Arial'
+      Font.Height = -13
+      Font.Name = 'Default'
       Font.Style = [fsBold]
       Mask = ',0.00'
+      OnPrint = QRDBText9Print
       ParentFont = False
       Transparent = False
       WordWrap = True
-      FontSize = 8
+      FontSize = 10
     end
   end
   object ChildBand4: TQRChildBand
     Left = 19
-    Top = 650
+    Top = 669
     Width = 249
     Height = 117
     Frame.Color = clBlack
@@ -5292,7 +5262,7 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
   end
   object ChildBand14: TQRChildBand
     Left = 19
-    Top = 767
+    Top = 786
     Width = 249
     Height = 147
     Frame.Color = clBlack
@@ -5647,6 +5617,89 @@ object qckRepReciboReimpTicketSurtidoraNew: TqckRepReciboReimpTicketSurtidoraNew
         2CFF000E567F8503C0FF00DA2428445FB5795CFCB2893EEE7DB1D6B77C1DE1C1
         E12F09D86862E4DC8B4561E695DBBB73B374FF008156ED140051451401FFD9}
       Stretch = True
+    end
+  end
+  object ChildBand15: TQRChildBand
+    Left = 19
+    Top = 453
+    Width = 249
+    Height = 17
+    Frame.Color = clBlack
+    Frame.DrawTop = False
+    Frame.DrawBottom = False
+    Frame.DrawLeft = False
+    Frame.DrawRight = False
+    AlignToBottom = False
+    Color = clWhite
+    ForceNewColumn = False
+    ForceNewPage = False
+    Size.Values = (
+      44.979166666666670000
+      658.812500000000000000)
+    ParentBand = ChildBand3
+    object QRLabel26: TQRLabel
+      Left = 58
+      Top = 0
+      Width = 86
+      Height = 15
+      Frame.Color = clBlack
+      Frame.DrawTop = False
+      Frame.DrawBottom = False
+      Frame.DrawLeft = False
+      Frame.DrawRight = False
+      Size.Values = (
+        39.687500000000000000
+        153.458333333333300000
+        0.000000000000000000
+        227.541666666666700000)
+      Alignment = taLeftJustify
+      AlignToBand = False
+      AutoSize = True
+      AutoStretch = False
+      Caption = 'Monto Recibido'
+      Color = clWhite
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Arial'
+      Font.Style = [fsBold]
+      ParentFont = False
+      Transparent = False
+      WordWrap = True
+      FontSize = 8
+    end
+    object QRDBText23: TQRDBText
+      Left = 152
+      Top = 0
+      Width = 95
+      Height = 15
+      Frame.Color = clBlack
+      Frame.DrawTop = False
+      Frame.DrawBottom = False
+      Frame.DrawLeft = False
+      Frame.DrawRight = False
+      Size.Values = (
+        39.687500000000000000
+        402.166666666666700000
+        0.000000000000000000
+        251.354166666666700000)
+      Alignment = taRightJustify
+      AlignToBand = False
+      AutoSize = False
+      AutoStretch = False
+      Color = clWhite
+      DataSet = dmFactura.qryVentaFactura
+      DataField = 'MONTO_PAGADO'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Arial'
+      Font.Style = [fsBold]
+      Mask = ',0.00'
+      ParentFont = False
+      Transparent = False
+      WordWrap = True
+      FontSize = 8
     end
   end
 end

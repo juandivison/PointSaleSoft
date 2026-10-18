@@ -105,6 +105,10 @@ type
     areaTrans : integer;
     PermiteEditar : boolean;
     _TienepagoTarjeta : boolean;
+
+    PagoAceptado : Boolean;
+    MontoNCRAplicado: Currency;
+
     Function GetMontoNotaCreditoPendiente(_moneda:string; codCte:Integer):Currency;
   end;
 
@@ -184,6 +188,12 @@ end;
 
 procedure TfrmPagosCombinados.FormCreate(Sender: TObject);
 begin
+  MontoNCRAplicado := 0;
+  _TienepagoTarjeta := False;
+
+  BitBtn21.ModalResult := mrNone;
+  ModalResult := mrNone;
+  PagoAceptado := False;
   PermiteEditar :=False;
   dmPagosTarjeta.qryTipoPago.close;
   dmPagosTarjeta.qryTipoPago.Open;
@@ -412,60 +422,104 @@ begin
   dmPagosTarjeta.tblDetallePagos.Cancel;
 end;
 
-procedure TfrmPagosCombinados.actualizarrxCobros(tpago: integer);
+procedure TfrmPagosCombinados.actualizarrxCobros(
+  tpago: Integer
+);
 var
-monto : Extended;
+  monto: Extended;
+  LMontoPago: Currency;
+  LTipoPago: Integer;
 begin
-  dmPagosTarjeta.tblDetallePagos.First;
-  monto:=0;
-  rxCobros.AutoCalcFields:=False;
-  rxCobros.Edit;
-  rxCobrosEfectivo.Value:=0;
-  rxCobrosTarjeta.Value:=0;
-  rxCobrosCheque.Value:=0;
-  rxCobrosCoberturaARS.Value:=0;
-  rxCobrosBono.Value:=0;
-  While Not dmPagosTarjeta.tblDetallePagos.Eof do
-  begin
-    Case tpago Of
-    1, 10, 11 :
-    begin
-      rxCobrosEfectivo.Value:=rxCobrosEfectivo.Value + dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
-    end; //Efectivo, Cupon, Otro, Nota de Credito
-    2, 12, 13  : //tarjeta debito, tarjeta propia
-    begin
-      rxCobrosTarjeta.Value:=rxCobrosTarjeta.Value + dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
-    end;
-    3,20,21  : //tarjeta debito, tarjeta propia, or transf, or deposito
-    begin
-      rxCobrosCheque.Value:=rxCobrosCheque.Value + dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
-    end;
-    9 :
-    begin
-      rxCobrosBono.Value:=rxCobrosBono.Value + dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
-    end;
-    18 :
-    begin
-      rxCobrosCoberturaARS.Value:=rxCobrosCoberturaARS.Value + dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
-    end;
-  end;
-  monto:=monto + dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
+  {
+    tpago se conserva temporalmente para no alterar
+    todas las llamadas del formulario durante M1.
+    Ya no determina la clasificación.
+  }
 
-  dmPagosTarjeta.tblDetallePagos.Next;
+  monto := 0;
+  MontoNCRAplicado := 0;
+  _TienepagoTarjeta := False;
+
+  rxCobros.AutoCalcFields := False;
+
+  try
+    if rxCobros.State = dsBrowse then
+      rxCobros.Edit;
+
+    rxCobrosEfectivo.Value := 0;
+    rxCobrosTarjeta.Value := 0;
+    rxCobrosCheque.Value := 0;
+    rxCobrosCoberturaARS.Value := 0;
+    rxCobrosBono.Value := 0;
+
+    dmPagosTarjeta.tblDetallePagos.First;
+
+    while not dmPagosTarjeta.tblDetallePagos.Eof do
+    begin
+      if dmPagosTarjeta.tblDetallePagosTIPO_PAGO.IsNull then
+        LTipoPago := 0
+      else
+        LTipoPago :=
+          dmPagosTarjeta.tblDetallePagosTIPO_PAGO.Value;
+
+      if dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.IsNull then
+        LMontoPago := 0
+      else
+        LMontoPago :=
+          dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
+
+      case LTipoPago of
+        1, 11:
+          rxCobrosEfectivo.Value :=
+            rxCobrosEfectivo.Value + LMontoPago;
+
+        10:
+        begin
+          {
+            Se mantiene dentro del bucket visual de efectivo
+            para no modificar el DFM en M1, pero además
+            conservamos explícitamente lo aplicado como NCR.
+          }
+          rxCobrosEfectivo.Value :=
+            rxCobrosEfectivo.Value + LMontoPago;
+
+          MontoNCRAplicado :=
+            MontoNCRAplicado + LMontoPago;
+        end;
+
+        2, 12, 13:
+        begin
+          rxCobrosTarjeta.Value :=
+            rxCobrosTarjeta.Value + LMontoPago;
+
+          _TienepagoTarjeta := True;
+        end;
+
+        3, 20, 21:
+          rxCobrosCheque.Value :=
+            rxCobrosCheque.Value + LMontoPago;
+
+        9:
+          rxCobrosBono.Value :=
+            rxCobrosBono.Value + LMontoPago;
+
+        18:
+          rxCobrosCoberturaARS.Value :=
+            rxCobrosCoberturaARS.Value + LMontoPago;
+      end;
+
+      monto := monto + LMontoPago;
+
+      dmPagosTarjeta.tblDetallePagos.Next;
+    end;
+
+    rxCobros.Post;
+
+  finally
+    rxCobros.AutoCalcFields := True;
   end;
-  rxCobros.Post;
+
   Label35.Caption := Format('%8.2f', [monto]);
-  rxCobros.AutoCalcFields:=True;
-  {if (abs(monto - rxCobrostotalNeto.Value) > 1) then
-  begin
-    MessageDlg('No se permite sobrante '+ floatTostr(abs(monto - rxCobrostotalNeto.Value))+' en pagos combinados, verifique',mtError,[mbok],0);
-    dmPagosTarjeta.tblDetallePagos.Last;
-    dmPagosTarjeta.tblDetallePagos.Delete;
-    GlbSalvarQuery(dmPagosTarjeta.tblDetallePagos);
-    actualizarrxCobros(dmpagostarjeta.tblDetallePagosTIPO_PAGO.Value);
-    if showing then
-    DBEdit14.SetFocus;
-  end;}
 end;
 
 procedure TfrmPagosCombinados.BitBtn18Click(Sender: TObject);
@@ -604,19 +658,19 @@ end;
 
 procedure TfrmPagosCombinados.BitBtn21Click(Sender: TObject);
 begin
-  if dmPagosTarjeta.tblDetallePagos.State in [dsInsert, dsEdit] then
+  if dmPagosTarjeta.tblDetallePagos.State in
+     [dsInsert, dsEdit] then
   begin
-     MessageDlg('Transacción activa, verifique', mtError,[mbOk],0);
-     exit;
-  end else
-  if dmPagosTarjeta.tblDetallePagos.State in [dsBrowse] then
-  begin
-    if rxCobrostotalNeto.Value < rxCobrosDiferencia.Value then
-    begin
-     MessageDlg('Monto pendiente, verifique', mtError,[mbOk],0);
-     exit;
-    end;
+    MessageDlg(
+      'Transacción activa, verifique.',
+      mtError,
+      [mbOk],
+      0
+    );
+    Exit;
   end;
+
+  Close;
 end;
 
 procedure TfrmPagosCombinados.DBEdit16Exit(Sender: TObject);
@@ -636,15 +690,26 @@ begin
 end;
 
 procedure TfrmPagosCombinados.DBEdit14Change(Sender: TObject);
+var
+  LDisponible: Currency;
 begin
-  if (dmPagosTarjeta.tblDetallePagosTIPO_PAGO.Value = 10) then //Nota de Crdito
+  if dmPagosTarjeta.tblDetallePagosTIPO_PAGO.Value = 10 then
   begin
-    frmProcVentaRapida.Totales.Edit;
-    frmProcVentaRapida.TotalesMontoNotaCredito.Value:=
-    GetMontoNotaCreditoPendiente(frmProcVentaRapida.TotalesMoneda.Value,
-    frmProcVentaRapida.tablaPropietarioCodigoPropietario.Value) -
-    dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
+    LDisponible :=
+      GetMontoNotaCreditoPendiente(
+        frmProcVentaRapida.TotalesMoneda.Value,
+        frmProcVentaRapida.tablaPropietarioCodigoPropietario.Value
+      );
+
+    if not dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.IsNull then
+      LDisponible :=
+        LDisponible -
+        dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value;
+
+    Label11.Caption :=
+      InsertarComa(FloatToStr(LDisponible));
   end;
+
   Refresh;
 end;
 
@@ -670,31 +735,68 @@ begin
   Refresh;
 end;
 
-procedure TfrmPagosCombinados.FormCloseQuery(Sender: TObject;
-  var CanClose: Boolean);
+procedure TfrmPagosCombinados.FormCloseQuery(
+  Sender: TObject;
+  var CanClose: Boolean
+);
 begin
-  CanClose:=True;
-  if dmPagosTarjeta.tblDetallePagos.State in [dsInsert, dsEdit] then
+  CanClose := False;
+  PagoAceptado := False;
+
+  {
+    No cerrar mientras existe un registro
+    pendiente de Post/Cancel.
+  }
+  if dmPagosTarjeta.tblDetallePagos.State in
+     [dsInsert, dsEdit] then
   begin
-     MessageDlg('Transacción activa, verifique. Cancelar para salir.', mtError,[mbOk],0);
-     if showing then
-     BitBtn20.SetFocus;
-     CanClose:=False;
-     exit;
+    MessageDlg(
+      'Transacción activa, verifique. Cancelar para salir.',
+      mtError,
+      [mbOk],
+      0
+    );
+
+    if Showing and BitBtn20.CanFocus then
+      BitBtn20.SetFocus;
+
+    Exit;
   end;
+
+  {
+    Si no existe ningún pago, permitimos cerrar,
+    pero NO consideramos la distribución aceptada.
+  }
   if dmPagosTarjeta.tblDetallePagos.RecordCount = 0 then
   begin
-    _TienepagoTarjeta:=false;
-    rxCobros.EmptyTable;
-    CanClose:=True;
-  end else
-  if (ABS(rxCobrosDiferencia.Value) > 0.50) then
-  begin
-     //T MessageDlg('Favor verificar pago exacto. ',mtError,[mbok], 0);
-     //T CanClose:=False;
+    _TienepagoTarjeta := False;
+
+    if rxCobros.Active then
+      rxCobros.EmptyTable;
+
+    CanClose := True;
+    PagoAceptado := False;
+    Exit;
   end;
-  if (rxCobrostotalNeto.Value > 0) then
-  if not VerificarDatos(rxCobrostotalNeto.Value) then CanClose:=False;
+
+  {
+    Existe distribución:
+    debe ser válida antes de permitir cerrar.
+  }
+  if rxCobrostotalNeto.Value > 0 then
+  begin
+    if not VerificarDatos(
+      rxCobrostotalNeto.Value
+    ) then
+      Exit;
+  end;
+
+  {
+    Si llegamos aquí, la distribución quedó validada.
+    Cerrar la ventana equivale a aceptar el pago.
+  }
+  PagoAceptado := True;
+  CanClose := True;
 end;
 
 procedure TfrmPagosCombinados.RxDBLookupCombo5Enter(Sender: TObject);

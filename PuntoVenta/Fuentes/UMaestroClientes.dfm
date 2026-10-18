@@ -1,6 +1,6 @@
 object frmClientes: TfrmClientes
-  Left = 318
-  Top = 200
+  Left = 198
+  Top = 138
   Width = 993
   Height = 558
   Caption = 'Maestro Clientes'
@@ -1295,7 +1295,8 @@ object frmClientes: TfrmClientes
         Top = 371
         Width = 191
         Height = 23
-        DropDownCount = 8
+        DropDownCount = 10
+        DropDownWidth = 500
         DataField = 'TIPO_CF'
         DataSource = dtSource
         Font.Charset = DEFAULT_CHARSET
@@ -1304,10 +1305,12 @@ object frmClientes: TfrmClientes
         Font.Name = 'MS Sans Serif'
         Font.Style = []
         LookupField = 'TIPO_CF'
-        LookupDisplay = 'DESCRIPCION'
-        LookupSource = dmFactura.dstblTipoCF
+        LookupDisplay = 'TIPO_CF;DESCRIPCION'
+        LookupDisplayIndex = 1
+        LookupSource = dsqrytipoECF
         ParentFont = False
         TabOrder = 10
+        OnExit = RxDBLookupCombo3Exit
       end
       object DBEdit19: TDBEdit
         Left = 104
@@ -5616,7 +5619,7 @@ object frmClientes: TfrmClientes
     TipoRes = 1
     UsaFechaCierre = False
     Left = 748
-    Top = 242
+    Top = 218
   end
   object PopupMenu2: TPopupMenu
     Left = 668
@@ -5714,12 +5717,17 @@ object frmClientes: TfrmClientes
   end
   object dsqryProvinciaseCF: TDataSource
     DataSet = dmDatos.qryProvinciaseCF
-    Left = 696
-    Top = 296
+    Left = 704
+    Top = 304
   end
   object dsqryMunicipioseCF: TDataSource
     DataSet = dmDatos.qryMunicipioseCF
-    Left = 688
+    Left = 680
     Top = 240
+  end
+  object dsqrytipoECF: TDataSource
+    DataSet = dmFactura.qrytipoECF
+    Left = 870
+    Top = 442
   end
 end

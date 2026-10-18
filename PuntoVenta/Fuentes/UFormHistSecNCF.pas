@@ -123,16 +123,7 @@ end;
 
 procedure TfrmMantHistoricoNCF.BitBtn4Click(Sender: TObject);
 begin
-  if dmFactura.tblQryHistoricoSecNCF.State in [dsInsert, dsEdit] then
-  begin
-    dmFactura.tblQryHistoricoSecNCF.Post;
-    dmFactura.tblQryHistoricoSecNCF.ApplyUpdates;
-    try
-      dmFactura.tblQryHistoricoSecNCF.Transaction.CommitRetaining;
-    except
-        dmFactura.tblQryHistoricoSecNCF.Transaction.RollbackRetaining;
-    end;
-  end;
+  GlbSalvarQuery(dmFactura.tblQryHistoricoSecNCF);
 end;
 
 procedure TfrmMantHistoricoNCF.BitBtn5Click(Sender: TObject);

@@ -2260,7 +2260,7 @@ object frmInvCertificados: TfrmInvCertificados
     object tblInvCertificadosDetNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object tblInvCertificadosDetCODCTECONSIGNADO: TIntegerField
       FieldName = 'CODCTECONSIGNADO'
@@ -2431,7 +2431,7 @@ object frmInvCertificados: TfrmInvCertificados
     object qryClientesNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object tblCertConsignados: TIBDataSet
@@ -2498,7 +2498,7 @@ object frmInvCertificados: TfrmInvCertificados
     object tblCertConsignadosNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object tblCertConsignadosFECHA_IN: TDateTimeField
       FieldName = 'FECHA_IN'

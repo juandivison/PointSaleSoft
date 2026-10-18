@@ -3464,7 +3464,7 @@ object frmConsignacion: TfrmConsignacion
     object qryClienteNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClienteDIRECCION_CONT: TIBStringField
       FieldName = 'DIRECCION_CONT'

@@ -72,19 +72,14 @@ type
     QRDBText21: TQRDBText;
     QRExpr1: TQRExpr;
     ChildBand2: TQRChildBand;
-    QRDBText9: TQRDBText;
     QRDBText13: TQRDBText;
-    QRShape2: TQRShape;
     QRShape1: TQRShape;
     QRLabel13: TQRLabel;
     QRLabel23: TQRLabel;
     QRDBText22: TQRDBText;
     QRLabel12: TQRLabel;
-    QRLabel25: TQRLabel;
     QRDBText1: TQRDBText;
     ChildBand3: TQRChildBand;
-    QRLabel26: TQRLabel;
-    QRDBText23: TQRDBText;
     ChildBand4: TQRChildBand;
     ChildBand5: TQRChildBand;
     QRDBText24: TQRDBText;
@@ -102,6 +97,13 @@ type
     QRLabel31: TQRLabel;
     qrCodigoSegecf: TQRLabel;
     qrFechaFDigital: TQRLabel;
+    ChildBand15: TQRChildBand;
+    QRLabel26: TQRLabel;
+    QRDBText23: TQRDBText;
+    QRLabel25: TQRLabel;
+    QRDBText9: TQRDBText;
+    QRLabel34: TQRLabel;
+    QRDBText25: TQRDBText;
     procedure QRDBText4Print(sender: TObject; var Value: String);
     procedure QuickRepBeforePrint(Sender: TCustomQuickRep;
       var PrintReport: Boolean);
@@ -316,6 +318,8 @@ begin
     QRLabel17.Top:=QRLabel16.Top;
     QRDBText17.Top:=QRLabel16.Top;
   end;
+  if dmFactura.qryVentaFacturaMONTO_RECARGO.Value = 0 then
+  ChildBand2.Height:=0;
 end;
 
 procedure TqckRepReciboReimpTicketSurtidoraNew.QRExpr5Print(sender: TObject;
@@ -771,6 +775,7 @@ begin
         //t PrintBand:=True;
       end else
       begin
+        if (codseg <> '') then
         LogInformacionTxt('Ruta codigo QR, no existe ->'+rutaqr);
         ChildBand4.Height:=0;
       end;

@@ -3,8 +3,9 @@ unit UDatosVentas;
 interface
 
 uses
-  SysUtils, Classes, DB, IBCustomDataSet, IBUpdateSQL, IBQuery, IBTable,
-  Variants, dialogs, IBStoredProc, IBSQL;
+  SysUtils, Classes, DB, IBCustomDataSet, IBUpdateSQL, IBQuery,
+  IBTable,IBStoredProc, IBSQL,
+  Variants, dialogs;
 
 type
   TdmVentas = class(TDataModule)
@@ -58,7 +59,6 @@ type
     tblVentasMastFORMA_PAGO: TSmallintField;
     qryClientesCIUDAD: TIBStringField;
     qryClientesDIRECCION_CONT: TIBStringField;
-    qryClientesNOMBRE_FACTURAR: TIBStringField;
     qryClientesPAIS: TIBStringField;
     qryClientesTELEF_CONTACTO: TIBStringField;
     qryClientesFOTO: TBlobField;
@@ -873,6 +873,7 @@ type
     tblncfasignadoCODIGO_USUARIO_UPD: TIntegerField;
     tblncfasignadoECF: TIBStringField;
     tblncfasignadoNUMERO_NCF_REFERENCIA: TIBStringField;
+    qryClientesNOMBRE_FACTURAR: TIBStringField;
     procedure tblVentasDetalleBeforePost(DataSet: TDataSet);
     procedure tblVentasMastAfterScroll(DataSet: TDataSet);
     procedure tblVentasMastAfterInsert(DataSet: TDataSet);

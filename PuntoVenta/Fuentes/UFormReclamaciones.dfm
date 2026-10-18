@@ -2486,7 +2486,7 @@ object frmReclamaciones: TfrmReclamaciones
     object qryClienteNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClienteEMAIL: TIBStringField
       FieldName = 'EMAIL'
@@ -3275,7 +3275,7 @@ object frmReclamaciones: TfrmReclamaciones
     object qryRepReclamacionDESCCLIENTE: TIBStringField
       FieldName = 'DESCCLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepReclamacionTELEF_CONTACTO: TIBStringField
       FieldName = 'TELEF_CONTACTO'

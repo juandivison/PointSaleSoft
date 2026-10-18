@@ -27,7 +27,6 @@ type
     Label5: TLabel;
     edtCodCte: TEditN;
     Label6: TLabel;
-    SkinData1: TSkinData;
     rdgContado: TRadioButton;
     rdgCredito: TRadioButton;
     lblFactTieneDevolucion: TLabel;
@@ -119,6 +118,10 @@ type
     VerificarMontos1: TMenuItem;
     chkImpenPDF: TCheckBox;
     XMLFirmados1: TMenuItem;
+    Label12: TLabel;
+    DBText5: TDBText;
+    AuditarXMLvsVta1: TMenuItem;
+    SkinData1: TSkinData;
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure cboxClientesChange(Sender: TObject);
@@ -166,6 +169,7 @@ type
     procedure CartadeSaldo1Click(Sender: TObject);
     procedure VerificarMontos1Click(Sender: TObject);
     procedure XMLFirmados1Click(Sender: TObject);
+    procedure AuditarXMLvsVta1Click(Sender: TObject);
   private
     { Private declarations }
     procedure VerificaVendedor;
@@ -208,7 +212,7 @@ USES UDatModFactura, uglobal, UDatModClientes, UFormCambiarCteFact,
   UDatModPagoTarjeta, UFormUpdateMontopagado, UUtilecf, UUtilecftimbre,
   UfrmlECF_TIMBRE_LOG, UFormAsignareCFAVentasSineCF, UModoConsumoToCredito,
   UBuscarClientesPersonasP, UFormNCFAsignados, USetClaveMaestra,
-  UFrmCartaRutaTemplate, UFrmCartaSaldoTemplate,
+  UFrmCartaRutaTemplate, UFrmCartaSaldoTemplate,UAuditoriaECF,
   UformConsultarVerificaMontosVtas, UXmlSalesImporter;
 {$R *.dfm}
 
@@ -266,7 +270,7 @@ begin
       if rdgNotaCR.Checked then
       dmFactura.qryVentaFactura.SQL.Text:=
       dmFactura.qryDatosDevolucionNCR_0.SQL.Text +
-      ' Where VENTAS_MAST.numero =:numero and '+
+      ' Where VENTAS_MAST.numero =:numero '+
       ' And ventas_mast.cia_key =:ciakey and ventas_mast.FORMA_PAGO = 6 '
       +edtMontoquery
       else
@@ -281,7 +285,7 @@ begin
 
       dmFactura.qryVentaFactura.SQL.Text := dmFactura.qryVentaFactura.SQL.Text +
       ' order by ventas_mast.numero';
-      
+
       dmFactura.qryVentaFactura.Params[0].AsInteger:= edtNumConduce.ValueInteger;
       dmFactura.qryVentaFactura.Params[1].AsInteger:= glbCia_Key;
     end else
@@ -487,7 +491,11 @@ begin
   end;
   dmFactura.qryDatosTrncxc.Params[1].AsInteger:= dmFactura.qryVentaFacturaNUMERO_FACTURA.Value;
   //dmFactura.qryDatosTrncxc.Params[1].AsInteger:= glbCia_Key;
-  dmFactura.qryDatosTrncxc.Open;
+  //try
+  dmFactura.qryDatosTrncxc.Open;//dmFactura.qryDatosTrncxc.sql.text
+  //except
+  //temporal
+  //end;
   NumTrnVenta:=dmfactura.qryVentaFacturaNUMERO.Value;
 
   dmFactura.qryFactTieneDevolucion.Close;
@@ -701,6 +709,10 @@ begin
     dmfactura.qryDetPagos.Params[0].Value:=dmfactura.qryVentaFacturaNUMERO.Value;
     dmfactura.qryDetPagos.Open;
   end;
+  if  (dmfactura.qryVentaFacturaSTATUS.Value = 'E') then
+  begin
+    Background:=clRed;
+  end else
   if  (dmfactura.qryVentaFacturaSTATUS.Value = 'C') then
   Background:=clGray
   else
@@ -744,7 +756,10 @@ begin
   if  (dmFactura.qryVentaFacturaDetSTATUS_DET.Value = 'C') then
   Background:=clGray
   else
-  if (Field.FieldName = 'LEVEL_PRECIO_VENTA') And dmFactura.qryVentaFacturaDetLevel_precio_Venta.IsNull then
+  if dmFactura.qryVentaFacturaDetFUE_DEVUELTO.Value = 1 then
+  background:=$008CFFFF
+  else
+  if dmFactura.qryVentaFacturaDetLevel_precio_Venta.IsNull then
   begin
     background:=$00BDECE9;
     Label9.Visible:=True
@@ -2029,6 +2044,20 @@ begin
     LConnectionString,
     LXmlFolder
   );
+end;
+
+procedure TfrmConsultaFacturas.AuditarXMLvsVta1Click(Sender: TObject);
+begin
+  if not Assigned(frmAuditoriaECF) then
+    frmAuditoriaECF := TfrmAuditoriaECF.Create(Application);
+
+  try
+    frmAuditoriaECF.edtTRN.Text:=dmFactura.qryVentaFacturaNUMERO.AsString;
+    frmAuditoriaECF.edtENCF.Text:=dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+    frmAuditoriaECF.ShowModal;
+  finally
+    FreeAndNil(frmAuditoriaECF);
+  end;
 end;
 
 end.

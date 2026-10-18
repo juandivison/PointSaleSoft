@@ -54,7 +54,7 @@ begin
   frmInciaConeccion.Free;
   frmInciaConeccion := Nil;
   end;
-end;
+end;        
 
 procedure TdmConectar.IBDatabase1Login(Database: TIBDatabase;
   LoginParams: TStrings);

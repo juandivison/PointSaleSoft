@@ -1,6 +1,6 @@
 object frmNominaEmpleado: TfrmNominaEmpleado
-  Left = 363
-  Top = 193
+  Left = 335
+  Top = 177
   Width = 1040
   Height = 561
   Caption = 'Procesar N'#243'mina Empleados'
@@ -492,6 +492,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       item
         Expanded = False
         FieldName = 'BONIFICACION'
+        Width = 64
         Visible = True
       end
       item
@@ -538,6 +539,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       item
         Expanded = False
         FieldName = 'CUOTA_PRESTAMO'
+        Width = 64
         Visible = True
       end
       item
@@ -549,6 +551,7 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       item
         Expanded = False
         FieldName = 'FECHA_IN'
+        Width = 64
         Visible = True
       end
       item
@@ -572,11 +575,13 @@ object frmNominaEmpleado: TfrmNominaEmpleado
       item
         Expanded = False
         FieldName = 'SFS_COMPLEMENTARIO'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'SFS_DEPENDIENTES'
+        Width = 64
         Visible = True
       end>
   end

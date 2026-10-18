@@ -1301,7 +1301,7 @@ object dmInventario: TdmInventario
     object tblInventarioSERIENOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object dstblInventarioSERIE: TDataSource

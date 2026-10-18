@@ -402,9 +402,10 @@ object dmCxc: TdmCxc
     end
     object qryProcServNOMBRE_FACTURAR: TIBStringField
       DisplayLabel = 'ClienteDesc'
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object dsqryProcServ: TDataSource
@@ -2226,39 +2227,48 @@ object dmCxc: TdmCxc
       '            WHEN p.Tipo_doc = 6 THEN'
       '                COALESCE('
       '                    ('
+      '                    SELECT FIRST 1'
+      '                        CASE'
       
-        '                        SELECT FIRST 1 UPPER(TRIM(tp.DESCRIPCION' +
-        '))'
-      '                        FROM VENTAS_MAST vmDev'
+        '                            WHEN dp.TIPO_PAGO IN (7,8,15,18) THE' +
+        'N '#39'CREDITO'#39
       
-        '                        LEFT JOIN DETALLE_PAGOS dp ON dp.SERIE_T' +
-        'RN = vmDev.REF_TRN_ORIGEN'
+        '                            WHEN dp.TIPO_PAGO = 1 THEN '#39'EFECTIVO' +
+        #39
+      '                            WHEN dp.TIPO_PAGO = 2 THEN '#39'TARJETA'#39
       
-        '                        LEFT JOIN TIPO_PAGO tp ON tp.CODIGO = dp' +
-        '.TIPO_PAGO'
-      '                        WHERE vmDev.NUMERO = p.NUMERO_TRN'
-      '                    ),'
-      '                    ('
-      '                        SELECT'
-      '                            CASE'
+        '                            WHEN dp.TIPO_PAGO IN (20,21) THEN '#39'T' +
+        'RANSFERENCIA'#39
+      '                            ELSE UPPER(TRIM(tp.DESCRIPCION))'
+      '                        END'
+      '                    FROM VENTAS_MAST vmDev'
+      '                    LEFT JOIN DETALLE_PAGOS dp'
+      '                        ON dp.SERIE_TRN = vmDev.REF_TRN_ORIGEN'
+      '                    LEFT JOIN TIPO_PAGO tp'
+      '                        ON tp.CODIGO = dp.TIPO_PAGO'
+      '                    WHERE vmDev.NUMERO = p.NUMERO_TRN'
+      '                                        ),'
+      '                                        ('
+      '                    SELECT'
+      '                        CASE'
       
-        '                                WHEN vmOrig.FORMA_PAGO = '#39'1'#39' THE' +
-        'N '#39'EFECTIVO'#39
+        '                            WHEN vmOrig.FORMA_PAGO = 1 THEN '#39'EFE' +
+        'CTIVO'#39
       
-        '                                WHEN vmOrig.FORMA_PAGO = '#39'2'#39' THE' +
-        'N '#39'TARJETA'#39
+        '                            WHEN vmOrig.FORMA_PAGO = 2 THEN '#39'TAR' +
+        'JETA'#39
       
-        '                                WHEN vmOrig.FORMA_PAGO IN ('#39'20'#39',' +
-        #39'21'#39') THEN '#39'TRANSFERENCIA'#39
+        '                            WHEN vmOrig.FORMA_PAGO IN (20,21) TH' +
+        'EN '#39'TRANSFERENCIA'#39
       
-        '                                ELSE UPPER(TRIM(p.tipo_documento' +
-        '))'
-      '                            END'
-      '                        FROM VENTAS_MAST vmDev'
-      
-        '                        LEFT JOIN VENTAS_MAST vmOrig ON vmOrig.N' +
-        'UMERO = vmDev.REF_TRN_ORIGEN'
-      '                        WHERE vmDev.NUMERO = p.NUMERO_TRN'
+        '                            WHEN vmOrig.FORMA_PAGO IN (7,8,15,18' +
+        ') THEN '#39'CREDITO'#39
+      '                            ELSE UPPER(TRIM(p.tipo_documento))'
+      '                        END'
+      '                    FROM VENTAS_MAST vmDev'
+      '                    LEFT JOIN VENTAS_MAST vmOrig'
+      '                        ON vmOrig.NUMERO = vmDev.REF_TRN_ORIGEN'
+      '                    WHERE vmDev.NUMERO = p.NUMERO_TRN'
       '                    ),'
       '                    UPPER(TRIM(p.tipo_documento))'
       '                )'
@@ -2519,8 +2529,8 @@ object dmCxc: TdmCxc
     SQL.Strings = (
       'Select * From DISTR_STATUS_CNT'
       'Where modulo_cnt=:modulocnt')
-    Left = 272
-    Top = 488
+    Left = 256
+    Top = 496
     ParamData = <
       item
         DataType = ftUnknown

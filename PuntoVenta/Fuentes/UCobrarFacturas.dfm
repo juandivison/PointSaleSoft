@@ -2795,10 +2795,10 @@ object frmCobrarFacturas: TfrmCobrarFacturas
     end
     object qryFactPendienteNOMBRE_FACTURAR: TIBStringField
       DisplayLabel = 'Nombre Facturar'
-      DisplayWidth = 30
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryFactPendienteTIPO: TIntegerField
       DisplayLabel = 'Tipo'
@@ -3330,7 +3330,7 @@ object frmCobrarFacturas: TfrmCobrarFacturas
     object qryClienteStdNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClienteStdRNC_NUMERO: TIBStringField
       FieldName = 'RNC_NUMERO'

@@ -775,7 +775,8 @@ uses
   UNOmHistorico in 'UNOmHistorico.pas' {frmNOmHistorico},
   URepIR13 in '..\Reportes\URepIR13.pas' {qckRepIR13: TQuickRep},
   UFormSepararNombre in 'UFormSepararNombre.pas' {frmSepararNombre},
-  UformConsultarVerificaMontosVtas in 'UformConsultarVerificaMontosVtas.pas' {frmConsultarVtasVerDiff};
+  UformConsultarVerificaMontosVtas in 'UformConsultarVerificaMontosVtas.pas' {frmConsultarVtasVerDiff},
+  URepPagoComisionesXVta in '..\Reportes\URepPagoComisionesXVta.pas' {qckRepPagoComisionesXVta: TQuickRep};
 
 {$E exe}
 

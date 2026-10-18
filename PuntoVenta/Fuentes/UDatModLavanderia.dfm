@@ -579,7 +579,7 @@ object dmLavanderia: TdmLavanderia
     object qryreportOrdenLavanderiaNOMBRE_CLIENTE: TIBStringField
       FieldName = 'NOMBRE_CLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryreportOrdenLavanderiaTELEF_CONTACTO: TIBStringField
       FieldName = 'TELEF_CONTACTO'
@@ -994,7 +994,7 @@ object dmLavanderia: TdmLavanderia
     object qryOrdenEntregaNOMBRE_CLIENTE: TIBStringField
       FieldName = 'NOMBRE_CLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
 end

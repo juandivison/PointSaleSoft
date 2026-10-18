@@ -282,7 +282,7 @@ type
     function EstadoEnvioPermiteCorreccion: Boolean;
     function RechazoActualRequiereNuevaSecuencia: Boolean;
   public
-  end;
+  end;                            
 
 var
   frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF;

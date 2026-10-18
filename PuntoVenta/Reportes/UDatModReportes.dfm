@@ -1,8 +1,8 @@
 object dmReportes: TdmReportes
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Left = 360
-  Top = 193
+  Left = 384
+  Top = 144
   Height = 695
   Width = 1086
   object qryDatosRepClientes: TIBQuery
@@ -141,9 +141,10 @@ object dmReportes: TdmReportes
       Size = 60
     end
     object qryDatosRepClientesNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatosRepClientesPAIS: TIBStringField
       FieldName = 'PAIS'
@@ -418,9 +419,10 @@ object dmReportes: TdmReportes
       Origin = 'PROC_DATOS_VENTA_DIARIA.MONTO_INICIAL'
     end
     object qryDatosRepVentaDiariaNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'PROC_DATOS_VENTA_DIARIA.NOMBRE_FACTURAR'
-      Size = 80
+      Size = 150
     end
     object qryDatosRepVentaDiariaNOMBRE_VENDEDOR: TIBStringField
       FieldName = 'NOMBRE_VENDEDOR'
@@ -551,9 +553,10 @@ object dmReportes: TdmReportes
       Origin = 'VIEW_ANTIGUEDAD_CXC.CODIGO'
     end
     object qryVigenciaCxcNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'VIEW_ANTIGUEDAD_CXC.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryVigenciaCxcFECHA_BCE: TDateTimeField
       FieldName = 'FECHA_BCE'
@@ -580,9 +583,10 @@ object dmReportes: TdmReportes
       Origin = 'VIEW_ANTIGUEDAD_CXC.BALANCE_ACT'
     end
     object qryVigenciaCxcNOMBRE_FACTURAR1: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR1'
       Origin = 'VIEW_ANTIGUEDAD_CXC.NOMBRE_FACTURAR1'
-      Size = 40
+      Size = 150
     end
     object qryVigenciaCxcFECHA_BCE1: TDateTimeField
       FieldName = 'FECHA_BCE1'
@@ -3546,9 +3550,10 @@ object dmReportes: TdmReportes
       Size = 30
     end
     object qryViewVentasMastNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'VIEW_VENTAS_MAST.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryViewVentasMastCOMENTARIO: TIBStringField
       FieldName = 'COMENTARIO'
@@ -4552,9 +4557,10 @@ object dmReportes: TdmReportes
       Size = 71
     end
     object qryViewVentasHistNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'VIEW_HIST_VENTA.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryViewVentasHistNOMBRE_CLIENTE_GENERAL: TIBStringField
       FieldName = 'NOMBRE_CLIENTE_GENERAL'
@@ -5058,9 +5064,10 @@ object dmReportes: TdmReportes
       Required = True
     end
     object qryClientesNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClientesDESCRIPCION_TIPOCTE: TIBStringField
       FieldName = 'DESCRIPCION_TIPOCTE'
@@ -5276,9 +5283,10 @@ object dmReportes: TdmReportes
       Size = 30
     end
     object qryRepVentaServicioNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepVentaServicioCOD_VENDEDOR: TIntegerField
       FieldName = 'COD_VENDEDOR'
@@ -5776,9 +5784,10 @@ object dmReportes: TdmReportes
       Origin = 'INVENTARIO_PRODUCTO.PRECIO_COMPRA'
     end
     object qryRepCotizacionesNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepCotizacionesNOMBRE_ABREV: TIBStringField
       FieldName = 'NOMBRE_ABREV'
@@ -6053,7 +6062,7 @@ object dmReportes: TdmReportes
     object qryRepDatosCteVehNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepDatosCteVehCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -6533,9 +6542,10 @@ object dmReportes: TdmReportes
       Size = 80
     end
     object qryDatosVentaMasterNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'VIEW_VENTAS_MAST.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatosVentaMasterCOMENTARIO: TIBStringField
       FieldName = 'COMENTARIO'
@@ -6903,7 +6913,7 @@ object dmReportes: TdmReportes
     object qryDatosRepTranscxcIFiscalNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'VIEW_TRANSNOTA_CR_DB.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatosRepTranscxcIFiscalTELEF_CONTACTO: TIBStringField
       FieldName = 'TELEF_CONTACTO'
@@ -7325,9 +7335,10 @@ object dmReportes: TdmReportes
       Origin = 'ESTADOFISCAL.TOTAL_NETO'
     end
     object qryDatosReimpDocFiscalNombrecliente: TStringField
+      DisplayWidth = 150
       FieldKind = fkCalculated
       FieldName = 'Nombrecliente'
-      Size = 80
+      Size = 150
       Calculated = True
     end
     object qryDatosReimpDocFiscalRNC: TStringField
@@ -7572,7 +7583,7 @@ object dmReportes: TdmReportes
     object qryDatosRepClientesCumpleNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatosRepClientesCumpleDESCRIPCION_TIPOCTE: TIBStringField
       FieldName = 'DESCRIPCION_TIPOCTE'
@@ -8107,7 +8118,7 @@ object dmReportes: TdmReportes
     object qryProcGetDatosNCNBNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'PROC_GETTRANSNOTA_CR_DB.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryProcGetDatosNCNBTELEF_CONTACTO: TIBStringField
       FieldName = 'TELEF_CONTACTO'
@@ -10178,8 +10189,8 @@ object dmReportes: TdmReportes
         'INNER join TRANS_CXC_DET t on t.SERIE_NCF_ASIGNADO =:seriefcnasi' +
         'gnado'
       'And t.NUMERO_TRN_ORIGEN = r.NUMERO) ')
-    Left = 400
-    Top = 497
+    Left = 408
+    Top = 513
     ParamData = <
       item
         DataType = ftInteger
@@ -10434,7 +10445,7 @@ object dmReportes: TdmReportes
     object qryDatos607NOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'PROC_REPDATOSNCF_RTIPO.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatos607RNC_NUMERO: TIBStringField
       FieldName = 'RNC_NUMERO'
@@ -11442,8 +11453,8 @@ object dmReportes: TdmReportes
       
         'Select distinct r.* from PROC_COMISION_SAM_V2 (:fechaini, :fecha' +
         'fin) r')
-    Left = 384
-    Top = 544
+    Left = 408
+    Top = 568
     ParamData = <
       item
         DataType = ftUnknown
@@ -11467,8 +11478,8 @@ object dmReportes: TdmReportes
       'inner join MARCA_VEHICULO m on m.IDMARCA = d.IDMARCA'
       'where d.codigo_cte=:codigocte'
       'and d.numpol=:numpol')
-    Left = 600
-    Top = 536
+    Left = 592
+    Top = 544
     ParamData = <
       item
         DataType = ftInteger
@@ -11601,8 +11612,8 @@ object dmReportes: TdmReportes
       'inner join INVENTARIO_SERIE s on s.CODIGO = i.CODIGO'
       'left outer join CLIENTES c on c.CODIGO_CTE = s.CODIGO_CTE'
       'left outer join empleado e on e.codigo = r.codigo_tecnico')
-    Left = 672
-    Top = 544
+    Left = 688
+    Top = 560
     object qryRepEquiposNUMERO: TIntegerField
       FieldName = 'NUMERO'
       Origin = 'EQUIPO_MASTER.NUMERO'
@@ -11652,7 +11663,7 @@ object dmReportes: TdmReportes
     object qryRepEquiposNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepEquiposTELEF_CONTACTO: TIBStringField
       FieldName = 'TELEF_CONTACTO'
@@ -11723,8 +11734,8 @@ object dmReportes: TdmReportes
         'left outer join ORDEN_COMP_DET_ORIGINAL dto on dto.serie = o.ser' +
         'ie'
       '')
-    Left = 240
-    Top = 536
+    Left = 232
+    Top = 560
     object qryReporteOrdenesCompORDENRECIBIDAPOR: TIBStringField
       FieldName = 'ORDENRECIBIDAPOR'
       Size = 71
@@ -12045,8 +12056,8 @@ object dmReportes: TdmReportes
       
         'left outer join ORDEN_COMP_DET_ORIGINAL dto on dto.serie = o.ser' +
         'ie')
-    Left = 104
-    Top = 592
+    Left = 96
+    Top = 584
   end
   object qryDatosVentaDet_Pendiente: TIBQuery
     Database = dmConectar.IBDatabase1
@@ -12277,7 +12288,7 @@ object dmReportes: TdmReportes
     object qryDatosRepVentaDiariaNewNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'PROC_DATOS_VENTA_DIARIA_C.NOMBRE_FACTURAR'
-      Size = 80
+      Size = 150
     end
     object qryDatosRepVentaDiariaNewNUMERO_DOCUMENTO: TIntegerField
       FieldName = 'NUMERO_DOCUMENTO'
@@ -12525,8 +12536,8 @@ object dmReportes: TdmReportes
       'Where moneda Between :monedaini And :monedafin'
       'Group By  r.NUMERO_TRN'
       'Order By  r.NUMERO_TRN')
-    Left = 312
-    Top = 528
+    Left = 328
+    Top = 536
     ParamData = <
       item
         DataType = ftDateTime

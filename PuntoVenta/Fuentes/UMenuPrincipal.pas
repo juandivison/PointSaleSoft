@@ -2242,6 +2242,12 @@ end;
        
 procedure TfrmMenuPrincipal.ProcesoLogin;
 begin
+  if dmConectar.IBDatabase1.TestConnected then
+  begin
+    dmConectar.IBDatabase1.CloseDataSets;
+    dmConectar.IBDatabase1.Close;
+    dmConectar.IBDatabase1.Open;
+  end;
   if Assigned(frmLogin) then
   try
     FreeAndNil(frmLogin);
@@ -9265,7 +9271,7 @@ procedure TfrmMenuPrincipal.ExportaraExcel6061Click(Sender: TObject);
 begin
   TfrmReporte606Excel.Ejecutar(Self);
 end;
-
+       
 end.
 
 

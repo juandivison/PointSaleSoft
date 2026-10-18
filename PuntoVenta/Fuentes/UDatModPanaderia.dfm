@@ -2311,7 +2311,7 @@ object dmPanaderia: TdmPanaderia
     object qryRepOrdenTrabNOMBRECTEREGISTRADO: TIBStringField
       FieldName = 'NOMBRECTEREGISTRADO'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepOrdenTrabNUMERO: TIntegerField
       FieldName = 'NUMERO'

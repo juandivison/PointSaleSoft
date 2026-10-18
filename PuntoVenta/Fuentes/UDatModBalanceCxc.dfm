@@ -120,7 +120,7 @@ object dmBalanceCxc: TdmBalanceCxc
       DisplayLabel = 'Nombre Cliente'
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryBalanceCteTELEF_CONTACTO: TIBStringField
       DisplayLabel = 'Telefono'

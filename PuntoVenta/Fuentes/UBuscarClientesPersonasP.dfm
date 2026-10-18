@@ -741,9 +741,10 @@ object FrmBuscarClientesPersonas: TFrmBuscarClientesPersonas
       Size = 1
     end
     object qryClienteStdNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClienteStdCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -970,9 +971,10 @@ object FrmBuscarClientesPersonas: TFrmBuscarClientesPersonas
       Size = 1
     end
     object qryPrestamosNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryPrestamosCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -1204,9 +1206,10 @@ object FrmBuscarClientesPersonas: TFrmBuscarClientesPersonas
       Size = 1
     end
     object IBQuery1NOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object IBQuery1CONTACTO: TIBStringField
       FieldName = 'CONTACTO'

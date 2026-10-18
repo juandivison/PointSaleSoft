@@ -72,7 +72,7 @@ var
 
 implementation
 
-uses UDatModFactura, UFormCompFiscal, UDatModConectar, UFormHistSecNCF;
+uses UDatModFactura, UFormCompFiscal, UDatModConectar, Uglobal, UFormHistSecNCF;
 
 {$R *.dfm}
 
@@ -89,8 +89,10 @@ begin
   if dmFactura.tblDgii_SerieNCF.State in [dsEdit, dsInsert] then
   begin
     dmFactura.tblDgii_SerieNCF.Post;
+    dmFactura.tblDgii_SerieNCF.ApplyUpdates;
+
     if not dmFactura.tblDgii_SerieNCF.Transaction.InTransaction then
-    dmFactura.tblDgii_SerieNCF.Transaction.StartTransaction;
+      dmFactura.tblDgii_SerieNCF.Transaction.StartTransaction;
     try
       dmFactura.tblDgii_SerieNCF.Transaction.CommitRetaining;
     except

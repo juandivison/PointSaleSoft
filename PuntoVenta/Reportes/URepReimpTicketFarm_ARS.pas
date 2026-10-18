@@ -630,7 +630,7 @@ begin
         qrFechaFDigital.Caption:=femision;
       end else
       begin
-        LogInformacionTxt('Ruta codigo QR, no existe ->'+rutaqr);
+        //LogInformacionTxt('Ruta codigo QR, no existe ->'+rutaqr);
         ChildBand3.Height:=0;
       end;
     end;

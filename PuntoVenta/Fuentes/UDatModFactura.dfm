@@ -1,10 +1,10 @@
 object dmFactura: TdmFactura
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Left = 488
+  Left = 517
   Top = 125
-  Height = 641
-  Width = 1024
+  Height = 661
+  Width = 1034
   object IBDataSetFacturas: TIBDataSet
     Database = dmConectar.IBDatabase1
     Transaction = dmConectar.IBTransaction1
@@ -1519,8 +1519,8 @@ object dmFactura: TdmFactura
       '   and '
       '      (V.NUMERO = D.NUMERO)'
       '   )')
-    Left = 396
-    Top = 360
+    Left = 380
+    Top = 344
     ParamData = <
       item
         DataType = ftInteger
@@ -2565,9 +2565,10 @@ object dmFactura: TdmFactura
       Calculated = True
     end
     object qryVentaFacturaNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryVentaFacturaCOTIZACION_ORIGEN: TIntegerField
       FieldName = 'COTIZACION_ORIGEN'
@@ -2677,6 +2678,46 @@ object dmFactura: TdmFactura
       '  D.CODIGO_PROD,'
       '  D.CANTIDAD,'
       '  D.CANT_CONDUCE,'
+      '  '
+      '  CASE'
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) > 0'
+      '      THEN 1'
+      '    ELSE 0'
+      '  END AS FUE_DEVUELTO,'
+      ''
+      '  CASE'
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) <= 0'
+      '      THEN '#39'NO'#39
+      ''
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) >='
+      '         ABS(COALESCE(D.CANTIDAD, 0)) - 0.0001'
+      '      THEN '#39'TOTAL'#39
+      ''
+      '    ELSE '#39'PARCIAL'#39
+      '  END AS ESTADO_DEVOLUCION,'
+      ''
+      '  COALESCE('
+      '    DEV.CANTIDAD_DEVUELTA,'
+      '    0'
+      '  ) AS CANTIDAD_DEVUELTA,'
+      ''
+      '  CASE'
+      '    WHEN'
+      '      ABS(COALESCE(D.CANTIDAD, 0)) -'
+      '      COALESCE(DEV.CANTIDAD_DEVUELTA, 0) < 0.0001'
+      '      THEN 0'
+      ''
+      '    ELSE'
+      '      ABS(COALESCE(D.CANTIDAD, 0)) -'
+      '      COALESCE(DEV.CANTIDAD_DEVUELTA, 0)'
+      '  END AS CANTIDAD_DISPONIBLE,'
+      ''
+      '  COALESCE('
+      '    DEV.CANT_NCR,'
+      '    0'
+      '  ) AS CANT_NCR,'
+      ''
+      '  DEV.ULTIMA_NCR,'
       ''
       '  ABS(D.PRECIO) AS PRECIO,'
       '  D.PORC_DESC_DET,'
@@ -2717,16 +2758,18 @@ object dmFactura: TdmFactura
       '  D.NUM_CONDUCE_CTE,'
       '  D.NUM_IDENT,'
       '  D.FICHA_VEH,'
+      ''
       '  CASE'
-      
-        '    WHEN NULLIF(D.DESCRIPCIONPRODUCTO, '#39#39') IS NULL THEN D.DESCRI' +
-        'PCION'
-      '    ELSE D.DESCRIPCION || '#39' '#39' || D.DESCRIPCIONPRODUCTO'
+      '    WHEN NULLIF(D.DESCRIPCIONPRODUCTO, '#39#39') IS NULL'
+      '      THEN D.DESCRIPCION'
+      '    ELSE'
+      '      D.DESCRIPCION || '#39' '#39' || D.DESCRIPCIONPRODUCTO'
       '  END AS DESCRIPCIONPRODUCTO,'
-      '  '
+      ''
       '  D.PRECIO_COMPRA,'
       '  D.CANT_VIAJES,'
       '  D.CODIGO_VENDEDOR,'
+      '  D.SERIE_ORIGEN,'
       ''
       '  /*'
       '    Valores hist'#243'ricos de la l'#237'nea.'
@@ -2747,19 +2790,64 @@ object dmFactura: TdmFactura
       '  ) AS TRANSP_ITBIS'
       ''
       'FROM VENTAS_MAST V'
+      ''
       'INNER JOIN VENTAS_DET D'
       '  ON V.NUMERO = D.NUMERO'
+      ''
       'LEFT JOIN NCF_ASIGNADOS N'
       '  ON V.SERIE_NCF_ASIGNADO = N.SERIE'
+      ''
       'LEFT JOIN TIPO_CF F'
       '  ON N.TIPO_NCF = F.TIPO_CF'
+      ''
       'LEFT JOIN UNIDADES U'
       '  ON D.TIPO_UNIDAD = U.IDUNIDAD'
+      ''
       'LEFT JOIN INVENTARIO_PRODUCTO I'
       '  ON I.CODIGO = D.CODIGO_PROD'
-      'WHERE V.NUMERO = :NUMERO'
-      'ORDER BY D.SERIE')
-    Left = 88
+      ''
+      'LEFT JOIN'
+      '('
+      '  SELECT'
+      '    VN.CIA_KEY,'
+      '    VN.REF_TRN_ORIGEN AS NUMERO_ORIGEN,'
+      '    DN.SERIE_ORIGEN,'
+      ''
+      '    SUM('
+      '      ABS(COALESCE(DN.CANTIDAD, 0))'
+      '    ) AS CANTIDAD_DEVUELTA,'
+      ''
+      '    COUNT(*) AS CANT_NCR,'
+      ''
+      '    MAX(VN.NUMERO) AS ULTIMA_NCR'
+      ''
+      '  FROM VENTAS_MAST VN'
+      ''
+      '  INNER JOIN VENTAS_DET DN'
+      '    ON DN.NUMERO = VN.NUMERO'
+      ''
+      '  WHERE'
+      '        VN.FORMA_PAGO = 6'
+      '    AND VN.STATUS = '#39'A'#39
+      '    AND COALESCE(DN.STATUS_DET, '#39'A'#39') <> '#39'C'#39
+      '    AND DN.SERIE_ORIGEN IS NOT NULL'
+      '    AND VN.REF_TRN_ORIGEN IS NOT NULL'
+      ''
+      '  GROUP BY'
+      '    VN.CIA_KEY,'
+      '    VN.REF_TRN_ORIGEN,'
+      '    DN.SERIE_ORIGEN'
+      ') DEV'
+      '  ON DEV.CIA_KEY = V.CIA_KEY'
+      ' AND DEV.NUMERO_ORIGEN = V.NUMERO'
+      ' AND DEV.SERIE_ORIGEN = D.SERIE'
+      ''
+      'WHERE'
+      '  V.NUMERO =:NUMERO'
+      ''
+      'ORDER BY'
+      '  D.SERIE')
+    Left = 96
     Top = 280
     ParamData = <
       item
@@ -3005,6 +3093,32 @@ object dmFactura: TdmFactura
     object qryVentaFacturaDetIDTASAITBIS: TFloatField
       FieldName = 'IDTASAITBIS'
     end
+    object qryVentaFacturaDetFUE_DEVUELTO: TIntegerField
+      FieldName = 'FUE_DEVUELTO'
+      Required = True
+    end
+    object qryVentaFacturaDetESTADO_DEVOLUCION: TIBStringField
+      FieldName = 'ESTADO_DEVOLUCION'
+      Required = True
+      FixedChar = True
+      Size = 7
+    end
+    object qryVentaFacturaDetCANTIDAD_DEVUELTA: TFloatField
+      FieldName = 'CANTIDAD_DEVUELTA'
+    end
+    object qryVentaFacturaDetCANTIDAD_DISPONIBLE: TFloatField
+      FieldName = 'CANTIDAD_DISPONIBLE'
+    end
+    object qryVentaFacturaDetCANT_NCR: TIntegerField
+      FieldName = 'CANT_NCR'
+    end
+    object qryVentaFacturaDetULTIMA_NCR: TIntegerField
+      FieldName = 'ULTIMA_NCR'
+    end
+    object qryVentaFacturaDetSERIE_ORIGEN: TIntegerField
+      FieldName = 'SERIE_ORIGEN'
+      Origin = 'VENTAS_DET.SERIE_ORIGEN'
+    end
   end
   object dsqryVentaFactura: TDataSource
     DataSet = qryVentaFactura
@@ -3166,8 +3280,8 @@ object dmFactura: TdmFactura
       'where num_doc =:numdoc'
       '--Select * From PROC_gettrncxc(numerodoc,ciakey)'
       '--1-Venta credito --- 2 -Venta Contado')
-    Left = 528
-    Top = 298
+    Left = 580
+    Top = 273
     ParamData = <
       item
         DataType = ftSmallint
@@ -3220,9 +3334,10 @@ object dmFactura: TdmFactura
       Size = 60
     end
     object qryDatosTrncxcNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'PROC_GETTRANSNOTA_CR_DB.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatosTrncxcTELEF_CONTACTO: TIBStringField
       FieldName = 'TELEF_CONTACTO'
@@ -3459,9 +3574,10 @@ object dmFactura: TdmFactura
       Size = 30
     end
     object qryRepCotizaNewNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'PROC_GETDATOSCOTIZA_NEW.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepCotizaNewDIRECCION_CONT: TIBStringField
       FieldName = 'DIRECCION_CONT'
@@ -4257,9 +4373,10 @@ object dmFactura: TdmFactura
       Size = 30
     end
     object qryVentaFacturaConsignaNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryVentaFacturaConsignaDIRECCION_CONT: TIBStringField
       FieldName = 'DIRECCION_CONT'
@@ -5400,7 +5517,7 @@ object dmFactura: TdmFactura
       '       D.PORC_DESC_DET,'
       '       D.ITBI_DET,'
       '       D.VALOR_SERVICIO_DET,'
-      '       D.VALOR_TOTAL_DET,'
+      '       D.VALOR_TOTAL_DET,d.serie_origen,'
       '       V.NUMERO_FACTURA,'
       '       D.STATUS_DET,'
       '       V.SERIE_NCF_ASIGNADO,'
@@ -5420,8 +5537,8 @@ object dmFactura: TdmFactura
         'GO)'
       'Where  V.numero =:numero'
       'Order by  D.DESCRIPCION, D.SERIE')
-    Left = 352
-    Top = 282
+    Left = 336
+    Top = 274
     ParamData = <
       item
         DataType = ftUnknown
@@ -6042,9 +6159,10 @@ object dmFactura: TdmFactura
       Size = 30
     end
     object qryCotizacionConduceNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryCotizacionConduceDIRECCION_CONT: TIBStringField
       FieldName = 'DIRECCION_CONT'
@@ -7616,7 +7734,49 @@ object dmFactura: TdmFactura
       ''
       '  F.DESCRIPCION AS DESC_TIPO_NCF,'
       ''
+      '  D.SERIE_ORIGEN,'
       '  D.CODIGO_PROD,'
+      ''
+      '  CASE'
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) > 0'
+      '      THEN 1'
+      '    ELSE 0'
+      '  END AS FUE_DEVUELTO,'
+      ''
+      '  CASE'
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) <= 0'
+      '      THEN '#39'NO'#39
+      ''
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) >='
+      '         ABS(SUM(D.CANTIDAD)) - 0.0001'
+      '      THEN '#39'TOTAL'#39
+      ''
+      '    ELSE '#39'PARCIAL'#39
+      '  END AS ESTADO_DEVOLUCION,'
+      ''
+      '  COALESCE('
+      '    DEV.CANTIDAD_DEVUELTA,'
+      '    0'
+      '  ) AS CANTIDAD_DEVUELTA,'
+      ''
+      '  CASE'
+      '    WHEN'
+      '      ABS(SUM(D.CANTIDAD)) -'
+      '      COALESCE(DEV.CANTIDAD_DEVUELTA, 0) < 0.0001'
+      '      THEN 0'
+      ''
+      '    ELSE'
+      '      ABS(SUM(D.CANTIDAD)) -'
+      '      COALESCE(DEV.CANTIDAD_DEVUELTA, 0)'
+      '  END AS CANTIDAD_DISPONIBLE,'
+      ''
+      '  COALESCE('
+      '    DEV.CANT_NCR,'
+      '    0'
+      '  ) AS CANT_NCR,'
+      ''
+      '  DEV.ULTIMA_NCR,'
+      ''
       '  V.NUMERO_FACTURA,'
       '  D.STATUS_DET,'
       '  V.SERIE_NCF_ASIGNADO,'
@@ -7655,10 +7815,6 @@ object dmFactura: TdmFactura
       '  SUBSTRING(U.DESCRIPCION FROM 1 FOR 1) AS LTIPO_UNIDAD,'
       '  U.CANTIDAD AS CANTXUNIDAD,'
       ''
-      '  /*'
-      '    Valores hist'#243'ricos de la l'#237'nea.'
-      '    No usar cat'#225'logo actual durante modificaci'#243'n de factura.'
-      '  */'
       '  COALESCE(D.MONEDA, V.MONEDA) AS MONEDA,'
       '  COALESCE(D.MONTO_TASA, 1) AS MONTO_TASA,'
       '  COALESCE(D.IDTASAITBIS, 0) AS IDTASAITBIS,'
@@ -7678,6 +7834,7 @@ object dmFactura: TdmFactura
       '  SUM(D.CANT_PROMO) AS CANT_PROMO,'
       '  SUM(D.MONTO_DIETA) AS MONTO_DIETA,'
       '  SUM(D.MONTO_AJUSTE) AS MONTO_AJUSTE,'
+      ''
       '  SUM(D.CANTIDAD) AS CANTIDAD,'
       '  SUM(D.CANT_CONDUCE) AS CANT_CONDUCE,'
       ''
@@ -7688,18 +7845,60 @@ object dmFactura: TdmFactura
       '  SUM(ABS(D.VALOR_TOTAL_DET)) AS VALOR_TOTAL_DET'
       ''
       'FROM VENTAS_MAST V'
+      ''
       'INNER JOIN VENTAS_DET D'
       '  ON V.NUMERO = D.NUMERO'
+      ''
       'LEFT OUTER JOIN NCF_ASIGNADOS N'
       '  ON V.SERIE_NCF_ASIGNADO = N.SERIE'
+      ''
       'LEFT OUTER JOIN TIPO_CF F'
       '  ON N.TIPO_NCF = F.TIPO_CF'
+      ''
       'LEFT OUTER JOIN UNIDADES U'
       '  ON D.TIPO_UNIDAD = U.IDUNIDAD'
+      ''
       'LEFT OUTER JOIN INVENTARIO_PRODUCTO I'
       '  ON I.CODIGO = D.CODIGO_PROD'
       ''
-      'WHERE V.NUMERO = :NUMERO'
+      'LEFT OUTER JOIN'
+      '('
+      '  SELECT'
+      '    VN.CIA_KEY,'
+      '    VN.REF_TRN_ORIGEN AS NUMERO_ORIGEN,'
+      '    DN.SERIE_ORIGEN,'
+      ''
+      '    SUM('
+      '      ABS(COALESCE(DN.CANTIDAD, 0))'
+      '    ) AS CANTIDAD_DEVUELTA,'
+      ''
+      '    COUNT(*) AS CANT_NCR,'
+      ''
+      '    MAX(VN.NUMERO) AS ULTIMA_NCR'
+      ''
+      '  FROM VENTAS_MAST VN'
+      ''
+      '  INNER JOIN VENTAS_DET DN'
+      '    ON DN.NUMERO = VN.NUMERO'
+      ''
+      '  WHERE'
+      '        VN.FORMA_PAGO = 6'
+      '    AND VN.STATUS = '#39'A'#39
+      '    AND COALESCE(DN.STATUS_DET, '#39'A'#39') <> '#39'C'#39
+      '    AND DN.SERIE_ORIGEN IS NOT NULL'
+      '    AND VN.REF_TRN_ORIGEN IS NOT NULL'
+      ''
+      '  GROUP BY'
+      '    VN.CIA_KEY,'
+      '    VN.REF_TRN_ORIGEN,'
+      '    DN.SERIE_ORIGEN'
+      ') DEV'
+      '  ON DEV.CIA_KEY = V.CIA_KEY'
+      ' AND DEV.NUMERO_ORIGEN = V.NUMERO'
+      ' AND DEV.SERIE_ORIGEN = D.SERIE'
+      ''
+      'WHERE'
+      '  V.NUMERO = :NUMERO'
       ''
       'GROUP BY'
       '  D.NUMERO,'
@@ -7711,7 +7910,13 @@ object dmFactura: TdmFactura
       ''
       '  F.DESCRIPCION,'
       ''
+      '  D.SERIE_ORIGEN,'
       '  D.CODIGO_PROD,'
+      ''
+      '  DEV.CANTIDAD_DEVUELTA,'
+      '  DEV.CANT_NCR,'
+      '  DEV.ULTIMA_NCR,'
+      ''
       '  V.NUMERO_FACTURA,'
       '  D.STATUS_DET,'
       '  V.SERIE_NCF_ASIGNADO,'
@@ -7754,7 +7959,7 @@ object dmFactura: TdmFactura
       '  D.NUMERO,'
       '  D.SERIE')
     Left = 112
-    Top = 224
+    Top = 232
     ParamData = <
       item
         DataType = ftInteger
@@ -7779,6 +7984,46 @@ object dmFactura: TdmFactura
       '  D.CODIGO_PROD,'
       '  D.CANTIDAD,'
       '  D.CANT_CONDUCE,'
+      '  '
+      '  CASE'
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) > 0'
+      '      THEN 1'
+      '    ELSE 0'
+      '  END AS FUE_DEVUELTO,'
+      ''
+      '  CASE'
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) <= 0'
+      '      THEN '#39'NO'#39
+      ''
+      '    WHEN COALESCE(DEV.CANTIDAD_DEVUELTA, 0) >='
+      '         ABS(COALESCE(D.CANTIDAD, 0)) - 0.0001'
+      '      THEN '#39'TOTAL'#39
+      ''
+      '    ELSE '#39'PARCIAL'#39
+      '  END AS ESTADO_DEVOLUCION,'
+      ''
+      '  COALESCE('
+      '    DEV.CANTIDAD_DEVUELTA,'
+      '    0'
+      '  ) AS CANTIDAD_DEVUELTA,'
+      ''
+      '  CASE'
+      '    WHEN'
+      '      ABS(COALESCE(D.CANTIDAD, 0)) -'
+      '      COALESCE(DEV.CANTIDAD_DEVUELTA, 0) < 0.0001'
+      '      THEN 0'
+      ''
+      '    ELSE'
+      '      ABS(COALESCE(D.CANTIDAD, 0)) -'
+      '      COALESCE(DEV.CANTIDAD_DEVUELTA, 0)'
+      '  END AS CANTIDAD_DISPONIBLE,'
+      ''
+      '  COALESCE('
+      '    DEV.CANT_NCR,'
+      '    0'
+      '  ) AS CANT_NCR,'
+      ''
+      '  DEV.ULTIMA_NCR,'
       ''
       '  ABS(D.PRECIO) AS PRECIO,'
       '  D.PORC_DESC_DET,'
@@ -7819,16 +8064,18 @@ object dmFactura: TdmFactura
       '  D.NUM_CONDUCE_CTE,'
       '  D.NUM_IDENT,'
       '  D.FICHA_VEH,'
+      ''
       '  CASE'
-      
-        '    WHEN NULLIF(D.DESCRIPCIONPRODUCTO, '#39#39') IS NULL THEN D.DESCRI' +
-        'PCION'
-      '    ELSE D.DESCRIPCION || '#39' '#39' || D.DESCRIPCIONPRODUCTO'
+      '    WHEN NULLIF(D.DESCRIPCIONPRODUCTO, '#39#39') IS NULL'
+      '      THEN D.DESCRIPCION'
+      '    ELSE'
+      '      D.DESCRIPCION || '#39' '#39' || D.DESCRIPCIONPRODUCTO'
       '  END AS DESCRIPCIONPRODUCTO,'
-      '  '
+      ''
       '  D.PRECIO_COMPRA,'
       '  D.CANT_VIAJES,'
       '  D.CODIGO_VENDEDOR,'
+      '  D.SERIE_ORIGEN,'
       ''
       '  /*'
       '    Valores hist'#243'ricos de la l'#237'nea.'
@@ -7849,18 +8096,63 @@ object dmFactura: TdmFactura
       '  ) AS TRANSP_ITBIS'
       ''
       'FROM VENTAS_MAST V'
+      ''
       'INNER JOIN VENTAS_DET D'
       '  ON V.NUMERO = D.NUMERO'
+      ''
       'LEFT JOIN NCF_ASIGNADOS N'
       '  ON V.SERIE_NCF_ASIGNADO = N.SERIE'
+      ''
       'LEFT JOIN TIPO_CF F'
       '  ON N.TIPO_NCF = F.TIPO_CF'
+      ''
       'LEFT JOIN UNIDADES U'
       '  ON D.TIPO_UNIDAD = U.IDUNIDAD'
+      ''
       'LEFT JOIN INVENTARIO_PRODUCTO I'
       '  ON I.CODIGO = D.CODIGO_PROD'
-      'WHERE V.NUMERO = :NUMERO'
-      'ORDER BY D.SERIE')
+      ''
+      'LEFT JOIN'
+      '('
+      '  SELECT'
+      '    VN.CIA_KEY,'
+      '    VN.REF_TRN_ORIGEN AS NUMERO_ORIGEN,'
+      '    DN.SERIE_ORIGEN,'
+      ''
+      '    SUM('
+      '      ABS(COALESCE(DN.CANTIDAD, 0))'
+      '    ) AS CANTIDAD_DEVUELTA,'
+      ''
+      '    COUNT(*) AS CANT_NCR,'
+      ''
+      '    MAX(VN.NUMERO) AS ULTIMA_NCR'
+      ''
+      '  FROM VENTAS_MAST VN'
+      ''
+      '  INNER JOIN VENTAS_DET DN'
+      '    ON DN.NUMERO = VN.NUMERO'
+      ''
+      '  WHERE'
+      '        VN.FORMA_PAGO = 6'
+      '    AND VN.STATUS = '#39'A'#39
+      '    AND COALESCE(DN.STATUS_DET, '#39'A'#39') <> '#39'C'#39
+      '    AND DN.SERIE_ORIGEN IS NOT NULL'
+      '    AND VN.REF_TRN_ORIGEN IS NOT NULL'
+      ''
+      '  GROUP BY'
+      '    VN.CIA_KEY,'
+      '    VN.REF_TRN_ORIGEN,'
+      '    DN.SERIE_ORIGEN'
+      ') DEV'
+      '  ON DEV.CIA_KEY = V.CIA_KEY'
+      ' AND DEV.NUMERO_ORIGEN = V.NUMERO'
+      ' AND DEV.SERIE_ORIGEN = D.SERIE'
+      ''
+      'WHERE'
+      '  V.NUMERO =:NUMERO'
+      ''
+      'ORDER BY'
+      '  D.SERIE')
     Left = 112
     Top = 184
     ParamData = <
@@ -8031,9 +8323,10 @@ object dmFactura: TdmFactura
       Size = 15
     end
     object qryDatosVtaARSNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatosVtaARSTELEF_CONTACTO: TIBStringField
       FieldName = 'TELEF_CONTACTO'
@@ -8419,7 +8712,7 @@ object dmFactura: TdmFactura
     object qryAbonoPrepagoNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryAbonoPrepagoRNC_NUMERO: TIBStringField
       FieldName = 'RNC_NUMERO'
@@ -8605,8 +8898,8 @@ object dmFactura: TdmFactura
       '  MONTO_TOTAL_ITBIS = :MONTO_TOTAL_ITBIS'
       'where'
       '  NUMERO = :OLD_NUMERO')
-    Left = 728
-    Top = 536
+    Left = 720
+    Top = 544
     object tblUpdateVentaNUMERO: TIntegerField
       FieldName = 'NUMERO'
       Origin = 'VENTAS_MAST.NUMERO'
@@ -9647,7 +9940,21 @@ object dmFactura: TdmFactura
         'v.TIPO_CF,v.NCF, v.DESCRIPCION, -1 TIPO_NCF_IFISCAL,-1 tipo_ncfN' +
         'CR '
       'From View_nfc v ')
-    Left = 232
+    Left = 240
     Top = 544
+  end
+  object qrytipoECF: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select v.TIPO_CF, n.DESCRIPCION,  '
+      'n.TIPO_NCF_IFISCAL, n.tipo_ncfNCR '
+      'From View_nfc v '
+      'Left Outer join NCF_TIPO_IFISCAL n on v.TIPO_CF = n.TIPO_NCF'
+      'where v.TIPO_CF > 30')
+    Left = 800
+    Top = 568
   end
 end

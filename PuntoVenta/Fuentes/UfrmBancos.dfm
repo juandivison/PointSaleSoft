@@ -609,9 +609,9 @@ object frmBancos: TfrmBancos
       end
       object DBRadioGroup1: TDBRadioGroup
         Left = 284
-        Top = 90
-        Width = 103
-        Height = 28
+        Top = 85
+        Width = 104
+        Height = 33
         Caption = 'Show Cta Fct'
         Columns = 2
         DataField = 'ACTIVAENFCT'

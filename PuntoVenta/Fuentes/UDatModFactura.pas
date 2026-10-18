@@ -1177,6 +1177,14 @@ type
     qryVentaFacturaDetMONTO_TASA: TFloatField;
     qryVentaFacturaDetIDTASAITBIS: TFloatField;
     ibQryViewNCFGastos_0: TIBQuery;
+    qrytipoECF: TIBQuery;
+    qryVentaFacturaDetFUE_DEVUELTO: TIntegerField;
+    qryVentaFacturaDetESTADO_DEVOLUCION: TIBStringField;
+    qryVentaFacturaDetCANTIDAD_DEVUELTA: TFloatField;
+    qryVentaFacturaDetCANTIDAD_DISPONIBLE: TFloatField;
+    qryVentaFacturaDetCANT_NCR: TIntegerField;
+    qryVentaFacturaDetULTIMA_NCR: TIntegerField;
+    qryVentaFacturaDetSERIE_ORIGEN: TIntegerField;
     procedure ibQryViewNCFFilterRecord(DataSet: TDataSet;
       var Accept: Boolean);
     procedure tblDgii_SerieNCFAfterScroll(DataSet: TDataSet);

@@ -303,7 +303,6 @@ object dmCalculos: TdmCalculos
     Transaction = dmConectar.IBTransaction1
     ForcedRefresh = True
     AfterOpen = qryConsultaPosExtraDetAfterOpen
-    Active = True
     BufferChunks = 1000
     CachedUpdates = False
     SQL.Strings = (
@@ -520,6 +519,10 @@ object dmCalculos: TdmCalculos
     object qryConsultaPosExtraDetDC_MONTONETO: TFloatField
       FieldName = 'DC_MONTONETO'
       Origin = 'PROC_POSCONSEXTRADET.DC_MONTONETO'
+    end
+    object qryConsultaPosExtraDetTC_MONTORECARGO_GLB_DET: TFloatField
+      FieldName = 'TC_MONTORECARGO_GLB_DET'
+      Origin = 'PROC_POSCONSEXTRADET.TC_MONTORECARGO_GLB_DET'
     end
   end
   object ibSqlDeletePosExtraDET: TIBSQL
@@ -1384,7 +1387,7 @@ object dmCalculos: TdmCalculos
     object qryVentasNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryVentasMONTO_PAGADO: TFloatField
       FieldName = 'MONTO_PAGADO'

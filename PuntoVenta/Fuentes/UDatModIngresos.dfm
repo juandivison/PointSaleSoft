@@ -546,9 +546,10 @@ object dmIngresos: TdmIngresos
       Required = True
     end
     object IBQryClienteNOMBRE_FACTURAR: TIBStringField
+      DisplayWidth = 150
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object IBTableServicio: TIBTable
@@ -1189,7 +1190,7 @@ object dmIngresos: TdmIngresos
       Size = 6
     end
     object qryRepIngMasterNOMBRECLIENTECLD: TIBStringField
-      DisplayWidth = 60
+      DisplayWidth = 150
       FieldKind = fkCalculated
       FieldName = 'NOMBRECLIENTECLD'
       Size = 60
@@ -1693,7 +1694,7 @@ object dmIngresos: TdmIngresos
     object qryRepIngDetalleAdicionalNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryRepIngDetalleAdicionalFECHA: TDateTimeField
       FieldName = 'FECHA'

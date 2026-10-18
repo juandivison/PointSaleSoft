@@ -32,7 +32,7 @@ function BuildFacturaTxtPath(const AOutputDir: string; const ANumeroTransaccion:
 implementation
 
 uses
-  UUtilecf, UGlobal;
+  UUtilecf;
 
 function EnsureDir(const ADir: string): string;
 begin
@@ -42,7 +42,8 @@ begin
 
   Result := IncludeTrailingPathDelimiter(Result);
   if not DirectoryExists(Result) then
-    ForceDirectories(Result);
+    if not ForceDirectories(Result) then
+      raise Exception.Create('No se pudo crear el directorio de Factura.txt: ' + Result);
 end;
 
 function BuildFacturaTxtPath(const AOutputDir: string; const ANumeroTransaccion: Integer): string;
@@ -77,6 +78,30 @@ var
   SL: TStringList;
   I: Integer;
   Linea: string;
+  TipoRegistro: string;
+  CantCampos: Integer;
+  CantDetalles: Integer;
+  CantTotalesFiscales: Integer;
+
+  function ContarCampos(const S: string): Integer;
+  var
+    J: Integer;
+  begin
+    Result := 1;
+    J := 1;
+
+    while J < Length(S) do
+    begin
+      if (S[J] = '|') and (S[J + 1] = '|') then
+      begin
+        Inc(Result);
+        Inc(J, 2);
+      end
+      else
+        Inc(J);
+    end;
+  end;
+
 begin
   if not FileExists(AFileName) then
     raise Exception.Create('No se encontró el archivo Factura.txt para validar: ' + AFileName);
@@ -95,30 +120,81 @@ begin
     if Copy(Linea, 1, 3) <> '2||' then
       raise Exception.Create('La primera línea de Factura.txt debe iniciar con "2||".');
 
+    CantCampos := ContarCampos(Linea);
+    if CantCampos <> 27 then
+      raise Exception.CreateFmt(
+        'El encabezado de Factura.txt debe contener exactamente 27 campos. Encontrados: %d.',
+        [CantCampos]
+      );
+
     if SL.Count < 2 then
       raise Exception.Create('Factura.txt no contiene líneas de detalle.');
 
-    for I := 0 to SL.Count - 1 do
+    CantDetalles := 0;
+    CantTotalesFiscales := 0;
+
+    for I := 1 to SL.Count - 1 do
     begin
       Linea := Trim(SL[I]);
 
       if Linea = '' then
-        raise Exception.CreateFmt('Factura.txt contiene una línea vacáa en la posición %d.', [I + 1]);
+        raise Exception.CreateFmt(
+          'Factura.txt contiene una línea vacía en la posición %d.',
+          [I + 1]
+        );
 
-      if I = 0 then
+      TipoRegistro := Copy(Linea, 1, 3);
+      CantCampos := ContarCampos(Linea);
+
+      if TipoRegistro = '1||' then
       begin
-        if Copy(Linea, 1, 3) <> '2||' then
-          raise Exception.Create('El encabezado de Factura.txt es inválido.');
+        Inc(CantDetalles);
+
+        { V1 = 7 campos. V2 fiscal = 12 campos. }
+        if (CantCampos <> 7) and (CantCampos <> 12) then
+          raise Exception.CreateFmt(
+            'La línea %d de detalle debe contener 7 campos (V1) o 12 campos (V2). Encontrados: %d.',
+            [I + 1, CantCampos]
+          );
+      end
+      else
+      if TipoRegistro = '3||' then
+      begin
+        { V2: ajuste fiscal global distribuido por IndicadorFacturacion. }
+        if CantCampos <> 8 then
+          raise Exception.CreateFmt(
+            'La línea %d de ajuste fiscal tipo 3 debe contener exactamente 8 campos. Encontrados: %d.',
+            [I + 1, CantCampos]
+          );
+      end
+      else
+      if TipoRegistro = '4||' then
+      begin
+        { V2: fotografía autoritativa de totales fiscales. }
+        Inc(CantTotalesFiscales);
+
+        if CantTotalesFiscales > 1 then
+          raise Exception.Create(
+            'Factura.txt V2 permite una sola línea tipo 4 de totales fiscales.'
+          );
+
+        if CantCampos <> 7 then
+          raise Exception.CreateFmt(
+            'La línea %d de totales fiscales tipo 4 debe contener exactamente 7 campos. Encontrados: %d.',
+            [I + 1, CantCampos]
+          );
       end
       else
       begin
-        if Copy(Linea, 1, 3) <> '1||' then
-          raise Exception.CreateFmt(
-            'La línea %d de Factura.txt debe iniciar con "1||". Valor encontrado: %s',
-            [I + 1, Linea]
-          );
+        raise Exception.CreateFmt(
+          'La línea %d de Factura.txt tiene un tipo de registro no soportado. Se permiten 1 (detalle), 3 (ajuste fiscal) y 4 (totales fiscales). Valor encontrado: %s',
+          [I + 1, Linea]
+        );
       end;
     end;
+
+    if CantDetalles <= 0 then
+      raise Exception.Create('Factura.txt no contiene líneas de detalle tipo "1||".');
   finally
     SL.Free;
   end;
@@ -181,9 +257,6 @@ begin
   ValidateFacturaTxtStructure(BuildRes.OutputFile);
 
   CmdLine := Format('"%s" --factura-txt "%s"', [ExeFullPath, ExpandFileName(BuildRes.OutputFile)]);
-
-  if GlbValidarECF = 0 then
-    Exit;
 
   ArtifactDir := BuildFacturaTxtArtifactDir(ExeFullPath, BuildRes.ENcf);
   PrepareFreshFacturaTxtArtifacts(ArtifactDir);

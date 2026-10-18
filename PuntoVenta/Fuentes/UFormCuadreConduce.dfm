@@ -348,7 +348,7 @@ object frmCuadraConduce: TfrmCuadraConduce
     object qryConduceMasterNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryConduceMasterVALOR_TOTAL_DET: TFloatField
       FieldName = 'VALOR_TOTAL_DET'

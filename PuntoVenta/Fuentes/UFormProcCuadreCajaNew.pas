@@ -885,51 +885,7 @@ begin
           rxCuadreCantIngCxc.Value:=rxCuadreCantIngCxc.Value + 1;
 
       end else
-      //inicio codigo refactorizado
-      {if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_doc').AsInteger = 6) then
-      begin
-        if dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').Value > 0 then
-        begin
-          if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').Value = 0) then
-          begin
-            if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').Value < 0) then
-            begin
-              rxCuadreMONTO_DEVOLUCION.Value:= rxCuadreMONTO_DEVOLUCION.Value +
-              (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').AsCurrency - _MontoDescuento)* -1;
-              Total:=(dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').AsCurrency - _MontoDescuento) *-1;
-            end else
-            begin
-              rxCuadreMONTO_DEVOLUCION.Value:= rxCuadreMONTO_DEVOLUCION.Value
-              + dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').AsCurrency - _MontoDescuento;
-              Total:=dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto').AsCurrency - _MontoDescuento;
-            end;
-          end else
-          begin
-            if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency < 0) then
-            begin
-              rxCuadreMONTO_DEVOLUCION.Value:= rxCuadreMONTO_DEVOLUCION.Value + dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency;
-              Total:=dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency;
-            end else
-            begin
-              rxCuadreMONTO_DEVOLUCION.Value:= rxCuadreMONTO_DEVOLUCION.Value +dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency * -1;
-              Total:=dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency * -1;
-            end;
-          end;
-        end else
-        begin
-          if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency < 0) then
-          begin
-            rxCuadreMONTO_DEVOLUCION.Value:= rxCuadreMONTO_DEVOLUCION.Value + dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency;
-            Total:=dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency;
-          end else
-          begin
-            rxCuadreMONTO_DEVOLUCION.Value:= rxCuadreMONTO_DEVOLUCION.Value + dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency * -1;
-            Total:=dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('monto_recibido').AsCurrency *-1;
-          end;
-        end;
-        rxCuadreCantDevolucion.Value:=rxCuadreCantDevolucion.Value + 1;
 
-      end else }//fin codigo refactorizado
       if (dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('tipo_doc').AsInteger = 6) then
 begin
   sTipoDev := UpperCase(Trim(dmcxc.qryTipoMvtoIngresoCuadre.FieldByName('TIPO_DOCUMENTO_DEV').AsString));
@@ -947,26 +903,42 @@ begin
       Total := Total * -1;
   end;
 
+  if Pos('CRED', sTipoDev) > 0 then
+  begin
+    {
+      NCR contra venta a crédito.
+      Reduce la cuenta por cobrar, pero no genera salida de efectivo.
+    }
+    rxCuadreMontoDevolucionNoEfectivo.Value :=
+    rxCuadreMontoDevolucionNoEfectivo.Value + Total;
+    Total := 0;
+  end else
   if (Pos('TARJ', sTipoDev) > 0) or
      (Pos('TRANS', sTipoDev) > 0) or
      (Pos('DEP', sTipoDev) > 0) then
   begin
     rxCuadreMontoDevolucionNoEfectivo.Value :=
-      rxCuadreMontoDevolucionNoEfectivo.Value + Total;
+    rxCuadreMontoDevolucionNoEfectivo.Value + Total;
 
-    if (Pos('TARJ', sTipoDev) > 0) then
-      rxCuadreIngTarjeta.Value := rxCuadreIngTarjeta.Value + Total
+    if Pos('TARJ', sTipoDev) > 0 then
+    rxCuadreIngTarjeta.Value :=
+      rxCuadreIngTarjeta.Value + Total
     else
-    if (Pos('TRANS', sTipoDev) > 0) or (Pos('DEP', sTipoDev) > 0) then
-      rxCuadreTransferencia.Value := rxCuadreTransferencia.Value + Total;
-
-    Total := 0;
-  end
-  else
-  begin
-    rxCuadreMONTO_DEVOLUCION.Value :=
-      rxCuadreMONTO_DEVOLUCION.Value + Total;
-  end;
+    if (Pos('TRANS', sTipoDev) > 0) or
+       (Pos('DEP', sTipoDev) > 0) then
+       rxCuadreTransferencia.Value :=
+       rxCuadreTransferencia.Value + Total;
+  Total := 0;
+end
+else
+begin
+  {
+    Solo una devolución realmente efectiva
+    reduce el efectivo esperado en caja.
+  }
+  rxCuadreMONTO_DEVOLUCION.Value :=
+    rxCuadreMONTO_DEVOLUCION.Value + Total;
+end;
 
   rxCuadreCantDevolucion.Value := rxCuadreCantDevolucion.Value + 1;
 end
@@ -1086,7 +1058,7 @@ end;
 
 procedure TfrmCuadreCajaNew.BitBtn5Click(Sender: TObject);
 begin
-  if MessageDlg('Aún tienes una transacción no guardada, desea guardar',mtWarning, [mbyes, mbNo], 0) = mrno then
+  if MessageDlg('Aún tienes una transacción no guardada, desea guardar',mtWarning, [mbyes, mbNo], 0) = mryes then
   exit;
 
   rxTotales.Close;

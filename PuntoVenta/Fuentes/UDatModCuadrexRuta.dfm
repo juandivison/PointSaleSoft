@@ -3041,7 +3041,7 @@ object dmCuadrexRuta: TdmCuadrexRuta
     object qryVentasPorUsrNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryVentasPorUsrNOMBRE_CLIENTE_GENERAL: TIBStringField
       FieldName = 'NOMBRE_CLIENTE_GENERAL'

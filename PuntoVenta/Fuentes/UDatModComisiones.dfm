@@ -1521,8 +1521,14 @@ object dmComision: TdmComision
       'where'
       '  ID = :ID')
     SelectSQL.Strings = (
-      'Select *  from COMISION_XVTA'
-      'Where fecha_pago between :fechaini and :fechafin')
+      'SELECT *'
+      'FROM COMISION_XVTA'
+      'WHERE FECHA_PAGO BETWEEN :FECHAINI AND :FECHAFIN'
+      'ORDER BY'
+      '    CODIGO_EMPLEADO,'
+      '    FECHA_PAGO,'
+      '    FECHA_INICIO,'
+      '    FECHA_FINAL')
     ModifySQL.Strings = (
       'update COMISION_XVTA'
       'set'

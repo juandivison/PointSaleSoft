@@ -1147,7 +1147,7 @@ object frmPromoverEstudiantes: TfrmPromoverEstudiantes
     object qryClienteStdNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClienteStdCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -1669,7 +1669,7 @@ object frmPromoverEstudiantes: TfrmPromoverEstudiantes
     object qryListaEstudiantesNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryListaEstudiantesCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -2087,7 +2087,7 @@ object frmPromoverEstudiantes: TfrmPromoverEstudiantes
     object IBQuery1NOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object IBQuery1CONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -2548,7 +2548,7 @@ object frmPromoverEstudiantes: TfrmPromoverEstudiantes
     object qryClientesNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClientesCONTACTO: TIBStringField
       FieldName = 'CONTACTO'
@@ -2846,7 +2846,7 @@ object frmPromoverEstudiantes: TfrmPromoverEstudiantes
     object qryPrestamosNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryPrestamosCONTACTO: TIBStringField
       FieldName = 'CONTACTO'

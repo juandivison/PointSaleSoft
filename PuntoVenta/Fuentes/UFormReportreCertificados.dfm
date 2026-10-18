@@ -400,7 +400,7 @@ object frmConsultaCertificados: TfrmConsultaCertificados
     object qryClienteNOMBRE_FACTURAR: TIBStringField
       FieldName = 'NOMBRE_FACTURAR'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryClienteRNC_NUMERO: TIBStringField
       FieldName = 'RNC_NUMERO'

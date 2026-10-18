@@ -1,10 +1,10 @@
 unit UFrmOrderFilePicker;
-
+
 interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, FileCtrl, ComCtrls,
+  Dialogs, StdCtrls, ExtCtrls, FileCtrl, ComCtrls, ShlObj, ActiveX,
   WinSkinData;
 
 type
@@ -77,6 +77,95 @@ begin
     Result := S;
 end;
 
+const
+  // Valores documentados por SHBrowseForFolder.
+  // Nombres propios para evitar conflictos con versiones de ShlObj
+  // que ya declaren estas constantes.
+  C_BFFM_INITIALIZED   = 1;
+  C_BFFM_SETSELECTIONA = WM_USER + 102;
+
+function BrowseFolderCallback(
+  Wnd: HWND;
+  uMsg: UINT;
+  lParam, lpData: LPARAM
+): Integer; stdcall;
+begin
+  Result := 0;
+
+  // lpData contiene un PChar con la ruta inicial.
+  // BFFM_SETSELECTIONA con wParam=1 indica que lParam es una ruta (no un PIDL).
+  // PostMessage difiere la seleccion hasta que el dialogo termine de
+  // inicializarse (importante con BIF_NEWDIALOGSTYLE).
+  if (uMsg = C_BFFM_INITIALIZED) and (lpData <> 0) then
+    PostMessage(Wnd, C_BFFM_SETSELECTIONA, 1, lpData);
+end;
+
+function BrowseForNetworkFolder(
+  const ACaption, AInitialPath: string;
+  out ASelectedPath: string
+): Boolean;
+var
+  BI: TBrowseInfo;
+  PIDL: PItemIDList;
+  DisplayName: array[0..MAX_PATH] of Char;
+  PathBuffer: array[0..MAX_PATH] of Char;
+  InitialPath, Caption: string;
+begin
+  // Copiar los parametros de entrada ANTES de escribir en el parametro out.
+  // Si el caller pasa la misma variable como entrada y salida, los strings
+  // const se pasan por referencia y 'ASelectedPath := ''''' vaciaria tambien
+  // AInitialPath (aliasing).
+  InitialPath := NormalizePath(AInitialPath);
+  Caption := ACaption;
+
+  // "C:\" debe conservar el backslash final; el resto no.
+  if Length(InitialPath) > 3 then
+    InitialPath := ExcludeTrailingPathDelimiter(InitialPath);
+
+  Result := False;
+  ASelectedPath := '';
+
+  FillChar(BI, SizeOf(BI), 0);
+  FillChar(DisplayName, SizeOf(DisplayName), 0);
+  FillChar(PathBuffer, SizeOf(PathBuffer), 0);
+
+  BI.hwndOwner := Application.Handle;
+
+  // Mantener Desktop como raiz del selector para que el usuario pueda subir
+  // a This PC, Network, unidades mapeadas o recursos UNC. La ruta inicial
+  // solo posiciona la seleccion.
+  BI.pidlRoot := nil;
+  BI.pszDisplayName := DisplayName;
+  BI.lpszTitle := PChar(Caption);
+
+  BI.ulFlags :=
+    BIF_RETURNONLYFSDIRS or
+    BIF_NEWDIALOGSTYLE or
+    BIF_EDITBOX;
+
+  // InitialPath permanece vivo durante toda la llamada modal a
+  // SHBrowseForFolder, por lo que PChar(InitialPath) es seguro.
+  if (InitialPath <> '') and DirectoryExists(InitialPath) then
+  begin
+    BI.lpfn := BrowseFolderCallback;
+    BI.lParam := LPARAM(PChar(InitialPath));
+  end;
+
+  PIDL := SHBrowseForFolder(BI);
+  if PIDL = nil then
+    Exit;
+
+  try
+    if SHGetPathFromIDList(PIDL, PathBuffer) then
+    begin
+      ASelectedPath := NormalizePath(PathBuffer);
+      Result := ASelectedPath <> '';
+    end;
+  finally
+    CoTaskMemFree(PIDL);
+  end;
+end;
+
 { TfrmOrderFilePicker }
 
 class function TfrmOrderFilePicker.Execute(AOwner: TComponent; AFiles: TStrings; const AInitialPath: string): Boolean;
@@ -88,9 +177,11 @@ begin
   F := TfrmOrderFilePicker.Create(AOwner);
   try
     if Trim(AInitialPath) <> '' then
-      F.LoadRoot(AInitialPath)
-    else
-      F.LoadRoot('\\');
+    begin
+      if DirectoryExists(NormalizePath(AInitialPath)) then
+        F.LoadRoot(AInitialPath);
+    end else
+      F.edtRoot.Text := '';
 
     for I := 0 to AFiles.Count - 1 do
       if F.lbSelected.Items.IndexOf(AFiles[I]) < 0 then
@@ -142,10 +233,32 @@ begin
     dirTree.Items.EndUpdate;
   end;
 
+  if not DirectoryExists(RootPath) then
+  begin
+    MessageDlg(
+      'No se puede acceder a la carpeta:' + #13#10 +
+      #13#10 +
+      RootPath + #13#10 +
+      #13#10 +
+      'Verifique la ruta, el recurso compartido y los permisos de red.',
+      mtError, [mbOK], 0);
+    Exit;
+  end;
+
   try
     fileList.Directory := RootPath;
   except
-    fileList.Directory := '';
+    on E: Exception do
+    begin
+      MessageDlg(
+        'No fue posible abrir la carpeta de ordenes:' + #13#10 +
+        #13#10 +
+        RootPath + #13#10 +
+        #13#10 +
+        E.Message,
+        mtError, [mbOK], 0);
+      Exit;
+    end;
   end;
 end;
 
@@ -206,14 +319,31 @@ end;
 
 procedure TfrmOrderFilePicker.btnBrowseRootClick(Sender: TObject);
 var
-  Dir: string;
+  CurrentDir, SelectedDir: string;
 begin
-  Dir := NormalizePath(edtRoot.Text);
-  if Dir = '' then
-    Dir := '\\';
+  // Variables separadas para entrada y salida (ver nota en BrowseForNetworkFolder).
+  CurrentDir := NormalizePath(edtRoot.Text);
 
-  if SelectDirectory('Seleccione la carpeta raiz', '', Dir) then
-    LoadRoot(Dir);
+  if not BrowseForNetworkFolder(
+       'Seleccione la carpeta de ordenes',
+       CurrentDir,
+       SelectedDir) then
+    Exit;
+
+  if not DirectoryExists(SelectedDir) then
+  begin
+    MessageDlg(
+      'No se puede acceder a la carpeta seleccionada:' + #13#10 +
+      #13#10 +
+      SelectedDir + #13#10 +
+      #13#10 +
+      'Verifique que la carpeta este compartida y que el usuario ' +
+      'tenga permisos de acceso.',
+      mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  LoadRoot(SelectedDir);
 end;
 
 procedure TfrmOrderFilePicker.dirTreeChange(Sender: TObject; Node: TTreeNode);
@@ -304,7 +434,6 @@ function TfrmOrderFilePicker.ExtractOrderNo(const AFileName: string): string;
 var
   S: string;
 begin
-  Result := '';
   S := NormalizeFileNameOnly(AFileName);
 
   Result := ExtractDigitsAfterMarker(S, 'PEDIDO');
@@ -382,7 +511,7 @@ begin
         'Advertencia:' + #13#10 + #13#10 +
         'Se detectaron archivos de servicio sin su archivo companero del mismo numero de orden:' + #13#10 + #13#10 +
         WarnList.Text + #13#10 +
-        'Puede continuar, pero verifique que la seleccion sea correcta.',
+        'Puede continuar, pero verifique que la selecci' + #243 + 'n sea correcta.',
         mtWarning, [mbOK], 0);
   finally
     WarnList.Free;
@@ -396,3 +525,4 @@ begin
 end;
 
 end.
+

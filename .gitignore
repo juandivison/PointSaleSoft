@@ -207,7 +207,7 @@ __recovery/
 # ARCHIVOS TEMPORALES Y DE LOG
 
 # ============================================================
-
+/PuntoVenta/Reportes/Implementar/
 *.tmp
 *.temp
 *.log

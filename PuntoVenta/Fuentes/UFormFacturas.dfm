@@ -1,7 +1,7 @@
 object frmConsultaFacturas: TfrmConsultaFacturas
-  Left = 248
-  Top = 123
-  Width = 1171
+  Left = 350
+  Top = 119
+  Width = 1172
   Height = 764
   Caption = 'Facturas'
   Color = clBtnFace
@@ -18,7 +18,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   OnCreate = FormCreate
   OnShow = FormShow
   DesignSize = (
-    1163
+    1164
     713)
   PixelsPerInch = 96
   TextHeight = 13
@@ -39,7 +39,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   object DBText1: TDBText
     Left = 8
     Top = 72
-    Width = 201
+    Width = 193
     Height = 16
     DataField = 'NOMBRE_FACTURAR'
     DataSource = dmFactura.dsqryVentaFactura
@@ -52,15 +52,15 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     Caption = 'CLIENTE'
   end
   object DBText2: TDBText
-    Left = 224
+    Left = 207
     Top = 72
-    Width = 97
+    Width = 92
     Height = 16
     DataField = 'MONTO_BRUTO'
     DataSource = dmFactura.dsqryVentaFactura
   end
   object Label4: TLabel
-    Left = 224
+    Left = 208
     Top = 56
     Width = 40
     Height = 13
@@ -102,15 +102,15 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     Caption = 'NUM CONDUCE'
   end
   object DBText3: TDBText
-    Left = 336
+    Left = 306
     Top = 72
-    Width = 97
+    Width = 87
     Height = 16
     DataField = 'VALOR_TOTAL_DET'
     DataSource = dmFactura.dsqryVentaFactura
   end
   object Label8: TLabel
-    Left = 336
+    Left = 306
     Top = 56
     Width = 73
     Height = 13
@@ -194,6 +194,21 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     ParentShowHint = False
     ShowHint = True
     OnClick = SpeedButton1Click
+  end
+  object Label12: TLabel
+    Left = 401
+    Top = 56
+    Width = 27
+    Height = 13
+    Caption = 'ITBIS'
+  end
+  object DBText5: TDBText
+    Left = 398
+    Top = 72
+    Width = 60
+    Height = 16
+    DataField = 'MONTO_TOTAL_ITBIS'
+    DataSource = dmFactura.dsqryVentaFactura
   end
   object RxDBGrid1: TRxDBGrid
     Left = 0
@@ -509,7 +524,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
   object RxDBGrid2: TRxDBGrid
     Left = 544
     Top = 96
-    Width = 823
+    Width = 824
     Height = 473
     Anchors = [akLeft, akTop, akRight, akBottom]
     DataSource = dmFactura.dsqryVentaFacturaDet
@@ -699,6 +714,37 @@ object frmConsultaFacturas: TfrmConsultaFacturas
         FieldName = 'LEVEL_PRECIO_VENTA'
         Title.Caption = 'NivelPrecio'
         Visible = True
+      end
+      item
+        Color = 9240575
+        Expanded = False
+        FieldName = 'SERIE_ORIGEN'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'ULTIMA_NCR'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'CANTIDAD_DEVUELTA'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'CANTIDAD_DISPONIBLE'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'ESTADO_DEVOLUCION'
+        Visible = True
+      end
+      item
+        Expanded = False
+        FieldName = 'FUE_DEVUELTO'
+        Visible = True
       end>
   end
   object DateTimePicker1: TDateTimePicker
@@ -824,9 +870,9 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     TextHint = True
   end
   object rdgContado: TRadioButton
-    Left = 456
+    Left = 461
     Top = 47
-    Width = 65
+    Width = 61
     Height = 17
     Caption = 'Contado'
     Checked = True
@@ -834,9 +880,9 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     TabStop = True
   end
   object rdgCredito: TRadioButton
-    Left = 456
+    Left = 461
     Top = 61
-    Width = 65
+    Width = 60
     Height = 17
     Caption = 'Credito'
     TabOrder = 11
@@ -1018,9 +1064,9 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     OnClick = BitBtn7Click
   end
   object rdgNotaCR: TRadioButton
-    Left = 456
+    Left = 461
     Top = 75
-    Width = 65
+    Width = 62
     Height = 15
     Caption = 'Nota CR'
     TabOrder = 23
@@ -1274,10 +1320,370 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     Caption = 'Envia Fact a PDF'
     TabOrder = 35
   end
+  object qryUltFact: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select max(numero)  NumFactMax From FACTURAS')
+    Left = 600
+    Top = 280
+    object qryUltFactNUMFACTMAX: TFloatField
+      FieldName = 'NUMFACTMAX'
+    end
+  end
+  object ibsqlFacturas: TIBSQL
+    Database = dmConectar.IBDatabase1
+    ParamCheck = True
+    SQL.Strings = (
+      'Delete from Facturas'
+      'where numero=:numero')
+    Transaction = dmConectar.IBTransaction1
+    Left = 592
+    Top = 168
+  end
+  object ibsqlUpdatDatosVeh: TIBSQL
+    Database = dmConectar.IBDatabase1
+    ParamCheck = True
+    SQL.Strings = (
+      'update DATOSVEHICULO r'
+      'set r.NUMPOL = null,'
+      'r.CODIGO_CTE = null'
+      'where r.CHASSIS =:chassis')
+    Transaction = dmConectar.IBTransaction1
+    Left = 776
+    Top = 296
+  end
+  object qryClientes: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'Select *'
+      'from CLIENTES'
+      'order by CODIGO_CTE')
+    Left = 320
+    Top = 232
+    object qryClientesCODIGO_CTE: TIntegerField
+      FieldName = 'CODIGO_CTE'
+      Origin = 'CLIENTES.CODIGO_CTE'
+      Required = True
+    end
+    object qryClientesCIA_KEY: TIntegerField
+      FieldName = 'CIA_KEY'
+      Origin = 'CLIENTES.CIA_KEY'
+    end
+    object qryClientesNOMBRE_CTE: TIBStringField
+      FieldName = 'NOMBRE_CTE'
+      Origin = 'CLIENTES.NOMBRE_CTE'
+      Size = 60
+    end
+    object qryClientesNOMBRE_ABREV: TIBStringField
+      FieldName = 'NOMBRE_ABREV'
+      Origin = 'CLIENTES.NOMBRE_ABREV'
+      Size = 30
+    end
+    object qryClientesNOMBRE_FACTURAR: TIBStringField
+      FieldName = 'NOMBRE_FACTURAR'
+      Origin = 'CLIENTES.NOMBRE_FACTURAR'
+      Size = 150
+    end
+    object qryClientesRNC_NUMERO: TIBStringField
+      FieldName = 'RNC_NUMERO'
+      Origin = 'CLIENTES.RNC_NUMERO'
+      Size = 14
+    end
+  end
+  object qryEmpleado: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      
+        'Select c.NOMBRE desc_cargo,e.nombre||'#39' '#39'||e.apellido nombrevende' +
+        'dor , e.* From EMPLEADO e'
+      'inner join CARGO_EMPLEADOS c on c.CODIGO = e.CARGO'
+      'where upper(c.NOMBRE) = '#39'VENDEDOR'#39)
+    Left = 488
+    Top = 464
+    object qryEmpleadoNOMBREVENDEDOR: TIBStringField
+      FieldName = 'NOMBREVENDEDOR'
+      Size = 71
+    end
+    object qryEmpleadoCODIGO: TIntegerField
+      FieldName = 'CODIGO'
+      Origin = 'EMPLEADO.CODIGO'
+      Required = True
+    end
+  end
+  object qryLogoTipoAfiliado: TIBQuery
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = False
+    SQL.Strings = (
+      'select f.IDTIPO, l.RUTA_LOGO, f.DESCRIPCION from TIPO_AFILIADO f'
+      'inner join logo_servicio l on l.TIPO_AFILIADO = f.IDTIPO')
+    Left = 49
+    Top = 232
+    object qryLogoTipoAfiliadoIDTIPO: TIntegerField
+      FieldName = 'IDTIPO'
+      Origin = 'TIPO_AFILIADO.IDTIPO'
+      Required = True
+    end
+    object qryLogoTipoAfiliadoRUTA_LOGO: TIBStringField
+      FieldName = 'RUTA_LOGO'
+      Origin = 'LOGO_SERVICIO.RUTA_LOGO'
+      Size = 80
+    end
+    object qryLogoTipoAfiliadoDESCRIPCION: TIBStringField
+      FieldName = 'DESCRIPCION'
+      Origin = 'TIPO_AFILIADO.DESCRIPCION'
+      Size = 80
+    end
+  end
+  object MainMenu1: TMainMenu
+    Left = 224
+    Top = 240
+    object Opciones1: TMenuItem
+      Caption = 'Opciones'
+      object Consultarpago1: TMenuItem
+        Caption = 'Consultar pago'
+        OnClick = Consultarpago1Click
+      end
+      object EditarMontoPagado1: TMenuItem
+        Caption = 'Editar Monto Pagado'
+        OnClick = EditarMontoPagado1Click
+      end
+      object AutoAutualizaFPago1: TMenuItem
+        Caption = 'Auto Autualiza FPago'
+        OnClick = AutoAutualizaFPago1Click
+      end
+      object eNCFAsignados1: TMenuItem
+        Caption = 'eNCF Asignados'
+        OnClick = eNCFAsignados1Click
+      end
+      object SolicitareCFDGII1: TMenuItem
+        Caption = 'Validar eCF DGII'
+        OnClick = SolicitareCFDGII1Click
+      end
+      object ConsultaTimbreeCF1: TMenuItem
+        Caption = 'Consulta Timbre e-CF'
+        OnClick = ConsultaTimbreeCF1Click
+      end
+      object AsignareCFSerieE1: TMenuItem
+        Caption = 'Asignar eCF (Serie E)'
+        OnClick = AsignareCFSerieE1Click
+      end
+      object OpcioneseCF1: TMenuItem
+        Caption = 'Opciones eCF'
+        object Reenviar1: TMenuItem
+          Caption = 'Reenviar'
+          OnClick = Reenviar1Click
+        end
+        object ChequearCert1: TMenuItem
+          Caption = 'Chequear Cert'
+          OnClick = ChequearCert1Click
+        end
+        object RefrescarCert1: TMenuItem
+          Caption = 'Refrescar Cert'
+          OnClick = RefrescarCert1Click
+        end
+      end
+      object CambiarTipoECF1: TMenuItem
+        Caption = 'Cambiar Tipo_ECF'
+        OnClick = CambiarTipoECF1Click
+      end
+      object XMLFirmados1: TMenuItem
+        Caption = 'XML Firmados'
+        OnClick = XMLFirmados1Click
+      end
+      object VerificarMontos1: TMenuItem
+        Caption = 'Verificar Montos'
+        OnClick = VerificarMontos1Click
+      end
+      object AuditarXMLvsVta1: TMenuItem
+        Caption = 'Auditar XML vs Vta'
+        OnClick = AuditarXMLvsVta1Click
+      end
+    end
+    object ieneECF1: TMenuItem
+      Caption = 'Tiene ECF?'
+      OnClick = ieneECF1Click
+    end
+    object CartadeRuta1: TMenuItem
+      Caption = 'Carta de Ruta'
+      OnClick = BitBtn16Click
+    end
+    object CartadeSaldo1: TMenuItem
+      Caption = 'Carta de Saldo'
+      OnClick = CartadeSaldo1Click
+    end
+  end
+  object tblDetallePagos: TIBDataSet
+    Database = dmConectar.IBDatabase1
+    Transaction = dmConectar.IBTransaction1
+    BufferChunks = 1000
+    CachedUpdates = True
+    DeleteSQL.Strings = (
+      'delete from DETALLE_PAGOS'
+      'where'
+      '  SERIE = :OLD_SERIE')
+    InsertSQL.Strings = (
+      'insert into DETALLE_PAGOS'
+      
+        '  (SERIE, FECHA, TIPO_TARJETA, NUMERO_TARJETA_CRED, ANO_VENCE, M' +
+        'ES_VENCE, '
+      
+        '   MONTO_PAGADO, NUMERO_APROBACION, TIPO, CODIGO_PROVEEDOR, TIPO' +
+        '_PAGO, '
+      
+        '   NUMERO_CHEQUE, COD_BANCO_CHEQUE, SERIE_TRN, AREA_TRANS, NUMER' +
+        'O_CUPON, '
+      '   PAGO)'
+      'values'
+      
+        '  (:SERIE, :FECHA, :TIPO_TARJETA, :NUMERO_TARJETA_CRED, :ANO_VEN' +
+        'CE, :MES_VENCE, '
+      
+        '   :MONTO_PAGADO, :NUMERO_APROBACION, :TIPO, :CODIGO_PROVEEDOR, ' +
+        ':TIPO_PAGO, '
+      
+        '   :NUMERO_CHEQUE, :COD_BANCO_CHEQUE, :SERIE_TRN, :AREA_TRANS, :' +
+        'NUMERO_CUPON, '
+      '   :PAGO)')
+    RefreshSQL.Strings = (
+      'Select '
+      '  SERIE,'
+      '  FECHA,'
+      '  TIPO_TARJETA,'
+      '  NUMERO_TARJETA_CRED,'
+      '  ANO_VENCE,'
+      '  MES_VENCE,'
+      '  MONTO_PAGADO,'
+      '  NUMERO_APROBACION,'
+      '  TIPO,'
+      '  CODIGO_PROVEEDOR,'
+      '  TIPO_PAGO,'
+      '  NUMERO_CHEQUE,'
+      '  COD_BANCO_CHEQUE,'
+      '  SERIE_TRN,'
+      '  AREA_TRANS,'
+      '  NUMERO_CUPON,'
+      '  PAGO'
+      'from DETALLE_PAGOS '
+      'where'
+      '  SERIE = :SERIE')
+    SelectSQL.Strings = (
+      'Select *  From DETALLE_PAGOS'
+      'Where  serie_trn =:serietrn')
+    ModifySQL.Strings = (
+      'update DETALLE_PAGOS'
+      'set'
+      '  SERIE = :SERIE,'
+      '  FECHA = :FECHA,'
+      '  TIPO_TARJETA = :TIPO_TARJETA,'
+      '  NUMERO_TARJETA_CRED = :NUMERO_TARJETA_CRED,'
+      '  ANO_VENCE = :ANO_VENCE,'
+      '  MES_VENCE = :MES_VENCE,'
+      '  MONTO_PAGADO = :MONTO_PAGADO,'
+      '  NUMERO_APROBACION = :NUMERO_APROBACION,'
+      '  TIPO = :TIPO,'
+      '  CODIGO_PROVEEDOR = :CODIGO_PROVEEDOR,'
+      '  TIPO_PAGO = :TIPO_PAGO,'
+      '  NUMERO_CHEQUE = :NUMERO_CHEQUE,'
+      '  COD_BANCO_CHEQUE = :COD_BANCO_CHEQUE,'
+      '  SERIE_TRN = :SERIE_TRN,'
+      '  AREA_TRANS = :AREA_TRANS,'
+      '  NUMERO_CUPON = :NUMERO_CUPON,'
+      '  PAGO = :PAGO'
+      'where'
+      '  SERIE = :OLD_SERIE')
+    GeneratorField.Field = 'SERIE'
+    GeneratorField.Generator = 'GEN_SERIE_DET_PAGO'
+    GeneratorField.ApplyEvent = gamOnPost
+    Left = 400
+    Top = 336
+    object tblDetallePagosSERIE: TIntegerField
+      FieldName = 'SERIE'
+      Origin = 'DETALLE_PAGOS.SERIE'
+      Required = True
+    end
+    object tblDetallePagosFECHA: TDateTimeField
+      FieldName = 'FECHA'
+      Origin = 'DETALLE_PAGOS.FECHA'
+    end
+    object tblDetallePagosTIPO_TARJETA: TSmallintField
+      FieldName = 'TIPO_TARJETA'
+      Origin = 'DETALLE_PAGOS.TIPO_TARJETA'
+    end
+    object tblDetallePagosNUMERO_TARJETA_CRED: TIBStringField
+      FieldName = 'NUMERO_TARJETA_CRED'
+      Origin = 'DETALLE_PAGOS.NUMERO_TARJETA_CRED'
+    end
+    object tblDetallePagosANO_VENCE: TIntegerField
+      FieldName = 'ANO_VENCE'
+      Origin = 'DETALLE_PAGOS.ANO_VENCE'
+    end
+    object tblDetallePagosMES_VENCE: TSmallintField
+      FieldName = 'MES_VENCE'
+      Origin = 'DETALLE_PAGOS.MES_VENCE'
+    end
+    object tblDetallePagosMONTO_PAGADO: TFloatField
+      FieldName = 'MONTO_PAGADO'
+      Origin = 'DETALLE_PAGOS.MONTO_PAGADO'
+      Required = True
+    end
+    object tblDetallePagosNUMERO_APROBACION: TIBStringField
+      FieldName = 'NUMERO_APROBACION'
+      Origin = 'DETALLE_PAGOS.NUMERO_APROBACION'
+      FixedChar = True
+      Size = 15
+    end
+    object tblDetallePagosTIPO: TSmallintField
+      FieldName = 'TIPO'
+      Origin = 'DETALLE_PAGOS.TIPO'
+    end
+    object tblDetallePagosCODIGO_PROVEEDOR: TSmallintField
+      FieldName = 'CODIGO_PROVEEDOR'
+      Origin = 'DETALLE_PAGOS.CODIGO_PROVEEDOR'
+    end
+    object tblDetallePagosTIPO_PAGO: TSmallintField
+      FieldName = 'TIPO_PAGO'
+      Origin = 'DETALLE_PAGOS.TIPO_PAGO'
+    end
+    object tblDetallePagosNUMERO_CHEQUE: TIntegerField
+      FieldName = 'NUMERO_CHEQUE'
+      Origin = 'DETALLE_PAGOS.NUMERO_CHEQUE'
+    end
+    object tblDetallePagosCOD_BANCO_CHEQUE: TIntegerField
+      FieldName = 'COD_BANCO_CHEQUE'
+      Origin = 'DETALLE_PAGOS.COD_BANCO_CHEQUE'
+    end
+    object tblDetallePagosSERIE_TRN: TIntegerField
+      FieldName = 'SERIE_TRN'
+      Origin = 'DETALLE_PAGOS.SERIE_TRN'
+    end
+    object tblDetallePagosAREA_TRANS: TSmallintField
+      FieldName = 'AREA_TRANS'
+      Origin = 'DETALLE_PAGOS.AREA_TRANS'
+    end
+    object tblDetallePagosNUMERO_CUPON: TIntegerField
+      FieldName = 'NUMERO_CUPON'
+      Origin = 'DETALLE_PAGOS.NUMERO_CUPON'
+    end
+    object tblDetallePagosPAGO: TSmallintField
+      FieldName = 'PAGO'
+      Origin = 'DETALLE_PAGOS.PAGO'
+    end
+  end
   object SkinData1: TSkinData
     Active = True
     DisableTag = 99
-    SkinControls = [xcMainMenu, xcPopupMenu, xcToolbar, xcControlbar, xcCombo, xcCheckBox, xcRadioButton, xcProgress, xcScrollbar, xcEdit, xcButton, xcBitBtn, xcSpeedButton, xcPanel, xcGroupBox, xcStatusBar, xcTab, xcSystemMenu]
+    SkinControls = [xcToolbar, xcCombo, xcCheckBox, xcRadioButton, xcEdit, xcButton, xcBitBtn, xcSpeedButton, xcGroupBox, xcStatusBar]
     Skin3rd.Strings = (
       'TTBDock=Panel'
       'TTBToolbar=Panel'
@@ -1370,7 +1776,7 @@ object frmConsultaFacturas: TfrmConsultaFacturas
     SkinStore = '(Good)'
     SkinFormtype = sfOnlyThisForm
     Version = '2.65.7.03'
-    MenuUpdate = True
+    MenuUpdate = False
     Left = 90
     Top = 142
     SkinStream = {
@@ -2542,361 +2948,5 @@ object frmConsultaFacturas: TfrmConsultaFacturas
       3DF647358EB5C926BB1D15DFBD7EBB382E43F6EE2A52BA00EE1149CE9CF0FBB6
       07EFDED4331B735019F7A27C7A9C1EC635DA14469933864FE3F8747965B58ECE
       590FBDE62E9A53653F1ABD189A5844DA8B4576B9FEE726BD6604EEDEC580}
-  end
-  object qryUltFact: TIBQuery
-    Database = dmConectar.IBDatabase1
-    Transaction = dmConectar.IBTransaction1
-    BufferChunks = 1000
-    CachedUpdates = False
-    SQL.Strings = (
-      'Select max(numero)  NumFactMax From FACTURAS')
-    Left = 600
-    Top = 280
-    object qryUltFactNUMFACTMAX: TFloatField
-      FieldName = 'NUMFACTMAX'
-    end
-  end
-  object ibsqlFacturas: TIBSQL
-    Database = dmConectar.IBDatabase1
-    ParamCheck = True
-    SQL.Strings = (
-      'Delete from Facturas'
-      'where numero=:numero')
-    Transaction = dmConectar.IBTransaction1
-    Left = 592
-    Top = 168
-  end
-  object ibsqlUpdatDatosVeh: TIBSQL
-    Database = dmConectar.IBDatabase1
-    ParamCheck = True
-    SQL.Strings = (
-      'update DATOSVEHICULO r'
-      'set r.NUMPOL = null,'
-      'r.CODIGO_CTE = null'
-      'where r.CHASSIS =:chassis')
-    Transaction = dmConectar.IBTransaction1
-    Left = 776
-    Top = 296
-  end
-  object qryClientes: TIBQuery
-    Database = dmConectar.IBDatabase1
-    Transaction = dmConectar.IBTransaction1
-    BufferChunks = 1000
-    CachedUpdates = False
-    SQL.Strings = (
-      'Select *'
-      'from CLIENTES'
-      'order by CODIGO_CTE')
-    Left = 320
-    Top = 232
-    object qryClientesCODIGO_CTE: TIntegerField
-      FieldName = 'CODIGO_CTE'
-      Origin = 'CLIENTES.CODIGO_CTE'
-      Required = True
-    end
-    object qryClientesCIA_KEY: TIntegerField
-      FieldName = 'CIA_KEY'
-      Origin = 'CLIENTES.CIA_KEY'
-    end
-    object qryClientesNOMBRE_CTE: TIBStringField
-      FieldName = 'NOMBRE_CTE'
-      Origin = 'CLIENTES.NOMBRE_CTE'
-      Size = 60
-    end
-    object qryClientesNOMBRE_ABREV: TIBStringField
-      FieldName = 'NOMBRE_ABREV'
-      Origin = 'CLIENTES.NOMBRE_ABREV'
-      Size = 30
-    end
-    object qryClientesNOMBRE_FACTURAR: TIBStringField
-      FieldName = 'NOMBRE_FACTURAR'
-      Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
-    end
-    object qryClientesRNC_NUMERO: TIBStringField
-      FieldName = 'RNC_NUMERO'
-      Origin = 'CLIENTES.RNC_NUMERO'
-      Size = 14
-    end
-  end
-  object qryEmpleado: TIBQuery
-    Database = dmConectar.IBDatabase1
-    Transaction = dmConectar.IBTransaction1
-    BufferChunks = 1000
-    CachedUpdates = False
-    SQL.Strings = (
-      
-        'Select c.NOMBRE desc_cargo,e.nombre||'#39' '#39'||e.apellido nombrevende' +
-        'dor , e.* From EMPLEADO e'
-      'inner join CARGO_EMPLEADOS c on c.CODIGO = e.CARGO'
-      'where upper(c.NOMBRE) = '#39'VENDEDOR'#39)
-    Left = 488
-    Top = 464
-    object qryEmpleadoNOMBREVENDEDOR: TIBStringField
-      FieldName = 'NOMBREVENDEDOR'
-      Size = 71
-    end
-    object qryEmpleadoCODIGO: TIntegerField
-      FieldName = 'CODIGO'
-      Origin = 'EMPLEADO.CODIGO'
-      Required = True
-    end
-  end
-  object qryLogoTipoAfiliado: TIBQuery
-    Database = dmConectar.IBDatabase1
-    Transaction = dmConectar.IBTransaction1
-    BufferChunks = 1000
-    CachedUpdates = False
-    SQL.Strings = (
-      'select f.IDTIPO, l.RUTA_LOGO, f.DESCRIPCION from TIPO_AFILIADO f'
-      'inner join logo_servicio l on l.TIPO_AFILIADO = f.IDTIPO')
-    Left = 49
-    Top = 232
-    object qryLogoTipoAfiliadoIDTIPO: TIntegerField
-      FieldName = 'IDTIPO'
-      Origin = 'TIPO_AFILIADO.IDTIPO'
-      Required = True
-    end
-    object qryLogoTipoAfiliadoRUTA_LOGO: TIBStringField
-      FieldName = 'RUTA_LOGO'
-      Origin = 'LOGO_SERVICIO.RUTA_LOGO'
-      Size = 80
-    end
-    object qryLogoTipoAfiliadoDESCRIPCION: TIBStringField
-      FieldName = 'DESCRIPCION'
-      Origin = 'TIPO_AFILIADO.DESCRIPCION'
-      Size = 80
-    end
-  end
-  object MainMenu1: TMainMenu
-    Left = 224
-    Top = 240
-    object Opciones1: TMenuItem
-      Caption = 'Opciones'
-      object Consultarpago1: TMenuItem
-        Caption = 'Consultar pago'
-        OnClick = Consultarpago1Click
-      end
-      object EditarMontoPagado1: TMenuItem
-        Caption = 'Editar Monto Pagado'
-        OnClick = EditarMontoPagado1Click
-      end
-      object AutoAutualizaFPago1: TMenuItem
-        Caption = 'Auto Autualiza FPago'
-        OnClick = AutoAutualizaFPago1Click
-      end
-      object eNCFAsignados1: TMenuItem
-        Caption = 'eNCF Asignados'
-        OnClick = eNCFAsignados1Click
-      end
-      object SolicitareCFDGII1: TMenuItem
-        Caption = 'Validar eCF DGII'
-        OnClick = SolicitareCFDGII1Click
-      end
-      object ConsultaTimbreeCF1: TMenuItem
-        Caption = 'Consulta Timbre e-CF'
-        OnClick = ConsultaTimbreeCF1Click
-      end
-      object AsignareCFSerieE1: TMenuItem
-        Caption = 'Asignar eCF (Serie E)'
-        OnClick = AsignareCFSerieE1Click
-      end
-      object OpcioneseCF1: TMenuItem
-        Caption = 'Opciones eCF'
-        object Reenviar1: TMenuItem
-          Caption = 'Reenviar'
-          OnClick = Reenviar1Click
-        end
-        object ChequearCert1: TMenuItem
-          Caption = 'Chequear Cert'
-          OnClick = ChequearCert1Click
-        end
-        object RefrescarCert1: TMenuItem
-          Caption = 'Refrescar Cert'
-          OnClick = RefrescarCert1Click
-        end
-      end
-      object CambiarTipoECF1: TMenuItem
-        Caption = 'Cambiar Tipo_ECF'
-        OnClick = CambiarTipoECF1Click
-      end
-      object XMLFirmados1: TMenuItem
-        Caption = 'XML Firmados'
-        OnClick = XMLFirmados1Click
-      end
-      object VerificarMontos1: TMenuItem
-        Caption = 'Verificar Montos'
-        OnClick = VerificarMontos1Click
-      end
-    end
-    object ieneECF1: TMenuItem
-      Caption = 'Tiene ECF?'
-      OnClick = ieneECF1Click
-    end
-    object CartadeRuta1: TMenuItem
-      Caption = 'Carta de Ruta'
-      OnClick = BitBtn16Click
-    end
-    object CartadeSaldo1: TMenuItem
-      Caption = 'Carta de Saldo'
-      OnClick = CartadeSaldo1Click
-    end
-  end
-  object tblDetallePagos: TIBDataSet
-    Database = dmConectar.IBDatabase1
-    Transaction = dmConectar.IBTransaction1
-    BufferChunks = 1000
-    CachedUpdates = True
-    DeleteSQL.Strings = (
-      'delete from DETALLE_PAGOS'
-      'where'
-      '  SERIE = :OLD_SERIE')
-    InsertSQL.Strings = (
-      'insert into DETALLE_PAGOS'
-      
-        '  (SERIE, FECHA, TIPO_TARJETA, NUMERO_TARJETA_CRED, ANO_VENCE, M' +
-        'ES_VENCE, '
-      
-        '   MONTO_PAGADO, NUMERO_APROBACION, TIPO, CODIGO_PROVEEDOR, TIPO' +
-        '_PAGO, '
-      
-        '   NUMERO_CHEQUE, COD_BANCO_CHEQUE, SERIE_TRN, AREA_TRANS, NUMER' +
-        'O_CUPON, '
-      '   PAGO)'
-      'values'
-      
-        '  (:SERIE, :FECHA, :TIPO_TARJETA, :NUMERO_TARJETA_CRED, :ANO_VEN' +
-        'CE, :MES_VENCE, '
-      
-        '   :MONTO_PAGADO, :NUMERO_APROBACION, :TIPO, :CODIGO_PROVEEDOR, ' +
-        ':TIPO_PAGO, '
-      
-        '   :NUMERO_CHEQUE, :COD_BANCO_CHEQUE, :SERIE_TRN, :AREA_TRANS, :' +
-        'NUMERO_CUPON, '
-      '   :PAGO)')
-    RefreshSQL.Strings = (
-      'Select '
-      '  SERIE,'
-      '  FECHA,'
-      '  TIPO_TARJETA,'
-      '  NUMERO_TARJETA_CRED,'
-      '  ANO_VENCE,'
-      '  MES_VENCE,'
-      '  MONTO_PAGADO,'
-      '  NUMERO_APROBACION,'
-      '  TIPO,'
-      '  CODIGO_PROVEEDOR,'
-      '  TIPO_PAGO,'
-      '  NUMERO_CHEQUE,'
-      '  COD_BANCO_CHEQUE,'
-      '  SERIE_TRN,'
-      '  AREA_TRANS,'
-      '  NUMERO_CUPON,'
-      '  PAGO'
-      'from DETALLE_PAGOS '
-      'where'
-      '  SERIE = :SERIE')
-    SelectSQL.Strings = (
-      'Select *  From DETALLE_PAGOS'
-      'Where  serie_trn =:serietrn')
-    ModifySQL.Strings = (
-      'update DETALLE_PAGOS'
-      'set'
-      '  SERIE = :SERIE,'
-      '  FECHA = :FECHA,'
-      '  TIPO_TARJETA = :TIPO_TARJETA,'
-      '  NUMERO_TARJETA_CRED = :NUMERO_TARJETA_CRED,'
-      '  ANO_VENCE = :ANO_VENCE,'
-      '  MES_VENCE = :MES_VENCE,'
-      '  MONTO_PAGADO = :MONTO_PAGADO,'
-      '  NUMERO_APROBACION = :NUMERO_APROBACION,'
-      '  TIPO = :TIPO,'
-      '  CODIGO_PROVEEDOR = :CODIGO_PROVEEDOR,'
-      '  TIPO_PAGO = :TIPO_PAGO,'
-      '  NUMERO_CHEQUE = :NUMERO_CHEQUE,'
-      '  COD_BANCO_CHEQUE = :COD_BANCO_CHEQUE,'
-      '  SERIE_TRN = :SERIE_TRN,'
-      '  AREA_TRANS = :AREA_TRANS,'
-      '  NUMERO_CUPON = :NUMERO_CUPON,'
-      '  PAGO = :PAGO'
-      'where'
-      '  SERIE = :OLD_SERIE')
-    GeneratorField.Field = 'SERIE'
-    GeneratorField.Generator = 'GEN_SERIE_DET_PAGO'
-    GeneratorField.ApplyEvent = gamOnPost
-    Left = 400
-    Top = 336
-    object tblDetallePagosSERIE: TIntegerField
-      FieldName = 'SERIE'
-      Origin = 'DETALLE_PAGOS.SERIE'
-      Required = True
-    end
-    object tblDetallePagosFECHA: TDateTimeField
-      FieldName = 'FECHA'
-      Origin = 'DETALLE_PAGOS.FECHA'
-    end
-    object tblDetallePagosTIPO_TARJETA: TSmallintField
-      FieldName = 'TIPO_TARJETA'
-      Origin = 'DETALLE_PAGOS.TIPO_TARJETA'
-    end
-    object tblDetallePagosNUMERO_TARJETA_CRED: TIBStringField
-      FieldName = 'NUMERO_TARJETA_CRED'
-      Origin = 'DETALLE_PAGOS.NUMERO_TARJETA_CRED'
-    end
-    object tblDetallePagosANO_VENCE: TIntegerField
-      FieldName = 'ANO_VENCE'
-      Origin = 'DETALLE_PAGOS.ANO_VENCE'
-    end
-    object tblDetallePagosMES_VENCE: TSmallintField
-      FieldName = 'MES_VENCE'
-      Origin = 'DETALLE_PAGOS.MES_VENCE'
-    end
-    object tblDetallePagosMONTO_PAGADO: TFloatField
-      FieldName = 'MONTO_PAGADO'
-      Origin = 'DETALLE_PAGOS.MONTO_PAGADO'
-      Required = True
-    end
-    object tblDetallePagosNUMERO_APROBACION: TIBStringField
-      FieldName = 'NUMERO_APROBACION'
-      Origin = 'DETALLE_PAGOS.NUMERO_APROBACION'
-      FixedChar = True
-      Size = 15
-    end
-    object tblDetallePagosTIPO: TSmallintField
-      FieldName = 'TIPO'
-      Origin = 'DETALLE_PAGOS.TIPO'
-    end
-    object tblDetallePagosCODIGO_PROVEEDOR: TSmallintField
-      FieldName = 'CODIGO_PROVEEDOR'
-      Origin = 'DETALLE_PAGOS.CODIGO_PROVEEDOR'
-    end
-    object tblDetallePagosTIPO_PAGO: TSmallintField
-      FieldName = 'TIPO_PAGO'
-      Origin = 'DETALLE_PAGOS.TIPO_PAGO'
-    end
-    object tblDetallePagosNUMERO_CHEQUE: TIntegerField
-      FieldName = 'NUMERO_CHEQUE'
-      Origin = 'DETALLE_PAGOS.NUMERO_CHEQUE'
-    end
-    object tblDetallePagosCOD_BANCO_CHEQUE: TIntegerField
-      FieldName = 'COD_BANCO_CHEQUE'
-      Origin = 'DETALLE_PAGOS.COD_BANCO_CHEQUE'
-    end
-    object tblDetallePagosSERIE_TRN: TIntegerField
-      FieldName = 'SERIE_TRN'
-      Origin = 'DETALLE_PAGOS.SERIE_TRN'
-    end
-    object tblDetallePagosAREA_TRANS: TSmallintField
-      FieldName = 'AREA_TRANS'
-      Origin = 'DETALLE_PAGOS.AREA_TRANS'
-    end
-    object tblDetallePagosNUMERO_CUPON: TIntegerField
-      FieldName = 'NUMERO_CUPON'
-      Origin = 'DETALLE_PAGOS.NUMERO_CUPON'
-    end
-    object tblDetallePagosPAGO: TSmallintField
-      FieldName = 'PAGO'
-      Origin = 'DETALLE_PAGOS.PAGO'
-    end
   end
 end

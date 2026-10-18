@@ -305,7 +305,7 @@ object frmCertConsignados: TfrmCertConsignados
     object tblCertConsignadosNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object tblCertConsignadosFECHA_IN: TDateTimeField
       FieldName = 'FECHA_IN'
@@ -1600,7 +1600,7 @@ object frmCertConsignados: TfrmCertConsignados
     object qryClientesNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
   end
   object DataSource1: TDataSource

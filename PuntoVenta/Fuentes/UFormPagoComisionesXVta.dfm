@@ -1,6 +1,6 @@
 object frmPagoComisiones: TfrmPagoComisiones
-  Left = 244
-  Top = 120
+  Left = 295
+  Top = 141
   Width = 1173
   Height = 649
   Caption = 'Pago Comisiones'
@@ -43,6 +43,19 @@ object frmPagoComisiones: TfrmPagoComisiones
     Width = 67
     Height = 13
     Caption = 'Aplicar % Com'
+  end
+  object lblFechaPago: TLabel
+    Left = 208
+    Top = 20
+    Width = 69
+    Height = 13
+    Caption = 'Fecha Pago'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clBlue
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ParentFont = False
   end
   object BitBtn1: TBitBtn
     Left = 470
@@ -124,6 +137,7 @@ object frmPagoComisiones: TfrmPagoComisiones
     Height = 25
     Caption = 'R&eporte'
     TabOrder = 3
+    OnClick = BitBtn2Click
     Glyph.Data = {
       76010000424D7601000000000000760000002800000020000000100000000100
       04000000000000010000130B0000130B00001000000000000000000000000000
@@ -588,6 +602,15 @@ object frmPagoComisiones: TfrmPagoComisiones
       0333337F777777737F333308888888880333337F333333337F33330888888888
       03333373FFFFFFFF733333700000000073333337777777773333}
     NumGlyphs = 2
+  end
+  object btnConfirmarComision: TButton
+    Left = 944
+    Top = 38
+    Width = 75
+    Height = 25
+    Caption = 'Confirmar'
+    TabOrder = 11
+    OnClick = btnConfirmarComisionClick
   end
   object dstblComisionXVta: TDataSource
     DataSet = dmComision.tblComisionXVta

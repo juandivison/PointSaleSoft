@@ -293,6 +293,7 @@ type
     ibSqlUpdGlobalPosExtraDet: TIBSQL;
     qryConsultaPosExtraDetDC_MONTONETO: TFloatField;
     ibstpproc_InseCotiVtaExtraDetINVENTARIAR: TSmallintField;
+    qryConsultaPosExtraDetTC_MONTORECARGO_GLB_DET: TFloatField;
     procedure DataModuleCreate(Sender: TObject);
     procedure Totales_xxxAfterPost(DataSet: TDataSet);
     procedure qryPosExtraDetBeforePost(DataSet: TDataSet);
@@ -306,6 +307,8 @@ type
     FRecalculoPendiente: Boolean;
     FCambioGlobalPendiente: Boolean;
     function TieneDistribucionGlobalActiva: Boolean;
+    function BuscarSeriePosExtraDet(ANumero, ASerie, ACodUsuario: Integer): Boolean;
+    function BuscarSerieConsultaPosExtraDet(ANumero, ASerie, ACodUsuario: Integer): Boolean;
   public
     { Public declarations }
     serierxVenta : integer;
@@ -359,6 +362,10 @@ type
     procedure LogProcedureCalc(const ProcName: string);
     procedure RefrescarLineaActualDesdePosExtraDet;
     procedure ProcesaCalculosVentaCompleta;
+    procedure ReconstruirPosExtraDesdeRxVenta(ANumero: Integer);
+    function ValidarSincronizacionRxVentaPosExtraDet(
+      out AMensaje: string
+    ): Boolean;
     procedure ActualizarPosExtraSum(numstr: Integer);
     procedure RefrescarTodasLineasDesdePosExtraDet;
     procedure ActualizarValoresGlobalesPosExtraDet(numstr: Integer);
@@ -625,7 +632,7 @@ begin
     Exit;
 
   if GlbNumVtaPOS <= 0 then
-    Exit;
+    GlbNumVtaPOS := GetRandomNumber(VarUsuarioGlb);
 
   FProcesandoCalculos := True;
   frmProcVentaRapida.EnProcesoCalculo := True;
@@ -832,6 +839,482 @@ begin
 end;
 
 
+procedure TdmCalculos.ReconstruirPosExtraDesdeRxVenta(
+  ANumero: Integer
+);
+var
+  LBmk: TBookmark;
+  LOldLlenandoDatos: Boolean;
+  LOldEnProcesoCalculo: Boolean;
+begin
+  if ANumero <= 0 then
+    raise Exception.Create(
+      'Numero temporal POS invalido para reconstruir POS_EXTRA_DET.'
+    );
+
+  if not Assigned(frmProcVentaRapida) then
+    raise Exception.Create(
+      'Formulario de venta no disponible para reconstruir POS_EXTRA_DET.'
+    );
+
+  if (not frmProcVentaRapida.rxVenta.Active) or
+     frmProcVentaRapida.rxVenta.IsEmpty then
+    raise Exception.Create(
+      'rxVenta no contiene lineas para reconstruir POS_EXTRA_DET.'
+    );
+
+  LBmk := nil;
+  LOldLlenandoDatos := frmProcVentaRapida.LlenandoDatos;
+  LOldEnProcesoCalculo := frmProcVentaRapida.EnProcesoCalculo;
+
+  if not frmProcVentaRapida.rxVenta.IsEmpty then
+    LBmk := frmProcVentaRapida.rxVenta.GetBookmark;
+
+  frmProcVentaRapida.rxVenta.DisableControls;
+  frmProcVentaRapida.LlenandoDatos := True;
+  frmProcVentaRapida.EnProcesoCalculo := True;
+
+  try
+    {
+      Invariante M1 para cargas masivas:
+        rxVenta -> POS_EXTRA_DET -> POS_EXTRA_SUM -> rxVenta/Totales.
+
+      La reconstruccion empieza desde un POS_EXTRA_DET vacio para ANumero.
+      No depende de FProcesandoCalculos ni de eventos de UI.
+    }
+    ProcDeletePosExtraDet(ANumero);
+
+    frmProcVentaRapida.rxVenta.First;
+
+    while not frmProcVentaRapida.rxVenta.Eof do
+    begin
+      if (not frmProcVentaRapida.rxVentaCodArticulo.IsNull) and
+         (frmProcVentaRapida.rxVentaCodArticulo.Value > 0) and
+         ((frmProcVentaRapida.rxVentaStatus.IsNull) or
+          (UpperCase(Trim(frmProcVentaRapida.rxVentaStatus.AsString)) <> 'C')) then
+      begin
+        ProcInsertUpdatePosExtraDet(ANumero);
+      end;
+
+      frmProcVentaRapida.rxVenta.Next;
+    end;
+
+    Pos_UpdateTotales(ANumero);
+    RefrescarTodasLineasDesdePosExtraDet;
+
+    if LBmk <> nil then
+    begin
+      if frmProcVentaRapida.rxVenta.Active and
+         frmProcVentaRapida.rxVenta.BookmarkValid(LBmk) then
+        frmProcVentaRapida.rxVenta.GotoBookmark(LBmk);
+    end;
+
+  finally
+    if LBmk <> nil then
+    begin
+      try
+        if frmProcVentaRapida.rxVenta.Active then
+          frmProcVentaRapida.rxVenta.FreeBookmark(LBmk);
+      except
+        { No ocultar el error real por un bookmark. }
+      end;
+    end;
+
+    frmProcVentaRapida.LlenandoDatos := LOldLlenandoDatos;
+    frmProcVentaRapida.EnProcesoCalculo := LOldEnProcesoCalculo;
+    frmProcVentaRapida.rxVenta.EnableControls;
+  end;
+end;
+
+function TdmCalculos.ValidarSincronizacionRxVentaPosExtraDet(
+  out AMensaje: string
+): Boolean;
+const
+  TOL_MONTO = 0.0049;
+  TOL_INPUT = 0.0005;
+var
+  LBmk: TBookmark;
+  LAfterOpen: TDataSetNotifyEvent;
+  LOldLlenandoDatos: Boolean;
+  LCountRx: Integer;
+  LCountPos: Integer;
+  LSerie: Integer;
+  LPrecioEsperado: Currency;
+  LSeriesRx: TStringList;
+  LSeriesPos: TStringList;
+  LSerieKey: string;
+  I: Integer;
+
+  function Diferente(A, B, ATol: Currency): Boolean;
+  begin
+    Result := Abs(A - B) > ATol;
+  end;
+
+  procedure ErrorCampo(
+    ASerie: Integer;
+    const ACampo: string;
+    const AValorRx, AValorPos: string
+  );
+  begin
+    AMensaje :=
+      'SERIE=' + IntToStr(ASerie) +
+      ' CAMPO=' + ACampo +
+      ' RX=[' + AValorRx + ']' +
+      ' POS=[' + AValorPos + ']';
+  end;
+
+  function BuscarSerieRx(ASerie: Integer): Boolean;
+  begin
+    Result := False;
+
+    if frmProcVentaRapida.rxVenta.IsEmpty then
+      Exit;
+
+    {
+      No usar Locate: en IBX/RxMemoryData hemos observado falsos negativos
+      en otros recorridos. El recorrido deja rxVenta posicionado exactamente
+      sobre la SERIE encontrada para comparar sus campos con POS_EXTRA_DET.
+      El bookmark general LBmk restaura la linea original al final.
+    }
+    frmProcVentaRapida.rxVenta.First;
+
+    while not frmProcVentaRapida.rxVenta.Eof do
+    begin
+      if (not frmProcVentaRapida.rxVentaSerie.IsNull) and
+         (frmProcVentaRapida.rxVentaSerie.AsInteger = ASerie) then
+      begin
+        Result := True;
+        Exit;
+      end;
+
+      frmProcVentaRapida.rxVenta.Next;
+    end;
+  end;
+
+begin
+  Result := False;
+  AMensaje := '';
+
+  if not Assigned(frmProcVentaRapida) then
+  begin
+    AMensaje := 'Formulario de venta no disponible.';
+    Exit;
+  end;
+
+  if (not frmProcVentaRapida.rxVenta.Active) or
+     frmProcVentaRapida.rxVenta.IsEmpty then
+  begin
+    AMensaje := 'rxVenta no tiene detalle activo.';
+    Exit;
+  end;
+
+  if GlbNumVtaPOS <= 0 then
+  begin
+    AMensaje := 'GlbNumVtaPOS no es valido.';
+    Exit;
+  end;
+
+  if frmProcVentaRapida.rxVenta.State in [dsEdit, dsInsert] then
+  begin
+    AMensaje := 'rxVenta tiene una linea sin Post.';
+    Exit;
+  end;
+
+  LBmk := nil;
+  LAfterOpen := qryConsultaPosExtraDet.AfterOpen;
+  LOldLlenandoDatos := frmProcVentaRapida.LlenandoDatos;
+  LSeriesRx := TStringList.Create;
+  LSeriesPos := TStringList.Create;
+
+  LSeriesRx.Sorted := True;
+  LSeriesRx.Duplicates := dupError;
+  LSeriesPos.Sorted := True;
+  LSeriesPos.Duplicates := dupError;
+
+  qryConsultaPosExtraDet.AfterOpen := nil;
+  frmProcVentaRapida.LlenandoDatos := True;
+  frmProcVentaRapida.rxVenta.DisableControls;
+
+  try
+    qryConsultaPosExtraDet.Close;
+    qryConsultaPosExtraDet.ParamByName('NUMEROSTR').AsInteger := GlbNumVtaPOS;
+    qryConsultaPosExtraDet.ParamByName('CODUSER').AsInteger := VarUsuarioGlb;
+    qryConsultaPosExtraDet.ParamByName('NUMCOTIZA').AsInteger := -1;
+    qryConsultaPosExtraDet.Open;
+
+    if qryConsultaPosExtraDet.IsEmpty then
+    begin
+      AMensaje := 'POS_EXTRA_DET no tiene lineas para la venta temporal.';
+      Exit;
+    end;
+
+    LBmk := frmProcVentaRapida.rxVenta.GetBookmark;
+
+    LCountRx := 0;
+    frmProcVentaRapida.rxVenta.First;
+
+    while not frmProcVentaRapida.rxVenta.Eof do
+    begin
+      if UpperCase(Trim(frmProcVentaRapida.rxVentaStatus.AsString)) <> 'C' then
+      begin
+        Inc(LCountRx);
+
+        if frmProcVentaRapida.rxVentaSerie.IsNull then
+        begin
+          AMensaje := 'Existe una linea de rxVenta sin SERIE.';
+          Exit;
+        end;
+
+        LSerie := frmProcVentaRapida.rxVentaSerie.AsInteger;
+        LSerieKey := IntToStr(LSerie);
+
+        if LSeriesRx.IndexOf(LSerieKey) >= 0 then
+        begin
+          AMensaje :=
+            'SERIE=' + LSerieKey +
+            ' esta duplicada entre las lineas activas de rxVenta.';
+          Exit;
+        end;
+
+        LSeriesRx.Add(LSerieKey);
+      end;
+
+      frmProcVentaRapida.rxVenta.Next;
+    end;
+
+    LCountPos := 0;
+    qryConsultaPosExtraDet.First;
+
+    while not qryConsultaPosExtraDet.Eof do
+    begin
+      Inc(LCountPos);
+
+      if qryConsultaPosExtraDetNUMERO.AsInteger <> GlbNumVtaPOS then
+      begin
+        AMensaje :=
+          'POS_EXTRA_DET retorno NUMERO=' +
+          qryConsultaPosExtraDetNUMERO.AsString +
+          ' cuando se esperaba ' + IntToStr(GlbNumVtaPOS) + '.';
+        Exit;
+      end;
+
+      if qryConsultaPosExtraDetCOD_USUARIO.AsInteger <> VarUsuarioGlb then
+      begin
+        AMensaje :=
+          'POS_EXTRA_DET retorno COD_USUARIO=' +
+          qryConsultaPosExtraDetCOD_USUARIO.AsString +
+          ' cuando se esperaba ' + IntToStr(VarUsuarioGlb) + '.';
+        Exit;
+      end;
+
+      LSerie := qryConsultaPosExtraDetSERIE.AsInteger;
+      LSerieKey := IntToStr(LSerie);
+
+      if LSeriesPos.IndexOf(LSerieKey) >= 0 then
+      begin
+        AMensaje :=
+          'SERIE=' + LSerieKey +
+          ' esta duplicada en POS_EXTRA_DET.';
+        Exit;
+      end;
+
+      LSeriesPos.Add(LSerieKey);
+
+      if not BuscarSerieRx(LSerie) then
+      begin
+        AMensaje :=
+          'SERIE=' + LSerieKey +
+          ' existe en POS_EXTRA_DET pero no en rxVenta.';
+        Exit;
+      end;
+
+      if UpperCase(Trim(frmProcVentaRapida.rxVentaStatus.AsString)) = 'C' then
+      begin
+        AMensaje :=
+          'SERIE=' + LSerieKey +
+          ' esta cancelada en rxVenta pero continua en POS_EXTRA_DET.';
+        Exit;
+      end;
+
+      if qryConsultaPosExtraDetD_CODIGO_PROD.AsInteger <>
+         frmProcVentaRapida.rxVentaCodArticulo.AsInteger then
+      begin
+        ErrorCampo(
+          LSerie,
+          'CODIGO_PROD',
+          frmProcVentaRapida.rxVentaCodArticulo.AsString,
+          qryConsultaPosExtraDetD_CODIGO_PROD.AsString
+        );
+        Exit;
+      end;
+
+      if Trim(qryConsultaPosExtraDetD_MONEDA.AsString) <>
+         Trim(frmProcVentaRapida.rxVentaMoneda.AsString) then
+      begin
+        ErrorCampo(
+          LSerie,
+          'MONEDA',
+          frmProcVentaRapida.rxVentaMoneda.AsString,
+          qryConsultaPosExtraDetD_MONEDA.AsString
+        );
+        Exit;
+      end;
+
+      if Diferente(
+        frmProcVentaRapida.rxVentaCant.AsCurrency,
+        qryConsultaPosExtraDetD_CANT.AsCurrency,
+        TOL_INPUT
+      ) then
+      begin
+        ErrorCampo(
+          LSerie,
+          'CANTIDAD',
+          frmProcVentaRapida.rxVentaCant.AsString,
+          qryConsultaPosExtraDetD_CANT.AsString
+        );
+        Exit;
+      end;
+
+      if GlbMonedaBase = 1 then
+        LPrecioEsperado :=
+          frmProcVentaRapida.rxVentaPrecio.AsCurrency *
+          frmProcVentaRapida.rxVentaMonto_Tasa.AsCurrency
+      else
+        LPrecioEsperado := frmProcVentaRapida.rxVentaPrecio.AsCurrency;
+
+      if Diferente(
+        LPrecioEsperado,
+        qryConsultaPosExtraDetD_PRECIO.AsCurrency,
+        TOL_INPUT
+      ) then
+      begin
+        ErrorCampo(
+          LSerie,
+          'PRECIO_BASE',
+          CurrToStr(LPrecioEsperado),
+          qryConsultaPosExtraDetD_PRECIO.AsString
+        );
+        Exit;
+      end;
+
+      if qryConsultaPosExtraDetD_TIPO_UNIDAD.AsInteger <>
+         frmProcVentaRapida.rxVentaTipoUnidad.AsInteger then
+      begin
+        ErrorCampo(
+          LSerie,
+          'TIPO_UNIDAD',
+          frmProcVentaRapida.rxVentaTipoUnidad.AsString,
+          qryConsultaPosExtraDetD_TIPO_UNIDAD.AsString
+        );
+        Exit;
+      end;
+
+      if Diferente(
+        frmProcVentaRapida.rxVentaPorcDescItem.AsCurrency,
+        qryConsultaPosExtraDetD_PORCDESCITEM.AsCurrency,
+        TOL_INPUT
+      ) then
+      begin
+        ErrorCampo(
+          LSerie,
+          'PORC_DESC_ITEM',
+          frmProcVentaRapida.rxVentaPorcDescItem.AsString,
+          qryConsultaPosExtraDetD_PORCDESCITEM.AsString
+        );
+        Exit;
+      end;
+
+      if Diferente(
+        frmProcVentaRapida.rxVentaMontoBruto.AsCurrency,
+        DsFieldCurr(qryConsultaPosExtraDet, 'DC_MONTOBRUTO', 0),
+        TOL_MONTO
+      ) then
+      begin
+        ErrorCampo(
+          LSerie,
+          'DC_MONTOBRUTO',
+          frmProcVentaRapida.rxVentaMontoBruto.AsString,
+          CurrToStr(DsFieldCurr(qryConsultaPosExtraDet, 'DC_MONTOBRUTO', 0))
+        );
+        Exit;
+      end;
+
+      if Diferente(
+        frmProcVentaRapida.rxVentaMontoNeto.AsCurrency,
+        DsFieldCurr(qryConsultaPosExtraDet, 'DC_MONTONETO', 0),
+        TOL_MONTO
+      ) then
+      begin
+        ErrorCampo(
+          LSerie,
+          'DC_MONTONETO',
+          frmProcVentaRapida.rxVentaMontoNeto.AsString,
+          CurrToStr(DsFieldCurr(qryConsultaPosExtraDet, 'DC_MONTONETO', 0))
+        );
+        Exit;
+      end;
+
+      if Diferente(
+        frmProcVentaRapida.rxVentaItbi.AsCurrency,
+        DsFieldCurr(qryConsultaPosExtraDet, 'DC_ITBIS', 0),
+        TOL_MONTO
+      ) then
+      begin
+        ErrorCampo(
+          LSerie,
+          'DC_ITBIS',
+          frmProcVentaRapida.rxVentaItbi.AsString,
+          CurrToStr(DsFieldCurr(qryConsultaPosExtraDet, 'DC_ITBIS', 0))
+        );
+        Exit;
+      end;
+
+      qryConsultaPosExtraDet.Next;
+    end;
+
+    for I := 0 to LSeriesRx.Count - 1 do
+    begin
+      if LSeriesPos.IndexOf(LSeriesRx[I]) < 0 then
+      begin
+        AMensaje :=
+          'SERIE=' + LSeriesRx[I] +
+          ' existe en rxVenta pero no en POS_EXTRA_DET.';
+        Exit;
+      end;
+    end;
+
+    if LCountRx <> LCountPos then
+    begin
+      AMensaje :=
+        'Cantidad de lineas diferente. rxVenta=' + IntToStr(LCountRx) +
+        ' POS_EXTRA_DET=' + IntToStr(LCountPos) + '.';
+      Exit;
+    end;
+
+    Result := True;
+
+  finally
+    if LBmk <> nil then
+    begin
+      try
+        if frmProcVentaRapida.rxVenta.Active and
+           frmProcVentaRapida.rxVenta.BookmarkValid(LBmk) then
+          frmProcVentaRapida.rxVenta.GotoBookmark(LBmk);
+      finally
+        if frmProcVentaRapida.rxVenta.Active then
+          frmProcVentaRapida.rxVenta.FreeBookmark(LBmk);
+      end;
+    end;
+
+    frmProcVentaRapida.rxVenta.EnableControls;
+    frmProcVentaRapida.LlenandoDatos := LOldLlenandoDatos;
+    qryConsultaPosExtraDet.AfterOpen := LAfterOpen;
+    LSeriesPos.Free;
+    LSeriesRx.Free;
+  end;
+end;
+
+
 procedure TdmCalculos.ProcesarSumaTotal;
 var
   monto:Extended;
@@ -931,6 +1414,59 @@ begin
   end;
 end;
 
+function TdmCalculos.BuscarSeriePosExtraDet(
+  ANumero, ASerie, ACodUsuario: Integer
+): Boolean;
+begin
+  Result := False;
+
+  if not qryPosExtraDet.Active then
+    Exit;
+
+  if qryPosExtraDet.State <> dsBrowse then
+    Exit;
+
+  qryPosExtraDet.First;
+
+  while not qryPosExtraDet.Eof do
+  begin
+    if (qryPosExtraDetNUMERO.AsInteger = ANumero) and
+       (qryPosExtraDetSERIE.AsInteger = ASerie) and
+       (qryPosExtraDetCOD_USUARIO.AsInteger = ACodUsuario) then
+    begin
+      Result := True;
+      Exit;
+    end;
+
+    qryPosExtraDet.Next;
+  end;
+end;
+
+function TdmCalculos.BuscarSerieConsultaPosExtraDet(
+  ANumero, ASerie, ACodUsuario: Integer
+): Boolean;
+begin
+  Result := False;
+
+  if not qryConsultaPosExtraDet.Active then
+    Exit;
+
+  qryConsultaPosExtraDet.First;
+
+  while not qryConsultaPosExtraDet.Eof do
+  begin
+    if (qryConsultaPosExtraDetNUMERO.AsInteger = ANumero) and
+       (qryConsultaPosExtraDetSERIE.AsInteger = ASerie) and
+       (qryConsultaPosExtraDetCOD_USUARIO.AsInteger = ACodUsuario) then
+    begin
+      Result := True;
+      Exit;
+    end;
+
+    qryConsultaPosExtraDet.Next;
+  end;
+end;
+
 procedure TdmCalculos.ProcInsertUpdatePosExtraDet(numstr: integer);
 var
   Existe: Boolean;
@@ -945,13 +1481,18 @@ begin
   if frmProcVentaRapida.rxVentaCodArticulo.IsNull then Exit;
   if frmProcVentaRapida.rxVentaCodArticulo.Value <= 0 then Exit;
 
+  if frmProcVentaRapida.rxVentaSerie.IsNull or
+     (frmProcVentaRapida.rxVentaSerie.Value <= 0) then
+    Exit;
+
   if frmProcVentaRapida.rxVentaStatus.IsNull then
   begin
-    frmProcVentaRapida.rxVenta.Edit;
+    if frmProcVentaRapida.rxVenta.State = dsBrowse then
+      frmProcVentaRapida.rxVenta.Edit;
     frmProcVentaRapida.rxVentaStatus.Value := 'A';
   end;
 
-  if frmProcVentaRapida.rxVentaStatus.Value = 'C' then
+  if UpperCase(Trim(frmProcVentaRapida.rxVentaStatus.AsString)) = 'C' then
     Exit;
 
   if numstr <= 0 then
@@ -966,54 +1507,63 @@ begin
   qryPosExtraDet.Params[0].Value := GlbNumVtaPOS;
   qryPosExtraDet.Open;
 
-  Existe := False;
+  {
+    M1 - llave deterministica.
+    Nunca ejecutar Edit sobre qryPosExtraDet si no se ha demostrado que el
+    registro actual coincide con NUMERO + SERIE + COD_USUARIO.
+  }
+  Existe := BuscarSeriePosExtraDet(
+    GlbNumVtaPOS,
+    frmProcVentaRapida.rxVentaSerie.Value,
+    VarUsuarioGlb
+  );
 
-  if qryPosExtraDet.State = dsBrowse then
+  if (not Existe) and
+     VtaExisteExtra(
+       GlbNumVtaPOS,
+       frmProcVentaRapida.rxVentaSerie.Value,
+       VarUsuarioGlb
+     ) then
   begin
-    Existe := qryPosExtraDet.Locate(
-      'NUMERO;SERIE;COD_USUARIO',
-      VarArrayOf([
-        GlbNumVtaPOS,
-        frmProcVentaRapida.rxVentaSerie.Value,
-        VarUsuarioGlb
-      ]),
-      []
-    );
-  end;
+    {
+      La consulta de existencia dice que la fila esta en Firebird. Reabrimos
+      el dataset y la buscamos recorriendo el result set real. Si aun no
+      aparece, es preferible abortar a editar otra SERIE accidentalmente.
+    }
+    qryPosExtraDet.Close;
+    qryPosExtraDet.Params[0].Value := GlbNumVtaPOS;
+    qryPosExtraDet.Open;
 
-  if not Existe then
-    Existe := VtaExisteExtra(
+    Existe := BuscarSeriePosExtraDet(
       GlbNumVtaPOS,
       frmProcVentaRapida.rxVentaSerie.Value,
       VarUsuarioGlb
     );
 
-  if Existe then
-  begin
-    if not qryPosExtraDet.Locate(
-      'NUMERO;SERIE;COD_USUARIO',
-      VarArrayOf([
-        GlbNumVtaPOS,
-        frmProcVentaRapida.rxVentaSerie.Value,
-        VarUsuarioGlb
-      ]),
-      []
-    ) then
+    if not Existe then
     begin
-      qryPosExtraDet.Close;
-      qryPosExtraDet.Params[0].Value := GlbNumVtaPOS;
-      qryPosExtraDet.Open;
+      LogProcedureCalc(
+        'POS_EXTRA_DET existente no visible en dataset. Numero=' +
+        IntToStr(GlbNumVtaPOS) +
+        ' Serie=' + frmProcVentaRapida.rxVentaSerie.AsString +
+        ' Usuario=' + IntToStr(VarUsuarioGlb)
+      );
 
-      qryPosExtraDet.Locate(
-        'NUMERO;SERIE;COD_USUARIO',
-        VarArrayOf([
-          GlbNumVtaPOS,
-          frmProcVentaRapida.rxVentaSerie.Value,
-          VarUsuarioGlb
-        ]),
-        []
+      raise Exception.Create(
+        'No fue posible actualizar el calculo temporal del producto.'
       );
     end;
+  end;
+
+  if Existe then
+  begin
+    if (qryPosExtraDetNUMERO.AsInteger <> GlbNumVtaPOS) or
+       (qryPosExtraDetSERIE.AsInteger <>
+        frmProcVentaRapida.rxVentaSerie.Value) or
+       (qryPosExtraDetCOD_USUARIO.AsInteger <> VarUsuarioGlb) then
+      raise Exception.Create(
+        'No fue posible posicionar el detalle temporal del producto.'
+      );
 
     qryPosExtraDet.Edit;
   end
@@ -1023,41 +1573,46 @@ begin
     qryPosExtraDetSERIE.Value := frmProcVentaRapida.rxVentaSerie.Value;
     qryPosExtraDetNUMERO.Value := GlbNumVtaPOS;
     qryPosExtraDetCOD_USUARIO.Value := VarUsuarioGlb;
-    qryPosExtraDetFECHA.Value := ExtraerFecha(frmProcVentaRapida.rxVentaFecha.Value);
+    qryPosExtraDetFECHA.Value :=
+      ExtraerFecha(frmProcVentaRapida.rxVentaFecha.Value);
   end;
 
   qryPosExtraDetFECHA_COTIZA.Value :=
     ExtraerFecha(frmProcVentaRapida.rxVentaFecha.Value);
 
   if not frmProcVentaRapida.rxVentaNumeroCotiza.IsNull then
-    qryPosExtraDetNUMERO_COTIZA.Value := frmProcVentaRapida.rxVentaNumeroCotiza.Value
+    qryPosExtraDetNUMERO_COTIZA.Value :=
+      frmProcVentaRapida.rxVentaNumeroCotiza.Value
   else
     qryPosExtraDetNUMERO_COTIZA.Value := 0;
 
   if frmProcVentaRapida.rxVentaMoneda.IsNull then
   begin
-    if (GlbMonedaBase > 0) then
-    frmProcVentaRapida.rxVentaMoneda.Value   := IntToStr(GlbMonedaBase)
+    if GlbMonedaBase > 0 then
+      frmProcVentaRapida.rxVentaMoneda.Value := IntToStr(GlbMonedaBase)
     else
-    frmProcVentaRapida.rxVentaMoneda.Value   := '1';
+      frmProcVentaRapida.rxVentaMoneda.Value := '1';
   end;
 
-  qryPosExtraDetD_MONEDA.Value := frmProcVentaRapida.rxVentaMoneda.Value;
-  qryPosExtraDetD_TIPO_VENTA.Value := frmProcVentaRapida.rxVentaTipoVenta.Value;
-  qryPosExtraDetD_CODIGO_PROD.Value := frmProcVentaRapida.rxVentaCodArticulo.Value;
-  qryPosExtraDetD_CANT.Value := frmProcVentaRapida.rxVentaCant.Value;
-  qryPosExtraDetD_TIPO_UNIDAD.Value := frmProcVentaRapida.rxVentaTipoUnidad.Value;
-  qryPosExtraDetCODTEXTO.Value := frmProcVentaRapida.rxVentaCodTexto.Value;
+  qryPosExtraDetD_MONEDA.Value :=
+    frmProcVentaRapida.rxVentaMoneda.Value;
+  qryPosExtraDetD_TIPO_VENTA.Value :=
+    frmProcVentaRapida.rxVentaTipoVenta.Value;
+  qryPosExtraDetD_CODIGO_PROD.Value :=
+    frmProcVentaRapida.rxVentaCodArticulo.Value;
+  qryPosExtraDetD_CANT.Value :=
+    frmProcVentaRapida.rxVentaCant.Value;
+  qryPosExtraDetD_TIPO_UNIDAD.Value :=
+    frmProcVentaRapida.rxVentaTipoUnidad.Value;
+  qryPosExtraDetCODTEXTO.Value :=
+    frmProcVentaRapida.rxVentaCodTexto.Value;
 
   if not frmProcVentaRapida.rxVentaLevelPrecio.IsNull then
-    qryPosExtraDetLEVEL_PRECIO_VENT.Value := frmProcVentaRapida.rxVentaLevelPrecio.Value
+    qryPosExtraDetLEVEL_PRECIO_VENT.Value :=
+      frmProcVentaRapida.rxVentaLevelPrecio.Value
   else
     qryPosExtraDetLEVEL_PRECIO_VENT.Value := 0;
 
-  {
-    Mantengo tu regla actual de precio en moneda base.
-    No es cálculo fiscal; es preparar el insumo que la BD ya espera.
-  }
   if GlbMonedaBase = 1 then
     qryPosExtraDetD_PRECIO.Value :=
       frmProcVentaRapida.rxVentaPrecio.Value *
@@ -1066,9 +1621,6 @@ begin
     qryPosExtraDetD_PRECIO.Value :=
       frmProcVentaRapida.rxVentaPrecio.Value;
 
-  {
-    Tasa como insumo. Los montos fiscales los calcula Firebird.
-  }
   if (GlbIgI = 0) and (GlbCalcItbis = 0) then
     ATasaItbis := 0
   else
@@ -1105,20 +1657,9 @@ begin
     frmProcVentaRapida.TotalesMontoNCRAplicado.Value;
 
   {
-    IMPORTANTE:
-    No escribir aquí campos calculados como:
-      DC_MONTOBRUTO
-      DC_MONTODESCITEM
-      DC_ITBIS
-      TC_TOTALNETO
-      TC_ITBIS
-      TC_SUBTOTAL
-      TC_MONTOITBISRECARGO_GLB
-      TC_MONTOITBISRECARGO_ITM
-
-    Esos valores los debe producir Firebird.
+    DC_MONTOBRUTO, DC_MONTODESCITEM, DC_ITBIS, DC_MONTONETO y los
+    acumulados TC_* son outputs de Firebird. Delphi no los calcula aqui.
   }
-
   try
     GlbSalvarQuery(qryPosExtraDet);
   except
@@ -1147,7 +1688,6 @@ begin
 
   LogProcedureCalc('TdmCalculos.ProcInsertUpdatePosExtraDet FIN');
 end;
-
 
 procedure TdmCalculos.ProcDelRecPosExtraDet(serietrn: integer);
 begin
@@ -1265,7 +1805,6 @@ var
   VNeto: Currency;
   VNetoMostrar: Currency;
   TipoNCF: string;
-  EsNCFEspecial: Boolean;
   AplicaExoneracion: Boolean;
 begin
   LogProcedureCalc('TdmCalculos.Pos_UpdateTotales INICIO');
@@ -1330,29 +1869,24 @@ begin
     TipoNCF := '';
 
     if not TotalesTipoNCF.IsNull then
-      TipoNCF := UpperCase(Trim(TotalesTipoNCF.AsString));
+    begin
+      TipoNCF :=
+        UpperCase(
+          Trim(TotalesTipoNCF.AsString)
+        );
+    end;
 
     {
-      E44 = Regimenes Especiales electronico.
-      B14 = Regimenes Especiales convencional.
+      Una sola autoridad para decidir la exoneracion:
 
-      Se soportan versiones con y sin prefijo por compatibilidad
-      con rutas antiguas del POS.
-    }
-    EsNCFEspecial :=
-      (TipoNCF = '44') or
-      (TipoNCF = 'E44') or
-      (TipoNCF = '14') or
-      (TipoNCF = 'B14');
+        E44/B14 directo
+        NCR nueva contra E44/B14
+        NCR persistida E34->E44 recuperada/modificada
 
-    {
-      Solo se retira ITBIS cuando el precio esta configurado
-      como ITBIS incluido.
+      No volver a reconstruir esta regla dentro de Pos_UpdateTotales.
     }
     AplicaExoneracion :=
-      CheckBox1.Checked and
-      EsNCFEspecial and
-      (GlbIgI = 1);
+      frmProcVentaRapida.AplicaExoneracionITBISOperacion;
 
     {
       Valores globales de POS_EXTRA_SUM.
@@ -1404,6 +1938,19 @@ begin
 
     TotalesItbis.Value := VItbis;
 
+    {
+      El signo se conserva.
+
+      Ejemplo E44:
+        VNeto  = 425.00
+        VItbis = 64.83
+        Mostrar = 360.17
+
+      Ejemplo NCR E34->E44:
+        VNeto  = -425.00
+        VItbis = -64.83
+        Mostrar = -360.17
+    }
     if AplicaExoneracion then
     begin
       TotalesMontoExoneraITBIS.Value := VItbis;
@@ -1412,13 +1959,14 @@ begin
     else
     begin
       {
-        Evita que E44/B14 deje un residuo al cambiar de NCF.
+        Evita que una operacion anterior con exoneracion
+        deje residuos al cambiar de tipo fiscal.
       }
       TotalesMontoExoneraITBIS.Value := 0;
       VNetoMostrar := VNeto;
     end;
 
-    Totalestotalneto.Value := VNetoMostrar;
+    TotalesTotalNeto.Value := VNetoMostrar;
 
     if (not LlenandoDatos) and
        (Totales.State in [dsInsert, dsEdit]) then
@@ -1429,12 +1977,15 @@ begin
     'TdmCalculos.Pos_UpdateTotales FIN ' +
     'Num=' + IntToStr(numstr) +
     ' TipoNCF=' + TipoNCF +
-    ' SubTotal=' + CurrToStr(GetFieldCurr(QSum, 'TC_SUBTOTAL', 0)) +
+    ' AplicaExoneracion=' + BoolToStr(AplicaExoneracion, True) +
+    ' SubTotal=' +
+      CurrToStr(GetFieldCurr(QSum, 'TC_SUBTOTAL', 0)) +
     ' ITBIS=' + CurrToStr(VItbis) +
     ' NetoFirebird=' + CurrToStr(VNeto) +
     ' NetoMostrar=' + CurrToStr(VNetoMostrar)
   );
 end;
+
 
 function TdmCalculos.VtaExiste(num, serie, coduser: integer): Boolean;
 begin
@@ -1567,27 +2118,16 @@ begin
   if GlbNumVtaPOS <= 0 then
     Exit;
 
-  {
-    Una línea cancelada no debe reconstruirse en POS_EXTRA_DET.
-  }
   if (not frmProcVentaRapida.rxVentaStatus.IsNull) and
-     (frmProcVentaRapida.rxVentaStatus.Value = 'C') then
+     (UpperCase(Trim(frmProcVentaRapida.rxVentaStatus.AsString)) = 'C') then
     Exit;
 
-  {
-    Una línea sin artículo no representa detalle fiscal.
-  }
   if frmProcVentaRapida.rxVentaCodArticulo.IsNull or
      (frmProcVentaRapida.rxVentaCodArticulo.Value <= 0) then
     Exit;
 
   LSerie := frmProcVentaRapida.rxVentaSerie.Value;
   LAfterOpen := qryConsultaPosExtraDet.AfterOpen;
-
-  {
-    qryConsultaPosExtraDetAfterOpen asume que existe un registro actual.
-    Durante la recuperación puede abrirse vacío, por eso se desactiva.
-  }
   qryConsultaPosExtraDet.AfterOpen := nil;
 
   try
@@ -1599,20 +2139,15 @@ begin
     qryConsultaPosExtraDet.ParamByName('NUMCOTIZA').AsInteger := -1;
     qryConsultaPosExtraDet.Open;
 
-    if not qryConsultaPosExtraDet.Locate(
-      'NUMERO;SERIE;COD_USUARIO',
-      VarArrayOf([
-        GlbNumVtaPOS,
-        LSerie,
-        VarUsuarioGlb
-      ]),
-      []
+    if not BuscarSerieConsultaPosExtraDet(
+      GlbNumVtaPOS,
+      LSerie,
+      VarUsuarioGlb
     ) then
     begin
       {
-        rxVenta tiene la línea, pero POS_EXTRA_DET no.
-        Se reconstruye el espejo desde los datos actualmente confirmados
-        en rxVenta y luego Firebird recalcula detalle y sumatoria.
+        Recuperacion automatica: rxVenta es la fuente de inputs. Si la SERIE
+        falta en POS_EXTRA_DET, se reconstruye y Firebird vuelve a calcular.
       }
       ProcInsertUpdatePosExtraDet(GlbNumVtaPOS);
       Pos_UpdateTotales(GlbNumVtaPOS);
@@ -1625,14 +2160,10 @@ begin
       qryConsultaPosExtraDet.ParamByName('NUMCOTIZA').AsInteger := -1;
       qryConsultaPosExtraDet.Open;
 
-      if not qryConsultaPosExtraDet.Locate(
-        'NUMERO;SERIE;COD_USUARIO',
-        VarArrayOf([
-          GlbNumVtaPOS,
-          LSerie,
-          VarUsuarioGlb
-        ]),
-        []
+      if not BuscarSerieConsultaPosExtraDet(
+        GlbNumVtaPOS,
+        LSerie,
+        VarUsuarioGlb
       ) then
       begin
         LogProcedureCalc(
@@ -1643,9 +2174,27 @@ begin
         );
 
         raise Exception.Create(
-          'No se pudo sincronizar el detalle temporal de la venta.'
+          'No fue posible completar el calculo del producto.'
         );
       end;
+    end;
+
+    {
+      NULL significa que Firebird no completo el calculo. Cero sigue siendo
+      valido para una linea exenta; por eso se valida IsNull, no el valor.
+    }
+    if qryConsultaPosExtraDetDC_MONTOBRUTO.IsNull or
+       qryConsultaPosExtraDetDC_ITBIS.IsNull or
+       qryConsultaPosExtraDetDC_MONTONETO.IsNull then
+    begin
+      LogProcedureCalc(
+        'Campos DC_* incompletos. Numero=' + IntToStr(GlbNumVtaPOS) +
+        ' Serie=' + IntToStr(LSerie)
+      );
+
+      raise Exception.Create(
+        'No fue posible completar el calculo del producto.'
+      );
     end;
 
     LOldLlenandoDatos := frmProcVentaRapida.LlenandoDatos;
@@ -1657,96 +2206,60 @@ begin
         if rxVenta.State = dsBrowse then
           rxVenta.Edit;
 
-        if Assigned(qryConsultaPosExtraDet.FindField('DC_MONTOBRUTO')) then
-          rxVentaMontoBruto.Value :=
-            DsFieldCurr(
-              qryConsultaPosExtraDet,
-              'DC_MONTOBRUTO',
-              rxVentaMontoBruto.Value
-            );
+        rxVentaMontoBruto.Value :=
+          qryConsultaPosExtraDetDC_MONTOBRUTO.AsCurrency;
 
-        if Assigned(qryConsultaPosExtraDet.FindField('DC_MONTODESCITEM')) then
+        if not qryConsultaPosExtraDetDC_MONTODESCITEM.IsNull then
           rxVentaMontoDescItem.Value :=
-            DsFieldCurr(
-              qryConsultaPosExtraDet,
-              'DC_MONTODESCITEM',
-              rxVentaMontoDescItem.Value
-            );
+            qryConsultaPosExtraDetDC_MONTODESCITEM.AsCurrency
+        else
+          rxVentaMontoDescItem.Value := 0;
 
-        if Assigned(qryConsultaPosExtraDet.FindField('TC_MONTODESCGLOBAL')) then
-        begin
+        if not qryConsultaPosExtraDetTC_MONTODESCGLOBAL.IsNull then
           rxVentaMontoDesGlobal.Value :=
-            DsFieldCurr(
-              qryConsultaPosExtraDet,
-              'TC_MONTODESCGLOBAL',
-              rxVentaMontoDesGlobal.Value
-            );
+            qryConsultaPosExtraDetTC_MONTODESCGLOBAL.AsCurrency
+        else
+          rxVentaMontoDesGlobal.Value := 0;
 
-          rxVentaMontoDescGlbDist.Value :=
-            rxVentaMontoDesGlobal.Value;
-        end;
+        rxVentaMontoDescGlbDist.Value :=
+          rxVentaMontoDesGlobal.Value;
 
-        if Assigned(qryConsultaPosExtraDet.FindField('DC_ITBIS')) then
-          rxVentaItbi.Value :=
-            DsFieldCurr(
-              qryConsultaPosExtraDet,
-              'DC_ITBIS',
-              rxVentaItbi.Value
-            );
+        rxVentaItbi.Value :=
+          qryConsultaPosExtraDetDC_ITBIS.AsCurrency;
 
-        if Assigned(qryConsultaPosExtraDet.FindField('DC_ITBIS_CLD')) then
+        if not qryConsultaPosExtraDetDC_ITBIS_CLD.IsNull then
           rxVentaDC_ITBIS_CLD.Value :=
-            DsFieldCurr(
-              qryConsultaPosExtraDet,
-              'DC_ITBIS_CLD',
-              rxVentaDC_ITBIS_CLD.Value
-            );
+            qryConsultaPosExtraDetDC_ITBIS_CLD.AsCurrency
+        else
+          rxVentaDC_ITBIS_CLD.Value := 0;
 
-        if Assigned(
-          qryConsultaPosExtraDet.FindField(
-            'TC_MONTOITBISRECARGO_GLB'
-          )
-        ) then
-        begin
+        if not qryConsultaPosExtraDetTC_MONTOITBISRECARGO_GLB.IsNull then
           rxVentaTC_MONTOITBISRECARGO_GLB.Value :=
-            DsFieldCurr(
-              qryConsultaPosExtraDet,
-              'TC_MONTOITBISRECARGO_GLB',
-              0
-            );
+            qryConsultaPosExtraDetTC_MONTOITBISRECARGO_GLB.AsCurrency
+        else
+          rxVentaTC_MONTOITBISRECARGO_GLB.Value := 0;
 
-          rxVentaMontoItbisRecargo.Value :=
-            rxVentaTC_MONTOITBISRECARGO_GLB.Value;
-        end;
+        rxVentaMontoItbisRecargo.Value :=
+          rxVentaTC_MONTOITBISRECARGO_GLB.Value;
 
-        if Assigned(
-          qryConsultaPosExtraDet.FindField(
-            'TC_MONTOITBISRECARGO_ITM'
-          )
+        if not qryConsultaPosExtraDetTC_MONTOITBISRECARGO_ITM.IsNull then
+          rxVentaTC_MONTOITBISRECARGO_ITM.Value :=
+            qryConsultaPosExtraDetTC_MONTOITBISRECARGO_ITM.AsCurrency
+        else
+          rxVentaTC_MONTOITBISRECARGO_ITM.Value := 0;
+
+        if Assigned(qryConsultaPosExtraDet.FindField('TC_MONTORECARGO_GLB_DET')
         ) then
         begin
-          rxVentaTC_MONTOITBISRECARGO_ITM.Value :=
-            DsFieldCurr(
-              qryConsultaPosExtraDet,
-              'TC_MONTOITBISRECARGO_ITM',
-              0
-            );
-
-          rxVentaMontoItbRecItmConDesc.Value :=
-            rxVentaTC_MONTOITBISRECARGO_ITM.Value;
+          rxVentaTC_MONTORECARGO_GLB_DET.Value :=
+            DsFieldCurr(qryConsultaPosExtraDet,'TC_MONTORECARGO_GLB_DET',0);
         end;
 
-        {
-          DC_MONTONETO es el importe final de ESTA línea.
-          Nunca usar TC_TOTALNETO, porque representa la venta completa.
-        }
-        if Assigned(qryConsultaPosExtraDet.FindField('DC_MONTONETO')) then
-          rxVentaMontoNeto.Value :=
-            DsFieldCurr(
-              qryConsultaPosExtraDet,
-              'DC_MONTONETO',
-              rxVentaMontoNeto.Value
-            );
+        rxVentaMontoItbRecItmConDesc.Value :=
+          rxVentaTC_MONTOITBISRECARGO_ITM.Value;
+
+        rxVentaMontoNeto.Value :=
+          qryConsultaPosExtraDetDC_MONTONETO.AsCurrency;
 
         if rxVenta.State in [dsInsert, dsEdit] then
           rxVenta.Post;
@@ -1759,7 +2272,7 @@ begin
     qryConsultaPosExtraDet.AfterOpen := LAfterOpen;
   end;
 end;
-    
+
 procedure TdmCalculos.RefrescarTodasLineasDesdePosExtraDet;
 var
   LSerieActiva: Integer;
@@ -1870,6 +2383,20 @@ begin
         frmProcVentaRapida.rxVentaTC_MONTOITBISRECARGO_ITM.Value :=
           VItbisRecargoItm;
 
+       if Assigned(
+            qryConsultaPosExtraDet.FindField(
+              'TC_MONTORECARGO_GLB_DET'
+            )
+          ) then
+          begin
+            frmProcVentaRapida.rxVentaTC_MONTORECARGO_GLB_DET.Value :=
+              DsFieldCurr(
+                qryConsultaPosExtraDet,
+                'TC_MONTORECARGO_GLB_DET',
+                0
+              );
+          end;
+
         frmProcVentaRapida.rxVentaMontoItbRecItmConDesc.Value :=
           VItbisRecargoItm;
 
@@ -1959,7 +2486,7 @@ begin
       raise;
     end;
   end;
-
+  
   Qry.Free;
 end;
 

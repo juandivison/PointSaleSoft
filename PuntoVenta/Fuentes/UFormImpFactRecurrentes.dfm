@@ -330,7 +330,7 @@ object frmImpresionFactRecurrente: TfrmImpresionFactRecurrente
     object tblFactGeneradaNOMBRECLIENTE: TIBStringField
       FieldName = 'NOMBRECLIENTE'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object tblFactGeneradaNUMERO_PROG: TIntegerField
       FieldName = 'NUMERO_PROG'

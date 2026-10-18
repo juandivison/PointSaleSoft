@@ -51,7 +51,7 @@ type
   TfrmProcVentaRapida = class(TForm)
     Panel1: TPanel;
     BitBtn1: TBitBtn;
-    BitBtn2: TBitBtn;
+    BitBtn2: TBitBtn;       
     BitBtn3: TBitBtn;
     BitBtn4: TBitBtn;
     rxVenta: TRxMemoryData;
@@ -969,6 +969,7 @@ type
     chkImpenPDF: TCheckBox;
     ModoCotizacion1: TMenuItem;
     qryValidaVentaPersistida: TIBQuery;
+    rxVentaTC_MONTORECARGO_GLB_DET: TCurrencyField;
 
     procedure BitBtn4Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -1238,18 +1239,92 @@ type
     FEntradaAutomaticaDesdeBarcode:Boolean;
     FInicializandoTotales: Boolean;
     FEditandoPrecio: Boolean;
-
+    FUnidadAnterior: Integer;
+    FPrecioUnidadAnterior: Currency;
+    FActualizandoUnidadUI: Boolean;
+    FModificandoNCRPersistida: Boolean;
+    FActualizandoRecargoNCR: Boolean;
+    FRecuperandoVentaError  : Boolean;
+    //FNCRPersistidaConItbisExonerado: Boolean;
     //Aplica a contado, crédito y devolución/NCR.
     FTotalesCongeladosFiscalmente: Boolean;
     //Es el total que fue validado antes de persistir o enviar a DGII.
     FTotalNetoFiscalConfirmado: Currency;
-
+    LNumeroTrnPersistido: Integer;
     //Solo aplica a contado, pago exacto y pagos combinados.
     FTotalesCongeladosParaCobro: Boolean;
-
+    FNCRNumeroTrnOrigen: Integer;
+    FNCRNumeroNCFOrigen: string;
+    //FNCRTipoNCFOrigen: string;
     //Solo aplica cuando existe un pago inmediato que debe cuadrar.
     FPagoConfirmado: Boolean;
     FTotalNetoCobro: Currency;
+    function AsignarClienteVentaOriginalNCR(
+  const ANumeroTrn: Integer;
+  const ACodigoCte: Integer
+): Boolean;
+
+    function SolicitarClienteCreditoNCR(
+  out ACodigoCte: Integer
+): Boolean;
+
+
+    procedure SincronizarClienteNCR(const ACodigoCte: Integer);
+
+    function ValidarMontoNCRContraCXC(
+    const ANumeroFactura: Integer;
+    const AMoneda: String;
+    const AMontoNCR: Currency;
+    out ASaldoPendiente: Currency): Boolean;
+
+    function ValidarMontoDisponibleNCR(
+    const ANumeroTrnOrigen: Integer;
+    const AMontoNCR: Currency;
+    out AMontoOriginal: Currency;
+    out AMontoNCRAnterior: Currency;
+    out AMontoDisponible: Currency
+   ): Boolean;
+
+    function ValidarFuenteRecargoNCR(
+      const ANumeroTrnOrigen: Integer;
+      out ARecargoMaster: Currency;
+      out AMensaje: String
+    ): Boolean;
+
+    function ObtenerSaldoRecargoNCRLinea(
+      const ANumeroTrnOrigen: Integer;
+      const ASerieOrigen: Integer;
+      out ACantidadOriginal: Currency;
+      out ARecargoOriginal: Currency;
+      out ACantidadDevuelta: Currency;
+      out ARecargoDevuelto: Currency;
+      out AMensaje: String
+    ): Boolean;
+
+    function CalcularRecargoNCRLinea(
+      const ANumeroTrnOrigen: Integer;
+      const ASerieOrigen: Integer;
+      const ACantidadNCR: Currency;
+      out ARecargoNCRLinea: Currency;
+      out AMensaje: String
+    ): Boolean;
+
+    function CalcularRecargoNCRSeleccionado(
+      out ARecargoNCR: Currency;
+      out AMensaje: String
+    ): Boolean;
+
+    function ActualizarRecargoNCR(
+      out AMensaje: String
+    ): Boolean;
+
+    function ValidarDistribucionRecargoNCR(
+      out AMensaje: String
+    ): Boolean;
+
+    procedure EjecutarInsertVentaDetNCR(
+      const ASerieOrigen: Integer
+    );
 
     procedure WMLogFocoFinal(var Msg: TMessage); message WM_LOG_FOCO_FINAL;
     procedure AsegurarUnidadYMonedaLinea;
@@ -1283,7 +1358,8 @@ type
     procedure ConsultaPreventa;
 
     function SetCantUnidad(codProd : integer;_TipoUnidad:integer):Integer;
-    
+
+    procedure MarcarVentaRecuperada(ANumero: Integer);
 
     procedure ImprimirTicketVtaAgua(numtrn:integer);
     procedure SetMontoNotaCredito;
@@ -1456,6 +1532,8 @@ type
     procedure ProcUpdateMotivo(numtrn: integer;motivo:smallint;ncfRef:string);
     procedure EjecutarCalculoTotales;
     function TipoCFRequiereCliente(const ATipo: string): Boolean;
+    function DocumentoFiscalClienteActual: string;
+    function ValidarCompradorE32AltoMonto: Boolean;
     procedure MostrarTasa;
     function EsControlEntradaDetalle(AControl: TWinControl): Boolean;
     procedure SincronizarUltimaSerie;
@@ -1475,8 +1553,21 @@ type
       out AMensaje: string): Boolean;
     function PrepararCierreFiscal: Boolean;
     function PrepararCreditoParaPersistir: Boolean;
+
+    function HayCobroTemporalActual: Boolean;
+    function VentaTieneCierreActivo: Boolean;
+
+    function CancelarCobroTemporalParaReabrir(
+      out AMensaje: String
+    ): Boolean;
+
+    procedure HabilitarEdicionVenta;
+
     procedure BloquearEdicionVenta;
     procedure CMDialogKey(var Msg: TCMDialogKey); message CM_DIALOGKEY;
+    procedure RestablecerEstadoEditableTrasCancelarCobro;
+    function ProcesarPagosTemporalesVentaActual(const AEliminar: Boolean;
+      out AMensaje: String): Boolean;
 
   public
     tempN : string;
@@ -1503,7 +1594,9 @@ type
     EnProcesoCalculo : boolean;
     UltimaVariableModificada: TTipoCambio;
     SerieLineaActiva: Integer;
-    procedure DgiiSolicitareCF(numerotrn:integer);
+    function AplicaExoneracionITBISOperacion: Boolean;
+    //function RequiereExoneracionNCRPersistida: Boolean;
+    procedure DgiiSolicitareCF(numerotrn: Integer; ARaiseOnError: Boolean = False);
     //procedure ProcSetPathlogoTipoServicio(tipo:smallint);
     procedure ExportarGridExcel;
     Function BuscarRutaImagen(codProducto : Integer):String;
@@ -1544,6 +1637,7 @@ type
 Const
   FormaPagoNotaDebito = 6;//Devolucion
   TipoPagoFactura = 7;//Factura-Credito
+  ECF_MONTO_IDENTIFICA_COMPRADOR = 250000.00;
   //PORC_TRANSP_ITBIS = 16/1.16;//13.79;
 var
   frmProcVentaRapida: TfrmProcVentaRapida;
@@ -1614,6 +1708,7 @@ var
   ProcesandoVenta: Boolean = False;
   LRecargoActivo: Boolean;
   LRefrescarTodas: Boolean;
+  LSaldoPendienteCXC: Currency;
   
 implementation
 uses UDatModConectar, UGlobal, URepComprobante, UDatModCompania,UDatModReportes,
@@ -1739,8 +1834,23 @@ end;
 function TfrmProcVentaRapida.PrepararCierreFiscal: Boolean;
 var
   LRequiereRecalculo: Boolean;
+  LMensajeSync: String;
 begin
   Result := False;
+
+  AsegurarRegistroTotales;
+
+  if TotalesMoneda.IsNull or
+     (Trim(TotalesMoneda.AsString) = '') then
+  begin
+    MessageDlg(
+      'No fue posible determinar la moneda de la venta.',
+      mtError,
+      [mbOk],
+      0
+    );
+    Exit;
+  end;
 
   if EnProcesoCalculo then
   begin
@@ -1754,18 +1864,32 @@ begin
   end;
 
   {
-    Si ya se congeló fiscalmente, no se recalcula.
-    Solo se verifica que nadie haya alterado el total.
+    Una venta/cotización cerrada no debe reconstruir silenciosamente
+    su frontera fiscal. Primero debe pasar por Abrir Venta.
   }
   if FTotalesCongeladosFiscalmente and
-     (not EsModificandoFactura) and
-     (not EsModificandoCotiza) then
+     (not EsModificandoFactura) then
   begin
-    if Abs(Totalestotalneto.Value - FTotalNetoFiscalConfirmado) > 0.01 then
+    if not dmCalculos.ValidarSincronizacionRxVentaPosExtraDet(
+      LMensajeSync
+    ) then
+    begin
+      MessageDlg(
+        'La venta no está sincronizada con POS_EXTRA_DET.' + #13 +
+        LMensajeSync,
+        mtError,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
+
+    if Abs(Totalestotalneto.Value -
+           FTotalNetoFiscalConfirmado) > 0.01 then
     begin
       MessageDlg(
         'El total fiscal cambió después de ser confirmado.' + #13 +
-        'Debe cancelar el cobro o reiniciar el proceso.',
+        'Debe abrir la venta antes de continuar.',
         mtError,
         [mbOk],
         0
@@ -1780,10 +1904,6 @@ begin
   if rxVenta.State in [dsEdit, dsInsert] then
     rxVenta.Post;
 
-  {
-    Esto cubre especialmente ventas modificadas y cotizaciones
-    cargadas, donde quedan flags activos por cálculo diferido.
-  }
   LRequiereRecalculo :=
     CalculoPendiente or
     CalculoMsgPendiente or
@@ -1792,27 +1912,40 @@ begin
     (not GlbCalculado);
 
   if LRequiereRecalculo then
-  begin
-    {
-      El cálculo se ejecuta una sola vez para toda la venta.
-      No se usa PostMessage ni cálculo por cada línea.
-    }
     dmCalculos.ProcesaCalculosVentaCompleta;
-  end;
 
   {
-    Solo se limpian las marcas luego de que el cálculo completo
-    terminó sin excepción.
+    INVARIANTE M1:
+    nunca congelar fiscalmente una venta cuyo detalle temporal
+    no representa exactamente lo que existe en rxVenta.
   }
+  if not dmCalculos.ValidarSincronizacionRxVentaPosExtraDet(
+    LMensajeSync
+  ) then
+  begin
+    DatosModificados := True;
+    CalculoPendiente := True;
+    CalculoMsgPendiente := False;
+    GlbCalculado := False;
+    procCalc := True;
+
+    MessageDlg(
+      'No se puede preparar el cierre fiscal porque rxVenta y ' +
+      'POS_EXTRA_DET no están sincronizados.' + #13 +
+      LMensajeSync,
+      mtError,
+      [mbOk],
+      0
+    );
+    Exit;
+  end;
+
   DatosModificados := False;
   CalculoPendiente := False;
   CalculoMsgPendiente := False;
   GlbCalculado := True;
   procCalc := False;
 
-  {
-    ValidaSubTotal ya no recalcula. Solo valida el resultado persistente.
-  }
   if not ValidaSubTotal then
   begin
     BitBtn6.Enabled := True;
@@ -1833,6 +1966,7 @@ begin
   if FInicializandoTotales then
     Exit;
 
+  LSaldoPendienteCXC := 0;
   FInicializandoTotales := True;
   LLlenandoDatos := LlenandoDatos;
   LlenandoDatos := True;
@@ -1866,6 +2000,7 @@ begin
     TotalesSubTotal.Value := 0;
     TotalesSubTotalScreen.Value := 0;
     TotalesMontoDescItems.Value := 0;
+    TotalesPorcDesAdicional.Value := 0;
     TotalesMontoDescAdicional.Value := 0;
     TotalesMontoDescGlbItbis.Value := 0;
     TotalesMontoExoneraITBIS.Value := 0;
@@ -1893,11 +2028,19 @@ begin
     Totales.Post;
     Totales.Tag := 0;
 
+    {
+      La interfaz de descuento global se reinicia SOLO al comenzar
+      una nueva venta. LlenandoDatos=True evita disparar calculos.
+    }
+    chKDescuentoGlobal.Checked := False;
+
   finally
     Totales.EnableControls;
     LlenandoDatos := LLlenandoDatos;
     FInicializandoTotales := False;
   end;
+
+  ProvVerDatosDescGlb;
 end;
 
 procedure TfrmProcVentaRapida.AsegurarRegistroTotales;
@@ -1906,8 +2049,40 @@ begin
     Totales.Open;
 
   if Totales.IsEmpty then
+  begin
     InicializarTotalesNuevaVenta;
+    Exit;
+  end;
+
+  {
+    La cabecera de una venta nunca debe quedar sin moneda.
+    Si por algun flujo legacy se pierde, restauramos la moneda base.
+  }
+  if TotalesMoneda.IsNull or
+     (Trim(TotalesMoneda.AsString) = '') then
+  begin
+    if Totales.State = dsBrowse then
+    begin
+      Totales.Edit;
+
+      if GlbMonedaBase > 0 then
+        TotalesMoneda.AsString := IntToStr(GlbMonedaBase)
+      else
+        TotalesMoneda.AsString := '1';
+
+      Totales.Post;
+    end
+    else
+    if Totales.State in [dsEdit, dsInsert] then
+    begin
+      if GlbMonedaBase > 0 then
+        TotalesMoneda.AsString := IntToStr(GlbMonedaBase)
+      else
+        TotalesMoneda.AsString := '1';
+    end;
+  end;
 end;
+
 //Proceso de totales final
 
 procedure TfrmProcVentaRapida.PostLineaYSolicitarCalculo(
@@ -1917,13 +2092,12 @@ procedure TfrmProcVentaRapida.PostLineaYSolicitarCalculo(
 begin
   LogEventoVenta('PostLineaYSolicitarCalculo', AOrigen);
 
-    {
-    Defensa central: nunca permitir Post ni cálculo nuevo
-    cuando existe cobro preparado.
+  {
+    Una venta nueva que ya fue preparada para cobro no puede modificarse
+    silenciosamente. BitBtn14 es la accion explicita para reabrirla.
   }
-  if FTotalesCongeladosParaCobro and
-     (not EsModificandoFactura) and
-     (not EsModificandoCotiza) then
+  if VentaTieneCierreActivo and
+   (not EsModificandoFactura) then
   begin
     if rxVenta.State in [dsEdit, dsInsert] then
       rxVenta.Cancel;
@@ -1933,35 +2107,102 @@ begin
     CalculoMsgPendiente := False;
     procCalc := False;
     GlbCalculado := True;
-
     Exit;
   end;
-  
 
-  if LlenandoDatos then Exit;
+  if LlenandoDatos then
+    Exit;
+
   if EnProcesoCalculo then
   begin
+    {
+      No intentar un segundo calculo dentro del motor. Se conserva dirty
+      para que la frontera fiscal pueda recuperar si un evento legacy
+      realmente modifico datos durante el refresco.
+    }
     DatosModificados := True;
     CalculoPendiente := True;
+    GlbCalculado := False;
+    procCalc := True;
     Exit;
   end;
 
-  if rxVenta.Active and (not rxVenta.IsEmpty) then
-    MarcarLineaActiva;
+  if (not rxVenta.Active) or rxVenta.IsEmpty then
+    Exit;
 
+  if rxVentaCodArticulo.IsNull or
+     (rxVentaCodArticulo.Value <= 0) then
+    Exit;
+
+  if rxVentaCant.IsNull or
+     (Abs(rxVentaCant.Value) <= 0.000001) then
+    Exit;
+
+  if rxVentaPrecio.IsNull or
+     (rxVentaPrecio.Value < 0) then
+    Exit;
+
+  MarcarLineaActiva;
+
+  UltimaVariableModificada := ATipo;
   DatosModificados := True;
+  CalculoPendiente := True;
   GlbCalculado := False;
   procCalc := True;
-  UltimaVariableModificada := ATipo;
 
-  if rxVenta.State in [dsEdit, dsInsert] then
-  begin
-    LogEventoVenta('PostLineaYSolicitarCalculo', 'Antes rxVenta.Post');
-    rxVenta.Post;
-    LogEventoVenta('PostLineaYSolicitarCalculo', 'Despues rxVenta.Post');
+  try
+    {
+      La linea se confirma una sola vez. Desde este punto POS_EXTRA_DET
+      recibe los inputs confirmados y Firebird produce DC_* y POS_EXTRA_SUM.
+    }
+    if rxVenta.State in [dsEdit, dsInsert] then
+    begin
+      LogEventoVenta('PostLineaYSolicitarCalculo', 'Antes rxVenta.Post');
+      rxVenta.Post;
+      LogEventoVenta('PostLineaYSolicitarCalculo', 'Despues rxVenta.Post');
+    end;
+
+    {
+      M1: los cambios de una linea son sincronicos.
+      No se usa WM_CALCULAR_TOTALES porque el mensaje podria ejecutarse
+      cuando otra SERIE ya estuviera activa.
+    }
+    CalculoPendiente := False;
+    CalculoMsgPendiente := False;
+
+    dmCalculos.ProcesaCalculos;
+
+    RestaurarLineaActiva;
+
+    DatosModificados := False;
+    CalculoPendiente := False;
+    GlbCalculado := True;
+    procCalc := False;
+
+    LogEventoVenta(
+      'PostLineaYSolicitarCalculo',
+      'Linea confirmada|Origen=' + AOrigen +
+      '|Serie=' + rxVentaSerie.AsString +
+      '|MontoBruto=' + rxVentaMontoBruto.AsString +
+      '|Itbi=' + rxVentaItbi.AsString +
+      '|MontoNeto=' + rxVentaMontoNeto.AsString +
+      '|TotalNeto=' + Totalestotalneto.AsString
+    );
+  except
+    on E: Exception do
+    begin
+      DatosModificados := True;
+      CalculoPendiente := True;
+      GlbCalculado := False;
+      procCalc := True;
+
+      LogEventoVenta(
+        'PostLineaYSolicitarCalculo',
+        'ERROR|Origen=' + AOrigen + '|Mensaje=' + E.Message
+      );
+      raise;
+    end;
   end;
-
-  SolicitarCalculoTotales(ATipo);
 end;
 
 function TfrmProcVentaRapida.TipoCFRequiereCliente(const ATipo: string): Boolean;
@@ -1969,6 +2210,124 @@ begin
   Result :=
     (ATipo = '01') or (ATipo = '14') or (ATipo = '15') or (ATipo = '31') or
     (ATipo = '41') or (ATipo = '44') or (ATipo = '45') or (ATipo = '46') or (ATipo = '47');
+end;
+
+function TfrmProcVentaRapida.DocumentoFiscalClienteActual: string;
+begin
+  Result := '';
+
+  if not qryCliente.Active then
+    Exit;
+
+  if not qryClienteRNC_NUMERO.IsNull then
+    Result := Trim(qryClienteRNC_NUMERO.AsString);
+
+  if (Result = '') and (not qryClienteCEDULA.IsNull) then
+    Result := Trim(qryClienteCEDULA.AsString);
+end;
+
+function TfrmProcVentaRapida.ValidarCompradorE32AltoMonto: Boolean;
+var
+  LCodigoCte: Integer;
+  LDocumento: string;
+  LNombre: string;
+begin
+  Result := True;
+
+  // Regla exclusiva para Factura de Consumo Electrónica (E32).
+  // No modifica la regla genérica de tipos que siempre requieren cliente.
+  if (GlbActivaECF <> 1) or (not CheckBox1.Checked) then
+    Exit;
+
+  if Trim(TotalesTipoNCF.AsString) <> '32' then
+    Exit;
+
+  // PrepararCierreFiscal debe haberse ejecutado antes de esta validación.
+  if FTotalNetoFiscalConfirmado < ECF_MONTO_IDENTIFICA_COMPRADOR then
+    Exit;
+
+  Result := False;
+
+  if (tablaPropietario.RecordCount = 0) or
+     tablaPropietarioCodigoPropietario.IsNull or
+     (tablaPropietarioCodigoPropietario.Value <= 0) then
+  begin
+    MessageDlg(
+      'La factura de consumo es igual o superior a RD$250,000.00.' + #13#10 +
+      'Debe seleccionar un cliente identificado con RNC o Cédula.',
+      mtError,
+      [mbOk],
+      0
+    );
+    
+    if isShowing and rxdbLookupCte.CanFocus then
+      PostMessage(
+        Handle,
+        WM_NEXTDLGCTL,
+        WPARAM(rxdbLookupCte.Handle),
+        LPARAM(1)
+      );
+
+    Exit;
+  end;
+
+  LCodigoCte := tablaPropietarioCodigoPropietario.Value;
+
+  if not qryCliente.Active then
+    qryCliente.Open;
+
+  if not qryCliente.Locate('CODIGO_CTE', LCodigoCte, []) then
+  begin
+    MessageDlg(
+      'No fue posible localizar el cliente seleccionado para validar su RNC/Cédula.',
+      mtError,
+      [mbOk],
+      0
+    );
+    Exit;
+  end;
+
+  LDocumento := DocumentoFiscalClienteActual;
+
+  if LDocumento = '' then
+  begin
+    MessageDlg(
+      'La factura de consumo es igual o superior a RD$250,000.00.' + #13#10 +
+      'El cliente seleccionado no tiene RNC/Cédula registrado.' + #13#10 +
+      'Actualice el maestro de clientes antes de continuar.',
+      mtError,
+      [mbOk],
+      0
+    );
+
+    if isShowing and rxdbLookupCte.CanFocus then
+      PostMessage(
+        Handle,
+        WM_NEXTDLGCTL,
+        WPARAM(rxdbLookupCte.Handle),
+        LPARAM(1)
+      );
+
+    Exit;
+  end;
+
+  LNombre := Trim(qryClienteNOMBRE_FACTURAR.AsString);
+  if LNombre = '' then
+    LNombre := Trim(qryClienteNOMBRE_CTE.AsString);
+
+  if LNombre = '' then
+  begin
+    MessageDlg(
+      'La factura de consumo es igual o superior a RD$250,000.00.' + #13#10 +
+      'Debe registrar el nombre o razón social del comprador.',
+      mtError,
+      [mbOk],
+      0
+    );
+    Exit;
+  end;
+
+  Result := True;
 end;
 
 procedure TfrmProcVentaRapida.LogProcedure(const ProcName: string);
@@ -2133,6 +2492,8 @@ end;
 
 
 procedure TfrmProcVentaRapida.LlenarrxSolDatoscte(codCte:integer);
+var
+  LDocumentoFiscal: string;
 begin
   //LogProcedure('TfrmProcVentaRapida.LlenarrxSolDatoscte');
   rxSolDatoscte.Close;
@@ -2151,6 +2512,7 @@ begin
       Exit;
   end;
   qryCliente.EnableControls;//prueba
+  LDocumentoFiscal := DocumentoFiscalClienteActual;
    if Totales.State = dsbrowse then Totales.Edit;
       TotalesCodCliente.Value:= codCte;
 
@@ -2158,6 +2520,12 @@ begin
    TotalesDireccion.Value     := qryClienteDIRECCION_CONT.Value;
    TotalesTelefono.Value      := qryClienteTELEF_CONTACTO.Value;
    TotalesCodCliente.Value    := qryClienteCODIGO_CTE.Value;
+
+   if LDocumentoFiscal <> '' then
+     TotalesRNC_NUMERO.AsString := LDocumentoFiscal
+   else
+     TotalesRNC_NUMERO.Clear;
+
    TotalesRNC_NUMERO.Value    := qryClienteRNC_NUMERO.Value;
    if (Not qryClienteCANT_DIAS_CREDITO.IsNull) And (qryClienteCANT_DIAS_CREDITO.Value > 0) Then
    TotalesFechaVence.Value    := GlbFechaTrnDiaria + qryClienteCANT_DIAS_CREDITO.Value
@@ -2186,10 +2554,14 @@ begin
         rxSolDatoscteDireccion2.Value:= '';
         //rxSolDatosctencfDescripcion.Value := aquis123aquis
 
-        if qryClienteRNC_NUMERO.IsNull then
-           rxSolDatoscteCedula.Value := qryClienteCEDULA.Value
+        //if qryClienteRNC_NUMERO.IsNull then
+        //   rxSolDatoscteCedula.Value := qryClienteCEDULA.Value
+        //else
+        //rxSolDatoscteCedula.Value    := qryClienteRNC_NUMERO.Value;
+        if LDocumentoFiscal <> '' then
+          rxSolDatoscteCedula.AsString := LDocumentoFiscal
         else
-        rxSolDatoscteCedula.Value    := qryClienteRNC_NUMERO.Value;
+          rxSolDatoscteCedula.Clear;
 
         rxSolDatoscteCiudad.Value    := qryClienteCIUDAD.Value;
         rxSolDatoscteTelefono.Value  := qryClienteTELEF_CONTACTO.Value;
@@ -2236,8 +2608,6 @@ var
   numeroTrnVta : integer;
   cantidadanterior:real;
   i, totalCopias: Integer;
-
-
   MasterCreado: Boolean;
   VentaCompleta: Boolean;
   PasoPersistencia: string;
@@ -2526,6 +2896,10 @@ begin
       Exit;
     end;
   end;
+  // E32 solo exige comprador identificado cuando el total fiscal confirmado
+  // alcanza el umbral. Debe ocurrir antes de reservar/asignar el e-NCF.
+  if not ValidarCompradorE32AltoMonto then
+    Exit;  
 end;  
   
 
@@ -3844,11 +4218,11 @@ end;
   dmReportes.qryViewVentasMast.Open;
 
   UImpresionVentas.ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
-
-
+     
   //Solicitar ecf a la DGII
 
-  if (GlbSecECFGenerada) and (GlbActivaECF = 1) and (5=5) and (ipStpInsertVentMast.Params[0].Value > 0) and CheckBox1.Checked then //Temporal
+  if (GlbSecECFGenerada) and (GlbActivaECF = 1) and (5=5) and
+     (ipStpInsertVentMast.Params[0].Value > 0)  and CheckBox1.Checked then //Temporal
   begin
     if (ipStpInsertVentMast.Params[0].Value > 0) then
     DgiiSolicitareCF(ipStpInsertVentMast.Params[0].Value);//Enviar a DGII
@@ -3950,11 +4324,27 @@ end;
     ImprimirVtaContado(valorNCF); //fin impresion venta al contado
   end;
   //Inicializar variables temporales despues de la venta
+  {
+    M1 - La venta ya fue persistida e impresa. Los bloqueos fiscal y de
+    cobro pertenecen a la transaccion terminada y no pueden sobrevivir
+    durante la preparacion de la proxima venta.
+  }
+  FTotalesCongeladosFiscalmente := False;
+  FTotalNetoFiscalConfirmado := 0;
+  FTotalesCongeladosParaCobro := False;
+  FPagoConfirmado := False;
+  FTotalNetoCobro := 0;
+  EsPagoExacto := False;
   rxPagos.EmptyTable;
   rxVenta.EmptyTable;
-  Totales.Edit;
-  TotalesReferenciaCte.Value:='';
-  TotalesVentaGuardada.Value:=0;
+
+  {
+    M1:
+    NO limpiar ni editar Totales en este punto.
+    La fotografia de la venta impresa debe permanecer visible hasta que
+    el usuario inicie realmente la proxima venta.
+    TotalesVentaGuardada permanece = 1 y sirve como frontera de estado.
+  }
   dmventas.tblLineaComentario.Close;
   dmventas.tblLineaComentario.Params[0].Value:=-1;
   lblTotalItem.Caption:='Total Items:'+IntToStr(rxVenta.RecordCount);
@@ -4030,7 +4420,10 @@ end;
   label36.Caption:='';
   NoTieneCredito:=False;
   NoTieneDiasDeCredito:=False;
-  chKDescuentoGlobal.Checked:= False;
+  {
+    Mantener el estado visual del descuento global de la venta terminada.
+    Se reinicia al comenzar la siguiente venta.
+  }
   rxSolDatoscte.EmptyTable;
   flagSolLote:=False;
   rxventa.EnableControls;
@@ -4092,6 +4485,13 @@ end;
   RxDBGrid1.EnableScroll;
   _TienepagoTarjeta:=False;
   yNumSerie := 0;
+  {
+    NO inicializar Totales aqui.
+    Los importes de la venta terminada permanecen visibles.
+    InicializarTotalesNuevaVenta se ejecutara al confirmar el primer
+    producto valido de la siguiente venta.
+  }
+
   LlenandoDatos :=False;
   ReactivarValores;
   if CerrarVentana then close;
@@ -5716,7 +6116,7 @@ begin
               else
               qckRepReciboReimpTicketSurtidoraNew.Page.Length:=qckRepReciboReimpTicketSurtidoraNew.Page.Length + 0.50;
               qckRepReciboReimpTicketSurtidoraNew.Prepare;
-              flag:=False;
+              flag:=False;              
             end else
             if (qckRepReciboReimpTicketSurtidoraNew.PageNumber = 1) then
                 break;
@@ -5812,6 +6212,7 @@ begin
   else LogEventosVentaActivo:=True;
   FDevolucionArmada := False;
   FProcesandoDevolucion := False;
+  FActualizandoRecargoNCR := False;
   dmVentas.qryPrecioMaxInv.Close;
   dmVentas.qryPrecioMaxInv.Params[0].Value:= GlbCia_Key;
   dmVentas.qryPrecioMaxInv.Open;
@@ -6650,7 +7051,7 @@ begin
         CheckBox1.Enabled := False;
         chkExento.Enabled := False;
         chkNoLeyPropina.Enabled := False;
-        chKDescuentoGlobal.Enabled := False;
+        chKDescuentoGlobal.Enabled := True;
         NoGenerarNCF1.Enabled := False;
 
         Edit1.ReadOnly := False;
@@ -7191,6 +7592,12 @@ begin
       Exit;
     end;
 
+        {
+      La distribución combinada también es una frontera de cobro.
+      No debe abrirse si un E32 >= RD$250,000 carece de comprador válido.
+    }
+    if not ValidarCompradorE32AltoMonto then
+      Exit;
     FTotalNetoCobro := FTotalNetoFiscalConfirmado;
     FTotalesCongeladosParaCobro := True;
   end;
@@ -7358,9 +7765,8 @@ begin
   // and (GlbActivaIFiscal = 0 ) and (GlbActivaECF = 0))
   //    or ((GlBExpert = 1) or (GLBAyaco = 1))  then //F12
   begin
-   if FTotalesCongeladosParaCobro and
-   (not EsModificandoFactura) and
-   (not EsModificandoCotiza) then
+   if VentaTieneCierreActivo and
+   (not EsModificandoFactura) then
    begin
       MessageDlg(
       'El cobro está preparado. Abra la venta antes de cambiar datos fiscales.',
@@ -7398,10 +7804,8 @@ begin
   else if (key = 117) then //F6
   begin
 
-    if FTotalesCongeladosParaCobro and
-      (not EsModificandoFactura) and
-      (not EsModificandoCotiza) then
-    begin
+   if VentaTieneCierreActivo and
+   (not EsModificandoFactura) then    begin
       MessageDlg(
       'El cobro está preparado. Abra la venta antes de cambiar datos fiscales.',
       mtWarning,[mbOk],0);
@@ -7509,11 +7913,10 @@ begin
     { Se mantiene la regla actual: avisa, pero no aborta. }
   end;
 
-if FTotalesCongeladosParaCobro and
-   (not EsModificandoFactura) and
-   (not EsModificandoCotiza) then
-begin
-  MessageDlg(
+  if VentaTieneCierreActivo and
+   (not EsModificandoFactura) then
+  begin
+    MessageDlg(
     'El cobro está preparado.' + #13 +
     'Use el botón de cambio de precio para abrir la venta.',
     mtWarning,
@@ -7584,7 +7987,7 @@ begin
      SincronizarTipoNCF;
 
   if TotalesMoneda.IsNull or
-     (Trim(TotalesMoneda.Value) = '') then
+     (Trim(TotalesMoneda.Value) = '')  then
     raise Exception.Create('Debe indicar la moneda de la venta.');
      
   if rxVentaMoneda.IsNull or
@@ -7695,106 +8098,90 @@ begin
 end;
 
 procedure TfrmProcVentaRapida.BitBtn5Click(Sender: TObject);
+var
+  LSerie: Integer;
 begin
   LogProcedure('TfrmProcVentaRapida.BitBtn5Click');
-  if rxVenta.RecordCount = 0 then exit;
-  EsModificandoFactura:= Label36.Visible;
-  GlbCalculado := False;
-  if rxVenta.state = dsBrowse then rxVenta.Cancel;
-  begin
-    if (EsModificandoCotiza) then
-    begin
-     if MessageDlg('Borrar item No.' + rxVentaSerie.AsString + '?', mtWarning, [mbYes, mbNO], 0)= mrYes then
-     begin
-      if (rxVentaStatus.Value = 'I') then
-      begin
-        dmCalculos.ProcDelRecPosExtraDet(rxVentaSerie.Value);
-        rxVenta.Delete;
-        DBEdit2Exit(Self);
 
-        if not GlbCalculado then
-        CalcularTotalesInterno;
-      end else
-      begin
-        dmCalculos.ProcDelRecPosExtraDet(rxVentaSerie.Value);
-        rxVenta.Edit;
-        rxVentaStatus.Value:='C';
-        DBEdit2Exit(Self);
-        if rxVenta.State = dsEdit then
-        rxVenta.Post;
-        //WriteToLog('Post rxVenta - Line 2357');
-        //marzo 17 2015 ProcesarSumaTotal;
-        //t BitBtn27Click(Self);
-        if not GlbCalculado then
-        CalcularTotalesInterno;
-      end;
-     end;
-    end else
-    if EsModificandoFactura then
+  if (not rxVenta.Active) or rxVenta.IsEmpty then
+    Exit;
+
+  {
+    Nunca eliminar pago ni POS_EXTRA_DET desde este botón
+    mientras exista un cierre activo.
+  }
+  if VentaTieneCierreActivo and
+     (not EsModificandoFactura) then
+  begin
+    MessageDlg(
+      'El cobro está preparado.' + #13 +
+      'Debe abrir la venta antes de eliminar artículos.',
+      mtWarning,
+      [mbOk],
+      0
+    );
+    Exit;
+  end;
+
+  if MessageDlg(
+    'Borrar item No.' + rxVentaSerie.AsString + '?',
+    mtWarning,
+    [mbYes, mbNo],
+    0
+  ) <> mrYes then
+    Exit;
+
+  LSerie := rxVentaSerie.Value;
+
+  {
+    Cotización/factura cargada:
+    una línea nueva sí desaparece físicamente.
+    Una línea original queda STATUS='C' para persistir su cancelación.
+  }
+  if EsModificandoCotiza or EsModificandoFactura then
+  begin
+    if rxVentaStatus.AsString = 'I' then
     begin
-      if MessageDlg('Borrar item No.' + rxVentaSerie.AsString + '?', mtWarning, [mbYes, mbNO], 0)= mrYes then
-      begin
-      if (rxVentaStatus.Value = 'I') then
-      begin
-        dmCalculos.ProcDelRecPosExtraDet(rxVentaSerie.Value);
-        rxVenta.Delete;
-        DBEdit2Exit(Self);
-        //t BitBtn27Click(Self);
-        if not GlbCalculado then
-        CalcularTotalesInterno;
-      end else
-      begin
-        dmCalculos.ProcDelRecPosExtraDet(rxVentaSerie.Value);
-        rxVenta.Edit;
-        rxVentaStatus.Value:='C';
-        DBEdit2Exit(Self);
-        if rxVenta.State = dsEdit then
-        rxVenta.Post;
-        //WriteToLog('Post rxVenta - Line 2372');
-        //marzo 17 2015 ProcesarSumaTotal;
-        //t BitBtn27Click(Self);
-        if not GlbCalculado then
-        CalcularTotalesInterno;
-      end;
-      end;
-    end else
-    if EsModificandoFactura then
+      {
+        NO llamar ProcDelRecPosExtraDet aquí.
+        rxVentaBeforeDelete es el único responsable.
+        rxVentaAfterDelete recalcula.
+      }
+      rxVenta.Delete;
+    end
+    else
     begin
-      if MessageDlg('Borrar item No.' + rxVentaSerie.AsString + '?', mtWarning, [mbYes, mbNO], 0)= mrYes then
-      begin
-        //if not VerificaHuellas then
-        begin
-          //if VerificaClave then
-          if VerificaHuellas then
-          begin
-            if not ValidarDobleRegPago then exit;
-            EliminarRecoverData;
-            dmCalculos.ProcDelRecPosExtraDet(rxVentaSerie.Value);
-            rxVenta.Delete;
-            DBEdit2Exit(Self);
-            //marzo 17 2015 ProcesarSumaTotal;
-            //t BitBtn27Click(Self);
-            if not GlbCalculado then
-            CalcularTotalesInterno;
-          end;
-        end;
-      end;
-    end else
-    begin
-      if MessageDlg('Borrar item No.' + rxVentaSerie.AsString + '?', mtWarning, [mbYes, mbNO], 0)= mrYes then
-      begin
-        if not ValidarDobleRegPago then exit;
-        EliminarRecoverData;
-        dmCalculos.ProcDelRecPosExtraDet(rxVentaSerie.Value);
-        rxVenta.Delete;//rxVenta.recordcount
-        DBEdit2Exit(Self);
-        //t if not GlbCalculado then
-        //t BitBtn27Click(Self);
-        if not GlbCalculado then
-        CalcularTotalesInterno;
-      end;
+      {
+        No habrá rxVenta.Delete, por tanto esta eliminación
+        sí debe ser explícita.
+      }
+      dmCalculos.ProcDelRecPosExtraDet(LSerie);
+
+      rxVenta.Edit;
+      rxVentaStatus.Value := 'C';
+      rxVenta.Post;
+
+      GlbCalculado := False;
+      dmCalculos.RecalcularDespuesDeEliminar(
+        GlbNumVtaPOS
+      );
     end;
-   end;
+
+    Exit;
+  end;
+
+  {
+    Venta nueva.
+    Si existe pago, el guard de VentaTieneCierreActivo
+    ya obligó a pasar primero por BitBtn14.
+  }
+  EliminarRecoverData;
+
+  {
+    BeforeDelete elimina POS_EXTRA_DET una sola vez.
+    AfterDelete recalcula una sola vez.
+  }
+  rxVenta.Delete;
 end;
 
 procedure TfrmProcVentaRapida.Inventario1Click(Sender: TObject);
@@ -7857,6 +8244,745 @@ begin
   end;
 end;
 
+function TfrmProcVentaRapida.ValidarFuenteRecargoNCR(
+  const ANumeroTrnOrigen: Integer;
+  out ARecargoMaster: Currency;
+  out AMensaje: String
+): Boolean;
+const
+  TOLERANCIA_RECARGO = 0.01;
+var
+  LQry: TIBQuery;
+  LRecargoDetalle: Currency;
+  LNCRLegacy: Integer;
+begin
+  Result := False;
+  ARecargoMaster := 0;
+  AMensaje := '';
+
+  if ANumeroTrnOrigen <= 0 then
+  begin
+    AMensaje :=
+      'No fue posible determinar la venta original para calcular el recargo.';
+    Exit;
+  end;
+
+  LQry := TIBQuery.Create(nil);
+  try
+    LQry.Database := ibStpInsertVentaDet.Database;
+    LQry.Transaction := ibStpInsertVentaDet.Transaction;
+
+    LQry.SQL.Text :=
+      'SELECT ' +
+      '  ABS(COALESCE(M.MONTO_RECARGO, 0)) AS RECARGO_MASTER, ' +
+      '  COALESCE(( ' +
+      '    SELECT SUM(ABS(COALESCE(D.TC_MONTORECARGO_GLB_DET, 0))) ' +
+      '    FROM VENTAS_DET D ' +
+      '    WHERE D.NUMERO = M.NUMERO ' +
+      '      AND COALESCE(D.STATUS_DET, ''A'') <> ''C'' ' +
+      '  ), 0) AS RECARGO_DETALLE, ' +
+      '  COALESCE(( ' +
+      '    SELECT COUNT(*) ' +
+      '    FROM VENTAS_MAST N ' +
+      '    JOIN VENTAS_DET ND ON ND.NUMERO = N.NUMERO ' +
+      '    WHERE N.REF_TRN_ORIGEN = M.NUMERO ' +
+      '      AND N.CIA_KEY = M.CIA_KEY ' +
+      '      AND N.FORMA_PAGO = 6 ' +
+      '      AND N.STATUS = ''A'' ' +
+      '      AND COALESCE(ND.STATUS_DET, ''A'') <> ''C'' ' +
+      '      AND ND.SERIE_ORIGEN IS NULL ' +
+      '  ), 0) AS NCR_LEGACY ' +
+      'FROM VENTAS_MAST M ' +
+      'WHERE M.NUMERO = :NUMERO_ORIGEN';
+
+    LQry.ParamByName('NUMERO_ORIGEN').AsInteger :=
+      ANumeroTrnOrigen;
+
+    LQry.Open;
+
+    if LQry.IsEmpty then
+    begin
+      AMensaje :=
+        'No existe la venta original para calcular el recargo de la NCR.';
+      Exit;
+    end;
+
+    ARecargoMaster :=
+      Abs(LQry.FieldByName('RECARGO_MASTER').AsCurrency);
+
+    LRecargoDetalle :=
+      Abs(LQry.FieldByName('RECARGO_DETALLE').AsCurrency);
+
+    LNCRLegacy :=
+      LQry.FieldByName('NCR_LEGACY').AsInteger;
+
+    {
+      La distribucion persistida en VENTAS_DET es la fuente historica.
+      Si no cuadra con el master, una NCR parcial no debe inventarla.
+    }
+    if Abs(ARecargoMaster - LRecargoDetalle) > TOLERANCIA_RECARGO then
+    begin
+      AMensaje :=
+        'No se puede calcular con seguridad el recargo de la NCR.' + #13#10 +
+        'El recargo del master no coincide con la distribucion historica ' +
+        'de VENTAS_DET.' + #13#10 +
+        'Master: ' + FormatFloat('#,##0.0000', ARecargoMaster) + #13#10 +
+        'Detalle: ' + FormatFloat('#,##0.0000', LRecargoDetalle) + '.';
+      Exit;
+    end;
+
+    {
+      Una NCR legacy activa sin SERIE_ORIGEN vuelve ambiguo el saldo por
+      linea. No se intenta asociarla por producto, precio o descripcion.
+    }
+    if (ARecargoMaster > TOLERANCIA_RECARGO) and
+       (LNCRLegacy > 0) then
+    begin
+      AMensaje :=
+        'La venta original tiene recargo y posee una Nota de Credito ' +
+        'anterior sin SERIE_ORIGEN.' + #13#10 +
+        'No es posible determinar con seguridad el recargo disponible ' +
+        'por linea.';
+      Exit;
+    end;
+
+    Result := True;
+  finally
+    LQry.Free;
+  end;
+end;
+
+function TfrmProcVentaRapida.ObtenerSaldoRecargoNCRLinea(
+  const ANumeroTrnOrigen: Integer;
+  const ASerieOrigen: Integer;
+  out ACantidadOriginal: Currency;
+  out ARecargoOriginal: Currency;
+  out ACantidadDevuelta: Currency;
+  out ARecargoDevuelto: Currency;
+  out AMensaje: String
+): Boolean;
+const
+  TOL_CANTIDAD = 0.0001;
+  TOL_RECARGO = 0.01;
+var
+  LQry: TIBQuery;
+begin
+  Result := False;
+  ACantidadOriginal := 0;
+  ARecargoOriginal := 0;
+  ACantidadDevuelta := 0;
+  ARecargoDevuelto := 0;
+  AMensaje := '';
+
+  if (ANumeroTrnOrigen <= 0) or (ASerieOrigen <= 0) then
+  begin
+    AMensaje := 'Referencia de linea original invalida para la NCR.';
+    Exit;
+  end;
+
+  LQry := TIBQuery.Create(nil);
+  try
+    LQry.Database := ibStpInsertVentaDet.Database;
+    LQry.Transaction := ibStpInsertVentaDet.Transaction;
+
+    LQry.SQL.Text :=
+      'SELECT ' +
+      '  ABS(COALESCE(O.CANTIDAD, 0)) AS CANTIDAD_ORIGINAL, ' +
+      '  ABS(COALESCE(O.TC_MONTORECARGO_GLB_DET, 0)) AS RECARGO_ORIGINAL, ' +
+      '  COALESCE(( ' +
+      '    SELECT SUM(ABS(ND.CANTIDAD)) ' +
+      '    FROM VENTAS_MAST N ' +
+      '    JOIN VENTAS_DET ND ON ND.NUMERO = N.NUMERO ' +
+      '    WHERE N.REF_TRN_ORIGEN = O.NUMERO ' +
+      '      AND N.CIA_KEY = M.CIA_KEY ' +
+      '      AND N.FORMA_PAGO = 6 ' +
+      '      AND N.STATUS = ''A'' ' +
+      '      AND COALESCE(ND.STATUS_DET, ''A'') <> ''C'' ' +
+      '      AND ND.SERIE_ORIGEN = O.SERIE ' +
+      '  ), 0) AS CANTIDAD_DEVUELTA, ' +
+      '  COALESCE(( ' +
+      '    SELECT SUM(ABS(COALESCE(ND.TC_MONTORECARGO_GLB_DET, 0))) ' +
+      '    FROM VENTAS_MAST N ' +
+      '    JOIN VENTAS_DET ND ON ND.NUMERO = N.NUMERO ' +
+      '    WHERE N.REF_TRN_ORIGEN = O.NUMERO ' +
+      '      AND N.CIA_KEY = M.CIA_KEY ' +
+      '      AND N.FORMA_PAGO = 6 ' +
+      '      AND N.STATUS = ''A'' ' +
+      '      AND COALESCE(ND.STATUS_DET, ''A'') <> ''C'' ' +
+      '      AND ND.SERIE_ORIGEN = O.SERIE ' +
+      '  ), 0) AS RECARGO_DEVUELTO ' +
+      'FROM VENTAS_DET O ' +
+      'JOIN VENTAS_MAST M ON M.NUMERO = O.NUMERO ' +
+      'WHERE O.NUMERO = :NUMERO_ORIGEN ' +
+      '  AND O.SERIE = :SERIE_ORIGEN ' +
+      '  AND COALESCE(O.STATUS_DET, ''A'') <> ''C''';
+
+    LQry.ParamByName('NUMERO_ORIGEN').AsInteger :=
+      ANumeroTrnOrigen;
+    LQry.ParamByName('SERIE_ORIGEN').AsInteger :=
+      ASerieOrigen;
+
+    LQry.Open;
+
+    if LQry.IsEmpty then
+    begin
+      AMensaje :=
+        'No existe la linea original SERIE=' +
+        IntToStr(ASerieOrigen) +
+        ' en la venta ' + IntToStr(ANumeroTrnOrigen) + '.';
+      Exit;
+    end;
+
+    ACantidadOriginal :=
+      Abs(LQry.FieldByName('CANTIDAD_ORIGINAL').AsCurrency);
+    ARecargoOriginal :=
+      Abs(LQry.FieldByName('RECARGO_ORIGINAL').AsCurrency);
+    ACantidadDevuelta :=
+      Abs(LQry.FieldByName('CANTIDAD_DEVUELTA').AsCurrency);
+    ARecargoDevuelto :=
+      Abs(LQry.FieldByName('RECARGO_DEVUELTO').AsCurrency);
+
+    if ACantidadOriginal <= TOL_CANTIDAD then
+    begin
+      AMensaje :=
+        'La linea original SERIE=' + IntToStr(ASerieOrigen) +
+        ' no tiene una cantidad valida.';
+      Exit;
+    end;
+
+    if ACantidadDevuelta > ACantidadOriginal + TOL_CANTIDAD then
+    begin
+      AMensaje :=
+        'La cantidad devuelta acumulada excede la cantidad original ' +
+        'en SERIE=' + IntToStr(ASerieOrigen) + '.';
+      Exit;
+    end;
+
+    if ARecargoDevuelto > ARecargoOriginal + TOL_RECARGO then
+    begin
+      AMensaje :=
+        'El recargo devuelto acumulado excede el recargo original ' +
+        'en SERIE=' + IntToStr(ASerieOrigen) + '.';
+      Exit;
+    end;
+
+    Result := True;
+  finally
+    LQry.Free;
+  end;
+end;
+
+function TfrmProcVentaRapida.CalcularRecargoNCRLinea(
+  const ANumeroTrnOrigen: Integer;
+  const ASerieOrigen: Integer;
+  const ACantidadNCR: Currency;
+  out ARecargoNCRLinea: Currency;
+  out AMensaje: String
+): Boolean;
+const
+  TOL_CANTIDAD = 0.0001;
+  TOL_RECARGO = 0.01;
+var
+  LCantidadOriginal: Currency;
+  LRecargoOriginal: Currency;
+  LCantidadDevuelta: Currency;
+  LRecargoDevuelto: Currency;
+  LCantidadDisponible: Currency;
+  LRecargoDisponible: Currency;
+  LCantidadSolicitada: Currency;
+begin
+  Result := False;
+  ARecargoNCRLinea := 0;
+  AMensaje := '';
+
+  LCantidadSolicitada := Abs(ACantidadNCR);
+
+  if LCantidadSolicitada <= TOL_CANTIDAD then
+  begin
+    AMensaje :=
+      'La cantidad a devolver debe ser mayor que cero en SERIE=' +
+      IntToStr(ASerieOrigen) + '.';
+    Exit;
+  end;
+
+  if not ObtenerSaldoRecargoNCRLinea(
+           ANumeroTrnOrigen,
+           ASerieOrigen,
+           LCantidadOriginal,
+           LRecargoOriginal,
+           LCantidadDevuelta,
+           LRecargoDevuelto,
+           AMensaje
+         ) then
+    Exit;
+
+  LCantidadDisponible :=
+    LCantidadOriginal - LCantidadDevuelta;
+
+  LRecargoDisponible :=
+    LRecargoOriginal - LRecargoDevuelto;
+
+  if Abs(LCantidadDisponible) <= TOL_CANTIDAD then
+    LCantidadDisponible := 0;
+
+  if Abs(LRecargoDisponible) <= TOL_RECARGO then
+    LRecargoDisponible := 0;
+
+  if LCantidadSolicitada > LCantidadDisponible + TOL_CANTIDAD then
+  begin
+    AMensaje :=
+      'La cantidad solicitada para devolver excede el saldo de la linea.' +
+      #13#10 +
+      'SERIE origen: ' + IntToStr(ASerieOrigen) + #13#10 +
+      'Cantidad original: ' + FormatFloat('#,##0.####', LCantidadOriginal) +
+      #13#10 +
+      'Devuelta anteriormente: ' +
+        FormatFloat('#,##0.####', LCantidadDevuelta) + #13#10 +
+      'Disponible: ' + FormatFloat('#,##0.####', LCantidadDisponible) +
+      #13#10 +
+      'Solicitada: ' + FormatFloat('#,##0.####', LCantidadSolicitada) + '.';
+    Exit;
+  end;
+
+  if LRecargoDisponible <= 0 then
+  begin
+    ARecargoNCRLinea := 0;
+    Result := True;
+    Exit;
+  end;
+
+  {
+    Si se consume toda la cantidad disponible, se toma todo el recargo
+    disponible. Esto absorbe residuos de redondeo de NCR anteriores.
+  }
+  if Abs(LCantidadSolicitada - LCantidadDisponible) <= TOL_CANTIDAD then
+    ARecargoNCRLinea := LRecargoDisponible
+  else
+  begin
+    if LCantidadDisponible <= TOL_CANTIDAD then
+    begin
+      AMensaje :=
+        'No queda cantidad disponible para la SERIE origen ' +
+        IntToStr(ASerieOrigen) + '.';
+      Exit;
+    end;
+
+    ARecargoNCRLinea :=
+      LRecargoDisponible *
+      LCantidadSolicitada /
+      LCantidadDisponible;
+  end;
+
+  if ARecargoNCRLinea > LRecargoDisponible + TOL_RECARGO then
+  begin
+    AMensaje :=
+      'El recargo calculado excede el recargo disponible en SERIE=' +
+      IntToStr(ASerieOrigen) + '.';
+    Exit;
+  end;
+
+  Result := True;
+end;
+
+function TfrmProcVentaRapida.CalcularRecargoNCRSeleccionado(
+  out ARecargoNCR: Currency;
+  out AMensaje: String
+): Boolean;
+const
+  TOL_RECARGO = 0.01;
+var
+  LBmk: TBookmark;
+  LNumeroOrigen: Integer;
+  LNumeroLinea: Integer;
+  LSerieOrigen: Integer;
+  LRecargoMaster: Currency;
+  LRecargoLinea: Currency;
+begin
+  Result := False;
+  ARecargoNCR := 0;
+  AMensaje := '';
+  LBmk := nil;
+  LNumeroOrigen := 0;
+
+  if not EsDevolucion then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  if FModificandoNCRPersistida then
+  begin
+    if TotalesRecargo.IsNull then
+      ARecargoNCR := 0
+    else
+      ARecargoNCR := Abs(TotalesRecargo.Value);
+
+    Result := True;
+    Exit;
+  end;
+
+  if (not rxVenta.Active) or rxVenta.IsEmpty then
+  begin
+    AMensaje := 'No existen lineas seleccionadas para la NCR.';
+    Exit;
+  end;
+
+  LBmk := rxVenta.GetBookmark;
+  rxVenta.DisableControls;
+  try
+    rxVenta.First;
+
+    while not rxVenta.Eof do
+    begin
+      if ((rxVentaStatus.IsNull) or
+          (UpperCase(Trim(rxVentaStatus.AsString)) <> 'C')) and
+         (not rxVentaCodArticulo.IsNull) and
+         (rxVentaCodArticulo.AsInteger > 0) then
+      begin
+        if rxVentaNumeroTrnOriginal.IsNull or
+           (rxVentaNumeroTrnOriginal.AsInteger <= 0) then
+        begin
+          AMensaje :=
+            'Una linea de la NCR no tiene NUMERO de venta original.';
+          Exit;
+        end;
+
+        LNumeroLinea := rxVentaNumeroTrnOriginal.AsInteger;
+
+        if LNumeroOrigen = 0 then
+          LNumeroOrigen := LNumeroLinea
+        else
+        if LNumeroOrigen <> LNumeroLinea then
+        begin
+          AMensaje :=
+            'La NCR contiene lineas de mas de una venta original.';
+          Exit;
+        end;
+      end;
+
+      rxVenta.Next;
+    end;
+
+    if LNumeroOrigen <= 0 then
+    begin
+      AMensaje :=
+        'No fue posible determinar la venta original de la NCR.';
+      Exit;
+    end;
+
+    if not ValidarFuenteRecargoNCR(
+             LNumeroOrigen,
+             LRecargoMaster,
+             AMensaje
+           ) then
+      Exit;
+
+    if LRecargoMaster <= TOL_RECARGO then
+    begin
+      ARecargoNCR := 0;
+      Result := True;
+      Exit;
+    end;
+
+    rxVenta.First;
+
+    while not rxVenta.Eof do
+    begin
+      if ((rxVentaStatus.IsNull) or
+          (UpperCase(Trim(rxVentaStatus.AsString)) <> 'C')) and
+         (not rxVentaCodArticulo.IsNull) and
+         (rxVentaCodArticulo.AsInteger > 0) then
+      begin
+        if rxVentaSerieOriginal.IsNull or
+           (rxVentaSerieOriginal.AsInteger <= 0) then
+        begin
+          AMensaje :=
+            'Una linea de la NCR no tiene SERIE de detalle original.';
+          Exit;
+        end;
+
+        LSerieOrigen := rxVentaSerieOriginal.AsInteger;
+
+        if rxVentaCant.IsNull then
+        begin
+          AMensaje :=
+            'La linea SERIE origen ' + IntToStr(LSerieOrigen) +
+            ' no tiene cantidad para devolver.';
+          Exit;
+        end;
+
+        if not CalcularRecargoNCRLinea(
+                 LNumeroOrigen,
+                 LSerieOrigen,
+                 rxVentaCant.AsCurrency,
+                 LRecargoLinea,
+                 AMensaje
+               ) then
+          Exit;
+
+        ARecargoNCR := ARecargoNCR + LRecargoLinea;
+      end;
+
+      rxVenta.Next;
+    end;
+
+    if ARecargoNCR > LRecargoMaster + TOL_RECARGO then
+    begin
+      AMensaje :=
+        'El recargo calculado para la NCR excede el recargo de la venta ' +
+        'original.';
+      Exit;
+    end;
+
+    Result := True;
+  finally
+    if LBmk <> nil then
+    begin
+      if rxVenta.Active and rxVenta.BookmarkValid(LBmk) then
+        rxVenta.GotoBookmark(LBmk);
+
+      if rxVenta.Active then
+        rxVenta.FreeBookmark(LBmk);
+    end;
+
+    rxVenta.EnableControls;
+  end;
+end;
+
+function TfrmProcVentaRapida.ActualizarRecargoNCR(
+  out AMensaje: String
+): Boolean;
+const
+  TOL_CAMBIO = 0.0001;
+var
+  LRecargoNCR: Currency;
+begin
+  Result := False;
+  AMensaje := '';
+
+  if (not EsDevolucion) or FModificandoNCRPersistida then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  if FActualizandoRecargoNCR then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  FActualizandoRecargoNCR := True;
+  try
+    if not CalcularRecargoNCRSeleccionado(
+             LRecargoNCR,
+             AMensaje
+           ) then
+      Exit;
+
+    if not Totales.Active then
+    begin
+      AMensaje := 'Totales no esta activo para actualizar el recargo NCR.';
+      Exit;
+    end;
+
+    if Totales.IsEmpty then
+    begin
+      AMensaje := 'No existe cabecera de Totales para actualizar el recargo NCR.';
+      Exit;
+    end;
+
+    if Totales.State = dsBrowse then
+      Totales.Edit;
+
+    if TotalesRecargo.IsNull or
+       (Abs(TotalesRecargo.AsCurrency - LRecargoNCR) > TOL_CAMBIO) then
+    begin
+      TotalesRecargo.AsCurrency := LRecargoNCR;
+
+      {
+        Solo cambia el insumo global. Firebird continuara siendo quien
+        distribuya el recargo, calcule ITBIS y actualice los totales.
+      }
+      dmCalculos.MarcarCambioGlobal;
+
+      DatosModificados := True;
+      CalculoPendiente := True;
+      GlbCalculado := False;
+      procCalc := True;
+    end;
+
+    Result := True;
+  finally
+    FActualizandoRecargoNCR := False;
+  end;
+end;
+
+function TfrmProcVentaRapida.ValidarDistribucionRecargoNCR(
+  out AMensaje: String
+): Boolean;
+const
+  TOLERANCIA_RECARGO = 0.01;
+var
+  LBmk: TBookmark;
+  LRecargoEsperado: Currency;
+  LRecargoLineaEsperado: Currency;
+  LRecargoLineaCalculado: Currency;
+  LNumeroOrigen: Integer;
+  LSerieOrigen: Integer;
+begin
+  Result := False;
+  AMensaje := '';
+  LBmk := nil;
+
+  if (not EsDevolucion) or FModificandoNCRPersistida then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  if not CalcularRecargoNCRSeleccionado(
+           LRecargoEsperado,
+           AMensaje
+         ) then
+    Exit;
+
+  if TotalesRecargo.IsNull then
+  begin
+    if Abs(LRecargoEsperado) > TOLERANCIA_RECARGO then
+    begin
+      AMensaje :=
+        'El recargo calculado para la NCR no fue aplicado a Totales.';
+      Exit;
+    end;
+  end
+  else
+  if Abs(Abs(TotalesRecargo.AsCurrency) - LRecargoEsperado) >
+     TOLERANCIA_RECARGO then
+  begin
+    AMensaje :=
+      'El recargo total de la NCR no coincide con el recargo esperado.' +
+      #13#10 +
+      'Esperado: ' + FormatFloat('#,##0.0000', LRecargoEsperado) + #13#10 +
+      'Calculado: ' +
+        FormatFloat('#,##0.0000', Abs(TotalesRecargo.AsCurrency)) + '.';
+    Exit;
+  end;
+
+  LBmk := rxVenta.GetBookmark;
+  rxVenta.DisableControls;
+  try
+    rxVenta.First;
+
+    while not rxVenta.Eof do
+    begin
+      if ((rxVentaStatus.IsNull) or
+          (UpperCase(Trim(rxVentaStatus.AsString)) <> 'C')) and
+         (not rxVentaCodArticulo.IsNull) and
+         (rxVentaCodArticulo.AsInteger > 0) then
+      begin
+        if rxVentaNumeroTrnOriginal.IsNull or
+           rxVentaSerieOriginal.IsNull then
+        begin
+          AMensaje :=
+            'Falta referencia de origen en una linea de la NCR.';
+          Exit;
+        end;
+
+        LNumeroOrigen := rxVentaNumeroTrnOriginal.AsInteger;
+        LSerieOrigen := rxVentaSerieOriginal.AsInteger;
+
+        if not CalcularRecargoNCRLinea(
+                 LNumeroOrigen,
+                 LSerieOrigen,
+                 rxVentaCant.AsCurrency,
+                 LRecargoLineaEsperado,
+                 AMensaje
+               ) then
+          Exit;
+
+        if rxVentaTC_MONTORECARGO_GLB_DET.IsNull then
+          LRecargoLineaCalculado := 0
+        else
+          LRecargoLineaCalculado :=
+            Abs(rxVentaTC_MONTORECARGO_GLB_DET.AsCurrency);
+
+        if Abs(LRecargoLineaCalculado - LRecargoLineaEsperado) >
+           TOLERANCIA_RECARGO then
+        begin
+          AMensaje :=
+            'La distribucion del recargo no coincide con la linea original.' +
+            #13#10 +
+            'SERIE origen: ' + IntToStr(LSerieOrigen) + #13#10 +
+            'Producto: ' + rxVentaCodArticulo.AsString + #13#10 +
+            'Esperado: ' +
+              FormatFloat('#,##0.0000', LRecargoLineaEsperado) + #13#10 +
+            'Calculado por el motor: ' +
+              FormatFloat('#,##0.0000', LRecargoLineaCalculado) + '.';
+          Exit;
+        end;
+      end;
+
+      rxVenta.Next;
+    end;
+
+    Result := True;
+  finally
+    if LBmk <> nil then
+    begin
+      if rxVenta.Active and rxVenta.BookmarkValid(LBmk) then
+        rxVenta.GotoBookmark(LBmk);
+
+      if rxVenta.Active then
+        rxVenta.FreeBookmark(LBmk);
+    end;
+
+    rxVenta.EnableControls;
+  end;
+end;
+
+procedure TfrmProcVentaRapida.EjecutarInsertVentaDetNCR(
+  const ASerieOrigen: Integer
+);
+var
+  LProc: TIBStoredProc;
+  I: Integer;
+begin
+  if ASerieOrigen <= 0 then
+    raise Exception.Create(
+      'No se puede guardar la NCR sin la serie de la l?a original.'
+    );
+
+  LProc := TIBStoredProc.Create(nil);
+  try
+    LProc.Database := ibStpInsertVentaDet.Database;
+    LProc.Transaction := ibStpInsertVentaDet.Transaction;
+    LProc.StoredProcName := 'PROC_INS_VENTAS_DET_NCR';
+    LProc.Prepare;
+
+    {
+      PROC_INS_VENTAS_DET_NCR conserva exactamente los 44 par?tros
+      de PROC_INS_VENTAS_DET y agrega SERIE_ORIGEN al final.
+      De esta forma no se altera el contrato usado por ventas normales
+      ni por otros consumidores del procedimiento legacy.
+    }
+    if LProc.Params.Count <> (ibStpInsertVentaDet.Params.Count + 1) then
+      raise Exception.Create(
+        'La firma de PROC_INS_VENTAS_DET_NCR no coincide con ' +
+        'PROC_INS_VENTAS_DET + SERIE_ORIGEN.'
+      );
+
+    for I := 0 to ibStpInsertVentaDet.Params.Count - 1 do
+      LProc.Params[I].Value := ibStpInsertVentaDet.Params[I].Value;
+
+    LProc.Params[ibStpInsertVentaDet.Params.Count].AsInteger :=
+      ASerieOrigen;
+
+    LProc.ExecProc;
+  finally
+    LProc.Free;
+  end;
+end;
 procedure TfrmProcVentaRapida.InsertarDetDevolucion(numero : Integer);
 begin
   LogProcedure('TfrmProcVentaRapida.InsertarDetDevolucion');
@@ -7942,7 +9068,7 @@ begin
   ibStpInsertVentaDet.Params[41].Value := GlbcodVendedor;
 
   ibStpInsertVentaDet.Params[42].Value := rxVentaLevelPrecio.Value;
-
+  ibStpInsertVentaDet.Params[43].Value :=rxVentaTC_MONTORECARGO_GLB_DET.Value;
   tblProductoSerie.close;
   tblProductoSerie.Params[0].Value := rxVentaSerieProd.Value;
   tblProductoSerie.Open;
@@ -7969,7 +9095,13 @@ begin
     ibstpUpdateLote.Transaction.RollbackRetaining;
     end;
   end;
-  ibStpInsertVentaDet.ExecProc;
+  if rxVentaSerieOriginal.IsNull or
+     (rxVentaSerieOriginal.Value <= 0) then
+    raise Exception.Create(
+      'La l?a de la NCR no tiene SERIE_ORIGEN v?da.'
+    );
+
+  EjecutarInsertVentaDetNCR(rxVentaSerieOriginal.Value);
 
   //devoluciones
   if Not ibStpInsertVentaDet.Transaction.InTransaction then
@@ -8112,7 +9244,7 @@ begin
   ibStpInsertVentaDet.Params[41].Value := GlbcodVendedor;
 
   ibStpInsertVentaDet.Params[42].Value := rxVentaLevelPrecio.Value;
-  
+  ibStpInsertVentaDet.Params[43].Value :=rxVentaTC_MONTORECARGO_GLB_DET.Value;
   if not rxVentaSerieProd.IsNull then
   begin
     tblProductoSerie.close;
@@ -8184,6 +9316,7 @@ begin
   ibStpInsertVentaDet.Params[41].Value := GlbcodVendedor;
 
   ibStpInsertVentaDet.Params[42].Value := rxVentaLevelPrecio.Value;
+  ibStpInsertVentaDet.Params[43].Value :=rxVentaTC_MONTORECARGO_GLB_DET.Value;
 
   ibStpInsertVentaDet.ExecProc;
 
@@ -9194,7 +10327,7 @@ begin
             qckCotServ8_5Standar.Free;
             qckCotServ8_5Standar := Nil;
           end;
-
+                                                   
           if CheckBox2.Checked then
             ShellExecute(0, nil, PChar(
               ExtractFilePath(Application.ExeName) +
@@ -11424,6 +12557,28 @@ begin
     Exit;
   end;
 
+  {
+  Seleccion manual desde RxDBGrid2.
+  El foco se difiere hasta que termine de procesarse el ENTER de la grilla.
+  }
+  if (not LectorCodBarra1.Checked) and
+     (not imbBarcode.Visible) then
+  begin
+    if IsShowing and
+       DBEdit1.Enabled and      
+       DBEdit1.Visible and
+       DBEdit1.CanFocus then
+    begin
+      PostMessage(
+        Handle,
+        WM_NEXTDLGCTL,
+        WPARAM(DBEdit1.Handle),
+        LPARAM(1)
+      );
+    end;
+    Exit;
+  end;
+
   if GlBCuadros = 1 then
   begin
     if IsShowing then
@@ -12059,7 +13214,8 @@ begin
         if frmProcVentaRapidaEdicion.rxVentaSerie.Value > yNumSerie then
         yNumSerie := frmProcVentaRapidaEdicion.rxVentaSerie.Value;
       
-        frmProcVentaRapidaEdicion.rxVenta.Post;
+
+        frmProcVentaRapidaEdicion.rxVenta.Post;
         frmEdicionVenta.tblDatosDet.Next;
       end;
 
@@ -13075,10 +14231,8 @@ begin
     Aunque el control de cliente debió quedar bloqueado,
     nunca se deben alterar precios si existe cobro preparado.
   }
-  if FTotalesCongeladosParaCobro and
-     (not EsModificandoFactura) and
-     (not EsModificandoCotiza) then
-  begin
+   if VentaTieneCierreActivo and
+   (not EsModificandoFactura) then  begin
     MessageDlg(
       'El cobro está preparado.' + #13 +
       'Debe abrir la venta antes de aplicar precios mayoristas.',
@@ -13460,83 +14614,127 @@ end;
 
 procedure TfrmProcVentaRapida.cboxTipoUnidadChange(Sender: TObject);
 var
-  xflag:boolean;
+  xFlag: Boolean;
+  LUnidadNueva: Integer;
 begin
-  //LogProcedure('TfrmProcVentaRapida.cboxTipoUnidadChange');
-  if rxVenta.State In [dsBrowse] Then
-  rxVenta.Edit;
-  xflag:=False;
+  if FActualizandoUnidadUI or LlenandoDatos or EnProcesoCalculo then
+    Exit;
 
-  dmVentas.qryPrecioUnidadSurt.Close;
-  dmVentas.qryPrecioUnidadSurt.Params[0].Value:=rxVentaCodArticulo.Value;
-  dmVentas.qryPrecioUnidadSurt.Open;
+  {
+    Las asignaciones programaticas de Text hechas al cargar/refrescar una
+    linea no representan una decision del usuario.
+  }
+  if not cboxTipoUnidad.Focused then
+    Exit;
 
-  //dmVentas.qryPrecioUnidadSurt.recordcount
-  xflag:=True;
-  //if (GlbUsaPUnidadLevel = 1) or (GLBPrecioMayUnidad = 1) then
-  if (GlbUsaPUnidadLevel = 1) then
-  if Not dmVentas.qryPrecioUnidadSurt.Locate('COD_PRODUCTO;DESCRIPCION',
-  VarArrayOf([rxVentaCodArticulo.Value,cboxTipoUnidad.Text]),[]) then
+  if (not rxVenta.Active) or rxVenta.IsEmpty then
+    Exit;
+
+  if rxVentaCodArticulo.IsNull or
+     (rxVentaCodArticulo.Value <= 0) then
+    Exit;
+
+  xFlag := False;
+  LUnidadNueva := 0;
+
+  if GlbUsaPUnidadLevel = 1 then
   begin
-    if (GlbUsaPUnidadLevel = 1) then
+    dmVentas.qryPrecioUnidadSurt.Close;
+    dmVentas.qryPrecioUnidadSurt.Params[0].Value :=
+      rxVentaCodArticulo.Value;
+    dmVentas.qryPrecioUnidadSurt.Open;
+
+    xFlag := dmVentas.qryPrecioUnidadSurt.Locate(
+      'COD_PRODUCTO;DESCRIPCION',
+      VarArrayOf([
+        rxVentaCodArticulo.Value,
+        cboxTipoUnidad.Text
+      ]),
+      []
+    );
+
+    if not xFlag then
     begin
-      MessageDlg('Unidad no encontrada en precio por unidad, verifique.', mtError, [mbOk], 0);
-      xflag:=False;
+      MessageDlg(
+        'Unidad no encontrada en precio por unidad, verifique.',
+        mtError,
+        [mbOk],
+        0
+      );
+      Exit;
     end;
-  end else
-  begin
+
     DSQryPrecios.DataSet := dmVentas.qryPrecioUnidadSurt;
-    GlbTipoUnidad := dmVentas.qryPrecioUnidadSurtIDUNIDAD.Value;
-    CantUnidad:= dmVentas.qryPrecioUnidadSurtCANTIDAD.Value;
-    if GlbTipoUnidad = 1 then
-    CantUnidad:=1;
-    rxVentaTipoUnidad.Value:= GlbTipoUnidad;
-  end;
-  
-  if GlbUsaPUnidadLevel = 0 then
-  if not xFlag then
-  if Not dmInventario.qryTipoUnidad.Locate('DESCRIPCION', cboxTipoUnidad.Text, []) then
+    LUnidadNueva := dmVentas.qryPrecioUnidadSurtIDUNIDAD.Value;
+    CantUnidad := dmVentas.qryPrecioUnidadSurtCANTIDAD.Value;
+  end
+  else
   begin
-    xflag:=False;
-  end else
- //if (GlbUsaPUnidadLevel = 1) Or (GLBPrecioMayUnidad = 1) then
- if (GlbUsaPUnidadLevel = 1) then
-  begin
-    GlbTipoUnidad:= dmInventario.qryTipoUnidadIDUNIDAD.Value;
-    CantUnidad   := dminventario.qryTipoUnidadCANTIDAD.Value;
-    rxVentaTipoUnidad.Value := GlbTipoUnidad;
-    panelTempPrecioLevels.Visible:=True;
-    if GlbTipoUnidad = 1 then
-    CantUnidad:=1;
+    if dmInventario.qryTipoUnidad.State = dsInactive then
+      AbrirUnidades;
+
+    xFlag := dmInventario.qryTipoUnidad.Locate(
+      'DESCRIPCION',
+      cboxTipoUnidad.Text,
+      []
+    );
+
+    if not xFlag then
+      Exit;
+
+    LUnidadNueva := dmInventario.qryTipoUnidadIDUNIDAD.Value;
+    CantUnidad := dmInventario.qryTipoUnidadCANTIDAD.Value;
   end;
 
-  if xFlag then
+  if LUnidadNueva <= 0 then
+    Exit;
+
+  if LUnidadNueva = 1 then
+    CantUnidad := 1;
+
+  GlbTipoUnidad := LUnidadNueva;
+
+  {
+    Seleccionar nuevamente la misma unidad no debe abrir rxVenta,
+    cambiar precio ni provocar Post/Calculo.
+  }
+  if (not rxVentaTipoUnidad.IsNull) and
+     (rxVentaTipoUnidad.Value = LUnidadNueva) then
+    Exit;
+
+  if rxVenta.State = dsBrowse then
+    rxVenta.Edit;
+
+  rxVentaTipoUnidad.Value := GlbTipoUnidad;
+  rxVentaDescUnidadMedida.Value := cboxTipoUnidad.Text;
+
+  if not qryProductoscodigo.IsNull and
+     (not PrecioCambio) then
   begin
-    if not qryProductoscodigo.Isnull And (Not PrecioCambio ) then
-    begin
-      if GlbUsaPUnidadLevel = 1 then
+    if GlbUsaPUnidadLevel = 1 then
       SetPrecioPorCantidad
-      else
-      begin
-        if (GlbUsaEscalaPrecio = 0) and (GlbTipoUnidad <> 1) then
-        if (GlbUsaPUnidadStd = 1) and (Not GlbUsandoCotiza Or ( rxVentaStatus.Value = 'I')) then
-        rxVentaPrecio.Value  := precioXUnidad(GlbTipoUnidad, qryProductoscodigo.value); //qryProductosPRECIO_TIPO_UNIDAD.Value;
+    else
+    begin
+      if (GlbUsaEscalaPrecio = 0) and
+         (GlbTipoUnidad <> 1) and
+         (GlbUsaPUnidadStd = 1) and
+         (not GlbUsandoCotiza or
+          ((not rxVentaStatus.IsNull) and
+           (rxVentaStatus.Value = 'I'))) then
+        rxVentaPrecio.Value :=
+          precioXUnidad(GlbTipoUnidad, qryProductoscodigo.Value);
 
-        if (rxVentaprecio.Value = 0) And (Not PrecioCambio )then
-        begin
-          if (GlbUsaescalaPrecio = 1) And (Not GlbUsandoCotiza Or ( rxVentaStatus.Value = 'I') ) then
-          begin
-            SetPrecioPorCantidad;//case
-          end
-        end;// else
-      end;
+      if (rxVentaPrecio.Value = 0) and
+         (not PrecioCambio) and
+         (GlbUsaescalaPrecio = 1) and
+         (not GlbUsandoCotiza or
+          ((not rxVentaStatus.IsNull) and
+           (rxVentaStatus.Value = 'I'))) then
+        SetPrecioPorCantidad;
     end;
   end;
 
-  if rxVenta.State In [dsBrowse] Then
-  rxVenta.Edit;
-
-  rxVentaDescUnidadMedida.Value:=cboxTipoUnidad.Text;
+  esEditando := True;
 end;
 
 //no usado, ver si no es necesario Dic 1, 2017
@@ -13590,33 +14788,69 @@ end;
 }
 
 procedure TfrmProcVentaRapida.cboxTipoUnidadExit(Sender: TObject);
+var
+  LUnidadActual: Integer;
+  LPrecioActual: Currency;
+  LCambioUnidad: Boolean;
 begin
-  //LogProcedure('TfrmProcVentaRapida.cboxTipoUnidadExit');
-  if not Self.Visible or not isShowing then Exit;
-  if rxVentaCodTexto.IsNull then exit;
-  if rxVentaDescUnidadMedida.isNull or (rxVentaDescUnidadMedida.Value = '') then
-  begin
-    if rxVenta.State = dsBrowse then rxVenta.Edit;
-    rxVentaDescUnidadMedida.Value:=cboxTipoUnidad.Text;
-  end;
-  MarcarLineaActiva;
+  if not Self.Visible or not isShowing then
+    Exit;
 
-  if rxVenta.State = dsBrowse then
-     rxVenta.Edit;
+  if LlenandoDatos or EnProcesoCalculo then
+    Exit;
 
-  rxVentaTipoUnidad.Value:=GlbTipoUnidad;
-  
-  panel2.Height:=87;
+  if rxVentaCodTexto.IsNull then
+    Exit;
+
+  if rxVentaTipoUnidad.IsNull then
+    LUnidadActual := 0
+  else
+    LUnidadActual := rxVentaTipoUnidad.Value;
+
+  if rxVentaPrecio.IsNull then
+    LPrecioActual := 0
+  else
+    LPrecioActual := rxVentaPrecio.Value;
+
+  LCambioUnidad :=
+    (LUnidadActual <> FUnidadAnterior) or
+    (Abs(LPrecioActual - FPrecioUnidadAnterior) > 0.0001);
+
+  panel2.Height := 87;
   panel2.Visible := False;
-  if glbUsaescalaPrecio = 0 then
-  panelTempPrecioLevels.Visible:= False;
 
-  PostLineaYSolicitarCalculo(tcUnidad, 'cboxTipoUnidad');
-  
-  //RestaurarLineaActiva;
-  if (isShowing) then
+  if glbUsaescalaPrecio = 0 then
+    panelTempPrecioLevels.Visible := False;
+
+  if LCambioUnidad then
   begin
-    DBEdit9.SetFocus;
+    if rxVenta.State = dsBrowse then
+      rxVenta.Edit;
+
+    if rxVentaDescUnidadMedida.IsNull or
+       (rxVentaDescUnidadMedida.AsString <> cboxTipoUnidad.Text) then
+      rxVentaDescUnidadMedida.Value := cboxTipoUnidad.Text;
+
+    MarcarLineaActiva;
+
+    PostLineaYSolicitarCalculo(
+      tcUnidad,
+      'cboxTipoUnidad'
+    );
+  end
+  else
+  begin
+    LogEventoVenta(
+      'cboxTipoUnidadExit',
+      'Unidad y precio sin cambio; no se solicita calculo'
+    );
+  end;
+
+  esEditando := False;
+
+  if isShowing and DBEdit9.CanFocus then
+  begin
+    SafeSetFocus(DBEdit9);
     DBEdit9.SelectAll;
     DBRadioGroup1.BringToFront;
     Label59.BringToFront;
@@ -13897,29 +15131,68 @@ end;
 
 procedure TfrmProcVentaRapida.cboxTipoUnidadEnter(Sender: TObject);
 begin
-  //LogProcedure('TfrmProcVentaRapida.cboxTipoUnidadEnter');
-  if (cboxTipoUnidad.Text = '') then
-  BEGIN
-    cboxTipoUnidad.Text:='UNIDAD';
-    GlbTipoUnidad := 1;   
-    CantUnidad:= 1;
-  END;
-  panel2.Height:=87;
-  panel2.Visible := False;
-  if glbUsaescalaPrecio = 0 then
-  panelTempPrecioLevels.Visible:= False;
-  if (not rxVentaCodArticulo.IsNull) then
-  if (GlbUsaPUnidadLevel = 1) then
-  begin
-    dminventario.qryTipoUnidad.Filtered:=False;
-    dmInventario.xcodProducto := rxVentaCodArticulo.AsInteger;
-    dminventario.qryTipoUnidad.Filtered:=True;
-    cboxTipoUnidad.Clear;
-    While Not dmInventario.qryTipoUnidad.Eof Do
+  if rxVentaTipoUnidad.IsNull then
+    FUnidadAnterior := 0
+  else
+    FUnidadAnterior := rxVentaTipoUnidad.Value;
+
+  if rxVentaPrecio.IsNull then
+    FPrecioUnidadAnterior := 0
+  else
+    FPrecioUnidadAnterior := rxVentaPrecio.Value;
+
+  FActualizandoUnidadUI := True;
+  try
+    if cboxTipoUnidad.Text = '' then
     begin
-      cboxTipoUnidad.Items.Add(dmInventario.qryTipoUnidadDESCRIPCION.Value);
-      dmInventario.qryTipoUnidad.Next;
+      cboxTipoUnidad.Text := 'UNIDAD';
+
+      if FUnidadAnterior > 0 then
+        GlbTipoUnidad := FUnidadAnterior
+      else
+        GlbTipoUnidad := 1;
+
+      if GlbTipoUnidad = 1 then
+        CantUnidad := 1;
     end;
+
+    panel2.Height := 87;
+    panel2.Visible := False;
+
+    if glbUsaescalaPrecio = 0 then
+      panelTempPrecioLevels.Visible := False;
+
+    if (not rxVentaCodArticulo.IsNull) and
+       (GlbUsaPUnidadLevel = 1) then
+    begin
+      dminventario.qryTipoUnidad.Filtered := False;
+      dmInventario.xcodProducto := rxVentaCodArticulo.AsInteger;
+      dminventario.qryTipoUnidad.Filtered := True;
+
+      cboxTipoUnidad.Clear;
+      dmInventario.qryTipoUnidad.First;
+
+      while not dmInventario.qryTipoUnidad.Eof do
+      begin
+        cboxTipoUnidad.Items.Add(
+          dmInventario.qryTipoUnidadDESCRIPCION.Value
+        );
+        dmInventario.qryTipoUnidad.Next;
+      end;
+
+      {
+        Restaurar la descripcion correspondiente a la unidad de ESTA linea.
+        Llenar el combo no debe cambiar la seleccion ni disparar calculos.
+      }
+      if (FUnidadAnterior > 0) and
+         dmInventario.qryTipoUnidad.Locate(
+           'IDUNIDAD', FUnidadAnterior, []
+         ) then
+        cboxTipoUnidad.Text :=
+          dmInventario.qryTipoUnidadDESCRIPCION.AsString;
+    end;
+  finally
+    FActualizandoUnidadUI := False;
   end;
 end;
 
@@ -14893,7 +16166,9 @@ var
   LOldLlenandoDatos: Boolean;
   LOldEnProcesoCalculo: Boolean;
   LTotalesAutoCalcFields: Boolean;
-  LTipoNCFOriginal: string;  
+  LTipoNCFOriginal: string;
+  LMensajeSincronizacion: string;
+  LOldLlenandoValidacion: Boolean;
 begin
 
   if (TotalesMontoRecibido.Value > 0) and
@@ -14946,6 +16221,16 @@ begin
   EsModificandoCotiza := False;
   EsEditando := False;
 
+  FModificandoNCRPersistida :=
+   (
+     UpperCase(Trim(dmFactura.qryVentaFacturaFORMA_PAGO.AsString)) = '6'
+   ) or (UpperCase(Trim(dmFactura.qryVentaFacturaFORMA_PAGO.AsString)
+    ) = 'DEVOLUCION');
+
+
+  FRecuperandoVentaError :=
+  UpperCase(Trim(dmFactura.qryVentaFacturaSTATUS.AsString)) = 'E';
+
   {
     Una factura cargada para modificación no puede heredar el cierre
     fiscal o de cobro de una venta anterior.
@@ -14967,10 +16252,18 @@ begin
   BitBtn25.Enabled := False;
 
   bitBtnEditarFact.Visible := True;
+  bitBtnEditarFact.Enabled := False;
   bitBtnEditarFact.Top := 475;
   bitBtnEditarFact.BringToFront;
 
-  lblProcDev.Visible := False;
+  if EsDevolucion then
+  begin
+    lblProcDev.Visible := True;
+    lblProcDev.BringToFront;
+  end
+  else
+    lblProcDev.Visible := False;
+
   Label36.Visible := True;
 
   if EsDevolucion then
@@ -15019,9 +16312,21 @@ begin
 
     TotalesFechaIniciaPoliza.Value :=dmFactura.qryVentaFacturaFechaIniciaPoliza.Value;
 
+    {
+      La moneda de la factura se toma de VENTAS_MAST.
+      Una venta cargada para modificar nunca puede quedar sin moneda.
+    }
     TotalesMoneda.Value :=
       Trim(dmFactura.qryVentaFacturaMONEDA.Value);
 
+    if Trim(TotalesMoneda.AsString) = '' then
+    begin
+      if GlbMonedaBase > 0 then
+        TotalesMoneda.Value := IntToStr(GlbMonedaBase)
+      else
+        TotalesMoneda.Value := '1';
+    end;
+                    
     TotalesSubTotal.Value := 0;
     TotalesSubTotalScreen.Value := 0;
     TotalesMontoDescItems.Value := 0;
@@ -15054,11 +16359,20 @@ begin
 
     TotalesPorcDesAdicional.Value :=dmFactura.qryVentaFacturaPORC_DESCUENTO.Value;
 
-    TotalesRecargo.Value :=dmFactura.qryVentaFacturaMONTO_RECARGO.Value;
+    {
+      NCR nueva: el recargo no puede copiarse completo desde el master
+      original. Se calcula despues de cargar las lineas seleccionadas,
+      usando TC_MONTORECARGO_GLB_DET de cada linea original.
 
-    if EsDevolucion then
-      TotalesRecargo.Value := TotalesRecargo.Value * 1;
-
+      Modificacion/recuperacion de una NCR persistida conserva el recargo
+      ya guardado en esa NCR; no se reconstruye historicamente aqui.
+    }
+    if EsDevolucion and (not FModificandoNCRPersistida) then
+      TotalesRecargo.Value := 0
+    else
+      TotalesRecargo.Value :=
+        dmFactura.qryVentaFacturaMONTO_RECARGO.Value;
+    
     chKDescuentoGlobal.Checked :=
       TotalesPorcDesAdicional.Value > 0;
 
@@ -15126,6 +16440,10 @@ begin
 
     LogProcedure('TfrmProcVentaRapida.CargarDatosAModificar; TotalesTipoNCFIFiscal.Clear;');
 
+
+    FRecuperandoVentaError :=
+    UpperCase(Trim(dmFactura.qryVentaFacturaSTATUS.AsString)) = 'E';
+
     if (dmFactura.qryVentaFacturaTIPO_FACTURA.Value = 0) and
        (UpperCase(GLBFormatoFactura) = 'INGESERVIS') then
     begin
@@ -15159,7 +16477,7 @@ begin
     dmReportes.qryViewVentasMast.Open;
 
     UImpresionVentas.ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
-
+    LNumeroTrnPersistido:=-0;
     {
       Se preserva el comportamiento de seleccionar todas las líneas
       cuando la grilla no tiene selección explícita.
@@ -15196,10 +16514,16 @@ begin
           if dmFactura.qryVentaFacturaCODIGO_VENDEDOR.Value > 0 then
           GlbcodVendedor:=dmFactura.qryVentaFacturaCODIGO_VENDEDOR.Value;
 
+          LNumeroTrnPersistido :=dmFactura.qryVentaFacturaNUMERO.AsInteger;
+
           rxVentaglbcodVendedor.Value:=GlbcodVendedor;
 
           rxVentaNumeroFactura.Value := dmFactura.qryVentaFacturaNUMERO_FACTURA.Value;
 
+          if dmfactura.qryVentaFacturaFORMA_PAGO.AsInteger in [7,8] then
+             EsContado:=False
+          else EsContado:=True;
+          
           if EsContado then
             rxVentaNumeroFactura.Value :=dmFactura.qryVentaFacturaNUMERO.AsInteger;
 
@@ -15233,10 +16557,22 @@ begin
 
           rxVentaInvetariar.Value := dmFactura.qryVentaFacturaDetINVENTARIAR.Value;
 
-          rxVentaMoneda.Value := Trim(dmFactura.qryVentaFacturaDetMONEDA.Value);
+          rxVentaMoneda.Value :=
+            Trim(dmFactura.qryVentaFacturaDetMONEDA.Value);
 
-          if Trim(rxVentaMoneda.Value) = '' then
+          if Trim(rxVentaMoneda.AsString) = '' then
             rxVentaMoneda.Value := TotalesMoneda.Value;
+
+          {
+            Postcondicion local: ninguna linea activa puede quedar sin moneda.
+          }
+          if Trim(rxVentaMoneda.AsString) = '' then
+          begin
+            if GlbMonedaBase > 0 then
+              rxVentaMoneda.Value := IntToStr(GlbMonedaBase)
+            else
+              rxVentaMoneda.Value := '1';
+          end;
 
           rxVentaMonedaBase.AsInteger := GlbMonedaBase;
 
@@ -15246,23 +16582,61 @@ begin
 
           SincronizarPorcTasaItbisCld;
 
-          rxVentaCant.Value := Abs(dmFactura.qryVentaFacturaDetCANTIDAD.Value);
 
-          rxVentaCantPax.Value := Abs(dmFactura.qryVentaFacturaDetCANT_VIAJES.AsInteger);
+          if FModificandoNCRPersistida then
+          begin
+            {
+              Una NCR se reconstruye con cantidad negativa.
+              Precio, tasas y porcentajes continúan siendo magnitudes positivas.
+            }
+            rxVentaCant.Value :=
+              -Abs(dmFactura.qryVentaFacturaDetCANTIDAD.AsCurrency);
 
-          rxVentaPrecio.Value := Abs(dmFactura.qryVentaFacturaDetPRECIO.Value);
+            rxVentaCantPax.Value :=
+              -Abs(dmFactura.qryVentaFacturaDetCANT_VIAJES.AsInteger);
 
-          rxVentaPorc_Desc.Value := Abs(dmFactura.qryVentaFacturaDetPORC_DESC_DET.Value);
+            rxVentaMontoBruto.Value :=
+              -Abs(dmFactura.qryVentaFacturaDetVALOR_SERVICIO_DET.AsCurrency);
 
-          rxVentaPorcDescItem.Value := Abs(dmFactura.qryVentaFacturaDetPORC_DESC_ITEM.Value);
+            rxVentaMontoNeto.Value :=
+              -Abs(dmFactura.qryVentaFacturaDetVALOR_TOTAL_DET.AsCurrency);
 
-          rxVentaMontoDescItem.Value := Abs(dmFactura.qryVentaFacturaDetMONTO_DESC_ITEM.Value);
+            rxVentaItbi.Value :=
+              -Abs(dmFactura.qryVentaFacturaDetITBI_DET.AsCurrency);
+          end
+          else
+          begin
+            rxVentaCant.Value :=
+              Abs(dmFactura.qryVentaFacturaDetCANTIDAD.AsCurrency);
 
-          rxVentaMontoBruto.Value := Abs(dmFactura.qryVentaFacturaDetVALOR_SERVICIO_DET.Value);
+            rxVentaCantPax.Value :=
+              Abs(dmFactura.qryVentaFacturaDetCANT_VIAJES.AsInteger);
 
-          rxVentaMontoNeto.Value := Abs(dmFactura.qryVentaFacturaDetVALOR_TOTAL_DET.Value);
+            rxVentaMontoBruto.Value :=
+              Abs(dmFactura.qryVentaFacturaDetVALOR_SERVICIO_DET.AsCurrency);
 
-          rxVentaItbi.Value := Abs(dmFactura.qryVentaFacturaDetITBI_DET.Value);
+            rxVentaMontoNeto.Value :=
+              Abs(dmFactura.qryVentaFacturaDetVALOR_TOTAL_DET.AsCurrency);
+
+            rxVentaItbi.Value :=
+              Abs(dmFactura.qryVentaFacturaDetITBI_DET.AsCurrency);
+          end;
+
+          {
+            Precio unitario, porcentajes y descuento se mantienen
+            como magnitudes positivas.
+          }
+          rxVentaPrecio.Value :=
+            Abs(dmFactura.qryVentaFacturaDetPRECIO.AsCurrency);
+
+          rxVentaPorc_Desc.Value :=
+            Abs(dmFactura.qryVentaFacturaDetPORC_DESC_DET.AsCurrency);
+
+          rxVentaPorcDescItem.Value :=
+            Abs(dmFactura.qryVentaFacturaDetPORC_DESC_ITEM.AsCurrency);
+
+          rxVentaMontoDescItem.Value :=
+            Abs(dmFactura.qryVentaFacturaDetMONTO_DESC_ITEM.AsCurrency);
 
           rxVentaDescripcion.Value := dmFactura.qryVentaFacturaDetDESCRIPCION.Value;
 
@@ -15357,16 +16731,110 @@ begin
   end;
 
   {
-    Una sola pasada final:
-      rxVenta -> POS_EXTRA_DET -> POS_EXTRA_SUM -> Totales
+    Carga de modificacion: sincronizacion estricta.
 
-    Firebird calcula. Delphi solo sincroniza y refleja.
+    No se acepta una venta editable donde rxVenta tenga una linea y
+    POS_EXTRA_DET no tenga su fila equivalente. Primero se reconstruye el
+    espejo temporal completo y luego se valida la postcondicion.
   }
   LlenandoDatos := False;
   EnProcesoCalculo := False;
+  LMensajeSincronizacion := '';
 
   try
-    dmCalculos.ProcesaCalculosVentaCompleta;
+    try
+      {
+        La primera reconstruccion de POS_EXTRA_DET debe recibir ya el
+        recargo correcto de la NCR. De lo contrario Firebird distribuiria
+        el MONTO_RECARGO completo de la factura original entre las lineas
+        seleccionadas.
+      }
+      if EsDevolucion and (not FModificandoNCRPersistida) then
+      begin
+        if not ActualizarRecargoNCR(LMensajeSincronizacion) then
+          raise Exception.Create(LMensajeSincronizacion);
+      end;
+
+      dmCalculos.ReconstruirPosExtraDesdeRxVenta(GlbNumVtaPOS);
+
+      if not dmCalculos.ValidarSincronizacionRxVentaPosExtraDet(
+        LMensajeSincronizacion
+      ) then
+      begin
+        raise Exception.Create(
+          'Inconsistencia rxVenta/POS_EXTRA_DET. ' +
+          LMensajeSincronizacion
+        );
+      end;
+
+      {
+        Solo una modificacion normal de factura puede utilizar
+        Guardar y Reimprimir.
+
+        Durante una NCR, CargarDatosAModificar se reutiliza unicamente
+        para preparar el detalle de la devolucion.
+      }
+      if EsDevolucion then
+        bitBtnEditarFact.Enabled := False
+      else
+        bitBtnEditarFact.Enabled := True;
+
+      LogEventoVenta(
+        'CargarDatosAModificar',
+        'Sincronizacion OK|GlbNumVtaPOS=' + IntToStr(GlbNumVtaPOS) +
+        '|Lineas=' + IntToStr(rxVenta.RecordCount) +
+        '|Moneda=' + TotalesMoneda.AsString
+      );
+
+    except
+      on E: Exception do
+      begin
+        bitBtnEditarFact.Enabled := False;
+        GlbCalculado := False;
+        procCalc := False;
+
+        LogEventoVenta(
+          'CargarDatosAModificar',
+          'ERROR sincronizacion|GlbNumVtaPOS=' +
+          IntToStr(GlbNumVtaPOS) +
+          '|Lineas=' + IntToStr(rxVenta.RecordCount) +
+          '|Error=' + E.Message
+        );
+
+        {
+          Si falla la postcondicion, no dejamos dos fuentes divergentes.
+          Se eliminan ambos espejos temporales. La factura persistida
+          original permanece intacta.
+        }
+        try
+          dmCalculos.ProcDeletePosExtraDet(GlbNumVtaPOS);
+        except
+          { No ocultar el error original. }
+        end;
+
+        LOldLlenandoValidacion := LlenandoDatos;
+        LlenandoDatos := True;
+        rxVenta.DisableControls;
+        try
+          if rxVenta.Active then
+            rxVenta.EmptyTable;
+        finally
+          rxVenta.EnableControls;
+          LlenandoDatos := LOldLlenandoValidacion;
+        end;
+
+        MessageDlg(
+          'No fue posible preparar la factura para modificar.' + #13#10 +
+          'La venta original no fue alterada.' + #13#10 +
+          E.Message,
+          mtError,
+          [mbOK],
+          0
+        );
+
+        Exit;
+      end;
+    end;
   finally
     LlenandoDatos := LOldLlenandoDatos;
     EnProcesoCalculo := LOldEnProcesoCalculo;
@@ -15441,7 +16909,7 @@ begin
     stpUpdateVentaDetU1.Params[12].Value:= rxVentaStatus.Value;
     stpUpdateVentaDetU1.Params[13].Value:= NOW;
     stpUpdateVentaDetU1.Params[14].Value:= strUserName;
-    stpUpdateVentaDetU1.Params[15].Value:= null;
+    stpUpdateVentaDetU1.Params[15].Value:= null;                                 
     stpUpdateVentaDetU1.Params[16].Value:= null;
     stpUpdateVentaDetU1.Params[17].Value:= null;
     stpUpdateVentaDetU1.Params[18].Value:= null;
@@ -15469,11 +16937,13 @@ begin
     stpUpdateVentaDetU1.Params[34].Value := rxVentaDC_ITBIS_CLD.Value;
     stpUpdateVentaDetU1.Params[35].Value := rxVentaTC_MONTOITBISRECARGO_GLB.Value;
     stpUpdateVentaDetU1.Params[36].Value := rxVentaTC_MONTOITBISRECARGO_ITM.Value;
+
     if not rxVentaglbcodVendedor.IsNull then
     stpUpdateVentaDetU1.Params[37].Value := rxVentaglbcodVendedor.Value
     else
     stpUpdateVentaDetU1.Params[37].Value := GlbcodVendedor;
     stpUpdateVentaDetU1.Params[38].Value := rxVentaLevelPrecio.Value;
+    stpUpdateVentaDetU1.Params[39].Value := rxVentaTC_MONTORECARGO_GLB_DET.Value;
 
     stpUpdateVentaDetU1.ExecProc;
     if Not stpUpdateVentaDetU1.Transaction.InTransaction then
@@ -15507,7 +16977,13 @@ begin
   stpProc_UpdateVENTAS_MAST_U1.Params[6].Value    := dmfactura.qryVentaFacturaOBSERVACION.Value;// 'Venta a Credito';
   stpProc_UpdateVENTAS_MAST_U1.Params[7].Value    := dmfactura.qryVentaFacturaMONEDA.Value;
   stpProc_UpdateVENTAS_MAST_U1.Params[8].Value := Totalestotalneto.Value; //EditN1.Text;
-  stpProc_UpdateVENTAS_MAST_U1.Params[9].Value    := 'A';
+
+  //stpProc_UpdateVENTAS_MAST_U1.Params[9].Value    := 'A';
+  if FRecuperandoVentaError then
+     stpProc_UpdateVENTAS_MAST_U1.Params[9].Value := 'E'
+  else
+  stpProc_UpdateVENTAS_MAST_U1.Params[9].Value := 'A';
+
   stpProc_UpdateVENTAS_MAST_U1.Params[10].Value   := Now;
   stpProc_UpdateVENTAS_MAST_U1.Params[11].Value   := strusername;
   stpProc_UpdateVENTAS_MAST_U1.Params[12].Value   := dmfactura.qryVentaFacturaNUMERO_FACTURA.Value;
@@ -15518,10 +16994,12 @@ begin
     stpProc_UpdateVENTAS_MAST_U1.Params[14].Value := Null;
   stpProc_UpdateVENTAS_MAST_U1.Params[15].Value:= TotalesSubTotal.Value;
   stpProc_UpdateVENTAS_MAST_U1.Params[16].Value:= TotalesPorcientoInteres.Value;
+
   if TotalesMontoDescAdicional.Value > 0 then
   stpProc_UpdateVENTAS_MAST_U1.Params[17].Value:= TotalesMontoDescAdicional.Value
   else
   stpProc_UpdateVENTAS_MAST_U1.Params[17].Value:= TotalesMontoDescItems.Value;
+
   stpProc_UpdateVENTAS_MAST_U1.Params[18].Value:= 0;//Null;//Totalesmontorecibido.Value;//monto inicial
   stpProc_UpdateVENTAS_MAST_U1.Params[19].Value:= edtObservacion.Text;
   //stpProc_UpdateVENTAS_MAST_U1.Params[19].Value:= TotalesNombreCliente.Value;// TotalesMontoDescAdicional.Value;
@@ -15546,14 +17024,31 @@ begin
   //stpProc_UpdateVENTAS_MAST_U1.Params[16].Value     := Serie_Asignadoncf
   //else stpProc_UpdateVENTAS_MAST_U1.Params[16].Value:= Null;
   //serie_ncf_asignado
-  stpProc_UpdateVENTAS_MAST_U1.ExecProc;
-  if Not stpProc_UpdateVENTAS_MAST_U1.Transaction.InTransaction then
+
+  if not stpProc_UpdateVENTAS_MAST_U1.Transaction.InTransaction then
   stpProc_UpdateVENTAS_MAST_U1.Transaction.StartTransaction;
+
   try
+    stpProc_UpdateVENTAS_MAST_U1.ExecProc;
     stpProc_UpdateVENTAS_MAST_U1.Transaction.CommitRetaining;
   except
-  stpProc_UpdateVENTAS_MAST_U1.Transaction.RollbackRetaining;
+    on E: Exception do
+    begin
+      if stpProc_UpdateVENTAS_MAST_U1.Transaction.InTransaction then
+        stpProc_UpdateVENTAS_MAST_U1.Transaction.RollbackRetaining;
+
+      LogEventoVenta(
+        'ActualizaVentaMaster',
+        'ERROR|NUMERO=' +
+        dmFactura.qryVentaFacturaNUMERO.AsString +
+        '|STATUS=' +
+        stpProc_UpdateVENTAS_MAST_U1.Params[9].AsString +
+        '|Mensaje=' + E.Message
+      );
+      raise;
+    end;
   end;
+
   //Application.ProcessMessages;
 end;
 
@@ -15707,16 +17202,18 @@ end;
 procedure TfrmProcVentaRapida.bitBtnEditarFactClick(Sender: TObject);
 var
   numF : integer;
-  tRecordsDet : integer;
-  flag :boolean;
-  cantAnt : Currency;
+  //tRecordsDet : integer;
+  //flag :boolean;
+  //cantAnt : Currency;
+  MensajeValidacion: string;
 begin
- // LogProcedure('TfrmProcVentaRapida.bitBtnEditarFactClick');
-  flag:=false;
-  cantAnt:=0;
+  // LogProcedure('TfrmProcVentaRapida.bitBtnEditarFactClick');
+  //flag:=false;
+  //cantAnt:=0;
   GlbEsCopia:=True;
   //Revisar proceso de modificar venta al contado Marzo 14 2024
-  if (TotalesSubTotal.Value <= 0) then
+  //if (TotalesSubTotal.Value <= 0) then
+  if Abs(TotalesSubTotal.Value) <= 0.005 then
   begin
     MessageDlg('Total venta no puede ser cero, verifique.', mtError, [mbOk], 0);
     Exit;
@@ -15731,27 +17228,27 @@ begin
      MessageDlg('No puedes guardar sin detalle modificando factura, verifique.',mtInformation,[mbok],0);
      Exit;
    end;
-   if (dmFactura.qryFactTieneDevolucion.RecordCount = 1) then
+   if (dmFactura.qryFactTieneDevolucion.RecordCount = 1) and (not EsModificandoFactura) then
    begin
      MessageDlg('Factura tiene una devolución previa, verifique ',mtInformation,[mbok],0);
      bitBtnEditarFact.Enabled:=True;
      Exit;
    end;
    
-if CheckBox1.Checked and
-   ((GlbActivaIFiscal = 1) or (GlbActivaECF = 1)) and
-   (TotalesTipoNCFIFiscal.IsNull or
+  if CheckBox1.Checked and
+    ((GlbActivaIFiscal = 1) or (GlbActivaECF = 1)) and
+    (TotalesTipoNCFIFiscal.IsNull or
     (TotalesTipoNCFIFiscal.Value < 0)) then
-begin
-  MessageDlg(
+  begin
+    MessageDlg(
     'Verifique tipo NCF.',
     mtError,
     [mbOk],
     0
-  );
-  BitBtn6.Enabled := True;
-  Exit;
-end;
+    );
+    BitBtn6.Enabled := True;
+    Exit;
+  end;
 
   if (EsDevolucion) And (rxVenta.RecordCount > 0) then
   begin
@@ -15812,7 +17309,7 @@ end;
     serieNCFAsignado :=
       dmFactura.qryVentaFacturaSERIE_NCF_ASIGNADO.Value;
         
-  ActualizaVentaMaster(dmfactura.qryVentaFacturaFORMA_PAGO.AsString,dmFactura.qryVentaFacturaSERIE_NCF_ASIGNADO.Value);
+  ActualizaVentaMaster(dmfactura.qryVentaFacturaFORMA_PAGO.AsString,serieNCFAsignado);
   //Cargar rxDataAnt
   ReversaCantInventario(GlbNumeroTrn);
 
@@ -15820,6 +17317,42 @@ end;
   //Actualiza tabla FACTURA
   ActualizaFactura;
 
+  // Primero demostrar que MASTER/DETALLE quedaron consistentes.
+  if not ValidarVentaPersistida(
+         LNumeroTrnPersistido,
+         MensajeValidacion
+       ) then
+  begin
+    {
+      La transacción recuperada permanece STATUS='E'.
+      Además dejamos la pantalla utilizable para revisar nuevamente.
+    }
+    bitBtnEditarFact.Visible := True;
+    bitBtnEditarFact.Enabled := True;
+    bitBtnEditarFact.BringToFront;
+
+    reciboImpreso := False;
+
+    FTotalesCongeladosFiscalmente := False;
+    FTotalNetoFiscalConfirmado := 0;
+
+    raise Exception.Create(
+    'Venta descuadrada. NumTrn:' +
+    IntToStr(LNumeroTrnPersistido) + '. ' +
+    MensajeValidacion);
+  end;
+
+  // E -> A solamente después de superar la validación persistida.
+  if FRecuperandoVentaError then
+  begin
+    MarcarVentaRecuperada(
+      LNumeroTrnPersistido
+    );
+
+    FRecuperandoVentaError := False;
+  end;
+
+  // Estos procesos dependientes se ejecutan sobre una venta ya validada.
   //Actualiza Factura Pendiente
   ActualizaFactPendiente;
 
@@ -15994,31 +17527,67 @@ end;
 
 procedure TfrmProcVentaRapida.ActivarBotonesEnModifica;
 begin
-  //LogProcedure('TfrmProcVentaRapida.ActivarBotonesEnModifica');
-  if EsModificandoFactura then
+  {
+    NCR:
+    CargarDatosAModificar utiliza internamente EsModificandoFactura,
+    pero NO estamos modificando la factura original.
+  }
+  if EsDevolucion then
   begin
-  BitBtn9.Enabled:=False;
-  BitBtn8.Enabled:=False;
-  BitBtn12.Enabled:=False;
-  BitBtn15.Enabled:=False;
-  BitBtn11.Enabled:=False;
-  BitBtn17.Enabled:=False;
-  bitBtnEditarFact.Visible:=True;
-  bitBtnEditarFact.Top := BitBtn6.Top;
-  bitBtnEditarFact.BringToFront;
-  end else
-  begin
-  BitBtn9.Enabled:=True;
-  BitBtn8.Enabled:=True;
-  BitBtn12.Enabled:=True;
-  BitBtn15.Enabled:=True;
+    BitBtn4.Enabled := False;
 
-  BitBtn11.Enabled:=True;
-  BitBtn17.Enabled:=True;
+    bitBtnEditarFact.Visible := True;
+    bitBtnEditarFact.Enabled := False;
+    bitBtnEditarFact.Top := BitBtn6.Top;
+    bitBtnEditarFact.BringToFront;
+
+    lblProcDev.Visible := True;
+    lblProcDev.BringToFront;
+
+    Refresh;
+    Exit;
   end;
-  refresh;
-end;
 
+  // Guardar y Reimprimir aplica solamente a modificacion de factura.
+  // Nunca debe activarse cuando estamos trabajando una cotizacion.
+  if EsModificandoFactura and (not EsModificandoCotiza) then
+  begin
+    BitBtn9.Enabled := False;
+    BitBtn8.Enabled := False;
+    BitBtn12.Enabled := False;
+    BitBtn15.Enabled := False;
+    BitBtn11.Enabled := False;
+    BitBtn17.Enabled := False;
+
+    bitBtnEditarFact.Visible := True;
+
+    if rxVenta.Active and
+       (rxVenta.RecordCount > 0) and
+       (GlbNumVtaPOS > 0) and
+       GlbCalculado then
+      bitBtnEditarFact.Enabled := True
+    else
+      bitBtnEditarFact.Enabled := False;
+
+    bitBtnEditarFact.Top := BitBtn6.Top;
+    bitBtnEditarFact.BringToFront;
+  end
+  else
+  begin
+    BitBtn9.Enabled := True;
+    BitBtn8.Enabled := True;
+    BitBtn12.Enabled := True;
+    BitBtn15.Enabled := True;
+    BitBtn11.Enabled := True;
+    BitBtn17.Enabled := True;
+
+    bitBtnEditarFact.Enabled := False;
+    bitBtnEditarFact.Visible := False;
+    bitBtnEditarFact.SendToBack;
+  end;
+
+  Refresh;
+end;
 
 procedure TfrmProcVentaRapida.Label37Click(Sender: TObject);
 var
@@ -16554,7 +18123,7 @@ begin
     dmcxc.stpProcNumDoc.Params[1].Value:= 5;
     dmcxc.stpProcNumDoc.ExecProc;
     ipStpInsertVentMast.Params[15].Value:= dmcxc.stpProcNumDoc.Params[0].Value;
-    UProcesarDevolucion.numeroFactura   := ipStpInsertVentMast.Params[15].Value;
+    //T? UProcesarDevolucion.numeroFactura   := ipStpInsertVentMast.Params[15].Value;
   end else
   ipStpInsertVentMast.Params[15].Value:= dmcxc.tblTransCxcnumero_doc.Value;    //yo soy inteligencia divina
 
@@ -16593,11 +18162,11 @@ begin
   ipStpInsertVentMast.Params[34].Value:= totalesReferenciaCte.Value;
   ipStpInsertVentMast.Params[35].Value:= TotalesRecargo.Value;
   ipStpInsertVentMast.Params[36].Value:= TotalesTipoNCFIFiscal.Value;
-  ipStpInsertVentMast.Params[37].Value:= TotalesMontoExoneraITBIS.Value;
+  ipStpInsertVentMast.Params[37].Value:= -ABS(TotalesMontoExoneraITBIS.Value);
   ipStpInsertVentMast.Params[38].Value:= 0;//aqui juan
-    ipStpInsertVentMast.Params[39].Value:= TotalesPropina.Value;
+  ipStpInsertVentMast.Params[39].Value:= TotalesPropina.Value*-1;
   ipStpInsertVentMast.Params[40].Value:= GlbPorcPropina;
-  ipStpInsertVentMast.Params[41].Value:= TotalesPropinaLegal.Value;
+  ipStpInsertVentMast.Params[41].Value:= TotalesPropinaLegal.Value*-1;
   if not rxPreventaticket_id.IsNull then
   ipStpInsertVentMast.Params[42].Value:= rxPreventaticket_id.Value //ticket fast food limao
   else
@@ -16693,7 +18262,7 @@ begin
     except
     updTipoRetencionVta.Transaction.RollbackRetaining;
     end;    
-  end;  
+  end;
   if Assigned(frmRegServicioTaller) then
   UpdateServINFO(ipStpInsertVentMast.Params[0].Value);
   if Assigned(frmAlquiler) then
@@ -16773,11 +18342,27 @@ end;
 
 procedure TfrmProcVentaRapida.TotalesAfterScroll(DataSet: TDataSet);
 begin
-//  LogProcedure('TfrmProcVentaRapida.TotalesAfterScroll');
- if (TotalesMoneda.Value = '') then Exit;
-  PAbrirtablaMoneda(TotalesMoneda.Value,GlbFechaTrnDiaria);
-  lblTasa.Caption:=Concat('1 =',SimboloMoneda(rxVentaMonedaBase.Value))+dmdatos.qryTasaVALORMONEDA.AsString;
-  Totalestotalneto.DisplayFormat:=Concat(SimboloMoneda(TotalesMoneda.Value),',0.00');
+  if TotalesMoneda.IsNull or
+     (Trim(TotalesMoneda.AsString) = '') then
+    Exit;
+
+  PAbrirtablaMoneda(
+    TotalesMoneda.AsString,
+    GlbFechaTrnDiaria
+  );
+
+  lblTasa.Caption :=
+    Concat(
+      '1 =',
+      SimboloMoneda(rxVentaMonedaBase.AsString)
+    ) +
+    dmDatos.qryTasaVALORMONEDA.AsString;
+
+  Totalestotalneto.DisplayFormat :=
+    Concat(
+      SimboloMoneda(TotalesMoneda.AsString),
+      ',0.00'
+    );
 end;
 
 procedure TfrmProcVentaRapida.ProcCalculoDivisa;
@@ -16925,6 +18510,8 @@ begin
   if not esEditando then Exit;
   if LlenandoDatos then Exit;
 
+  AsegurarRegistroTotales;
+  
   GlbMoneda := TotalesMoneda.AsInteger;
 
   if Totales.State in [dsInsert, dsEdit] then
@@ -16960,6 +18547,14 @@ begin
   GlbMoneda := tblMonedaCODIGO.AsInteger;
 end;
 
+//function TfrmProcVentaRapida.RequiereExoneracionNCRPersistida: Boolean;
+//begin
+//  Result :=
+//    EsModificandoFactura and
+//    FModificandoNCRPersistida and
+//    FNCRPersistidaConItbisExonerado;
+//end;
+
 function TfrmProcVentaRapida.BuscarRutaImagen(
   codProducto: Integer): String;
 begin
@@ -16973,79 +18568,160 @@ begin
   else result:=GlbRootImg;
 end;
 
-function TfrmProcVentaRapida.ValidarDobleRegPago:boolean;
+function TfrmProcVentaRapida.ValidarDobleRegPago: Boolean;
+var
+  LMensaje: String;
 begin
-  //LogProcedure('TfrmProcVentaRapida.ValidarDobleRegPago');
-  result:=true;
-  if rxpagos.State = dsBrowse then
-  begin
-    if rxpagos.RecordCount > 0 then
-    begin
-      if MessageDlg('La distribución de pago previa '+LF+CR+
-      'será eliminada, continuar?',mtinformation,[mbyes,mbno],0) = mryes then
-      begin
-        rxpagos.first;
-        dmPagosTarjeta.tblDetPagosRevisar.close;
-        dmPagosTarjeta.tblDetPagosRevisar.params[0].value:=ExtraerFecha(GlbFechaTrnDiaria);
-        dmPagosTarjeta.tblDetPagosRevisar.Open;
-        while not rxPagos.eof do
-        begin
-          if dmPagosTarjeta.tblDetPagosRevisar.locate('serie',rxPagosSerie.Value,[]) then
-          dmPagosTarjeta.tblDetPagosRevisar.delete;
-          rxPagos.Next;//voy por aqui jun 15 2020
-        end;
-        GlbSalvarQuery(dmPagosTarjeta.tblDetPagosRevisar);
-        result:=True;
-      end else
-      result:=false;
-    end;
-  end;
-end;
+  Result := True;
 
+  if not HayCobroTemporalActual then
+    Exit;
+
+  if MessageDlg(
+       'La distribución de pago previa será eliminada.' +
+       #13 +
+       '¿Desea continuar?',
+       mtInformation,
+       [mbYes, mbNo],
+       0
+     ) <> mrYes then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  if not CancelarCobroTemporalParaReabrir(
+    LMensaje
+  ) then
+  begin
+    MessageDlg(
+      LMensaje,
+      mtError,
+      [mbOk],
+      0
+    );
+
+    Result := False;
+    Exit;
+  end;
+
+  {
+    CancelarCobroTemporalParaReabrir ya limpió:
+      DETALLE_PAGOS
+      rxPagos
+      rxCobros
+      Totales pago
+      NCR aplicada
+      tarjeta
+      ARS
+      Edit1
+  }
+  Result := True;
+end;
 procedure TfrmProcVentaRapida.BitBtn25Click(Sender: TObject);
 var
-  mmonto : extended;
+  mmonto : Extended;
 begin
-  //LogProcedure('TfrmProcVentaRapida.BitBtn25Click');
-  EsPagoExacto:=False;
-  if rxVenta.RecordCount = 0 then Exit;
+  LogProcedure('TfrmProcVentaRapida.BitBtn25Click');
+
+  {
+    Si ya existe un cobro preparado, primero debe abrirse
+    explícitamente la venta con BitBtn14.
+  }
+  if FTotalesCongeladosParaCobro or
+     FTotalesCongeladosFiscalmente then
+  begin
+    MessageDlg(
+      'Si quieres redistribuir el pago, antes tienes que abrir la venta.',
+      mtError,
+      [mbOk],
+      0
+    );
+    Exit;
+  end;
+
+  EsPagoExacto := False;
+
+  if rxVenta.RecordCount = 0 then
+    Exit;
+
+  if (GlbAyaco = 1) and
+   (rxVentaglbcodVendedor.IsNull or
+    (rxVentaglbcodVendedor.Value <= 0)) then
+begin
+  MessageDlg(
+    'Debe asignar un vendedor antes de distribuir el pago.',
+    mtWarning,
+    [mbOk],
+    0
+  );
+
+  if isShowing and RxDBLookupCombo4.CanFocus then
+    RxDBLookupCombo4.SetFocus;
+
+  Exit;
+end;  
 
   if rxVenta.State in [dsEdit, dsInsert] then
-  rxVenta.Post;
-  
-  if not ValidaSubTotal then exit;
+    rxVenta.Post;
+
+  {
+    Mantener validación existente.
+  }
+  if not ValidaSubTotal then
+    Exit;
+
+  {
+    Caso ARS legacy.
+    No cambiamos este flujo ahora.
+  }
   if valPgoARS then
   begin
-    if not ValidarDobleRegPago then exit;
+    if not ValidarDobleRegPago then
+      Exit;
   end;
+
   {
-    Pago combinado necesita un total fiscal definitivo antes
-    de distribuir efectivo, tarjeta, cheque, ARS o bonos.
+    El total debe quedar fiscalmente confirmado
+    ANTES de abrir la distribución.
   }
+  if not PrepararCierreFiscal then
+    Exit;
 
-  if not FTotalesCongeladosParaCobro then
+  if FTotalNetoFiscalConfirmado <= 0 then
   begin
-    if not PrepararCierreFiscal then
-      Exit;
-
-    if FTotalNetoFiscalConfirmado <= 0 then
-    begin
-      MessageDlg(
-        'El total neto debe ser mayor que cero antes de distribuir pagos.',
-        mtError,
-        [mbOk],
-        0
-      );
-      Exit;
-    end;
-
-    FTotalNetoCobro := FTotalNetoFiscalConfirmado;
-    FTotalesCongeladosParaCobro := True;
-    FPagoConfirmado := False;
+    MessageDlg(
+      'El total neto debe ser mayor que cero antes de distribuir pagos.',
+      mtError,
+      [mbOk],
+      0
+    );
+    Exit;
   end;
 
-  if Abs(Totalestotalneto.Value - FTotalNetoCobro) > 0.01 then
+  if not ValidarCompradorE32AltoMonto then
+    Exit;
+
+  FTotalNetoCobro := FTotalNetoFiscalConfirmado;
+  FTotalesCongeladosParaCobro := True;
+  FPagoConfirmado := False;
+
+  {
+    Protección:
+    el total visible debe ser exactamente el total
+    que acabamos de congelar para cobro.
+  }
+  if Abs(
+       Totalestotalneto.Value -
+       FTotalNetoCobro
+     ) > 0.01 then
   begin
+    FTotalesCongeladosParaCobro := False;
+    FTotalesCongeladosFiscalmente := False;
+    FPagoConfirmado := False;
+    FTotalNetoCobro := 0;
+    FTotalNetoFiscalConfirmado := 0;
+
     MessageDlg(
       'El total cambió después de preparar el cobro.' + #13 +
       'Revise la venta antes de distribuir el pago.',
@@ -17058,105 +18734,256 @@ begin
 
   SetMontoNotaCredito;
 
+  {
+    Abrir únicamente los pagos correspondientes
+    a esta venta temporal.
+  }
   dmPagosTarjeta.tblDetallePagos.Close;
+
   dmPagosTarjeta.tblDetallePagos.Params[0].Value := 0;
   dmPagosTarjeta.tblDetallePagos.Params[1].Value := 1;
-  dmPagosTarjeta.tblDetallePagos.Params[2].Value := ExtraerFecha(rxVentaFecha.Value);
+
+  dmPagosTarjeta.tblDetallePagos.Params[2].Value :=
+    ExtraerFecha(rxVentaFecha.Value);
+
   if GlbNumVtaPOS > 0 then
-  dmPagosTarjeta.tblDetallePagos.Params[3].Value := GlbNumVtaPOS
+    dmPagosTarjeta.tblDetallePagos.Params[3].Value :=
+      GlbNumVtaPOS
   else
-  dmPagosTarjeta.tblDetallePagos.Params[3].Value := Null;
+    dmPagosTarjeta.tblDetallePagos.Params[3].Value :=
+      Null;
+
   dmPagosTarjeta.tblDetallePagos.Open;
 
-  if not FTotalesCongeladosParaCobro then
-  Exit;
-
-  //Usado para aceptar pagos combinados.
-  //Para ventas Area Trans = 1
-  //Para Cobro facturas Area Trans = 2
-  //Para Nota Crédito Area Trans = 3
+  {
+    Crear el formulario sólo si no existe.
+  }
   if not Assigned(frmPagosCombinados) then
-  frmPagosCombinados:=TfrmPagosCombinados.Create(Nil);
+    frmPagosCombinados :=
+      TfrmPagosCombinados.Create(nil);
+
   try
-    frmPagosCombinados._TienepagoTarjeta:=False;
+    frmPagosCombinados._TienepagoTarjeta := False;
+
     if frmPagosCombinados.rxCobros.State = dsInactive then
-    frmPagosCombinados.rxCobros.Open;
-    frmPagosCombinados.areaTrans:=1;//Ventas;
+      frmPagosCombinados.rxCobros.Open;
+
+    frmPagosCombinados.areaTrans := 1; // Ventas
+
+    {
+      Primera entrada a la distribución.
+    }
     if frmPagosCombinados.rxCobros.RecordCount = 0 then
     begin
       frmPagosCombinados.rxCobros.Insert;
-      frmPagosCombinados.rxCobrostotalNeto.Value:= Totalestotalneto.Value;
-      frmPagosCombinados.rxCobrosEfectivo.Value:=0;
-      frmPagosCombinados.rxCobrosTarjeta.Value :=0;
-      frmPagosCombinados.rxCobrosCheque.Value  :=0;
-      frmPagosCombinados.rxCobrosCoberturaARS.Value:=0;
-      frmPagosCombinados.rxCobrosBono.Value:=0;
-    end;
-    if frmPagosCombinados.rxPagos.state = dsInactive then
-    frmPagosCombinados.rxPagos.open;
 
-    //Procesar Pago y Cxc a ARS
-    //Inicio
-    dmPagosTarjeta.tblDetPagosRevisar.Close;
-    dmPagosTarjeta.tblDetPagosRevisar.Params[0].Value := ExtraerFecha(GlbFechaTrnDiaria);
-    dmPagosTarjeta.tblDetPagosRevisar.Open;
-    if GLBNUMVTAPOS > 0 then
-    begin
-      if dmPagosTarjeta.tblDetPagosRevisar.Locate('GLBNUMVTAPOS',GLBNUMVTAPOS,[]) then
-      begin
-        //todo
-      end;
-    end;
-  if rxCobertura.RecordCount > 0 then
-  begin
-    dmPagosTarjeta.tblDetallePagos.Append;
-    if (GlbUsaFctMexico = 1) and (not TotalesFechaIniciaPoliza.IsNull) then
-    dmPagosTarjeta.tblDetallePagosFECHA.Value:= ExtraerFecha(TotalesFechaIniciaPoliza.Value)
+      frmPagosCombinados.rxCobrostotalNeto.Value :=
+        FTotalNetoCobro;
+
+      frmPagosCombinados.rxCobrosEfectivo.Value := 0;
+      frmPagosCombinados.rxCobrosTarjeta.Value := 0;
+      frmPagosCombinados.rxCobrosCheque.Value := 0;
+      frmPagosCombinados.rxCobrosCoberturaARS.Value := 0;
+      frmPagosCombinados.rxCobrosBono.Value := 0;
+
+      frmPagosCombinados.rxCobros.Post;
+    end
     else
-    dmPagosTarjeta.tblDetallePagosFECHA.Value:= ExtraerFecha(GlbFechaTrnDiaria);
+    begin
+      {
+        Asegurarnos de que la ventana trabaja
+        contra el total actual.
+      }
+      if frmPagosCombinados.rxCobros.State = dsBrowse then
+        frmPagosCombinados.rxCobros.Edit;
 
-    dmPagosTarjeta.tblDetallePagosGlbNumVtaPOS.Value  := GlbNumVtaPOS;
-    dmPagosTarjeta.tblDetallePagosAREA_TRANS.Value := frmPagosCombinados.areaTrans;
-    dmPagosTarjeta.tblDetallePagosTIPO_PAGO.Value:=18; //Cobertura ARS
-    dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value:= rxCoberturaMontoCobertura.Value;
+      frmPagosCombinados.rxCobrostotalNeto.Value :=
+        FTotalNetoCobro;
 
-    dmPagosTarjeta.tblDetallePagosPAGO.Value:=0;
+      frmPagosCombinados.rxCobros.Post;
+    end;
 
-    if (dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value < 0) then
-    dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value:=0;
-    frmPagosCombinados.BitBtn19Click(Self);
-  end;
+    if frmPagosCombinados.rxPagos.State = dsInactive then
+      frmPagosCombinados.rxPagos.Open;
 
-  frmPagosCombinados.ShowModal;
-  _TienepagoTarjeta:= frmPagosCombinados._TienepagoTarjeta;
-  rxpagos.Close;
-  rxpagos.open;
-  frmPagosCombinados.rxPagos.First;
-  while not frmPagosCombinados.rxPagos.eof do
-  begin
-    rxpagos.Insert;
-    rxPagosSerie.Value:= frmPagosCombinados.rxPagosSerie.Value;
-    rxpagos.Post;
-    frmPagosCombinados.rxPagos.Next;
-  end;
-  mmonto := frmPagosCombinados.rxCobrosEfectivo.Value +
-  frmPagosCombinados.rxCobrosTarjeta.Value +
-  frmPagosCombinados.rxCobrosCheque.Value +
-  frmPagosCombinados.rxCobrosCoberturaARS.Value +
-  frmPagosCombinados.rxCobrosBono.Value;
-  Edit1.Text := Format('%8.2f',[mmonto]);
+    {
+      ARS.
+      Conservamos el comportamiento existente.
+    }
+    if rxCobertura.RecordCount > 0 then
+    begin
+      dmPagosTarjeta.tblDetallePagos.Append;
+
+      if (GlbUsaFctMexico = 1) and
+         (not TotalesFechaIniciaPoliza.IsNull) then
+        dmPagosTarjeta.tblDetallePagosFECHA.Value :=
+          ExtraerFecha(TotalesFechaIniciaPoliza.Value)
+      else
+        dmPagosTarjeta.tblDetallePagosFECHA.Value :=
+          ExtraerFecha(GlbFechaTrnDiaria);
+
+      dmPagosTarjeta.tblDetallePagosTIPO.Value := 1;
+
+      dmPagosTarjeta.tblDetallePagosGlbNumVtaPOS.Value :=
+        GlbNumVtaPOS;
+
+      dmPagosTarjeta.tblDetallePagosAREA_TRANS.Value :=
+        frmPagosCombinados.areaTrans;
+
+      dmPagosTarjeta.tblDetallePagosTIPO_PAGO.Value :=
+        18;
+
+      dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value :=
+        rxCoberturaMontoCobertura.Value;
+
+      dmPagosTarjeta.tblDetallePagosPAGO.Value := 0;
+
+      if dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value < 0 then
+        dmPagosTarjeta.tblDetallePagosMONTO_PAGADO.Value := 0;
+
+      frmPagosCombinados.BitBtn19Click(Self);
+    end;
+
+    {
+      Al entrar a Distribuir Pago dejamos creada
+      la línea con el saldo pendiente.
+
+      El usuario sólo debe seleccionar la forma de pago.
+    }
+    if frmPagosCombinados.rxCobrosDiferencia.Value < -0.01 then
+    begin
+      frmPagosCombinados.BitBtn1Click(Self);
+
+      frmPagosCombinados.ActiveControl :=
+        frmPagosCombinados.RxDBLookupCombo4;
+    end;
+
+    frmPagosCombinados.ShowModal;
+
+    {
+      El formulario ya valida si puede cerrarse.
+    }
+    //frmPagosCombinados.ShowModal;
+
+    {
+      Si salió sin registrar ningún pago,
+      no dejamos la venta bloqueada.
+    }
+    if frmPagosCombinados.rxPagos.RecordCount = 0 then
+    begin
+      FTotalesCongeladosParaCobro := False;
+      FTotalesCongeladosFiscalmente := False;
+      FPagoConfirmado := False;
+      FTotalNetoCobro := 0;
+      FTotalNetoFiscalConfirmado := 0;
+
+      _TienepagoTarjeta := False;
+      valPgoARS := False;
+
+      Edit1.Clear;
+
+      HabilitarEdicionVenta;
+
+      Exit;
+    end;
+
+    {
+      El formulario hijo ya sabe si realmente
+      existe pago en tarjeta.
+    }
+    _TienepagoTarjeta :=
+      frmPagosCombinados._TienepagoTarjeta;
+
+    {
+      rxPagos del formulario padre debe contener
+      exactamente las SERIES creadas por la distribución.
+    }
+    if rxPagos.State in [dsEdit, dsInsert] then
+      rxPagos.Cancel;
+
+    if rxPagos.Active then
+      rxPagos.Close;
+
+    rxPagos.Open;
+
+    frmPagosCombinados.rxPagos.First;
+
+    while not frmPagosCombinados.rxPagos.Eof do
+    begin
+      rxPagos.Insert;
+
+      rxPagosSerie.Value :=
+        frmPagosCombinados.rxPagosSerie.Value;
+
+      rxPagos.Post;
+
+      frmPagosCombinados.rxPagos.Next;
+    end;
+
+    {
+      NCR aplicada:
+      el formulario ya mantiene este valor.
+      No recalcular la venta por esto aquí.
+    }
+    if Totales.State = dsBrowse then
+      Totales.Edit;
+
+    TotalesMontoNCRAplicado.Value :=
+      frmPagosCombinados.MontoNCRAplicado;
+
+    if Totales.State in [dsEdit, dsInsert] then
+      Totales.Post;
+
+    {
+      ESTE ES EL MONTO QUE DEBE LLEGAR A Edit1.
+
+      No reconstruimos nada con otra consulta,
+      no tocamos POS_EXTRA_DET,
+      no recalculamos fiscalmente.
+    }
+    mmonto :=
+      frmPagosCombinados.rxCobrosEfectivo.Value +
+      frmPagosCombinados.rxCobrosTarjeta.Value +
+      frmPagosCombinados.rxCobrosCheque.Value +
+      frmPagosCombinados.rxCobrosCoberturaARS.Value +
+      frmPagosCombinados.rxCobrosBono.Value;
+
+    Edit1.Text :=
+      Format('%8.2f', [mmonto]);
+
+    {
+      ARS solamente si realmente existe cobertura.
+    }
+    valPgoARS :=
+      rxCobertura.RecordCount > 0;
+
   finally
-
+    {
+      El formulario se conserva porque así trabaja
+      actualmente el módulo.
+    }
   end;
-  if frmProcVentaRapida.showing then
-  Edit1.SetFocus;
-  //t BitBtn2Click(Self);
+
+  {
+    A partir de aquí vuelve al flujo normal de cobro.
+
+    Edit1Exit:
+      - asigna MontoRecibido
+      - calcula devolución
+      - ve que rxPagos ya tiene SERIES
+      - NO inserta otro efectivo
+      - FPagoConfirmado := True
+      - bloquea la venta
+  }
+  if isShowing and Edit1.CanFocus then
+    Edit1.SetFocus;
+
   Edit1Exit(Self);
-  if frmProcVentaRapida.showing then
-  if frmProcVentaRapida.BitBtn4.Enabled then
-  if isShowing then
-  frmProcVentaRapida.BitBtn4.SetFocus;
-  valPgoARS:=True;
+
+  if isShowing and
+     BitBtn4.Enabled and
+     BitBtn4.CanFocus then
+    BitBtn4.SetFocus;
 end;
 
 procedure TfrmProcVentaRapida.ProcInsertarDetPagos(numtrn : integer);
@@ -18198,31 +20025,74 @@ end;
 
 procedure TfrmProcVentaRapida.chKDescuentoGlobalClick(Sender: TObject);
 var
-  guardarRec : TBookMark;
+  LPorcAnterior: Currency;
 begin
   LogProcedure('TfrmProcVentaRapida.chKDescuentoGlobalClick');
-  esEditando:=True;
+
+  if LlenandoDatos then
+    Exit;
+
+  esEditando := True;
+
+  if TotalesPorcDesAdicional.IsNull then
+    LPorcAnterior := 0
+  else
+    LPorcAnterior := TotalesPorcDesAdicional.Value;
+
+  {
+    M1 - el checkbox de descuento global no debe reutilizar las rutas
+    de recargo (DBEdit10Exit / DBEdit17Exit).
+
+    Marcar el checkbox solamente habilita el descuento. El calculo se
+    solicita desde DBEdit11Exit cuando el porcentaje realmente cambia.
+
+    Desmarcarlo SI modifica el calculo: el porcentaje pasa a cero y debe
+    recalcular todas las lineas porque Firebird redistribuye el descuento.
+  }
   if not chKDescuentoGlobal.Checked then
   begin
-    Totales.Edit;
-    TotalesPorcDesAdicional.Value:=0;
+    if Totales.State = dsBrowse then
+      Totales.Edit;
+
+    TotalesPorcDesAdicional.Value := 0;
+
+    if Totales.State in [dsInsert, dsEdit] then
+      Totales.Post;
+
+    {
+      Al terminar una venta rxVenta ya esta vacio. Desmarcar el checkbox
+      es entonces una normalizacion de interfaz, no un cambio fiscal.
+      No debe marcar dirty ni solicitar calculo sin lineas.
+    }
+    if (not rxVenta.Active) or rxVenta.IsEmpty then
+    begin
+      ProvVerDatosDescGlb;
+      Refresh;
+      Exit;
+    end;
+
+    if Abs(LPorcAnterior) > 0.0001 then
+    begin
+      dmCalculos.MarcarCambioGlobal;
+
+      DatosModificados := True;
+      GlbCalculado := False;
+      procCalc := True;
+      GlbAlreadyCld := False;
+
+      SolicitarCalculoTotales(tcDescuento);
+    end;
   end;
-  procCalc := True;
-  GlbCalculado:=False;
-  if entraDessGlb and LlenandoDatos then exit;//probando velocidad;
 
   if TotalesPorcDesAdicional.IsNull then
   begin
     ProvVerDatosDescGlb;
-    exit;
+    Exit;
   end;
 
-  DBEdit10Exit(Self);
-  DBEdit17Exit(Self);
   ProvVerDatosDescGlb;
   Refresh;
 end;
-
 {
 procedure TfrmProcVentaRapida.DBEdit11Change(Sender: TObject);
 begin
@@ -18526,11 +20396,10 @@ begin
     
   LogProcedure('TfrmProcVentaRapida.rxVentaBeforeEdit');
 
-  if FTotalesCongeladosParaCobro and
-   (not EsModificandoFactura) and
-   (not EsModificandoCotiza) then
-begin
-  MessageDlg(
+  if VentaTieneCierreActivo and
+   (not EsModificandoFactura) then
+  begin
+    MessageDlg(
     'El cobro está preparado.' + #13 +
     'Use el botón de cambio de precio para abrir la venta.',
     mtWarning,
@@ -18647,7 +20516,7 @@ begin
     CheckBox1.Enabled := False;
   chkExento.Enabled := False;
   chkNoLeyPropina.Enabled := False;
-  chKDescuentoGlobal.Enabled := False;
+  chKDescuentoGlobal.Enabled := True;
   NoGenerarNCF1.Enabled := False;
 
   Edit1.ReadOnly := False;
@@ -18713,7 +20582,7 @@ begin
     
   if not chKDescuentoGlobal.Checked then
   chKDescuentoGlobal.Checked:= True; 
-end;
+end;                                          
 
 procedure TfrmProcVentaRapida.Label5Click(Sender: TObject);
 begin
@@ -19083,7 +20952,8 @@ begin
     dmInventario.tblInventarioProd.Close;//dmInventario.tblInventarioProd.selectSQL.TEXT
     dmInventario.tblInventarioProd.Filtered:=False;
     dmInventario.tblInventarioProd.SelectSQL.Text := dmInventario.qryInvProd_Base.Sql.Text;
-    dmInventario.tblInventarioProd.Params[0].Value:=glbCia_Key;  
+    dmInventario.tblInventarioProd.Params[0].Value:=glbCia_Key;
+    qryCliente.close;  
 end;
 
 procedure TfrmProcVentaRapida.CheckBox1Click(Sender: TObject);
@@ -19246,7 +21116,7 @@ begin
     exit;
   end;
     UImpresionVentas.ReImpDevolucion(numDev, flag);
-    Label36.Visible := False;
+    Label36.Visible := False;                                      
     Label36.Caption := '';
     rdgFactServicio.Checked:=False;
     Label36.Visible := False;
@@ -19547,7 +21417,7 @@ begin
   ibStpInsertVentaDet.Params[41].Value := GlbcodVendedor;
 
   ibStpInsertVentaDet.Params[42].Value := rxVentaLevelPrecio.Value;
-  
+  ibStpInsertVentaDet.Params[43].Value :=rxVentaTC_MONTORECARGO_GLB_DET.Value;
   tblProductoSerie.close;
   tblProductoSerie.Params[0].Value := rxVentaSerieProd.Value;
   tblProductoSerie.Open;
@@ -19575,7 +21445,13 @@ begin
     ibstpUpdateLote.Transaction.RollbackRetaining;
     end;
   end;
-  ibStpInsertVentaDet.ExecProc;
+  if rxVentaSerieOriginal.IsNull or
+     (rxVentaSerieOriginal.Value <= 0) then
+    raise Exception.Create(
+      'La l?a de la NCR no tiene SERIE_ORIGEN v?da.'
+    );
+
+  EjecutarInsertVentaDetNCR(rxVentaSerieOriginal.Value);
   //devoluciones
   if Not ibStpInsertVentaDet.Transaction.InTransaction then
   ibStpInsertVentaDet.Transaction.StartTransaction;
@@ -19798,6 +21674,18 @@ end;
 
 procedure TfrmProcVentaRapida.btnPagoExactoClick(Sender: TObject);
 begin
+  if (rxVentaglbcodVendedor.IsNull or (rxVentaglbcodVendedor.value = 0))
+  and (rxVenta.RecordCount > 0) and (GlbAyaco = 1) then
+  begin
+    if MessageDlg(
+        'Desea asignar vendedor?',
+        mtWarning,[mbYes,mbNo],0) = mrYes then
+    begin
+      RxDBLookupCombo4.SetFocus;
+      exit;
+    end;
+  end;
+  
   EsPagoExacto := False;
 
   {
@@ -19829,6 +21717,13 @@ begin
     Exit;
   end;
 
+      {
+      La distribución combinada también es una frontera de cobro.
+      No debe abrirse si un E32 >= RD$250,000 carece de comprador válido.
+    }
+    if not ValidarCompradorE32AltoMonto then
+      Exit;
+      
   FTotalNetoCobro := FTotalNetoFiscalConfirmado;
   FTotalesCongeladosParaCobro := True;
   FPagoConfirmado := False;
@@ -20100,63 +21995,101 @@ var
   xFlag : boolean;
 begin
   LogProcedure('TfrmProcVentaRapida.rxdblookupTipoUnidadChange');
-  if EnProcesoCalculo then
-     Exit;
 
-  if LlenandoDatos then
-     Exit;
+  if EnProcesoCalculo or LlenandoDatos then
+    Exit;
 
-  procCalc  := True;
-  esEditando:= True;
-  GlbCalculado:=False;
-  CalculoPendiente := True;
+  {
+    No se solicita calculo desde Change. El DBLookup puede disparar este
+    evento varias veces durante la seleccion. Exit confirma una sola vez.
+  }
+  esEditando := True;
 
-  frmLogError.LogMarca(GlbNumVtaPOS,rxVentaSerie.Value,now,now,'OnChangeUnit',1);
+  frmLogError.LogMarca(
+    GlbNumVtaPOS,
+    rxVentaSerie.Value,
+    Now,
+    Now,
+    'OnChangeUnit',
+    1
+  );
+
   if (rxdblookupTipoUnidad.Tag < 0) and
-  (rxVenta.State = dsInsert) then exit
+     (rxVenta.State = dsInsert) then
+    Exit
   else
-  rxdblookupTipoUnidad.Tag:=0;
-  GlbTipoUnidad := dmVentas.qryPrecioUnidadSurtIDUNIDAD.Value;
-  CantUnidad:= dmVentas.qryPrecioUnidadSurtCANTIDAD.Value;
+    rxdblookupTipoUnidad.Tag := 0;
 
-  if ((rxVentaCant.Value * CantUnidad) > qryProductosCANTIDAD.Value) And (GlbPermiteVentaInv0 = 0) then
+  GlbTipoUnidad := dmVentas.qryPrecioUnidadSurtIDUNIDAD.Value;
+  CantUnidad := dmVentas.qryPrecioUnidadSurtCANTIDAD.Value;
+
+  if ((rxVentaCant.Value * CantUnidad) > qryProductosCANTIDAD.Value) and
+     (GlbPermiteVentaInv0 = 0) then
   begin
-    if (not GlbFactRecurrente) then
+    if not GlbFactRecurrente then
     begin
-      MessageDlg('Cantidad venta es mayor que existencia inventario.', mtWarning, [mbOk], 0);
+      MessageDlg(
+        'Cantidad venta es mayor que existencia inventario.',
+        mtWarning,
+        [mbOk],
+        0
+      );
+
       if rxVenta.State in [dsEdit, dsInsert] then
-      rxVenta.Cancel;
+        rxVenta.Cancel;
     end;
+
     if isShowing then
-    SafeSetFocus(edtCodigo);
+      SafeSetFocus(edtCodigo);
+    Exit;
   end;
 
-  xFlag:=False;
+  xFlag := False;
 
-    if not qryProductoscodigo.Isnull And (Not PrecioCambio ) then
+  if not qryProductoscodigo.IsNull and
+     (not PrecioCambio) then
+  begin
+    if GlbUsaPUnidadLevel = 1 then
     begin
-      if GlbUsaPUnidadLevel = 1 then
+      SetPrecioPorCantidad;
+      xFlag := True;
+    end
+    else
+    if GLBPrecioMayUnidad = 1 then
+    begin
+      SetPrecioPorCantidadMay;
+      xFlag := True;
+    end
+    else
+    begin
+      if (GlbUsaEscalaPrecio = 0) and
+         (GlbTipoUnidad <> 1) and
+         (GlbUsaPUnidadStd = 1) then
       begin
-        SetPrecioPorCantidad;//case
-      end else
-      if (GLBPrecioMayUnidad = 1) then
+        if rxVenta.State = dsBrowse then
+          rxVenta.Edit;
+
+        rxVentaPrecio.Value :=
+          precioXUnidad(GlbTipoUnidad, qryProductoscodigo.Value);
+        xFlag := True;
+      end;
+
+      if (rxVentaPrecio.Value = 0) and
+         (not PrecioCambio) and
+         (GlbUsaescalaPrecio = 1) and
+         (not GlbUsandoCotiza or
+          ((not rxVentaStatus.IsNull) and
+           (rxVentaStatus.Value = 'I'))) then
       begin
-        SetPrecioPorCantidadMay;
-      end else
-      begin
-        if (GlbUsaEscalaPrecio = 0) and (GlbTipoUnidad <> 1) then
-        if (GlbUsaPUnidadStd = 1) then
-        rxVentaPrecio.Value  := precioXUnidad(GlbTipoUnidad, qryProductoscodigo.value); //qryProductosPRECIO_TIPO_UNIDAD.Value;
-        if (rxVentaprecio.Value = 0) And (Not PrecioCambio )then
-        begin
-          if (GlbUsaescalaPrecio = 1) And (Not GlbUsandoCotiza Or ( rxVentaStatus.Value = 'I') ) then
-          begin
-            SetPrecioPorCantidad;//case
-          end;
-        end;
+        SetPrecioPorCantidad;
+        xFlag := True;
       end;
     end;
-  
+  end;
+
+  { evita warning de variable no usada en Delphi 7 y documenta el alcance }
+  if xFlag then
+    esEditando := True;
 end;
 
 procedure TfrmProcVentaRapida.rxdblookupTipoUnidadEnter(Sender: TObject);
@@ -20289,10 +22222,6 @@ begin
 
   AsegurarRegistroTotales;
 
-  if TotalesMoneda.IsNull or
-   (Trim(TotalesMoneda.Value) = '') then
-  raise Exception.Create('La venta no tiene moneda asignada.');
-
   if glbMutur = 1 then
   begin
     if TotalesidNumeroDVeh.IsNull or (TotalesidNumeroDVeh.Value = 0) then
@@ -20416,20 +22345,26 @@ begin
     end;
   end;
 end;
-procedure TfrmProcVentaRapida.rxVentaBeforeDelete(DataSet: TDataSet);
+procedure TfrmProcVentaRapida.rxVentaBeforeDelete(
+  DataSet: TDataSet
+);
 begin
-  if FTotalesCongeladosFiscalmente  and
+  if VentaTieneCierreActivo and
      (not EsModificandoFactura) then
   begin
     MessageDlg(
-      'El pago ya fue preparado. Debe cancelar el cobro antes de eliminar líneas.',
+      'El cobro está preparado. Debe abrir la venta ' +
+      'antes de eliminar líneas.',
       mtWarning,
       [mbOk],
       0
     );
     Abort;
   end;
-  dmcalculos.ProcDelRecPosExtraDet(rxVentaSerie.Value);
+
+  dmCalculos.ProcDelRecPosExtraDet(
+    rxVentaSerie.Value
+  );
 end;
 
 procedure TfrmProcVentaRapida.TotalesBeforePost(DataSet: TDataSet);
@@ -21523,8 +23458,11 @@ begin
   Edit1.Text  := '';
   edtReferencia.Text:='';
   PrecioCambio:= False;
-  if reciboImpreso then
-  Totales.EmptyTable;
+  {
+    No vaciar Totales por reciboImpreso.
+    La venta anterior debe permanecer visible hasta confirmar que
+    realmente se inicia otra venta.
+  }
   rxPagos.EmptyTable;
   reciboImpreso := False;
 
@@ -21655,7 +23593,7 @@ begin
       qryProdPorProveedor.Params[1].Value:= glbCia_Key;
       qryProdPorProveedor.Open;
       if (dmInventario.qryTipoUnidad.State = dsInactive) then
-      AbrirUnidades;
+      AbrirUnidades;         
       //t LlenarTipoUnidadBox(qryProductosTipo_Unidad.Value);
       dmInventario.qryTipoUnidad.Locate('IDUNIDAD',qryProductosTipo_Unidad.value,[]);
       cboxTipoUnidad.Text:=dmInventario.qryTipoUnidadDescripcion.value;
@@ -21702,6 +23640,22 @@ begin
 
   if Prod_existe then
   begin                
+    {
+      M1 - Frontera real entre la venta terminada y la siguiente.
+
+      Mientras TotalesVentaGuardada=1 y no exista detalle nuevo,
+      Totales conserva en pantalla la fotografia de la venta impresa.
+
+      Solo al confirmar un producto valido para la siguiente venta
+      se crea una fotografia nueva de Totales.
+    }
+    if (rxVenta.RecordCount = 0) and
+       (not TotalesVentaGuardada.IsNull) and
+       (TotalesVentaGuardada.Value = 1) then
+    begin
+      InicializarTotalesNuevaVenta;
+    end;
+
     if (rxVentaCant.IsNull) and (qryProductosCANTIDAD.Value <= 0) And (GlbPermiteVentaInv0 = 0) then
     begin
       if (not GlbFactRecurrente) then
@@ -21779,8 +23733,15 @@ begin
          (not rxVentaPrecio.IsNull) and
          (rxVentaPrecio.Value > 0) then
       begin
-        LogEventoVenta('edtCodigoExit', 'Post linea anterior antes de insertar nuevo item');
-        rxVenta.Post;
+        LogEventoVenta(
+          'edtCodigoExit',
+          'Confirma linea anterior antes de insertar nuevo item'
+        );
+
+        PostLineaYSolicitarCalculo(
+          tcCantidad,
+          'edtCodigoExit-LineaAnterior'
+        );
       end
       else
       begin
@@ -22169,16 +24130,42 @@ end;
   if (GlbUsaPUnidadLevel = 0) and (esEditando) then
   DBEdit1.SetFocus;
   edtCodigo.Color  :=clSilver;
-  if (rxVentaMontoNeto.value = 0) and (rxVentaPrecio.value > 0) then
+  {
+    M1: una linea nueva debe salir de edtCodigoExit ya calculada por
+    POS_EXTRA_DET. Si el modo barcode ya paso por DBEdit1Exit, la linea
+    estara en Browse y no se ejecuta una segunda vez.
+  }
+  if (rxVenta.State in [dsEdit, dsInsert]) and
+     (not rxVentaCodArticulo.IsNull) and
+     (rxVentaCodArticulo.Value > 0) and
+     (not rxVentaCant.IsNull) and
+     (Abs(rxVentaCant.Value) > 0.000001) and
+     (not rxVentaPrecio.IsNull) and
+     (rxVentaPrecio.Value >= 0) then
   begin
-    EnProcesoCalculo:=False;
-    dmCalculos.ProcesaCalculos;
-    esEditando:=False;
+    PostLineaYSolicitarCalculo(
+      tcCantidad,
+      'edtCodigoExit-NuevoProducto'
+    );
+    esEditando := False;
+    {
+      Entrada manual: el nuevo item queda en Cantidad.
+    }
+    if (not imbBarcode.Visible) and
+       isShowing and
+       DBEdit1.Enabled and
+       DBEdit1.Visible and
+       DBEdit1.CanFocus then
+    begin
+      PostMessage(
+        Handle,
+        WM_NEXTDLGCTL,
+        WPARAM(DBEdit1.Handle),
+        LPARAM(1)
+      );
+    end;
   end;
 
-  if (Abs(rxVentaCant.Value) > 0) and (Abs(rxVentaPrecio.Value) > 0) and (totalestotalneto.Value = 0) then
-  CalcularTotalesInterno;
-  
   RestaurarLineaActiva;
 end;
 
@@ -22979,24 +24966,29 @@ begin
   Label60.Caption:='';
 end;
 
-{Antes
 function TfrmProcVentaRapida.ValidaSubTotal: Boolean;
 const
   TOLERANCIA = 0.01;
 var
-  ValorPrepago: Currency;
   ValorPosExtra: Currency;
   TotalParaValidar: Currency;
-  DiferenciaPantalla: Currency;
   MontoAjusteEspecial: Currency;
   TipoNCF: string;
   EsNCFEspecialConItbisIncluido: Boolean;
+
+  //TipoNCFOrigen: string;
+  //EsNCROrigenNCFEspecial: Boolean;
+
   HayLineaConItbis: Boolean;
-  HayLineaSinNeto: Boolean;
   LineaInvalida: Boolean;
   MensajeLinea: string;
   ClienteTexto: string;
   LBookmark: TBookmark;
+  ValorSumNeto: Currency;
+  ValorSumSubTotal: Currency;
+  ValorSumItbis: Currency;
+  ValorSumDescGlobal: Currency;
+  Diferencia: Currency;
 
   function ValorCampo(AField: TField): Currency;
   begin
@@ -23007,358 +24999,30 @@ var
       Result := AField.AsCurrency;
   end;
 
-  function EsNCFEspecial(const ATipoNCF: string): Boolean;
-  var
-    LTipoNCF: string;
-  begin
-    LTipoNCF := UpperCase(Trim(ATipoNCF));
-
-    Result :=
-      (LTipoNCF = '44') or
-      (LTipoNCF = 'E44') or
-      (LTipoNCF = '14') or
-      (LTipoNCF = 'B14');
-  end;
-
   procedure MostrarError(const AMensaje: string);
   begin
     MessageDlg(AMensaje, mtError, [mbOk], 0);
   end;
 
-begin
-  Result := False;
-
-  if EnProcesoCalculo then
-  begin
-    MostrarError(
-      'Existen calculos pendientes. Espere que finalice el proceso antes de continuar.'
-    );
-    Exit;
-  end;
-
-  if (not rxVenta.Active) or
-     rxVenta.IsEmpty then
-  begin
-    MostrarError('No existen lineas de venta para validar.');
-    Exit;
-  end;
-
-  if GlbNumVtaPOS <= 0 then
-  begin
-    MostrarError(
-      'La venta no tiene numero temporal POS asignado. No se puede validar.'
-    );
-    Exit;
-  end;
-
-  if rxVenta.State in [dsEdit, dsInsert] then
-  begin
-    MostrarError(
-      'Existe una linea pendiente de guardar. Termine la edicion antes de cobrar.'
-    );
-    Exit;
-  end;
-
-  if (not Totales.Active) or
-     Totales.IsEmpty then
-  begin
-    MostrarError(
-      'No existe cabecera de totales para validar la venta.'
-    );
-    Exit;
-  end;
-
-
-  HayLineaConItbis := False;
-  HayLineaSinNeto := False;
-  LineaInvalida := False;
-  MensajeLinea := '';
-  LBookmark := nil;
-
-  rxVenta.DisableControls;
-  try
-    LBookmark := rxVenta.GetBookmark;
-
-    rxVenta.First;
-
-    while not rxVenta.Eof do
-    begin
-
-      if UpperCase(Trim(rxVentaStatus.AsString)) <> 'C' then
-      begin
-        if rxVentaCodArticulo.IsNull or
-           (rxVentaCodArticulo.Value <= 0) then
-        begin
-          LineaInvalida := True;
-          MensajeLinea := 'Existe una linea sin producto asignado.';
-          Break;
-        end;
-
-        if rxVentaTipoUnidad.IsNull or
-           (rxVentaTipoUnidad.Value <= 0) then
-        begin
-          LineaInvalida := True;
-          MensajeLinea :=
-            'El producto ' + rxVentaCodArticulo.AsString +
-            ' no tiene tipo de unidad asignado.';
-          Break;
-        end;
-
-        if rxVentaMoneda.IsNull or
-           (Trim(rxVentaMoneda.AsString) = '') then
-        begin
-          LineaInvalida := True;
-          MensajeLinea :=
-            'El producto ' + rxVentaCodArticulo.AsString +
-            ' no tiene moneda asignada.';
-          Break;
-        end;
-
-        if rxVentaCant.IsNull or
-           (Abs(rxVentaCant.Value) <= 0.000001) then
-        begin
-          LineaInvalida := True;
-          MensajeLinea :=
-            'El producto ' + rxVentaCodArticulo.AsString +
-            ' no tiene cantidad valida.';
-          Break;
-        end;
-
-        if rxVentaPrecio.IsNull or
-           (rxVentaPrecio.Value < 0) then
-        begin
-          LineaInvalida := True;
-          MensajeLinea :=
-            'El producto ' + rxVentaCodArticulo.AsString +
-            ' no tiene precio valido.';
-          Break;
-        end;
-
-        if (Abs(rxVentaCant.Value) > 0.000001) and
-           (Abs(rxVentaPrecio.Value) > 0.005) and
-           (rxVentaMontoNeto.IsNull or
-            (Abs(rxVentaMontoNeto.Value) <= 0.005)) then
-        begin
-          HayLineaSinNeto := True;
-        end;
-
-        if (not rxVentaitbi.IsNull) and
-           (Abs(rxVentaitbi.Value) > 0.005) then
-        begin
-          HayLineaConItbis := True;
-        end;
-      end;
-
-      if (not rxVentaCant.IsNull) and
-         (not rxVentaPrecio.IsNull) and
-         (rxVentaCant.Value > 0) and
-         (rxVentaPrecio.Value > 0) then
-      begin
-        if rxVentaMontoNeto.IsNull or
-          (Abs(rxVentaMontoNeto.Value) <= 0.005) then
-        begin
-          LineaInvalida := True;
-          MensajeLinea :=
-          'El producto ' + rxVentaCodArticulo.AsString +
-          ' tiene cantidad y precio, pero monto neto nulo o en cero.';
-          Break;
-       end;
-      end; 
-      rxVenta.Next;
-    end;
-  finally
-    if LBookmark <> nil then
-    begin
-      if rxVenta.BookmarkValid(LBookmark) then
-        rxVenta.GotoBookmark(LBookmark);
-
-      rxVenta.FreeBookmark(LBookmark);
-    end;
-
-    rxVenta.EnableControls;
-  end;
-
-  if LineaInvalida then
-  begin
-    MostrarError(MensajeLinea);
-    Exit;
-  end;
-
-  if HayLineaSinNeto then
-  begin
-    MostrarError(
-      'Existen lineas con cantidad y precio, pero sin monto neto calculado.'
-    );
-    Exit;
-  end;
-
-
-  if HayLineaConItbis and
-     (Abs(ValorCampo(Totalesitbis)) <= 0.005) then
-  begin
-    MostrarError(
-      'El detalle contiene ITBIS, pero el total de ITBIS es cero.'
-    );
-    Exit;
-  end;
-
-
-  qryValidaPosExtra.Close;
-  qryValidaPosExtra.Params[0].Value := GlbNumVtaPOS;
-  qryValidaPosExtra.Open;
-
-  if qryValidaPosExtra.IsEmpty or
-     qryValidaPosExtraVALOR.IsNull then
-  begin
-    MostrarError(
-      'No fue posible obtener la sumatoria de POS_EXTRA_DET.'
-    );
-    Exit;
-  end;
-
-  ValorPrepago := 0;
-
-  if rxPrepagoAplicado.Active and
-     (not rxPrepagoAplicado.IsEmpty) then
-  begin
-    rxPrepagoAplicado.First;
-
-    if not rxPrepagoAplicadoMonto.IsNull then
-      ValorPrepago := rxPrepagoAplicadoMonto.Value;
-  end;
-
-  TipoNCF := '';
-
-  if not TotalesTipoNCF.IsNull then
-    TipoNCF := TotalesTipoNCF.AsString;
-
-  EsNCFEspecialConItbisIncluido :=
-    CheckBox1.Checked and
-    EsNCFEspecial(TipoNCF) and
-    (GlbIgI = 1);
-
-  MontoAjusteEspecial := 0;
-
-  if EsNCFEspecialConItbisIncluido then
-    MontoAjusteEspecial :=
-      Abs(ValorCampo(TotalesMontoExoneraITBIS));
-
-  TotalParaValidar :=
-    Abs(ValorCampo(Totalestotalneto)) +
-    Abs(ValorPrepago) +
-    Abs(ValorCampo(TotalesMontoDescItems)) +
-    Abs(ValorCampo(TotalesMontoDescAdicional)) +
-    MontoAjusteEspecial;
-
-  DiferenciaPantalla :=
-    Abs(
-      TotalParaValidar -
-      Abs(ValorCampo(TotalesSubTotalScreen))
-    );
-
-  if DiferenciaPantalla > TOLERANCIA then
+  procedure RegistrarErrorTotales(
+    const ADescripcion: string;
+    const AValorPantalla, AValorFirebird: Currency
+  );
   begin
     ClienteTexto :=
       TotalesCodCliente.AsString + ' - ' +
       TotalesNombreCliente.AsString;
 
     NotificaErrorByEmail(
-      'VALIDACION POS FALLIDA' + LF + CR +
+      'VALIDACION TOTALES FALLIDA' + LF + CR +
+      'Validacion: ' + ADescripcion + LF + CR +
       'Usuario: ' + GlbUsuarioLogueado + LF + CR +
       'Cliente: ' + ClienteTexto + LF + CR +
       'Tipo NCF: ' + TipoNCF + LF + CR +
-      'Neto mostrado: ' + CurrToStr(ValorCampo(Totalestotalneto)) + LF + CR +
-      'Prepago: ' + CurrToStr(ValorPrepago) + LF + CR +
-      'Desc. items: ' + CurrToStr(ValorCampo(TotalesMontoDescItems)) + LF + CR +
-      'Desc. adicional: ' + CurrToStr(ValorCampo(TotalesMontoDescAdicional)) + LF + CR +
-      'ITBIS exonerado: ' + CurrToStr(MontoAjusteEspecial) + LF + CR +
-      'Subtotal pantalla: ' +
-      CurrToStr(ValorCampo(TotalesSubTotalScreen)) + LF + CR +
-      'Diferencia: ' + CurrToStr(DiferenciaPantalla)
+      'Valor pantalla: ' + CurrToStr(AValorPantalla) + LF + CR +
+      'Valor POS_EXTRA_SUM: ' + CurrToStr(AValorFirebird) + LF + CR +
+      'Diferencia: ' + CurrToStr(Abs(AValorPantalla - AValorFirebird))
     );
-
-    MostrarError('Favor validar total neto.');
-    Exit;
-  end;
-
-
-  ValorPosExtra := Abs(qryValidaPosExtraVALOR.Value);
-
-  if Abs(
-       ValorPosExtra -
-       Abs(ValorCampo(TotalesSubTotalScreen))
-     ) > TOLERANCIA then
-  begin
-    ClienteTexto :=
-      TotalesCodCliente.AsString + ' - ' +
-      TotalesNombreCliente.AsString;
-
-    NotificaErrorByEmail(
-      'VALIDACION POS_EXTRA FALLIDA' + LF + CR +
-      'Usuario: ' + GlbUsuarioLogueado + LF + CR +
-      'Cliente: ' + ClienteTexto + LF + CR +
-      'Tipo NCF: ' + TipoNCF + LF + CR +
-      'Monto pantalla: ' +
-      CurrToStr(ValorCampo(TotalesSubTotalScreen)) + LF + CR +
-      'Monto POS_EXTRA_DET: ' +
-      CurrToStr(ValorPosExtra) + LF + CR +
-      'Diferencia: ' +
-      CurrToStr(
-        Abs(
-          ValorPosExtra -
-          Abs(ValorCampo(TotalesSubTotalScreen))
-        )
-      )
-    );
-
-    MostrarError('Favor validar total neto.');
-    Exit;
-  end;
-
-  Result := True;
-end;}
-
-function TfrmProcVentaRapida.ValidaSubTotal: Boolean;
-const
-  TOLERANCIA = 0.01;
-var
-  ValorPosExtra: Currency;
-  TotalParaValidar: Currency;
-  DiferenciaPantalla: Currency;
-  MontoAjusteEspecial: Currency;
-  TipoNCF: string;
-  EsNCFEspecialConItbisIncluido: Boolean;
-  HayLineaConItbis: Boolean;
-  LineaInvalida: Boolean;
-  MensajeLinea: string;
-  ClienteTexto: string;
-  LBookmark: TBookmark;
-
-  function ValorCampo(AField: TField): Currency;
-  begin
-    Result := 0;
-
-    if Assigned(AField) and
-       (not AField.IsNull) then
-      Result := AField.AsCurrency;
-  end;
-
-  function EsNCFEspecial(const ATipoNCF: string): Boolean;
-  var
-    LTipoNCF: string;
-  begin
-    LTipoNCF := UpperCase(Trim(ATipoNCF));
-
-    Result :=
-      (LTipoNCF = '44') or
-      (LTipoNCF = 'E44') or
-      (LTipoNCF = '14') or
-      (LTipoNCF = 'B14');
-  end;
-
-  procedure MostrarError(const AMensaje: string);
-  begin
-    MessageDlg(AMensaje, mtError, [mbOk], 0);
   end;
 
 begin
@@ -23564,71 +25228,137 @@ begin
     TipoNCF := TotalesTipoNCF.AsString;
 
   {
-    Para E44/B14 con ITBIS incluido, Totalestotalneto representa
-    el monto fiscal sin el ITBIS exonerado.
+    Una sola autoridad determina si la operacion
+    requiere tratamiento de ITBIS exonerado:
 
-    TotalesSubTotalScreen conserva el total comercial visible,
-    por eso se reincorpora exclusivamente dicho ITBIS.
+      - E44/B14 directo
+      - NCR nueva contra E44/B14
+      - NCR E34->E44 persistida y recuperada
   }
   EsNCFEspecialConItbisIncluido :=
-    CheckBox1.Checked and
-    EsNCFEspecial(TipoNCF) and
-    (GlbIgI = 1);
+    AplicaExoneracionITBISOperacion;
 
   MontoAjusteEspecial := 0;
 
   if EsNCFEspecialConItbisIncluido then
+  begin
+    {
+      Conservar el signo.
+
+      E44:
+        +ITBIS exonerado
+
+      NCR contra E44:
+        -ITBIS exonerado
+    }
     MontoAjusteEspecial :=
-      Abs(ValorCampo(TotalesMontoExoneraITBIS));
+      ValorCampo(TotalesMontoExoneraITBIS);
+  end;
 
   {
-    Totalestotalneto ya contiene el resultado final del cálculo:
+    POS_EXTRA_SUM.TC_TOTALNETO conserva el total comercial
+    producido por Firebird.
 
-      - descuentos por ítem;
-      - descuento global;
-      - recargos;
-      - propinas;
-      - ITBIS aplicable.
-
-    Por tanto, descuento de ítems, descuento adicional y prepago
-    no deben sumarse nuevamente aquí.
+    TotalNeto mostrado ya tiene retirado el ITBIS exonerado,
+    por lo que se reincorpora el mismo importe conservando
+    su signo exclusivamente para validar contra TC_TOTALNETO.
   }
   TotalParaValidar :=
-    Abs(ValorCampo(TotalesTotalNeto)) +
+    ValorCampo(TotalesTotalNeto) +
     MontoAjusteEspecial;
 
-  DiferenciaPantalla :=
-    Abs(
-      TotalParaValidar -
-      Abs(ValorCampo(TotalesSubTotalScreen))
-    );
+  dmCalculos.qryPosExtraSum.Close;
+  if dmCalculos.qryPosExtraSum.Params.Count > 0 then
+    dmCalculos.qryPosExtraSum.Params[0].Value := GlbNumVtaPOS;
+  dmCalculos.qryPosExtraSum.Open;
 
-  if DiferenciaPantalla > TOLERANCIA then
+  if dmCalculos.qryPosExtraSum.IsEmpty then
   begin
-    ClienteTexto :=
-      TotalesCodCliente.AsString + ' - ' +
-      TotalesNombreCliente.AsString;
-
-    NotificaErrorByEmail(
-      'VALIDACION POS FALLIDA' + LF + CR +
-      'Usuario: ' + GlbUsuarioLogueado + LF + CR +
-      'Cliente: ' + ClienteTexto + LF + CR +
-      'Tipo NCF: ' + TipoNCF + LF + CR +
-      'Total neto: ' +
-      CurrToStr(ValorCampo(TotalesTotalNeto)) + LF + CR +
-      'Desc. items ya incluido en neto: ' +
-      CurrToStr(ValorCampo(TotalesMontoDescItems)) + LF + CR +
-      'Desc. adicional ya incluido en neto: ' +
-      CurrToStr(ValorCampo(TotalesMontoDescAdicional)) + LF + CR +
-      'ITBIS exonerado E44/B14: ' +
-      CurrToStr(MontoAjusteEspecial) + LF + CR +
-      'Subtotal pantalla: ' +
-      CurrToStr(ValorCampo(TotalesSubTotalScreen)) + LF + CR +
-      'Diferencia: ' +
-      CurrToStr(DiferenciaPantalla)
+    MostrarError(
+      'No fue posible obtener los totales calculados de la venta.'
     );
+    Exit;
+  end;
 
+  dmCalculos.qryPosExtraSum.First;
+
+  ValorSumNeto :=
+    (ValorCampo(dmCalculos.qryPosExtraSumTC_TOTALNETO));
+
+  ValorSumSubTotal :=
+    Abs(ValorCampo(dmCalculos.qryPosExtraSumTC_SUBTOTAL));
+
+  ValorSumItbis :=
+    Abs(ValorCampo(dmCalculos.qryPosExtraSumTOTAL_ITBIS));
+
+  {
+    Misma compatibilidad usada por Pos_UpdateTotales:
+    si TOTAL_ITBIS llega en cero, TC_ITBIS conserva el total calculado.
+  }
+  if ValorSumItbis <= 0.0001 then
+    ValorSumItbis :=
+      Abs(ValorCampo(dmCalculos.qryPosExtraSumTC_ITBIS));
+
+  ValorSumDescGlobal :=
+    Abs(ValorCampo(dmCalculos.qryPosExtraSumTC_MONTODESCADICIONAL));
+
+  Diferencia := Abs(TotalParaValidar - ValorSumNeto);
+  if Diferencia > TOLERANCIA then
+  begin
+    RegistrarErrorTotales(
+      'TOTAL NETO',
+      TotalParaValidar,
+      ValorSumNeto
+    );
     MostrarError('Favor validar total neto.');
+    Exit;
+  end;
+
+  Diferencia :=
+    Abs(
+      Abs(ValorCampo(TotalesSubTotalScreen)) -
+      ValorSumSubTotal
+    );
+  if Diferencia > TOLERANCIA then
+  begin
+    RegistrarErrorTotales(
+      'SUBTOTAL',
+      Abs(ValorCampo(TotalesSubTotalScreen)),
+      ValorSumSubTotal
+    );
+    MostrarError('Favor validar subtotal.');
+    Exit;
+  end;
+
+  Diferencia :=
+    Abs(
+      Abs(ValorCampo(TotalesItbis)) -
+      ValorSumItbis
+    );
+  if Diferencia > TOLERANCIA then
+  begin
+    RegistrarErrorTotales(
+      'ITBIS',
+      Abs(ValorCampo(TotalesItbis)),
+      ValorSumItbis
+    );
+    MostrarError('Favor validar ITBIS.');
+    Exit;
+  end;
+
+  Diferencia :=
+    Abs(
+      Abs(ValorCampo(TotalesMontoDescAdicional)) -
+      ValorSumDescGlobal
+    );
+  if Diferencia > TOLERANCIA then
+  begin
+    RegistrarErrorTotales(
+      'DESCUENTO GLOBAL',
+      Abs(ValorCampo(TotalesMontoDescAdicional)),
+      ValorSumDescGlobal
+    );
+    MostrarError('Favor validar descuento global.');
     Exit;
   end;
 
@@ -24481,7 +26211,8 @@ begin
   
   if (totales.RecordCount > 0) then
   begin
-    totales.Close;
+    InicializarTotalesNuevaVenta;
+    {totales.Close;
     totales.Open;
     Edit1.Text:='';
     Totales.Close;
@@ -24489,7 +26220,7 @@ begin
     Totales.Insert;
     TotalesTipoDeIngreso.Value:='01';
     if (GlbFactRecurrente) then
-    TotalesPreAbono.Value:=_MontoPrepago;    
+    TotalesPreAbono.Value:=_MontoPrepago;
     TotalesSubTotal.Value:=0;
     Totalesitbis.Value   :=0;
     Totalesmontodesc.Value:=0;
@@ -24501,7 +26232,7 @@ begin
     else
     TotalesMoneda.Value   := '1';
     Totales.Post;
-    lblProcDev.Visible := False;
+    lblProcDev.Visible := False;}
   end;
   frmConsultaPreVenta:=TfrmConsultaPreVenta.Create(Nil);
   try
@@ -25116,9 +26847,8 @@ begin
     El control también debe quedar deshabilitado al preparar cobro,
     pero este bloque evita cambios por llamada programática.
   }
-  if FTotalesCongeladosParaCobro and
-     (not EsModificandoFactura) and
-     (not EsModificandoCotiza) then
+  if VentaTieneCierreActivo and
+   (not EsModificandoFactura) then
   begin
     MessageDlg(
       'El cobro ya fue preparado.' + #13 +
@@ -25909,85 +27639,233 @@ begin
   TestForm.free;
   TestForm:=Nil;
   end;
-end;
+end;          
 
-procedure TfrmProcVentaRapida.DgiiSolicitareCF(numerotrn: integer);
+procedure TfrmProcVentaRapida.DgiiSolicitareCF(
+  numerotrn: Integer;
+  ARaiseOnError: Boolean
+);
 var
   _smg: string;
   RunRes: TFacturaTxtEcfResult;
   OutputDir: string;
+  LQry: TIBQuery;
+  LNumeroNCF: string;
+
+  procedure FallarOInformar(const AMensaje: string);
+  begin
+    LogInformacionTxt(
+      'DGII ERROR. Trn=' + IntToStr(numerotrn) +
+      ' Motivo=' + AMensaje
+    );
+
+    if ARaiseOnError then
+      raise Exception.Create(AMensaje)
+    else
+      MessageDlg(
+        AMensaje,
+        mtError,
+        [mbOk],
+        0
+      );
+  end;
+
 begin
   _smg := '';
+  LNumeroNCF := '';
+
+  LogInformacionTxt(
+    'DGII INICIO. Trn=' + IntToStr(numerotrn)
+  );
+
+  if numerotrn <= 0 then
+  begin
+    FallarOInformar(
+      'Numero de transaccion invalido para envio e-CF.'
+    );
+    Exit;
+  end;
 
   if not ValidarVentaPersistida(numerotrn, _smg) then
   begin
     LogInformacionTxt(
-    'ECF BLOQUEADO. Trn=' + IntToStr(numerotrn) +
-    ' Motivo=' + _smg);
+      'ECF BLOQUEADO. Trn=' + IntToStr(numerotrn) +
+      ' Motivo=' + _smg
+    );
 
     NotificaErrorByEmail(
-    'ECF BLOQUEADO. Trn=' + IntToStr(numerotrn) +
-    LF + CR + _smg);
+      'ECF BLOQUEADO. Trn=' + IntToStr(numerotrn) +
+      LF + CR + _smg
+    );
 
-    MessageDlg(
-    'La venta no cuadra con el detalle persistido.' + #13 +
-    'No se enviara a DGII.' + #13 +
-    'Transaccion: ' + IntToStr(numerotrn) + #13 +
-    'Motivo: ' + _smg,mtError,[mbOk],0);
+    FallarOInformar(
+      'La venta no cuadra con el detalle persistido.' + #13 +
+      'No se enviara a DGII.' + #13 +
+      'Transaccion: ' + IntToStr(numerotrn) + #13 +
+      'Motivo: ' + _smg
+    );
     Exit;
   end;
 
-  if (GlbValidarECF = 0) or (not CheckBox1.Checked) then
-    Exit;
+  {
+    La fuente de verdad es la transaccion recibida en numerotrn.
+    Durante una NCR, dmFactura.qryVentaFactura sigue apuntando a la
+    venta ORIGINAL y no debe utilizarse para decidir si la NCR tiene e-NCF.
+  }
+  LQry := TIBQuery.Create(nil);
+  try
+    LQry.Database := dmConectar.IBDatabase1;
+    LQry.Transaction := dmConectar.IBTransaction1;
 
-  if not GlbSecECFGenerada then exit;
+    LQry.SQL.Text :=
+      'SELECT N.NUMERO_NCF ' +
+      'FROM VENTAS_MAST V ' +
+      'LEFT JOIN NCF_ASIGNADOS N ' +
+      '  ON N.SERIE = V.SERIE_NCF_ASIGNADO ' +
+      'WHERE V.NUMERO = :NUMERO';
+
+    LQry.ParamByName('NUMERO').AsInteger := numerotrn;
+    LQry.Open;
+
+    if (not LQry.IsEmpty) and
+       (not LQry.FieldByName('NUMERO_NCF').IsNull) then
+      LNumeroNCF := Trim(LQry.FieldByName('NUMERO_NCF').AsString);
+  finally
+    LQry.Free;
+  end;
+
+  GlbSecECFGenerada :=
+    (LNumeroNCF <> '') and
+    (UpperCase(Copy(LNumeroNCF, 1, 1)) = 'E');
+
+  if GlbValidarECF = 0 then
+  begin
+    LogInformacionTxt(
+      'DGII OMITIDO. Trn=' + IntToStr(numerotrn) +
+      ' Motivo=GlbValidarECF=0'
+    );
+
+    if ARaiseOnError then
+      raise Exception.Create(
+        'El envio e-CF esta deshabilitado porque GlbValidarECF = 0.'
+      );
+
+    Exit;
+  end;
+
+  if not GlbSecECFGenerada then
+  begin
+    LogInformacionTxt(
+      'DGII OMITIDO. Trn=' + IntToStr(numerotrn) +
+      ' Motivo=La transaccion no tiene e-NCF asignado.'
+    );
+
+    if ARaiseOnError then
+      raise Exception.Create(
+        'La transaccion ' + IntToStr(numerotrn) +
+        ' no tiene un e-NCF asignado.'
+      );
+
+    Exit;
+  end;
 
   if GlbUsarFacturaTxtECF = 1 then
   begin
     try
-      // Carpeta donde quieres generar Factura.txt
-      OutputDir := IncludeTrailingPathDelimiter('C:\Electronico')+'factura_txt';
+      OutputDir :=
+        IncludeTrailingPathDelimiter(
+          ExtractFilePath(
+            ExpandFileName(GlbRutaEcf)
+          )
+        ) + 'factura_txt';
+
+      LogInformacionTxt(
+        'DGII ENVIO FacturaTxt. Trn=' + IntToStr(numerotrn) +
+        ' eNCF=' + LNumeroNCF
+      );
 
       if not EjecutarFacturaTxtECF(
-      GlbRutaEcf,
-      numerotrn,
-      OutputDir,
-      dmConectar.IBDatabase1,
-      dmConectar.IBTransaction1,
-      RunRes) then
+        GlbRutaEcf,
+        numerotrn,
+        OutputDir,
+        dmConectar.IBDatabase1,
+        dmConectar.IBTransaction1,
+        RunRes
+      ) then
       begin
         if Trim(RunRes.OutputText) <> '' then
-          MessageBox(0, PChar(RunRes.OutputText), 'Facturación Electrónica', MB_ICONERROR or MB_OK)
+          _smg := RunRes.OutputText
         else
-        MessageBox(0, 'El proceso de facturación electrónica terminó con error, pero no devolvió detalle.',
-        'Facturación Electrónica', MB_ICONERROR or MB_OK);
+          _smg :=
+            'El proceso de facturacion electronica termino con error, ' +
+            'pero no devolvio detalle.';
+
+        FallarOInformar(_smg);
         Exit;
       end;
 
-      // opcional:
+      LogInformacionTxt(
+        'DGII FIN OK FacturaTxt. Trn=' + IntToStr(numerotrn)
+      );
+
       if GlbEsDebugFiscal = 1 then
       begin
-       if Trim(RunRes.OutputText) <> '' then
-         MessageBox(0, PChar(RunRes.OutputText), 'Facturación Electrónica', MB_ICONINFORMATION or MB_OK);
+        if Trim(RunRes.OutputText) <> '' then
+          MessageBox(
+            0,
+            PChar(RunRes.OutputText),
+            'Facturacion Electronica',
+            MB_ICONINFORMATION or MB_OK
+          );
       end;
+
     except
-    on E: Exception do
-      MessageBox(0, PChar(E.Message), 'Facturación Electrónica', MB_ICONERROR or MB_OK);
+      on E: Exception do
+      begin
+        if ARaiseOnError then
+          raise;
+
+        MessageBox(
+          0,
+          PChar(E.Message),
+          'Facturacion Electronica',
+          MB_ICONERROR or MB_OK
+        );
+      end;
     end;
+
     Exit;
   end;
 
-  // Ruta normal actual, intacta
-  if not CheckBox1.Checked then exit;
-  if not UUtilecf.EjecutarECF_y_Mostrar(GlbRutaEcf, IntToStr(numerotrn), _smg) then
-    MessageBox(0, PChar(_smg), 'Facturación Electrónica', MB_ICONERROR or MB_OK);
+  LogInformacionTxt(
+    'DGII ENVIO ruta normal. Trn=' + IntToStr(numerotrn) +
+    ' eNCF=' + LNumeroNCF
+  );
+
+  if not UUtilecf.EjecutarECF_y_Mostrar(
+           GlbRutaEcf,
+           IntToStr(numerotrn),
+           _smg
+         ) then
+  begin
+    if Trim(_smg) = '' then
+      _smg :=
+        'El envio electronico termino con error sin detalle.';
+
+    FallarOInformar(_smg);
+    Exit;
+  end;
+
+  LogInformacionTxt(
+    'DGII FIN OK ruta normal. Trn=' + IntToStr(numerotrn)
+  );
 end;
 
 function TfrmProcVentaRapida.FSolicitarMotivoNCR:smallint;
 var
   motivo: Integer;
 begin
-  motivo := 1; // sugerido por defecto (Error en precios o cantidades)
+  motivo := 1; // Anula el e-CF modificado
 
   try
   if TfrmMotivoNCR.ExecuteForECF('E34', Motivo) then
@@ -26010,6 +27888,7 @@ begin
   end;
 end;
 
+//Procesar Devoluciones
 procedure TfrmProcVentaRapida.BitBtn7Click(Sender: TObject);
 var
   NumTrnNCR: Integer;
@@ -26027,6 +27906,21 @@ var
   LMensajeValidacion: string;
   LCantidadInventario: Real;
   LNCRActivada: Boolean;
+  LMotivoNCR: Smallint;
+
+  LMontoOriginalNCR: Currency;
+  LMontoNCRAnterior: Currency;
+  LMontoDisponibleNCR: Currency;
+
+  LUsarCreditoNCR: Boolean;
+  LClienteSeleccionado: Integer;
+  LRespuesta: Integer;
+  LGenerarCreditoPendiente: Boolean;
+
+  LRespuestaCredito: Integer;
+  LFormaPagoOriginal: Integer;
+  
+
 procedure RestablecerBloqueoDevolucion;
 begin
   FProcesandoDevolucion := False;
@@ -26043,10 +27937,23 @@ begin
   end;
 
   {
-    No se creó NCR. El usuario puede corregir la devolución
-    o cancelar la operación.
+    No se creo NCR. El usuario puede corregir la devolucion
+    o cancelar la operacion.
   }
   BitBtn7.Enabled := True;
+
+  {
+    Si la devolucion sigue armada, mantener estrictamente el modo NCR.
+    No permitir Facturar ni Guardar/Reimprimir la venta original.
+  }
+  if EsDevolucion and FDevolucionArmada then
+  begin
+    BitBtn4.Enabled := False;
+    bitBtnEditarFact.Enabled := False;
+
+    lblProcDev.Visible := True;
+    lblProcDev.BringToFront;
+  end;
 end;
 
   procedure LimpiarEstadoFiscalNCR;
@@ -26114,6 +28021,7 @@ end;
   var
     LNumeroNCFOriginal: String;
     LEsFacturaE32: Boolean;
+    LMensajeRecargo: String;
   begin
     Result := False;
 
@@ -26138,12 +28046,13 @@ end;
       E34 para e-CF.
       B04 para NCF convencional.
 
-      La NCR solamente genera NCF cuando la venta original tenía
-      documento fiscal y la opción fiscal está habilitada.
+      La fiscalidad de la NCR depende del documento ORIGINAL.
+      No debe depender del estado visual de CheckBox1.
     }
-    if CheckBox1.Checked and
-    (LNumeroNCFOriginal <> '') then
+    if LNumeroNCFOriginal <> '' then
     begin
+      CheckBox1.Checked := True;
+
       if UpperCase(Copy(LNumeroNCFOriginal, 1, 1)) = 'E' then
       begin
         LTipoNCR := '34';
@@ -26154,6 +28063,10 @@ end;
         LTipoNCR := '04';
         LGeneraNCF := True;
       end;
+    end
+    else
+    begin
+      CheckBox1.Checked := False;
     end;
 
     if LGeneraNCF then
@@ -26170,7 +28083,29 @@ end;
         mtError,[mbOk],0);
         Exit;
       end;
+
       AsignarTipoNCF(LTipoNCR);
+            
+      {
+       Invariante:
+       Toda devolución electrónica que terminará como
+            VENTAS_MAST.FORMA_PAGO = 6 debe ser E34 / TIPO_NCF = 34.
+     }
+     if UpperCase(Copy(LNumeroNCFOriginal, 1, 1)) = 'E' then
+     begin
+       if LTipoNCR <> '34' then
+         raise Exception.Create(
+           'Una Nota de Crédito electrónica solo puede ser E34.'
+         );
+
+       if TotalesTipoNCF.IsNull or
+          (Trim(TotalesTipoNCF.AsString) <> '34') then
+         raise Exception.Create(
+           'Configuración fiscal inválida para NCR electrónica. ' +
+           'TIPO_NCF debe ser 34.'
+         );
+     end;
+
     end else
     begin
       if Totales.State = dsBrowse then
@@ -26201,11 +28136,44 @@ end;
     ProcItbisExonerado;
 
     {
+      Gate final de recargo antes de congelar fiscalmente. No depende de
+      que el usuario haya salido de un control ni de eventos de interfaz.
+    }
+    if not ActualizarRecargoNCR(LMensajeRecargo) then
+    begin
+      MessageDlg(
+        LMensajeRecargo,
+        mtError,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
+
+    {
       Este es el único punto donde se congela fiscalmente la NCR.
       Debe ocurrir después de definir B04/E34.
     }
     if not PrepararCierreFiscal then
       Exit;
+
+    {
+      Firebird es quien distribuye el recargo y recalcula ITBIS. Aqui no
+      corregimos sus resultados: solo comprobamos que la distribucion no
+      exceda ni contradiga la proporcion historica de las lineas origen.
+    }
+    if not ValidarDistribucionRecargoNCR(LMensajeRecargo) then
+    begin
+      LimpiarEstadoFiscalNCR;
+
+      MessageDlg(
+        LMensajeRecargo,
+        mtError,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
 
     if FTotalNetoFiscalConfirmado <= 0 then
     begin
@@ -26227,7 +28195,7 @@ end;
     UProcesarDevolucion.GeneraNCF := LGeneraNCF;
     UProcesarDevolucion.tipoCF := LTipoNCR;
 
-    UProcesarDevolucion.fechaTrn := rxVentaFecha.Value;
+    UProcesarDevolucion.fechaTrn := ExtraerFecha(GlbFechaTrnDiaria);
     UProcesarDevolucion.codigo_cte := LCliente;
     UProcesarDevolucion.monto := FTotalNetoFiscalConfirmado;
     UProcesarDevolucion.status := 'A';
@@ -26239,6 +28207,7 @@ end;
     UProcesarDevolucion.codigousuarioupd := VarUsuarioGlb;
     UProcesarDevolucion.tipodoc := 5;
     UProcesarDevolucion.numeroFactura := rxVentaNumeroFactura.Value;
+    UProcesarDevolucion.numeroTrnVta :=  dmFactura.qryVentaFacturaNUMERO.Value;
 
     if LCliente > 0 then
     begin
@@ -26468,12 +28437,16 @@ end;
       Siempre se usa el número de la NCR nueva, nunca el documento
       original cargado para devolución.
     }
-    if (GlbActivaECF = 1) and
-       CheckBox1.Checked and
-       LGeneraNCF and
+    if LGeneraNCF and
+       (LTipoNCR = '34') and
        (NumTrnNCR > 0) then
     begin
-      DgiiSolicitareCF(NumTrnNCR);
+      if GlbActivaECF <> 1 then
+        raise Exception.Create(
+          'La NCR fue generada como E34, pero el modulo e-CF no esta activo.'
+        );
+
+      DgiiSolicitareCF(NumTrnNCR, True);
     end;
 
     if GlbActivaIFiscal = 1 then
@@ -26532,10 +28505,15 @@ end;
     begin
       dmFactura.formaPago := 6;
 
-      if AEsCash then
-        ReImpDevolucion(NumOrden, LBanderaImprime)
-      else
-        ReImprimeDevolucionsinFact1Click(Self);
+        if NumOrden <= 0 then
+          raise Exception.Create(
+            'No se pudo determinar el número de la devolución para imprimir.'
+          );
+
+        ReImpDevolucion(
+          NumOrden,
+          LBanderaImprime
+        );
     end;
   end;
 
@@ -26544,13 +28522,14 @@ end;
     UProcesarDevolucion.numeroFactura := -1;
 
     EsDevolucion := False;
-    EsNotaCRParcial := False;
+    EsNotaCRParcial := False;   
     EsModificandoFactura := False;
-    EsModificandoCotiza := False;
+    EsModificandoCotiza := False;                                
     GlbUsandoCotiza := False;
 
     FDevolucionArmada := False;
     FProcesandoDevolucion := False;
+    FActualizandoRecargoNCR := False;
 
     lblProcDev.Visible := False;
     lblProcDev.Caption := 'Proceso Venta';
@@ -26613,7 +28592,19 @@ end;
       SafeSetFocus(edtCodigo);
   end;
 
+
 begin
+  LGenerarCreditoPendiente := False;
+  LClienteSeleccionado := 0;
+  LFormaPagoOriginal := 0;
+  
+  LUsarCreditoNCR := False;
+  LClienteSeleccionado := 0;
+
+  LMontoOriginalNCR := 0;
+  LMontoNCRAnterior := 0;
+  LMontoDisponibleNCR := 0;
+  
   AsegurarRegistroTotales;
 
   NumTrnNCR := 0;
@@ -26682,7 +28673,18 @@ begin
       end;
 
       FDevolucionArmada := True;
-      lblProcDev.Caption := 'Devolución cargada: revise artículos y cantidades.';
+
+      lblProcDev.Caption :=
+        'Devolución cargada: revise artículos y cantidades.';
+      lblProcDev.Visible := True;
+      lblProcDev.BringToFront;
+
+      {
+        Mientras exista una devolucion armada no se permite procesarla
+        accidentalmente como venta ni como modificacion de factura.
+      }
+      BitBtn4.Enabled := False;
+      bitBtnEditarFact.Enabled := False;
     finally
       BitBtn7.Enabled := True;
     end;
@@ -26760,7 +28762,7 @@ begin
   end;
 
   FProcesandoDevolucion := True;
-BitBtn7.Enabled := False;
+  BitBtn7.Enabled := False;
 
 try
   try
@@ -26776,28 +28778,312 @@ try
     end;
 
     PrepararClienteOriginal;
+    {
+  La venta original puede haber sido cash/genérica.
 
-    if not PrepararTipoFiscalNCR then
+  Solo exigimos cliente cuando el monto de la devolución
+  quedará disponible para ser usado posteriormente.
+}
+if LCliente <= 0 then
+begin
+  LRespuesta := MessageDlg(
+    'La venta original no tiene cliente asociado.' +
+    #13#10#13#10 +
+    '¿El cliente desea conservar el monto de esta devolución ' +
+    'como Nota de Crédito para utilizarlo en una compra futura?' +
+    #13#10#13#10 +
+    'Sí: deberá identificar/registrar el cliente.' +
+    #13#10 +
+    'No: la devolución se tratará como reembolso inmediato.',
+    mtConfirmation,
+    [mbYes, mbNo, mbCancel],
+    0
+  );
+
+  if LRespuesta = mrCancel then
+  begin
+    LProcesoCancelado := True;
+    Exit;
+  end;
+
+  if LRespuesta = mrYes then
+  begin
+    LUsarCreditoNCR := True;
+
+    LRespuesta := MessageDlg(
+      '¿El cliente ya está registrado?',
+      mtConfirmation,
+      [mbYes, mbNo, mbCancel],
+      0
+    );
+
+    if LRespuesta = mrCancel then
+    begin
+      LProcesoCancelado := True;
       Exit;
+    end;
+
+    if LRespuesta = mrNo then
+    begin
+      {
+        Abrir maestro para registrarlo.
+        No confiamos todavía en el registro activo que quede
+        después de cerrar el maestro.
+      }
+      ProcEntradaCliente;
+    end;
+
+    {
+      La selección explícita es obligatoria tanto para un cliente
+      existente como para uno recién creado.
+    }
+    xCodigoCte := -1;
+    BuscarCliente1Click(Self);
+
+    LClienteSeleccionado := xCodigoCte;
+
+    if LClienteSeleccionado <= 0 then
+    begin
+      MessageDlg(
+        'No se seleccionó un cliente.' +
+        #13#10 +
+        'La Nota de Crédito no será procesada.',
+        mtWarning,
+        [mbOK],
+        0
+      );
+
+      Exit;
+    end;
+
+    if not AsignarClienteVentaOriginalNCR(
+             dmFactura.qryVentaFacturaNUMERO.Value,
+             LClienteSeleccionado
+           ) then
+      Exit;
+
+    LCliente := LClienteSeleccionado;
+
+    SincronizarClienteNCR(LCliente);
+  end;
+end;
+
+PrepararClienteOriginal;
+
+if dmFactura.qryVentaFacturaFORMA_PAGO.IsNull then
+  raise Exception.Create(
+    'La venta original no tiene forma de pago definida.'
+  );
+
+LFormaPagoOriginal :=
+  dmFactura.qryVentaFacturaFORMA_PAGO.Value;
+
+LGenerarCreditoPendiente := False;
+
+{
+  Una venta a crédito debe tener cliente previamente.
+  Si no lo tiene es una inconsistencia, no la corregimos
+  silenciosamente desde una NCR.
+}
+if LFormaPagoOriginal in [7, 8, 15, 18] then
+begin
+  if LCliente <= 0 then
+    raise Exception.Create(
+      'La venta a crédito original no tiene cliente asociado. ' +
+      'Debe corregirse antes de procesar la Nota de Crédito.'
+    );
+end
+else
+begin
+  {
+    Para ventas cash con cliente, conservamos la regla acordada:
+    la devolución queda disponible como crédito.
+  }
+  if LCliente > 0 then
+    LGenerarCreditoPendiente := True
+  else
+  begin
+    LRespuestaCredito := MessageDlg(
+      'La venta original no tiene cliente asociado.' +
+      #13#10#13#10 +
+      '¿El cliente desea conservar el monto de esta devolución ' +
+      'como Nota de Crédito para utilizarlo en una compra futura?' +
+      #13#10#13#10 +
+      'Sí = registrar/seleccionar cliente y generar crédito.' +
+      #13#10 +
+      'No = reembolso inmediato.',
+      mtConfirmation,
+      [mbYes, mbNo, mbCancel],
+      0
+    );
+
+    if LRespuestaCredito = mrCancel then
+    begin
+      LProcesoCancelado := True;
+      Exit;
+    end;
+
+    if LRespuestaCredito = mrYes then
+    begin
+      if not SolicitarClienteCreditoNCR(
+               LClienteSeleccionado
+             ) then
+      begin
+        Exit;
+      end;
+
+      {
+        Confirmación explícita antes de modificar
+        una venta histórica.
+      }
+      if MessageDlg(
+           'Se asociará el cliente seleccionado a la venta original #' +
+           IntToStr(dmFactura.qryVentaFacturaNUMERO.Value) +
+           '.' + #13#10#13#10 +
+           'Cliente: ' +
+           IntToStr(LClienteSeleccionado) + ' - ' +
+           qryClienteNOMBRE_CTE.AsString +
+           #13#10#13#10 +
+           '¿Desea continuar?',
+           mtConfirmation,
+           [mbYes, mbNo],
+           0
+         ) <> mrYes then
+      begin
+        Exit;
+      end;
+
+      if not AsignarClienteVentaOriginalNCR(
+               dmFactura.qryVentaFacturaNUMERO.Value,
+               LClienteSeleccionado
+             ) then
+      begin
+        Exit;
+      end;
+
+      LCliente := LClienteSeleccionado;
+
+      SincronizarClienteNCR(LCliente);
+
+      LGenerarCreditoPendiente := True;
+    end;
+  end;
+end;
+
+if not PrepararTipoFiscalNCR then
+  Exit;
+  
 
     if Abs(Totalestotalneto.Value - FTotalNetoFiscalConfirmado) > 0.01 then
       raise Exception.Create(
         'El total de la devolución cambió antes de persistirla.'
       );
 
-    if dmFactura.qryVentaFacturaFORMA_PAGO.IsNull then
-      raise Exception.Create(
-      'La venta original no tiene forma de pago definida.');
+    //if dmFactura.qryVentaFacturaFORMA_PAGO.IsNull then
+    //  raise Exception.Create(
+    //  'La venta original no tiene forma de pago definida.');
 
-    LEsDevolucionCash :=
-    (not LGeneraNCF) and
-    (not (dmFactura.qryVentaFacturaFORMA_PAGO.Value in [7, 8, 15,18]));//18-Otros
+      {
+       Para facturas a crédito, la NCR debe cuadrar exactamente
+       contra el saldo pendiente de la factura.
+
+       IMPORTANTE:
+       esto ocurre antes de EjecutarNCFDevolucion, por tanto todavía
+       no existe NCF, TRANS_CXC ni VENTAS_MAST de la NCR.
+       }
+      if dmFactura.qryVentaFacturaFORMA_PAGO.Value in [7, 8, 15, 18] then
+      begin
+        if not ValidarMontoNCRContraCXC(
+           rxVentaNumeroFactura.Value,
+           Trim(TotalesMoneda.AsString),              
+           FTotalNetoFiscalConfirmado,
+           LSaldoPendienteCXC
+         ) then
+        begin
+          Exit;
+        end;
+      end;
+{
+  Esta variable pasa a significar únicamente:
+  devolución no fiscal liquidada inmediatamente.
+
+  Que una operación no tenga NCF ya NO implica por sí solo
+  que sea reembolso cash.
+}
+LEsDevolucionCash :=
+  (not LGeneraNCF) and
+  (not LGenerarCreditoPendiente) and
+  (not (LFormaPagoOriginal in [7, 8, 15,16,18]));
+
 
 
     if LGeneraNCF and LEsDevolucionCash then
       raise Exception.Create(
         'No se puede generar una NCR fiscal sin cliente asociado.'
       );
+
+    {
+  ==========================================================
+  CONTROL ACUMULADO DE NCR CONTRA LA VENTA ORIGINAL
+  ==========================================================
+  
+  No usar DEVOLUCIONES_PENDIENTE.MONTO_PENDIENTE.
+  Ese valor representa crédito todavía disponible para usar.
+
+  Aquí controlamos el histórico real de NCR creadas contra
+  VENTAS_MAST.NUMERO de la venta original.
+}
+if not ValidarMontoDisponibleNCR(
+         dmFactura.qryVentaFacturaNUMERO.Value,
+         FTotalNetoFiscalConfirmado,
+         LMontoOriginalNCR,
+         LMontoNCRAnterior,
+         LMontoDisponibleNCR
+       ) then
+begin
+  Exit;
+end;
+
+    {
+      ==========================================================
+      MOTIVO DGII DE LA NCR
+      ==========================================================
+
+      Código 3:
+      Corrección de montos del e-CF.
+
+      Se asigna automáticamente cuando la NCR actual NO consume
+      todo el saldo todavía disponible de la factura original.
+    }
+    LMotivoNCR := 0;
+
+    if LGeneraNCF and
+   (UpperCase(Copy(Trim(dmFactura.qryVentaFacturaNUMERO_NCF.AsString),
+      1,1)) = 'E') then
+    begin
+      if FTotalNetoFiscalConfirmado <
+         (LMontoDisponibleNCR - 0.01) then
+      begin
+        // Devolución parcial
+        LMotivoNCR := 3;
+      end
+      else
+      if (LMontoNCRAnterior <= 0.01) and
+         (Abs(FTotalNetoFiscalConfirmado -
+              LMontoOriginalNCR) <= 0.01) then
+      begin
+        // Primera NCR y anula completamente el documento original
+        LMotivoNCR := 1;
+      end
+      else
+      begin
+        {
+          Caso no inequívoco:
+          conservar selección manual.
+        }
+        LMotivoNCR := 0;
+      end;
+    end;
 
     if not LEsDevolucionCash then
     begin
@@ -26815,6 +29101,7 @@ try
         dmFactura.qryVentaFacturaNUMERO.Value
       );
 
+      NumOrden := ipStpInsertVentMast.Params[15].AsInteger;
       NumTrnNCR := ipStpInsertVentMast.Params[0].AsInteger;
     end
     else
@@ -26851,19 +29138,34 @@ try
 
     InsertarDetalleNCR(LEsDevolucionCash);
 
-    ValidarNCRPersistida;
-
     if (GlbActivaECF = 1) and
        CheckBox1.Checked and
        LGeneraNCF then
     begin
+      {
+        NCR parcial:
+        motivo 3 se determina automáticamente.
+
+        Para otros casos mantenemos la selección manual
+        hasta establecer una regla inequívoca.
+      }
+      if LMotivoNCR = 0 then
+        LMotivoNCR := FSolicitarMotivoNCR;
+
+      if not (LMotivoNCR in [1, 2, 3, 4, 5]) then
+        raise Exception.Create(
+          'No se pudo determinar un motivo válido para la Nota de Crédito.'
+        );
+
       ProcUpdateMotivo(
         NumTrnNCR,
-        FSolicitarMotivoNCR,
+        LMotivoNCR,
         dmFactura.qryVentaFacturaNUMERO_NCF.Value
       );
     end;
 
+    ValidarNCRPersistida;
+          
     ActualizarInventarioDevolucion(LEsDevolucionCash);
 
     if GlbMutur = 1 then
@@ -26928,6 +29230,12 @@ try
       end
       else
       begin
+        NotificaErrorByEmail(
+          'La devolución no pudo completarse.' + LF + CR +
+          'Trn NCR: ' + IntToStr(NumTrnNCR) + LF + CR +
+          'Usuario: ' + GlbUsuarioLogueado + LF + CR +
+          'Error: ' + E.Message
+        );
         MessageDlg(
           'La devolución no pudo completarse.' + #13 +
           'NCR: ' + IntToStr(NumTrnNCR) + #13 +
@@ -27011,6 +29319,13 @@ end;
 
 procedure TfrmProcVentaRapida.ProcUpdateMotivo(numtrn: integer;motivo:smallint;ncfRef:string);
 begin
+  if not (motivo in [1,2,3,4,5]) then
+     raise Exception.Create(
+     'Motivo de Nota de Crédito inválido.');
+
+  if Trim(ncfRef) = '' then
+     raise Exception.Create('La Nota de Crédito no tiene NCF de referencia.');
+
   dmVentas.tblVtaMast.Close;
   dmVentas.tblVtaMast.Params[0].Value:=numtrn;
   dmVentas.tblVtaMast.Open;
@@ -27630,16 +29945,118 @@ begin
 end;
 
 procedure TfrmProcVentaRapida.BitBtn14Click(Sender: TObject);
+var
+  LReabrirVenta: Boolean;
+  LHayCobroTemporal: Boolean;
+  LMensaje: String;
 begin
-  //LogProcedure('TfrmProcVentaRapida.BitBtn14Click');
-if FTotalesCongeladosParaCobro and
-     (not EsModificandoFactura) and
-     (not EsModificandoCotiza) then
+  if (not rxVenta.Active) or
+     rxVenta.IsEmpty then
+    Exit;
+
+  LHayCobroTemporal :=
+    HayCobroTemporalActual;
+
+  LReabrirVenta :=
+    FTotalesCongeladosFiscalmente or
+    LHayCobroTemporal;
+
+  if LReabrirVenta then
   begin
+    {
+      Una factura ya persistida utiliza el flujo
+      Guardar/Reimprimir. Nunca vuelve a venta nueva.
+    }
+    if EsModificandoFactura and
+       (not EsModificandoCotiza) then
+    begin
+      MessageDlg(
+        'Esta transacción corresponde a una venta ya persistida.' + #13 +
+        'Debe utilizar el proceso de modificación correspondiente.',
+        mtWarning,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
+
+    {
+      Nunca regresar desde persistencia a edición.
+    }
+    if ProcesandoVenta then
+    begin
+      MessageDlg(
+        'La venta se está procesando.' + #13 +
+        'Espere que finalice antes de continuar.',
+        mtWarning,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
+
+    if Totales.Active and
+       (not Totales.IsEmpty) and
+       (TotalesVentaGuardada.Value = 1) then
+    begin
+      MessageDlg(
+        'La venta ya fue guardada y no puede abrirse nuevamente.',
+        mtWarning,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
+
+    {
+      Master ya creado = frontera irreversible para este flujo.
+      Evita crear una segunda venta después de una falla post-master.
+    }
+    if isMasterSave and
+       (NumeroTrn > 0) then
+    begin
+      MessageDlg(
+        'La venta ya inició el proceso de persistencia.' + #13 +
+        'No puede volver al modo de edición para evitar duplicarla.',
+        mtError,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
+
+    if EnProcesoCalculo then
+    begin
+      MessageDlg(
+        'Existe un cálculo en ejecución.' + #13 +
+        'Espere que finalice antes de abrir la venta.',
+        mtWarning,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
+
+    if LHayCobroTemporal then
+      LMensaje :=
+        'Modificar la venta cancelará el cobro temporal actual.' +
+        #13#13 +
+        'Después de hacer los cambios deberá indicar nuevamente ' +
+        'el monto pagado.' +
+        #13#13 +
+        '¿Desea continuar?'
+    else
+      LMensaje :=
+        'La venta ya fue preparada fiscalmente.' + #13 +
+        'Al abrirla deberá validarse nuevamente antes de guardar.' +
+        #13#13 +
+        '¿Desea continuar?';
+
+    {
+      Hasta este punto no hemos modificado absolutamente nada.
+    }
     if MessageDlg(
-      'Modificar la venta cancelará el cobro actual.' + #13 +
-      'Los pagos temporales serán eliminados.' + #13 + #13 +
-      '¿Desea continuar?',
+      LMensaje,
       mtWarning,
       [mbYes, mbNo],
       0
@@ -27647,56 +30064,58 @@ if FTotalesCongeladosParaCobro and
       Exit;
 
     {
-      Borra únicamente pagos temporales de esta venta POS.
+      Mientras la venta estaba cerrada no debería existir
+      una edición pendiente. Si algún evento legacy abrió el
+      dataset, descartamos esa edición no sincronizada y
+      volvemos a la última fotografía confirmada.
     }
-    tblDetallePagos.Close;
-    tblDetallePagos.Params[0].Value :=
-      ExtraerFecha(GlbFechaTrnDiaria);
-    tblDetallePagos.Open;
+    if rxVenta.State in [dsEdit, dsInsert] then
+      rxVenta.Cancel;
 
-    try
-      tblDetallePagos.First;
-
-      while not tblDetallePagos.Eof do
+    {
+      Eliminar cobro solamente después de todas las validaciones.
+    }
+    if LHayCobroTemporal then
+    begin
+      if not CancelarCobroTemporalParaReabrir(
+        LMensaje
+      ) then
       begin
-        if (not tblDetallePagosGLBNUMVTAPOS.IsNull) and
-           (tblDetallePagosGLBNUMVTAPOS.Value = GlbNumVtaPOS) then
-          tblDetallePagos.Delete
-        else
-          tblDetallePagos.Next;
+        MessageDlg(
+          LMensaje,
+          mtError,
+          [mbOk],
+          0
+        );
+        Exit;
       end;
-
-      tblDetallePagos.ApplyUpdates;
-
-      if not tblDetallePagos.Transaction.InTransaction then
-        tblDetallePagos.Transaction.StartTransaction;
-
-      tblDetallePagos.Transaction.CommitRetaining;
-    except
-      tblDetallePagos.Transaction.RollbackRetaining;
-      raise;
+    end
+    else
+    begin
+      {
+        Incluso sin pago, no abrimos una venta fiscalmente
+        desincronizada.
+      }
+      if not dmCalculos.ValidarSincronizacionRxVentaPosExtraDet(
+        LMensaje
+      ) then
+      begin
+        MessageDlg(
+          'No fue posible abrir la venta porque el detalle temporal ' +
+          'no está sincronizado.' + #13 +
+          LMensaje,
+          mtError,
+          [mbOk],
+          0
+        );
+        Exit;
+      end;
     end;
 
-    tblDetallePagos.Close;
 
-    if rxPagos.State in [dsEdit, dsInsert] then
-      rxPagos.Cancel;
-
-    rxPagos.EmptyTable;
-
-    if Totales.State = dsBrowse then
-      Totales.Edit;
-
-    TotalesMontoRecibido.Value := 0;
-    TotalesDevolucion.Value := 0;
-    TotalesMontoEnEfectivo.Value := 0;
-    TotalesMontoEnTarjeta.Value := 0;
-    TotalesMontoEnCheque.Value := 0;
-    TotalesMontoEnBonos.Value := 0;
-    Totales.Post;
-
-    Edit1.Clear;
-
+    {
+      Solo AHORA desaparecen las fronteras.
+    }
     FTotalesCongeladosFiscalmente := False;
     FTotalNetoFiscalConfirmado := 0;
 
@@ -27704,60 +30123,61 @@ if FTotalesCongeladosParaCobro and
     FPagoConfirmado := False;
     FTotalNetoCobro := 0;
 
+    EsPagoExacto := False;
+
+    {
+      Cancelar cualquier mensaje viejo de cálculo.
+
+      CancelarCobroTemporalParaReabrir ya garantizó que
+      rxVenta / POS_EXTRA_DET están sincronizados.
+    }
     DatosModificados := False;
     CalculoPendiente := False;
     CalculoMsgPendiente := False;
     procCalc := False;
     GlbCalculado := True;
 
-    edtCodigo.Enabled := True;
-    DBEdit1.ReadOnly := False;
-    DBEdit2.ReadOnly := False;
-    DBEdit9.ReadOnly := False;
-    DBEdit10.ReadOnly := False;
-    DBEdit11.ReadOnly := False;
+    RestablecerEstadoEditableTrasCancelarCobro;
+    //HabilitarEdicionVenta;
 
-    RxSpinEdit1.Enabled := True;
-    cboxTipoUnidad.Enabled := True;
-    rxdblookupTipoUnidad.Enabled := True;
-    RxDBLookupCombo2.Enabled := True;
-    RxDBLookupCombo3.Enabled := True;
+    LogInformacionTxt(
+      'Venta abierta nuevamente. ' +
+      'GlbNumVtaPOS=' + IntToStr(GlbNumVtaPOS) +
+      ' EsCotiza=' + BoolToStr(EsModificandoCotiza, True)
+    );
+  end;
 
-    CheckBox1.Enabled := True;
-    chkExento.Enabled := True;
-    chkNoLeyPropina.Enabled := True;
-    chKDescuentoGlobal.Enabled := True;
-    NoGenerarNCF1.Enabled := True;
-
-    RxDBGrid1.ReadOnly := False;
-    RxDBGrid1.EnableScroll;
-
-    BitBtn4.Enabled := False;
-  end;  
+  {
+    Mantener la función original de BitBtn14:
+    permitir edición de precio y llevar el cursor al precio.
+  }
   DBEdit2.ReadOnly := True;
-  if (varTipousuario = 0) then //Adm
+
+  if varTipousuario = 0 then
   begin
     DBEdit2.ReadOnly := False;
-    if isShowing then
-    DBEdit2.SetFocus;
-  end else
+  end
+  else
   begin
-    if not GlbPermiteCambioPrecio then
-    begin
-        precioAnt:=rxVentaPrecio.Value;
-        DBEdit2.ReadOnly := False;
-        if isShowing then
-        DBEdit2.SetFocus;
-    end else
-    begin
-      precioAnt:=rxVentaPrecio.Value;
-      DBEdit2.ReadOnly := False;
-      if isShowing then
-      DBEdit2.SetFocus;
-    end;
+    precioAnt := rxVentaPrecio.Value;
+    DBEdit2.ReadOnly := False;
+  end;
+
+  FEntradaAutomaticaDesdeBarcode := False;
+
+  if isShowing and
+     DBEdit2.Enabled and
+     DBEdit2.Visible and
+     DBEdit2.CanFocus then
+  begin
+    PostMessage(
+      Handle,
+      WM_NEXTDLGCTL,
+      WPARAM(DBEdit2.Handle),
+      LPARAM(1)
+    );
   end;
 end;
-//Pendiente: 6. Simplificar DBEdit2
 
 procedure TfrmProcVentaRapida.DBEdit2Exit(Sender: TObject);
 var
@@ -27875,9 +30295,25 @@ begin
   if not PrecioCambio then
   begin
     LogEventoVenta(
-    'DBEdit2Exit',
-    'Precio sin cambio; no se solicita cálculo');
-    edtCodigo.setfocus;
+      'DBEdit2Exit',
+      'Precio sin cambio; no se solicita cálculo'
+    );
+
+    {
+      No usar SetFocus directo desde OnExit. En algunos modos edtCodigo
+      puede estar oculto/deshabilitado y Windows genera:
+      "Cannot focus a disabled or invisible window".
+      Solo solicitamos el foco si el control realmente puede recibirlo,
+      y lo diferimos hasta terminar el evento actual.
+    }
+    if isShowing and edtCodigo.CanFocus then
+      PostMessage(
+        Handle,
+        WM_NEXTDLGCTL,
+        WPARAM(edtCodigo.Handle),
+        LPARAM(1)
+      );
+
     Exit;
   end;
 
@@ -28138,28 +30574,24 @@ begin
 end;
 
 procedure TfrmProcVentaRapida.SolicitarCalculoTotales(Origen: TTipoCambio);
+var
+  LMensajeRecargo: String;
 begin
   LogEventoVenta('SolicitarCalculoTotales', TipoCambioTexto(Origen));
 
   {
-    Una cotización modificable nunca debe conservar congelamiento
-    fiscal ni de cobro de una operación anterior.
+    Sin detalle no existe una venta que recalcular ni una venta que abrir.
+    Esta guarda debe evaluarse antes del bloqueo de cobro para que eventos
+    de limpieza de interfaz nunca muestren advertencias de la venta anterior.
   }
-  if EsModificandoCotiza then
-  begin
-    FTotalesCongeladosFiscalmente := False;
-    FTotalNetoFiscalConfirmado := 0;
-
-    FTotalesCongeladosParaCobro := False;
-    FPagoConfirmado := False;
-    FTotalNetoCobro := 0;
-  end;
+  if not rxVenta.Active then Exit;
+  if rxVenta.RecordCount = 0 then Exit;
 
   {
     Solo bloquear una venta nueva ya preparada para pago.
     Modificar factura y modificar cotización deben poder recalcular.
   }
-if FTotalesCongeladosParaCobro and
+  if FTotalesCongeladosParaCobro and
    (not EsModificandoFactura) and
    (not EsModificandoCotiza) then
 begin
@@ -28181,14 +30613,35 @@ end;
     Exit;
   end;
 
-  if not rxVenta.Active then Exit;
-  if rxVenta.RecordCount = 0 then Exit;
-
   if Origen in [tcCantidad, tcPrecio, tcDescuento, tcUnidad, tcrxspin] then
   begin
     if rxVentaCodArticulo.IsNull or (rxVentaCodArticulo.Value <= 0) then Exit;
     if rxVentaCant.IsNull or (Abs(rxVentaCant.Value) <= 0) then Exit;
     if rxVentaPrecio.IsNull or (rxVentaPrecio.Value <= 0) then Exit;
+  end;
+
+  {
+    En una NCR nueva, cualquier cambio de las lineas puede cambiar la
+    proporcion del recargo a devolver. Se recalcula antes de enviar el
+    documento al motor fiscal. FActualizandoRecargoNCR evita reentrada.
+  }
+  if EsDevolucion and
+     (not FModificandoNCRPersistida) and
+     (not FActualizandoRecargoNCR) then
+  begin
+    if not ActualizarRecargoNCR(LMensajeRecargo) then
+    begin
+      GlbCalculado := False;
+      procCalc := True;
+
+      MessageDlg(
+        LMensajeRecargo,
+        mtError,
+        [mbOk],
+        0
+      );
+      Exit;
+    end;
   end;
 
   UltimaVariableModificada := Origen;
@@ -28426,28 +30879,33 @@ end;
 
 procedure TfrmProcVentaRapida.DBEdit1Change(Sender: TObject);
 begin
-  if EnProcesoCalculo or LlenandoDatos then Exit;
-  
-  if (DBEdit1.Text <> '') and (Length(DBEdit1.Text) > 5) then
+  if EnProcesoCalculo or LlenandoDatos then
+    Exit;
+
+  if (DBEdit1.Text <> '') and
+     (Length(DBEdit1.Text) > 5) then
   begin
     DBEdit1.Text := '';
     Exit;
   end;
-  CalculoPendiente := True;
-  DatosModificados := True;
-  GlbCalculado := False;
-  procCalc := True;
+
+  {
+    M1: Change solamente indica digitacion. No invalida el calculo ni
+    programa trabajo. DBEdit1Exit compara auxiCant contra el valor final.
+  }
   esEditando := True;
 end;
 
 procedure TfrmProcVentaRapida.DBEdit2Change(Sender: TObject);
 begin
-  if EnProcesoCalculo or LlenandoDatos then Exit;
-  esEditando:=True;
-  DatosModificados := True;
-  GlbCalculado := False;
-  CalculoPendiente := True;
-  procCalc := True;
+  if EnProcesoCalculo or LlenandoDatos then
+    Exit;
+
+  {
+    No programar calculos ni invalidar flags por cada tecla.
+    DBEdit2Exit compara aPrecio contra el precio final confirmado.
+  }
+  esEditando := True;
 end;
 
 procedure TfrmProcVentaRapida.ValidarCalculos1Click(Sender: TObject);
@@ -28668,6 +31126,8 @@ begin
       rxVentaMontoNeto.Value :=
         QDet.FieldByName('TC_TOTALNETO').AsCurrency;
 
+      rxVentaTC_MONTORECARGO_GLB_DET.Value :=
+      QDet.FieldByName('TC_MONTORECARGO_GLB_DET').AsCurrency;
       rxVenta.Post;
     end;
 
@@ -28949,6 +31409,332 @@ begin
 end;
 
 
+function TfrmProcVentaRapida.CancelarCobroTemporalParaReabrir(
+  out AMensaje: String
+): Boolean;
+var
+  LMensajePago: String;
+  LMontoRecibido: Currency;
+  LDevolucion: Currency;
+  LMontoEfectivo: Currency;
+  LMontoTarjeta: Currency;
+  LMontoCheque: Currency;
+  LMontoBonos: Currency;
+  LDiferencia: Currency;
+  LMontoNCRAplicado: Currency;
+
+  LTextoPago: String;
+  LOldLlenandoDatos: Boolean;
+  LMensajeSync: String;
+  LGlobalPagoCambio: Boolean;
+
+  procedure AsignarTotalesPago(
+    const AMontoRecibido,
+          ADevolucion,
+          AEfectivo,
+          ATarjeta,
+          ACheque,
+          ABonos,
+          ADiferencia,
+          ANCRAplicado: Currency
+  );
+  begin
+    LOldLlenandoDatos := LlenandoDatos;
+    LlenandoDatos := True;
+
+    try
+      if Totales.State = dsBrowse then
+        Totales.Edit;
+
+      TotalesMontoRecibido.Value := AMontoRecibido;
+      TotalesDevolucion.Value := ADevolucion;
+      TotalesMontoEnEfectivo.Value := AEfectivo;
+      TotalesMontoEnTarjeta.Value := ATarjeta;
+      TotalesMontoEnCheque.Value := ACheque;
+      TotalesMontoEnBonos.Value := ABonos;
+      TotalesDiferencia.Value := ADiferencia;
+
+      {
+        MontoNCRAplicado forma parte de los datos globales
+        enviados a POS_EXTRA_DET. Al cancelar la distribucion
+        de pago no puede sobrevivir.
+      }
+      TotalesMontoNCRAplicado.Value := ANCRAplicado;
+
+      if Totales.State in [dsEdit, dsInsert] then
+        Totales.Post;
+
+    finally
+      LlenandoDatos := LOldLlenandoDatos;
+    end;
+  end;
+
+begin
+  Result := False;
+  AMensaje := '';
+ 
+  try
+    {
+      1. Tomar fotografia del pago.
+    }
+    LMontoRecibido := TotalesMontoRecibido.AsCurrency;
+    LDevolucion := TotalesDevolucion.AsCurrency;
+    LMontoEfectivo := TotalesMontoEnEfectivo.AsCurrency;
+    LMontoTarjeta := TotalesMontoEnTarjeta.AsCurrency;
+    LMontoCheque := TotalesMontoEnCheque.AsCurrency;
+    LMontoBonos := TotalesMontoEnBonos.AsCurrency;
+    LDiferencia := TotalesDiferencia.AsCurrency;
+    LMontoNCRAplicado := TotalesMontoNCRAplicado.AsCurrency;
+
+    LTextoPago := Edit1.Text;
+
+    {
+  2. Prevalidar el estado real de DETALLE_PAGOS.
+
+  No depende de fecha ni del dataset filtrado.
+}
+if not ProcesarPagosTemporalesVentaActual(
+  False,
+  LMensajePago
+) then
+begin
+  AMensaje := LMensajePago;
+  Exit;
+end;
+
+    {
+      4. Cancelar componentes del pago en Totales.
+
+      MontoRecibido y los medios de pago no son valores fiscales.
+      Devolucion y MontoNCRAplicado sí tienen representación
+      en POS_EXTRA_DET, por eso se controla la sincronización.
+    }
+    LGlobalPagoCambio :=
+      (Abs(LDevolucion) > 0.0001) or
+      (Abs(LMontoNCRAplicado) > 0.0001);
+
+    AsignarTotalesPago(
+      0, // Monto recibido
+      0, // Cambio / devolución
+      0, // Efectivo
+      0, // Tarjeta
+      0, // Cheque
+      0, // Bonos
+      0, // Diferencia
+      0  // NCR aplicado
+    );
+
+    try
+      {
+        Si existían valores del cobro almacenados como globales
+        en POS_EXTRA_DET, se retiran por el mismo motor.
+        NO se elimina POS_EXTRA_DET.
+      }
+      if LGlobalPagoCambio and
+         (GlbNumVtaPOS > 0) and
+         rxVenta.Active and
+         (not rxVenta.IsEmpty) then
+      begin
+        dmCalculos.ActualizarValoresGlobalesPosExtraDet(
+          GlbNumVtaPOS
+        );
+
+        dmCalculos.ProcesaCalculosVentaCompleta;
+      end;
+
+      {
+        Gate obligatorio antes de destruir DETALLE_PAGOS.
+      }
+      if not dmCalculos.ValidarSincronizacionRxVentaPosExtraDet(
+        LMensajeSync
+      ) then
+        raise Exception.Create(
+          'rxVenta y POS_EXTRA_DET no están sincronizados. ' +
+          LMensajeSync
+        );
+
+    except
+      on E: Exception do
+      begin
+        {
+          Todavía NO hemos borrado DETALLE_PAGOS.
+          Restauramos la fotografía anterior.
+        }
+        AsignarTotalesPago(
+          LMontoRecibido,
+          LDevolucion,
+          LMontoEfectivo,
+          LMontoTarjeta,
+          LMontoCheque,
+          LMontoBonos,
+          LDiferencia,
+          LMontoNCRAplicado
+        );
+
+        Edit1.Text := LTextoPago;
+
+        if LGlobalPagoCambio and
+           (GlbNumVtaPOS > 0) then
+        begin
+          try
+            dmCalculos.ActualizarValoresGlobalesPosExtraDet(
+              GlbNumVtaPOS
+            );
+            dmCalculos.ProcesaCalculosVentaCompleta;
+          except
+            on E2: Exception do
+              LogInformacionTxt(
+                'ERROR restaurando cálculo después de cancelar reapertura: ' +
+                E2.Message
+              );
+          end;
+        end;
+
+        AMensaje :=
+          'No fue posible abrir la venta.' + #13 +
+          E.Message;
+
+        Exit;
+      end;
+    end;
+
+    {
+  5. Eliminar físicamente todos los pagos TEMPORALES
+     pertenecientes a esta venta.
+
+  El DELETE está protegido por:
+    GLBNUMVTAPOS
+    AREA_TRANS = 1
+    SERIE_TRN = NULL/0
+}
+if not ProcesarPagosTemporalesVentaActual(
+  True,
+  LMensajePago
+) then
+begin
+  {
+    El pago físico no pudo cancelarse.
+    Restauramos la fotografía anterior.
+  }
+  AsignarTotalesPago(
+    LMontoRecibido,
+    LDevolucion,
+    LMontoEfectivo,
+    LMontoTarjeta,
+    LMontoCheque,
+    LMontoBonos,
+    LDiferencia,
+    LMontoNCRAplicado
+  );
+
+  Edit1.Text := LTextoPago;
+
+  if LGlobalPagoCambio and
+     (GlbNumVtaPOS > 0) then
+  begin
+    try
+      dmCalculos.ActualizarValoresGlobalesPosExtraDet(
+        GlbNumVtaPOS
+      );
+
+      dmCalculos.ProcesaCalculosVentaCompleta;
+
+    except
+      on E: Exception do
+        LogInformacionTxt(
+          'ERROR restaurando POS_EXTRA_DET: ' +
+          E.Message
+        );
+    end;
+  end;
+
+  AMensaje :=
+    'No fue posible cancelar el cobro temporal.' + #13 +
+    LMensajePago;
+
+  Exit;
+end;
+
+    {
+      6. Limpiar solamente después de que Firebird confirmó.
+    }
+    if rxPagos.State in [dsEdit, dsInsert] then
+      rxPagos.Cancel;
+
+    if rxPagos.Active then
+      rxPagos.EmptyTable;
+
+    {
+      El formulario de pagos combinados se reutiliza.
+      No debe conservar la distribución anterior.
+    }
+    if Assigned(frmPagosCombinados) then
+    begin
+      if frmPagosCombinados.rxPagos.State in [dsEdit, dsInsert] then
+        frmPagosCombinados.rxPagos.Cancel;
+
+      if frmPagosCombinados.rxPagos.Active then
+        frmPagosCombinados.rxPagos.EmptyTable;
+
+      if frmPagosCombinados.rxCobros.State in [dsEdit, dsInsert] then
+        frmPagosCombinados.rxCobros.Cancel;
+
+      if frmPagosCombinados.rxCobros.Active then
+        frmPagosCombinados.rxCobros.EmptyTable;
+
+      frmPagosCombinados._TienepagoTarjeta := False;
+    end;
+
+    dmPagosTarjeta.tblDetallePagos.Close;
+
+    _TienepagoTarjeta := False;
+    valPgoARS := False;
+    EsPagoExacto := False;
+
+    Edit1.Clear;
+
+    Result := True;
+
+  finally
+    //LSeriesPago.Free;
+  end;
+end;
+
+procedure TfrmProcVentaRapida.HabilitarEdicionVenta;
+begin
+  edtCodigo.Enabled := True;
+
+  DBEdit1.ReadOnly := False;
+  DBEdit2.ReadOnly := False;
+  DBEdit9.ReadOnly := False;
+  DBEdit10.ReadOnly := False;
+  DBEdit11.ReadOnly := False;
+
+  RxSpinEdit1.Enabled := True;
+  cboxTipoUnidad.Enabled := True;
+  rxdblookupTipoUnidad.Enabled := True;
+
+  RxDBLookupCombo2.Enabled := True;
+  RxDBLookupCombo3.Enabled := True;
+
+  CheckBox1.Enabled := True;
+  chkExento.Enabled := True;
+  chkNoLeyPropina.Enabled := True;
+  chKDescuentoGlobal.Enabled := True;
+  NoGenerarNCF1.Enabled := True;
+
+  rxdbLookupCte.Enabled := True;
+
+  RxDBGrid1.ReadOnly := False;
+  RxDBGrid1.EnableScroll;
+
+  {
+    Después de abrir no puede persistir hasta confirmar
+    nuevamente el cobro sobre el nuevo total.
+  }
+  BitBtn4.Enabled := False;
+end;
+
 procedure TfrmProcVentaRapida.BloquearEdicionVenta;
 begin
   edtCodigo.Enabled := False;
@@ -28978,21 +31764,79 @@ begin
   BitBtn14.Enabled := True;  
 end;
 
+function TfrmProcVentaRapida.HayCobroTemporalActual: Boolean;
+begin
+  Result :=
+    FTotalesCongeladosParaCobro or
+    FPagoConfirmado;
+
+  if Result then
+    Exit;
+
+  {
+    Recuperacion defensiva:
+    si por un flujo anterior se perdieron los flags pero rxPagos
+    conserva las SERIES temporales, sigue existiendo un cobro.
+  }
+  if rxPagos.Active and
+     (rxPagos.RecordCount > 0) then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  {
+    Ultima evidencia defensiva.
+    No sustituye rxPagos, pero evita declarar editable una venta
+    que todavia muestra monto recibido.
+  }
+  if Totales.Active and
+     (not Totales.IsEmpty) and
+     (not TotalesMontoRecibido.IsNull) and
+     (Abs(TotalesMontoRecibido.Value) > 0.0001) then
+  begin
+    Result := True;
+    Exit;
+  end;
+end;
+
+
+function TfrmProcVentaRapida.VentaTieneCierreActivo: Boolean;
+begin
+  Result :=
+    FTotalesCongeladosFiscalmente or
+    HayCobroTemporalActual;
+end;
   
 procedure TfrmProcVentaRapida.AsegurarUnidadYMonedaLinea;
 var
   LMoneda: string;
+
+  procedure EditarLineaSiNecesario;
+  begin
+    if rxVenta.State = dsBrowse then
+      rxVenta.Edit;
+  end;
+
 begin
   if not rxVenta.Active or rxVenta.IsEmpty then
     Exit;
 
-  if not (rxVenta.State in [dsEdit, dsInsert]) then
-    rxVenta.Edit;
+  {
+    M1 - no abrir rxVenta en dsEdit solo por entrar a Cantidad o Precio.
+    dsEdit debe ocurrir aqui exclusivamente si falta un dato que realmente
+    necesita ser normalizado. Esto evita el falso dirty:
+      Browse/GlbCalculado=True/procCalc=False
+        -> Enter control
+        -> Edit/Modified=False/procCalc=True.
+  }
 
   { Unidad }
   if rxVentaTipoUnidad.IsNull or
      (rxVentaTipoUnidad.Value <= 0) then
   begin
+    EditarLineaSiNecesario;
+
     if qryProductos.Active and
        (not qryProductosCODIGO.IsNull) and
        (qryProductosCODIGO.Value = rxVentaCodArticulo.Value) and
@@ -29005,47 +31849,44 @@ begin
 
   if rxVentaDescUnidadMedida.IsNull or
      (Trim(rxVentaDescUnidadMedida.AsString) = '') then
-    rxVentaDescUnidadMedida.Value := 'UNIDAD';
-
-  { Moneda }                             
-  LMoneda := '';
-
-  if qryProductos.Active and
-     (not qryProductosCODIGO.IsNull) and
-     (qryProductosCODIGO.Value = rxVentaCodArticulo.Value) and
-     (not qryProductosCOD_MONEDA.IsNull) and
-     (Trim(qryProductosCOD_MONEDA.AsString) <> '') then
-    LMoneda := Trim(qryProductosCOD_MONEDA.AsString);
-
-  if rxVentaMoneda.IsNull or
-   (Trim(rxVentaMoneda.AsString) = '') then
-begin
-  LMoneda := '';
-
-  if qryProductos.Active and
-     (not qryProductosCODIGO.IsNull) and
-     (qryProductosCODIGO.Value = rxVentaCodArticulo.Value) and
-     (not qryProductosCOD_MONEDA.IsNull) and
-     (Trim(qryProductosCOD_MONEDA.AsString) <> '') then
-    LMoneda := Trim(qryProductosCOD_MONEDA.AsString);
-
-  if LMoneda = '' then
   begin
-    if (not TotalesMoneda.IsNull) and
-       (Trim(TotalesMoneda.AsString) <> '') then
-      LMoneda := Trim(TotalesMoneda.AsString)
-    else
-    if GlbMonedaBase > 0 then
-      LMoneda := IntToStr(GlbMonedaBase)
-    else
-      LMoneda := '1';
+    EditarLineaSiNecesario;
+    rxVentaDescUnidadMedida.Value := 'UNIDAD';
   end;
-  if rxVentaInvetariar.IsNull or (rxVentaInvetariar.Value = 0) then
-     rxVentaInvetariar.Value := qryProductosINVENTARIAR.Value;
-     
-  rxVentaMoneda.Value := LMoneda;
-  
-end;
+
+  { Moneda }
+  if rxVentaMoneda.IsNull or
+     (Trim(rxVentaMoneda.AsString) = '') then
+  begin
+    LMoneda := '';
+
+    if qryProductos.Active and
+       (not qryProductosCODIGO.IsNull) and
+       (qryProductosCODIGO.Value = rxVentaCodArticulo.Value) and
+       (not qryProductosCOD_MONEDA.IsNull) and
+       (Trim(qryProductosCOD_MONEDA.AsString) <> '') then
+      LMoneda := Trim(qryProductosCOD_MONEDA.AsString);
+
+    if LMoneda = '' then
+    begin
+      if (not TotalesMoneda.IsNull) and
+         (Trim(TotalesMoneda.AsString) <> '') then
+        LMoneda := Trim(TotalesMoneda.AsString)
+      else
+      if GlbMonedaBase > 0 then
+        LMoneda := IntToStr(GlbMonedaBase)
+      else
+        LMoneda := '1';
+    end;
+
+    EditarLineaSiNecesario;
+
+    if rxVentaInvetariar.IsNull or
+       (rxVentaInvetariar.Value = 0) then
+      rxVentaInvetariar.Value := qryProductosINVENTARIAR.Value;
+
+    rxVentaMoneda.Value := LMoneda;
+  end;
 end;
 
 procedure TfrmProcVentaRapida.RxDBGrid1KeyDown(
@@ -29122,7 +31963,1159 @@ begin
   GlbcodVendedor:=rxVentaglbcodVendedor.Value;
 end;
 
+procedure TfrmProcVentaRapida.MarcarVentaRecuperada(
+  ANumero: Integer
+);
+var
+  LSQL: TIBSQL;
+  LFilasAfectadas: Integer;
+  LStatus: string;
+begin
+  if ANumero <= 0 then
+    raise Exception.Create(
+      'Número de transacción inválido al marcar venta recuperada.'
+    );
+
+  LogEventoVenta(
+    'MarcarVentaRecuperada',
+    'Inicio|NUMERO=' + IntToStr(ANumero)
+  );
+
+  LSQL := TIBSQL.Create(nil);
+  try
+    LSQL.Database :=
+      stpProc_UpdateVENTAS_MAST_U1.Database;
+
+    LSQL.Transaction :=
+      stpProc_UpdateVENTAS_MAST_U1.Transaction;
+
+    if not LSQL.Transaction.InTransaction then
+      LSQL.Transaction.StartTransaction;
+
+    try
+      {
+        Transición estricta:
+          solamente E -> A.
+
+        Si ya está A, C, R o cualquier otro status,
+        este UPDATE no debe tocar el registro.
+      }
+      LSQL.SQL.Text :=
+        'UPDATE VENTAS_MAST ' +
+        'SET STATUS = ''A'', ' +
+        '    FECHA_MOD = :P_FECHA_MOD, ' +
+        '    MOD_POR = :P_MOD_POR ' +
+        'WHERE NUMERO = :P_NUMERO ' +
+        '  AND CIA_KEY = :P_CIA_KEY ' +
+        '  AND STATUS = ''E''';
+
+      LSQL.ParamByName('P_FECHA_MOD').AsDateTime := Now;
+      LSQL.ParamByName('P_MOD_POR').AsString := StrUserName;
+      LSQL.ParamByName('P_NUMERO').AsInteger := ANumero;
+      LSQL.ParamByName('P_CIA_KEY').AsInteger := GlbCia_Key;
+
+      LSQL.ExecQuery;
+
+      LFilasAfectadas := LSQL.RowsAffected;
+
+      if LFilasAfectadas <> 1 then
+      begin
+        raise Exception.Create(
+          'No fue posible marcar la venta como recuperada. ' +
+          'NUMERO=' + IntToStr(ANumero) +
+          ', filas afectadas=' + IntToStr(LFilasAfectadas) +
+          '. Se esperaba STATUS=E.'
+        );
+      end;
+
+      {
+        Postcondición:
+        no basta con RowsAffected=1.
+        Confirmamos que el estado final realmente sea A.
+      }
+      LSQL.Close;
+      LSQL.SQL.Text :=
+        'SELECT STATUS ' +
+        'FROM VENTAS_MAST ' +
+        'WHERE NUMERO = :P_NUMERO ' +
+        '  AND CIA_KEY = :P_CIA_KEY';
+
+      LSQL.ParamByName('P_NUMERO').AsInteger := ANumero;
+      LSQL.ParamByName('P_CIA_KEY').AsInteger := GlbCia_Key;
+
+      LSQL.ExecQuery;
+
+      if LSQL.Eof then
+        raise Exception.Create(
+          'No se encontró VENTAS_MAST después de recuperar la venta. ' +
+          'NUMERO=' + IntToStr(ANumero) + '.'
+        );
+
+      LStatus := UpperCase(
+        Trim(LSQL.Fields[0].AsString)
+      );
+
+      if LStatus <> 'A' then
+      begin
+        raise Exception.Create(
+          'La venta no quedó activa después de la recuperación. ' +
+          'NUMERO=' + IntToStr(ANumero) +
+          ', STATUS=' + LStatus + '.'
+        );
+      end;
+
+      LSQL.Close;
+
+      LSQL.Transaction.CommitRetaining;
+
+      LogEventoVenta(
+        'MarcarVentaRecuperada',
+        'OK|NUMERO=' + IntToStr(ANumero) +
+        '|STATUS=A'
+      );
+
+    except
+      on E: Exception do
+      begin
+        if LSQL.Transaction.InTransaction then
+          LSQL.Transaction.RollbackRetaining;
+
+        LogEventoVenta(
+          'MarcarVentaRecuperada',
+          'ERROR|NUMERO=' + IntToStr(ANumero) +
+          '|Mensaje=' + E.Message
+        );
+
+        raise;
+      end;
+    end;
+
+  finally
+    LSQL.Free;
+  end;
+end;
+
+
+function TfrmProcVentaRapida.AplicaExoneracionITBISOperacion: Boolean;
+var
+  LTipoNCF: string;
+begin
+  Result := False;
+
+  if (not CheckBox1.Checked) or
+     (GlbIgI <> 1) then
+    Exit;
+
+  {
+    E44/B14 actual.
+  }
+  if Totales.Active and
+     (not Totales.IsEmpty) and
+     (not TotalesTipoNCF.IsNull) then
+  begin
+    LTipoNCF :=
+      UpperCase(Trim(TotalesTipoNCF.AsString));
+
+    if (LTipoNCF = '44') or
+       (LTipoNCF = 'E44') or
+       (LTipoNCF = '14') or
+       (LTipoNCF = 'B14') then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+
+  {
+    Creación de NCR:
+    qryVentaFactura todavía representa la factura original.
+  }
+  if EsDevolucion and
+     dmFactura.qryVentaFactura.Active and
+     (not dmFactura.qryVentaFactura.IsEmpty) and
+     (not dmFactura.qryVentaFacturaNUMERO_NCF.IsNull) then
+  begin
+    LTipoNCF :=
+      UpperCase(
+        Trim(dmFactura.qryVentaFacturaNUMERO_NCF.AsString)
+      );
+
+    if (Copy(LTipoNCF, 1, 3) = 'E44') or
+       (Copy(LTipoNCF, 1, 3) = 'B14') then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+
+  {
+    Recuperación/modificación de NCR persistida:
+    qryVentaFactura ya representa E34.
+    Se usa la referencia original cargada una sola vez.
+  }
+  if FModificandoNCRPersistida then
+  begin
+    LTipoNCF :=
+      UpperCase(Trim(FNCRNumeroNCFOrigen));
+
+    Result :=
+      (Copy(LTipoNCF, 1, 3) = 'E44') or
+      (Copy(LTipoNCF, 1, 3) = 'B14');
+  end;
+end;
+
+  procedure TfrmProcVentaRapida.SincronizarClienteNCR(const ACodigoCte: Integer);
+begin
+  if ACodigoCte <= 0 then
+    raise Exception.Create(
+      'Código de cliente inválido para la NCR.'
+    );
+
+  if not qryCliente.Active then
+    qryCliente.Open;
+
+  if not qryCliente.Locate(
+       'CODIGO_CTE',
+       ACodigoCte,
+       []
+     ) then
+  begin
+    raise Exception.Create(
+      'No fue posible localizar el cliente de la NCR.'
+    );
+  end;
+
+  if not tablaPropietario.Active then
+    tablaPropietario.Open;
+
+  if tablaPropietario.IsEmpty then
+    tablaPropietario.Append
+  else
+  if tablaPropietario.State = dsBrowse then
+    tablaPropietario.Edit;
+
+  tablaPropietarioCodigoPropietario.Value :=
+    ACodigoCte;
+
+  tablaPropietario.Post;
+
+  if Totales.State = dsBrowse then
+    Totales.Edit;
+
+  TotalesCodCliente.Value := ACodigoCte;
+
+  if not qryClienteNOMBRE_CTE.IsNull then
+    TotalesNombreCliente.Value :=
+      qryClienteNOMBRE_CTE.Value;
+
+  if not qryClienteDIRECCION_CONT.IsNull then
+    TotalesDireccion.Value :=
+      qryClienteDIRECCION_CONT.Value;
+
+  if not qryClienteTELEF_CONTACTO.IsNull then
+    TotalesTelefono.Value :=
+      qryClienteTELEF_CONTACTO.Value;
+
+  if not qryClienteRNC_NUMERO.IsNull and
+     (Trim(qryClienteRNC_NUMERO.AsString) <> '') then
+  begin
+    TotalesRNC_NUMERO.AsString :=
+      qryClienteRNC_NUMERO.AsString;
+  end
+  else
+  if not qryClienteCEDULA.IsNull then
+  begin
+    TotalesRNC_NUMERO.AsString :=
+      qryClienteCEDULA.AsString;
+  end
+  else
+    TotalesRNC_NUMERO.Clear;
+
+  Totales.Post;
+end;
+
+function TfrmProcVentaRapida.ValidarMontoNCRContraCXC(
+  const ANumeroFactura: Integer;
+  const AMoneda: String;
+  const AMontoNCR: Currency;
+  out ASaldoPendiente: Currency
+): Boolean;
+const
+  TOLERANCIA_CXC = 0.01;
+var
+  LQry: TIBQuery;
+begin
+  Result := False;
+  ASaldoPendiente := 0;
+
+  if ANumeroFactura <= 0 then
+  begin
+    MessageDlg(
+      'No fue posible determinar la factura de crédito original.',
+      mtError,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  if Trim(AMoneda) = '' then
+  begin
+    MessageDlg(
+      'No fue posible determinar la moneda de la factura.',
+      mtError,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  LQry := TIBQuery.Create(nil);
+  try
+    LQry.Database := dmCxc.stp_UpdateCxc.Database;
+    LQry.Transaction := dmCxc.stp_UpdateCxc.Transaction;
+
+    LQry.SQL.Text :=
+      'SELECT MONTO_PENDIENTE, STATUS ' +
+      'FROM FACTURAS_PENDIENTES ' +
+      'WHERE TIPO = :TIPO ' +
+      'AND MONEDA = :MONEDA ' +
+      'AND NUMERO_FACT = :NUMERO_FACT';
+
+    LQry.ParamByName('TIPO').AsInteger := 2;
+    LQry.ParamByName('MONEDA').AsString := Trim(AMoneda);
+    LQry.ParamByName('NUMERO_FACT').AsInteger := ANumeroFactura;
+
+    LQry.Open;
+
+    if LQry.IsEmpty then
+    begin
+      MessageDlg(
+        'La factura #' + IntToStr(ANumeroFactura) +
+        ' no existe en FACTURAS_PENDIENTES.' + #13#10 +
+        'No se puede crear la Nota de Crédito.',
+        mtError,
+        [mbOK],
+        0
+      );
+      Exit;
+    end;
+
+    if LQry.FieldByName('MONTO_PENDIENTE').IsNull then
+      ASaldoPendiente := 0
+    else
+      ASaldoPendiente :=
+        LQry.FieldByName('MONTO_PENDIENTE').AsCurrency;
+
+    if ASaldoPendiente <= 0 then
+    begin
+      MessageDlg(
+        'La factura #' + IntToStr(ANumeroFactura) +
+        ' no tiene balance pendiente por cobrar.' + #13#10 +
+        'No se puede crear la Nota de Crédito.',
+        mtError,
+        [mbOK],
+        0
+      );
+      Exit;
+    end;
+
+    if Abs(AMontoNCR - ASaldoPendiente) > TOLERANCIA_CXC then
+    begin
+      MessageDlg(
+        'El monto de la Nota de Crédito no coincide con el ' +
+        'balance pendiente de la factura.' + #13#10#13#10 +
+
+        'Factura: ' + IntToStr(ANumeroFactura) + #13#10 +
+        'Monto NCR: ' +
+          FormatFloat('#,##0.00', AMontoNCR) + #13#10 +
+        'Pendiente CxC: ' +
+          FormatFloat('#,##0.00', ASaldoPendiente) + #13#10 +
+        'Diferencia: ' +
+          FormatFloat(
+            '#,##0.00',
+            AMontoNCR - ASaldoPendiente
+          ) + #13#10#13#10 +
+
+        'La Nota de Crédito no será creada.',
+        mtError,
+        [mbOK],
+        0
+      );
+                          
+      Exit;
+    end;
+
+    Result := True;
+
+  finally
+    LQry.Free;
+  end;
+end;           
+
+function TfrmProcVentaRapida.ValidarMontoDisponibleNCR(
+  const ANumeroTrnOrigen: Integer;
+  const AMontoNCR: Currency;
+  out AMontoOriginal: Currency;
+  out AMontoNCRAnterior: Currency;
+  out AMontoDisponible: Currency
+): Boolean;
+const
+  TOLERANCIA_NCR = 0.01;
+var
+  LQry: TIBQuery;
+begin
+  Result := False;
+
+  AMontoOriginal := 0;
+  AMontoNCRAnterior := 0;
+  AMontoDisponible := 0;
+
+  if ANumeroTrnOrigen <= 0 then
+  begin
+    MessageDlg(
+      'No fue posible determinar la transacción de la venta original.',
+      mtError,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  LQry := TIBQuery.Create(nil);
+  try
+    LQry.Database := ipStpInsertVentMast.Database;
+    LQry.Transaction := ipStpInsertVentMast.Transaction;
+
+    {
+      VALOR_TOTAL_DET de la venta original representa el total
+      persistido de la factura.
+
+      Las NCR se identifican por:
+        FORMA_PAGO = 6
+        REF_TRN_ORIGEN = venta original
+        STATUS = A
+
+      No se utiliza DEVOLUCIONES_PENDIENTE porque su
+      MONTO_PENDIENTE puede disminuir cuando el cliente usa
+      la NCR como forma de pago.
+    }
+    LQry.SQL.Text :=
+      'SELECT ' +
+      '  V.VALOR_TOTAL_DET AS MONTO_ORIGINAL, ' +
+      '  COALESCE((' +
+      '    SELECT SUM(ABS(N.VALOR_TOTAL_DET)) ' +
+      '    FROM VENTAS_MAST N ' +
+      '    WHERE N.REF_TRN_ORIGEN = V.NUMERO ' +
+      '      AND N.CIA_KEY = V.CIA_KEY ' +
+      '      AND N.FORMA_PAGO = 6 ' +
+      '      AND N.STATUS = ''A''' +
+      '  ), 0) AS MONTO_NCR_ANTERIOR ' +
+      'FROM VENTAS_MAST V ' +
+      'WHERE V.NUMERO = :NUMERO_ORIGEN';
+
+    LQry.ParamByName('NUMERO_ORIGEN').AsInteger :=
+      ANumeroTrnOrigen;
+
+    LQry.Open;
+
+    if LQry.IsEmpty then
+    begin
+      MessageDlg(
+        'No existe la venta original #' +
+        IntToStr(ANumeroTrnOrigen) + '.',
+        mtError,
+        [mbOK],
+        0
+      );
+      Exit;
+    end;
+
+    if LQry.FieldByName('MONTO_ORIGINAL').IsNull then
+    begin
+      MessageDlg(
+        'La venta original no tiene monto registrado.',
+        mtError,
+        [mbOK],
+        0
+      );
+      Exit;
+    end;
+
+    AMontoOriginal :=
+      Abs(LQry.FieldByName('MONTO_ORIGINAL').AsCurrency);
+
+    AMontoNCRAnterior :=
+      Abs(LQry.FieldByName('MONTO_NCR_ANTERIOR').AsCurrency);
+
+    AMontoDisponible :=
+      AMontoOriginal - AMontoNCRAnterior;
+
+    if Abs(AMontoDisponible) <= TOLERANCIA_NCR then
+      AMontoDisponible := 0;
+
+    {
+      Si ya existen NCR superiores al monto original tenemos
+      una inconsistencia histórica. No permitir agravarla.
+    }
+    if AMontoDisponible < -TOLERANCIA_NCR then
+    begin
+      MessageDlg(
+        'La venta presenta una inconsistencia en sus Notas de Crédito.' +
+        #13#10#13#10 +
+        'Monto original: ' +
+        FormatFloat('#,##0.00', AMontoOriginal) + #13#10 +
+        'NCR acumuladas: ' +
+        FormatFloat('#,##0.00', AMontoNCRAnterior) + #13#10 +
+        'Diferencia: ' +
+        FormatFloat('#,##0.00', AMontoDisponible) + #13#10#13#10 +
+        'No se puede crear otra Nota de Crédito.',
+        mtError,
+        [mbOK],
+        0
+      );
+      Exit;
+    end;
+
+    if AMontoNCR > AMontoDisponible + TOLERANCIA_NCR then
+    begin
+      MessageDlg(
+        'El monto de la Nota de Crédito excede el monto disponible ' +
+        'para devolver de la venta original.' +
+        #13#10#13#10 +
+
+        'Monto venta original: ' +
+        FormatFloat('#,##0.00', AMontoOriginal) + #13#10 +
+
+        'NCR anteriores: ' +
+        FormatFloat('#,##0.00', AMontoNCRAnterior) + #13#10 +
+
+        'Disponible para devolver: ' +
+        FormatFloat('#,##0.00', AMontoDisponible) + #13#10 +
+
+        'NCR actual: ' +
+        FormatFloat('#,##0.00', AMontoNCR) + #13#10 +
+
+        'Exceso: ' +
+        FormatFloat(
+          '#,##0.00',
+          AMontoNCR - AMontoDisponible
+        ) + #13#10#13#10 +
+
+        'La Nota de Crédito no será creada.',
+        mtError,
+        [mbOK],
+        0
+      );
+
+      Exit;
+    end;
+
+    Result := True;
+
+  finally
+    LQry.Free;
+  end;
+end;
+
+function TfrmProcVentaRapida.AsignarClienteVentaOriginalNCR(
+  const ANumeroTrn: Integer;
+  const ACodigoCte: Integer
+): Boolean;
+var
+  LQry: TIBQuery;
+  LTransaction: TIBTransaction;
+  LClienteActual: Integer;
+begin
+  Result := False;
+
+  if ANumeroTrn <= 0 then
+    raise Exception.Create(
+      'No fue posible determinar la venta original.'
+    );
+
+  if ACodigoCte <= 0 then
+    raise Exception.Create(
+      'No se ha indicado un cliente válido.'
+    );
+
+  LTransaction := TIBTransaction.Create(nil);
+  LQry := TIBQuery.Create(nil);
+  try
+    LTransaction.DefaultDatabase :=
+      dmConectar.IBDatabase1;
+
+    LTransaction.Params.Clear;
+    LTransaction.Params.Add('read_committed');
+    LTransaction.Params.Add('rec_version');
+    LTransaction.Params.Add('nowait');
+
+    LQry.Database := dmConectar.IBDatabase1;
+    LQry.Transaction := LTransaction;
+
+    LTransaction.StartTransaction;
+
+    {
+      Leer nuevamente desde BD.
+      No confiar en qryVentaFactura para modificar una venta histórica.
+    }
+    LQry.SQL.Text :=
+      'SELECT CODIGO_CTE ' +
+      'FROM VENTAS_MAST ' +
+      'WHERE CIA_KEY = :CIA_KEY ' +
+      'AND NUMERO = :NUMERO';
+
+    LQry.ParamByName('CIA_KEY').AsInteger :=
+      GlbCodigoCia;
+
+    LQry.ParamByName('NUMERO').AsInteger :=
+      ANumeroTrn;
+
+    LQry.Open;
+
+    if LQry.IsEmpty then
+      raise Exception.Create(
+        'No existe la venta original #' +
+        IntToStr(ANumeroTrn) + '.'
+      );
+
+    if LQry.FieldByName('CODIGO_CTE').IsNull then
+      LClienteActual := 0
+    else
+      LClienteActual :=
+        LQry.FieldByName('CODIGO_CTE').AsInteger;
+
+    LQry.Close;
+
+    {
+      Si otro proceso ya asignó un cliente, nunca sobrescribirlo
+      silenciosamente.
+    }
+    if LClienteActual > 0 then
+    begin
+      if LClienteActual <> ACodigoCte then
+        raise Exception.Create(
+          'La venta original ya está asociada a otro cliente.' +
+          #13#10 +
+          'Cliente actual: ' +
+          IntToStr(LClienteActual) +
+          #13#10 +
+          'Cliente seleccionado: ' +
+          IntToStr(ACodigoCte)
+        );
+
+      LTransaction.Commit;
+      Result := True;
+      Exit;
+    end;
+
+    LQry.SQL.Text :=
+      'UPDATE VENTAS_MAST ' +
+      'SET CODIGO_CTE = :CODIGO_CTE, ' +
+      '    FECHA_MOD = :FECHA_MOD, ' +
+      '    MOD_POR = :MOD_POR ' +
+      'WHERE CIA_KEY = :CIA_KEY ' +
+      'AND NUMERO = :NUMERO ' +
+      'AND (CODIGO_CTE IS NULL OR CODIGO_CTE = 0)';
+
+    LQry.ParamByName('CODIGO_CTE').AsInteger :=
+      ACodigoCte;
+
+    LQry.ParamByName('FECHA_MOD').AsDateTime :=
+      Now;
+
+    LQry.ParamByName('MOD_POR').AsString :=
+      StrUserName;
+
+    LQry.ParamByName('CIA_KEY').AsInteger :=
+      GlbCodigoCia;
+
+    LQry.ParamByName('NUMERO').AsInteger :=
+      ANumeroTrn;
+
+    LQry.ExecSQL;
+    LQry.Close;
+
+    {
+      Releer dentro de la misma transacción.
+      Así comprobamos realmente el resultado.
+    }
+    LQry.SQL.Text :=
+      'SELECT CODIGO_CTE ' +
+      'FROM VENTAS_MAST ' +
+      'WHERE CIA_KEY = :CIA_KEY ' +
+      'AND NUMERO = :NUMERO';
+
+    LQry.ParamByName('CIA_KEY').AsInteger :=
+      GlbCodigoCia;
+
+    LQry.ParamByName('NUMERO').AsInteger :=
+      ANumeroTrn;
+
+    LQry.Open;
+
+    if LQry.IsEmpty or
+       LQry.FieldByName('CODIGO_CTE').IsNull or
+       (LQry.FieldByName('CODIGO_CTE').AsInteger <>
+        ACodigoCte) then
+    begin
+      raise Exception.Create(
+        'No fue posible confirmar la asociación del cliente ' +
+        'con la venta original.'
+      );
+    end;
+
+    LTransaction.Commit;
+
+    LogInformacionTxt(
+      'NCR: cliente asociado a venta original. ' +
+      'TRN=' + IntToStr(ANumeroTrn) +
+      ' CODIGO_CTE=' + IntToStr(ACodigoCte) +
+      ' Usuario=' + StrUserName
+    );
+
+    Result := True;
+
+  except
+    on E: Exception do
+    begin
+      if LTransaction.InTransaction then
+        LTransaction.Rollback;
+
+      LogInformacionTxt(
+        'ERROR asociando cliente a venta original para NCR. ' +
+        'TRN=' + IntToStr(ANumeroTrn) +
+        ' CODIGO_CTE=' + IntToStr(ACodigoCte) +
+        ' Error=' + E.Message
+      );
+
+      raise;
+    end;
+  end;
+
+  LQry.Free;
+  LTransaction.Free;
+end;
+
+
+function TfrmProcVentaRapida.SolicitarClienteCreditoNCR(
+  out ACodigoCte: Integer
+): Boolean;
+var
+  LRespuesta: Integer;
+begin
+  Result := False;
+  ACodigoCte := 0;
+
+  LRespuesta := MessageDlg(
+    'Para conservar esta devolución como crédito, ' +
+    'el cliente debe estar registrado.' + #13#10#13#10 +
+    '¿El cliente ya está registrado?',
+    mtConfirmation,
+    [mbYes, mbNo, mbCancel],
+    0
+  );
+
+  if LRespuesta = mrCancel then
+    Exit;
+
+  if LRespuesta = mrNo then
+  begin
+    {
+      Registrar cliente.
+      Después obligamos a seleccionarlo explícitamente.
+      No confiamos únicamente en el registro que quede activo
+      en dmClientes al cerrar el maestro.
+    }
+    ProcEntradaCliente;
+  end;
+
+  {
+    Tanto si ya existía como si acaba de registrarse,
+    la selección final es explícita.
+  }
+  xCodigoCte := -1;
+  BuscarCliente1Click(Self);
+
+  if xCodigoCte <= 0 then
+  begin
+    MessageDlg(
+      'No se seleccionó un cliente.' + #13#10 +
+      'La devolución no será procesada como crédito.',
+      mtWarning,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  if not qryCliente.Active then
+    qryCliente.Open;
+
+  if not qryCliente.Locate(
+       'CODIGO_CTE',
+       xCodigoCte,
+       []
+     ) then
+  begin
+    MessageDlg(
+      'No fue posible localizar el cliente seleccionado.',
+      mtError,
+      [mbOK],
+      0
+    );
+    Exit;
+  end;
+
+  ACodigoCte := xCodigoCte;
+  Result := True;
+end;
+
+procedure TfrmProcVentaRapida.RestablecerEstadoEditableTrasCancelarCobro;
+begin
+  FTotalesCongeladosFiscalmente := False;
+  FTotalNetoFiscalConfirmado := 0;
+
+  FTotalesCongeladosParaCobro := False;
+  FPagoConfirmado := False;
+  FTotalNetoCobro := 0;
+
+  EsPagoExacto := False;
+  _TienepagoTarjeta := False;
+  valPgoARS := False;
+
+  if Assigned(frmPagosCombinados) then
+    frmPagosCombinados._TienepagoTarjeta := False;
+
+  DatosModificados := False;
+  CalculoPendiente := False;
+  CalculoMsgPendiente := False;
+  procCalc := False;
+  GlbCalculado := True;
+
+  HabilitarEdicionVenta;
+end;
+function TfrmProcVentaRapida.ProcesarPagosTemporalesVentaActual(
+  const AEliminar: Boolean;
+  out AMensaje: String
+): Boolean;
+var
+  LTr: TIBTransaction;
+  LQry: TIBQuery;
+  LSql: TIBSQL;
+
+  LSeriePago: Integer;
+  LGlbNumVtaPOSPago: Integer;
+  LAreaTrans: Integer;
+  LSerieTrn: Integer;
+begin
+  Result := False;
+  AMensaje := '';
+
+  {
+    Sin identificador temporal no podemos borrar por aproximación.
+  }
+  if GlbNumVtaPOS <= 0 then
+  begin
+    if rxPagos.Active and
+       (rxPagos.RecordCount > 0) then
+    begin
+      AMensaje :=
+        'Existen referencias de pago temporal, pero la venta no tiene ' +
+        'un GLBNUMVTAPOS válido.' + #13 +
+        'No se eliminará ningún pago.';
+      Exit;
+    end;
+
+    Result := True;
+    Exit;
+  end;
+
+  LTr := TIBTransaction.Create(nil);
+  LQry := TIBQuery.Create(nil);
+  LSql := TIBSQL.Create(nil);
+
+  try
+    {
+      Transacción independiente y corta.
+
+      Es importante no reutilizar el snapshot de tblDetallePagos:
+      los pagos pudieron ser creados por dmPagosTarjeta.
+    }
+    LTr.DefaultDatabase := tblDetallePagos.Database;
+
+    LTr.Params.Clear;
+    LTr.Params.Add('read_committed');
+    LTr.Params.Add('rec_version');
+    LTr.Params.Add('nowait');
+
+    LQry.Database := tblDetallePagos.Database;
+    LQry.Transaction := LTr;
+
+    LSql.Database := tblDetallePagos.Database;
+    LSql.Transaction := LTr;
+
+    LTr.StartTransaction;
+
+    {
+      1. Validar las SERIES que rxPagos conoce.
+
+      La consulta es directamente contra DETALLE_PAGOS.
+      NO depende de fecha ni del SelectSQL de tblDetallePagos.
+    }
+    if rxPagos.Active and
+       (rxPagos.RecordCount > 0) then
+    begin
+      rxPagos.First;
+
+      while not rxPagos.Eof do
+      begin
+        if rxPagosSerie.IsNull or
+           (rxPagosSerie.Value <= 0) then
+        begin
+          AMensaje :=
+            'Existe una referencia de pago sin SERIE válida.';
+
+          LTr.Rollback;
+          Exit;
+        end;
+
+        LSeriePago := rxPagosSerie.Value;
+
+        LQry.Close;
+        LQry.SQL.Text :=
+          'SELECT ' +
+          '  SERIE, ' +
+          '  GLBNUMVTAPOS, ' +
+          '  AREA_TRANS, ' +
+          '  SERIE_TRN ' +
+          'FROM DETALLE_PAGOS ' +
+          'WHERE SERIE = :SERIE';
+
+        LQry.ParamByName('SERIE').AsInteger :=
+          LSeriePago;
+
+        LQry.Open;
+
+        if LQry.IsEmpty then
+        begin
+          {
+            IMPORTANTE:
+            rxPagos puede contener una referencia stale de un pago
+            que ya fue eliminado por una ruta legacy.
+
+            No es un motivo para bloquear la venta:
+            físicamente ya no existe nada que borrar.
+
+            No inventamos otro pago ni buscamos por fecha.
+          }
+          LogInformacionTxt(
+            'Pago temporal SERIE ' +
+            IntToStr(LSeriePago) +
+            ' no existe en DETALLE_PAGOS. ' +
+            'Se tratará como referencia stale de rxPagos.'
+          );
+
+          rxPagos.Next;
+          Continue;
+        end;
+
+        if LQry.FieldByName('GLBNUMVTAPOS').IsNull then
+        begin
+          AMensaje :=
+            'El pago SERIE ' +
+            IntToStr(LSeriePago) +
+            ' no tiene GLBNUMVTAPOS.';
+
+          LQry.Close;
+          LTr.Rollback;
+          Exit;
+        end;
+
+        LGlbNumVtaPOSPago :=
+          LQry.FieldByName('GLBNUMVTAPOS').AsInteger;
+
+        if LQry.FieldByName('AREA_TRANS').IsNull then
+          LAreaTrans := 0
+        else
+          LAreaTrans :=
+            LQry.FieldByName('AREA_TRANS').AsInteger;
+
+        if LQry.FieldByName('SERIE_TRN').IsNull then
+          LSerieTrn := 0
+        else
+          LSerieTrn :=
+            LQry.FieldByName('SERIE_TRN').AsInteger;
+
+        LQry.Close;
+
+        {
+          Nunca borrar un pago de otra venta.
+        }
+        if LGlbNumVtaPOSPago <> GlbNumVtaPOS then
+        begin
+          AMensaje :=
+            'El pago temporal SERIE ' +
+            IntToStr(LSeriePago) +
+            ' pertenece a otra venta temporal.' + #13 +
+            'Esperado GLBNUMVTAPOS=' +
+            IntToStr(GlbNumVtaPOS) + ', encontrado=' +
+            IntToStr(LGlbNumVtaPOSPago) + '.';
+
+          LTr.Rollback;
+          Exit;
+        end;
+
+        if LAreaTrans <> 1 then
+        begin
+          AMensaje :=
+            'El pago temporal SERIE ' +
+            IntToStr(LSeriePago) +
+            ' no pertenece al área de ventas.';
+
+          LTr.Rollback;
+          Exit;
+        end;
+
+        {
+          Frontera irreversible:
+          SERIE_TRN > 0 significa que el pago ya pertenece
+          a una venta persistida.
+        }
+        if LSerieTrn > 0 then
+        begin
+          AMensaje :=
+            'El pago SERIE ' +
+            IntToStr(LSeriePago) +
+            ' ya está ligado a la venta persistida ' +
+            IntToStr(LSerieTrn) + '.' + #13 +
+            'No puede eliminarse como pago temporal.';
+
+          LTr.Rollback;
+          Exit;
+        end;
+
+        rxPagos.Next;
+      end;
+    end;
+
+    {
+      2. Protección adicional.
+
+      Aunque rxPagos estuviera incompleto, nunca permitimos
+      cancelar una venta que ya tenga pagos persistidos ligados
+      al mismo GLBNUMVTAPOS.
+    }
+    LQry.Close;
+    LQry.SQL.Text :=
+      'SELECT COUNT(*) AS CANT ' +
+      'FROM DETALLE_PAGOS ' +
+      'WHERE GLBNUMVTAPOS = :GLBNUMVTAPOS ' +
+      '  AND AREA_TRANS = 1 ' +
+      '  AND COALESCE(SERIE_TRN, 0) > 0';
+
+    LQry.ParamByName('GLBNUMVTAPOS').AsInteger :=
+      GlbNumVtaPOS;
+
+    LQry.Open;
+
+    if LQry.FieldByName('CANT').AsInteger > 0 then
+    begin
+      AMensaje :=
+        'Existen pagos de esta venta temporal que ya fueron ' +
+        'ligados a una venta persistida.' + #13 +
+        'La venta no puede abrirse nuevamente.';
+
+      LQry.Close;
+      LTr.Rollback;
+      Exit;
+    end;
+
+    LQry.Close;
+
+    {
+      Sólo validación.
+    }
+    if not AEliminar then
+    begin
+      LTr.Commit;
+      Result := True;
+      Exit;
+    end;
+
+    {
+      3. Eliminar TODOS los pagos todavía temporales
+         pertenecientes exclusivamente a esta venta.
+
+      Ya no dependemos de:
+        - fecha
+        - rxPagos completo
+        - tblDetallePagos.Locate()
+        - dataset del formulario de pagos combinados
+    }
+    LSql.Close;
+    LSql.SQL.Text :=
+      'DELETE FROM DETALLE_PAGOS ' +
+      'WHERE GLBNUMVTAPOS = :GLBNUMVTAPOS ' +
+      '  AND AREA_TRANS = 1 ' +
+      '  AND COALESCE(SERIE_TRN, 0) = 0';
+
+    LSql.ParamByName('GLBNUMVTAPOS').AsInteger :=
+      GlbNumVtaPOS;
+
+    LSql.ExecQuery;
+
+    {
+      4. Verificación posterior.
+    }
+    LQry.Close;
+    LQry.SQL.Text :=
+      'SELECT COUNT(*) AS CANT ' +
+      'FROM DETALLE_PAGOS ' +
+      'WHERE GLBNUMVTAPOS = :GLBNUMVTAPOS ' +
+      '  AND AREA_TRANS = 1 ' +
+      '  AND COALESCE(SERIE_TRN, 0) = 0';
+
+    LQry.ParamByName('GLBNUMVTAPOS').AsInteger :=
+      GlbNumVtaPOS;
+
+    LQry.Open;
+
+    if LQry.FieldByName('CANT').AsInteger > 0 then
+    begin
+      AMensaje :=
+        'No fue posible eliminar completamente los pagos temporales ' +
+        'de la venta GLBNUMVTAPOS=' +
+        IntToStr(GlbNumVtaPOS) + '.';
+
+      LQry.Close;
+      LTr.Rollback;
+      Exit;
+    end;
+
+    LQry.Close;
+
+    LTr.Commit;
+
+    Result := True;
+
+  except
+    on E: Exception do
+    begin
+      if LTr.InTransaction then
+        LTr.Rollback;
+
+      AMensaje :=
+        'Error procesando pagos temporales: ' +
+        E.Message;
+
+      Result := False;
+    end;
+  end;
+
+  LSql.Free;
+  LQry.Free;
+  LTr.Free;
+end;
 end.
-
-
 

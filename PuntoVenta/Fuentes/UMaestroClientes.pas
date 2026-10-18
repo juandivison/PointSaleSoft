@@ -295,6 +295,7 @@ type
     FiltrarNoTranspITBIS1: TMenuItem;
     NoTranspITBISTodos1: TMenuItem;
     SiTranspITBISTodos1: TMenuItem;
+    dsqrytipoECF: TDataSource;
     procedure btnInsertarClick(Sender: TObject);
     procedure btnModificarClick(Sender: TObject);
     procedure btnSalvarClick(Sender: TObject);
@@ -407,6 +408,7 @@ type
     procedure RxLabel1Click(Sender: TObject);
     procedure NoTranspITBISTodos1Click(Sender: TObject);
     procedure SiTranspITBISTodos1Click(Sender: TObject);
+    procedure RxDBLookupCombo3Exit(Sender: TObject);
   private
     { Private declarations }
     procedure InsertarClienteEnWisPro(Codigocte:integer);
@@ -417,6 +419,7 @@ type
     procedure ActivaBotonEliminar(_numpol:integer);
     procedure ProcOpenTerritorios;
     procedure ProcActualizaTranspItbis(tipo: smallint);
+    function TipoCFRequiereCliente(const ATipo: string): Boolean;
 
   public
     { Public declarations }
@@ -571,6 +574,8 @@ begin
         MessageDlg('Debes indicar el límite de crédito.', mtError,[mbOk],0);
         DBEdit6.SetFocus;
       end;
+      if (dmClientes.tblClientesNOMBRE_FACTURAR.Value <> '') then
+      dmClientes.tblClientesNOMBRE_FACTURAR.Value:=Trim(dmClientes.tblClientesNOMBRE_FACTURAR.Value);
 
       GlbSalvarQuery(dmClientes.tblClientes);
       //*****************INSERTAR/ACTUALIZAR CLIENTE EN DB LOANPROCESS
@@ -717,7 +722,9 @@ begin
     dmClientes.qryDearler.Open;
     dmClientes.tblclientes.Filtered:=False;
     RxLabel1.Visible := False;
-    ProcOpenTerritorios;    
+    ProcOpenTerritorios;
+    dmFactura.qrytipoECF.Close;
+    dmFactura.qrytipoECF.Open;
   end;
 end;
 
@@ -752,6 +759,8 @@ begin
   dmUsuarios.qryEmpleados.Open;
   dmClientes.tblClientes.Close;
   dmClientes.tblClientes.Open;
+  dmFactura.qrytipoECF.Close;
+  dmFactura.qrytipoECF.Open;
 
   dmClientes.tblTipoCliente.Close;
   dmClientes.tblTipoCliente.Open;
@@ -765,6 +774,7 @@ begin
   BitBtn14.Visible:= True
   else
   BitBtn14.Visible:= False;
+
   dmfactura.tblTipoCF.Close;
   dmfactura.tblTipoCF.Open;
   GetAnyDate1.Fecha:=GlbFechaTrnDiaria;
@@ -1301,6 +1311,8 @@ begin
     if dmClientes.qryClientes.Locate('RNC_NUMERO',dmClientes.tblClientesRNC_NUMERO.Value,[]) then
     begin
       MessageDlg('Número: '+dmClientes.tblClientesRNC_NUMERO.Value+', existe. Verifique',mtError,[mbok],0);
+      dmclientes.tblClientes.Cancel;
+      Exit;
     end;
     if (GlbActivaECF = 1) then
     btnValidarDGIClick(self);
@@ -1342,19 +1354,19 @@ begin
         dmClientes.tblClientes.Open;
         dmClientes.tblClientes.DisableControls;
         dmClientes.tblClientes.Tag := -1;
-        if not dmClientes.tblClientes.locate('RNC_NUMERO',dmDGII.ibsqlBuscarRazonSocialrnc.Value,[]) then
+        if not dmClientes.tblClientes.locate('RNC_NUMERO', dmDGII.ibsqlBuscarRazonSocialrnc.Value,[]) then
         begin
           dmClientes.tblClientes.Insert;
-          dmClientes.tblClientesNOMBRE_CTE.Value:=dmDGII.ibsqlBuscarRazonSocialRazonSocial.Value;
-          dmClientes.tblClientesNOMBRE_FACTURAR.Value:=dmDGII.ibsqlBuscarRazonSocialRazonSocial.Value;
+          dmClientes.tblClientesNOMBRE_CTE.Value     := dmDGII.ibsqlBuscarRazonSocialRazonSocial.Value;
+          dmClientes.tblClientesNOMBRE_FACTURAR.Value:= dmDGII.ibsqlBuscarRazonSocialRazonSocial.Value;
           nAbr:= dmClientes.tblClientesNOMBRE_FACTURAR.Value;
-          dmClientes.tblClientesNOMBRE_ABREV.Value:= nAbr;
-          dmClientes.tblClientesRNC_NUMERO.Value:=dmDGII.ibsqlBuscarRazonSocialRNC.Value;
-          dmClientes.tblClientesSTATUS_CLIENTE.Value:='A';
-          dmClientes.tblClientesINSERTADO_POR.Value:=strusername;
-          dmClientes.tblClientesFECHA_INSERTADO.Value:=now;
-          dmClientes.tblClientesCIA_KEY.Value:= glbCia_Key;
-          dmClientes.tblClientesTIPO_CLIENTE.Value:=1;
+          dmClientes.tblClientesNOMBRE_ABREV.Value   := nAbr;
+          dmClientes.tblClientesRNC_NUMERO.Value     := dmDGII.ibsqlBuscarRazonSocialRNC.Value;
+          dmClientes.tblClientesSTATUS_CLIENTE.Value := 'A';
+          dmClientes.tblClientesINSERTADO_POR.Value  := strusername;
+          dmClientes.tblClientesFECHA_INSERTADO.Value:= now;
+          dmClientes.tblClientesCIA_KEY.Value        := glbCia_Key;
+          dmClientes.tblClientesTIPO_CLIENTE.Value   := 1;
           DBEdit4Exit(Self);
           if Length(dmClientes.tblClientesNOMBRE_FACTURAR.Value) = 0 then
           dmClientes.tblClientes.Cancel
@@ -2600,5 +2612,31 @@ procedure TfrmClientes.SiTranspITBISTodos1Click(Sender: TObject);
 begin
   ProcActualizaTranspItbis(0);
 end;
+
+procedure TfrmClientes.RxDBLookupCombo3Exit(Sender: TObject);
+begin
+  if dmClientes.tblClientes.State in [dsEdit, dsInsert] then
+  begin
+    if not TipoCFRequiereCliente(dmClientes.tblClientesTIPO_CF.Value) then
+    begin
+      MessageDlg(
+        'El tipo de comprobante seleccionado no Aplica para Ingresos.',
+        mtError,
+        [mbOK],
+        0
+        );
+        RxDBLookupCombo3.ClearValue;
+    end;
+  end;
+end;
+
+function TfrmClientes.TipoCFRequiereCliente(const ATipo: string): Boolean;
+begin
+  Result :=
+    (ATipo = '01') or (ATipo = '14') or (ATipo = '15') or (ATipo = '31') or
+    (ATipo = '32') or 
+    (ATipo = '41') or (ATipo = '44') or (ATipo = '45') or (ATipo = '46') or (ATipo = '47');
+end;
+
 
 end.

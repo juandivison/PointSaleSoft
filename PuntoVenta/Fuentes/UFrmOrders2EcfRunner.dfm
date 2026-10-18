@@ -1,6 +1,6 @@
 object frmOrders2EcfRunner: TfrmOrders2EcfRunner
-  Left = 246
-  Top = 64
+  Left = 225
+  Top = 128
   Width = 1211
   Height = 864
   Caption = 'Orders2Ecf Runner'
@@ -15,6 +15,7 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
   Position = poScreenCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object PanelTop: TPanel
@@ -64,16 +65,20 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
   object gbFolders: TGroupBox
     Left = 0
     Top = 538
-    Width = 505
+    Width = 561
     Height = 212
     Align = alLeft
     Caption = 'Archivos seleccionados'
     TabOrder = 1
+    DesignSize = (
+      561
+      212)
     object lbFolders: TListBox
       Left = 12
-      Top = 24
-      Width = 485
-      Height = 263
+      Top = 16
+      Width = 541
+      Height = 262
+      Anchors = [akLeft, akTop, akBottom]
       ItemHeight = 13
       TabOrder = 0
     end
@@ -139,6 +144,47 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
       Height = 13
       Caption = 'Motivo NCR'
       Visible = False
+    end
+    object lblEnvironment: TLabel
+      Left = 512
+      Top = 15
+      Width = 275
+      Height = 23
+      Alignment = taCenter
+      AutoSize = False
+      Caption = 'AMBIENTE: NO DETERMINADO'
+      Color = clYellow
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlack
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+    end
+    object lblLastEcfCaption: TLabel
+      Left = 1016
+      Top = 103
+      Width = 87
+      Height = 13
+      Caption = 'Ultimo e-CF usado'
+    end
+    object lblLastEcfValue: TLabel
+      Left = 512
+      Top = 41
+      Width = 275
+      Height = 21
+      AutoSize = False
+      Caption = '-'
+      Color = clInfoBk
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clNavy
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
     end
     object rgProcessType: TRadioGroup
       Left = 820
@@ -367,8 +413,6 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
       Width = 233
       Height = 17
       Caption = 'Abrir reporte Excel al terminar'
-      Checked = True
-      State = cbChecked
       TabOrder = 3
     end
     object chkOpenOutputFolder: TCheckBox
@@ -438,11 +482,21 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
       TabOrder = 11
       OnChange = AnyParamControlChange
     end
+    object chkRedondear: TCheckBox
+      Left = 560
+      Top = 48
+      Width = 137
+      Height = 17
+      Caption = 'Redondear decimales'
+      Checked = True
+      State = cbChecked
+      TabOrder = 12
+    end
   end
   object gbLog: TGroupBox
-    Left = 505
+    Left = 561
     Top = 538
-    Width = 698
+    Width = 642
     Height = 212
     Align = alClient
     Caption = 'Log de ejecuci'#243'n'
@@ -450,7 +504,7 @@ object frmOrders2EcfRunner: TfrmOrders2EcfRunner
     object memLog: TMemo
       Left = 2
       Top = 15
-      Width = 694
+      Width = 638
       Height = 195
       Align = alClient
       ReadOnly = True

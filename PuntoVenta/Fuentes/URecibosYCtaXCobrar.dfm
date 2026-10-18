@@ -494,7 +494,7 @@ object FrmRecibosYCtaXCobrar: TFrmRecibosYCtaXCobrar
     object qryDatosBlcCxcNOMBRE_EMPRESA: TIBStringField
       FieldName = 'NOMBRE_EMPRESA'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryDatosBlcCxcTIPO_CLIENTE: TSmallintField
       FieldName = 'TIPO_CLIENTE'
@@ -2551,7 +2551,7 @@ object FrmRecibosYCtaXCobrar: TFrmRecibosYCtaXCobrar
     object qryFactPendNOMBRE_EMPRESA: TIBStringField
       FieldName = 'NOMBRE_EMPRESA'
       Origin = 'CLIENTES.NOMBRE_FACTURAR'
-      Size = 40
+      Size = 150
     end
     object qryFactPendNOMBRE_PERSONAL: TIBStringField
       FieldName = 'NOMBRE_PERSONAL'
