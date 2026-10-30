@@ -1,6 +1,6 @@
 object frmBancos: TfrmBancos
-  Left = 362
-  Top = 242
+  Left = 463
+  Top = 205
   Width = 866
   Height = 531
   Caption = 'Mantenimiento Cta Banco'
@@ -660,8 +660,8 @@ object frmBancos: TfrmBancos
       object DBGrid2: TDBGrid
         Left = 0
         Top = 0
-        Width = 702
-        Height = 284
+        Width = 850
+        Height = 472
         Align = alClient
         DataSource = DataSource1
         TabOrder = 0
@@ -1126,8 +1126,8 @@ object frmBancos: TfrmBancos
     SkinFormtype = sfOnlyThisForm
     Version = '2.65.7.03'
     MenuUpdate = True
-    Left = 429
-    Top = 402
+    Left = 413
+    Top = 362
     SkinStream = {
       42E60000B36E0C00D676B1987EBC760C04AC9D5B8B63007F904FFFDFEBFADF71
       30AC007EFF9BAF75CD6E672D57FEAEF87C6A27CEAF97465D102324EBA08FE29B

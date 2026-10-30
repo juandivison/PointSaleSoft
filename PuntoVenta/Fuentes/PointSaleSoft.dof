@@ -90,7 +90,7 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
 UnitOutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 PackageDLLOutputDir=
 PackageDCPOutputDir=
@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/GLBRUTADB="Expert"
+RunParams=/GLBRUTADB="Electronica"
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -143,5 +143,5 @@ Count=1
 Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 [HistoryLists\hlOutputDirectorry]
 Count=2
-Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
-Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert

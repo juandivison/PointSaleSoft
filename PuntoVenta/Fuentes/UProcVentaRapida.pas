@@ -33108,7 +33108,7 @@ begin
       AMensaje :=
         'Error procesando pagos temporales: ' +
         E.Message;
-
+                            
       Result := False;
     end;
   end;
