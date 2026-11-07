@@ -90,7 +90,7 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\idesi
 UnitOutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 PackageDLLOutputDir=
 PackageDCPOutputDir=
@@ -100,7 +100,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/GLBRUTADB="Electronica"
+RunParams=/GLBRUTADB="IDESI_PROD"
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -142,6 +142,7 @@ Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 Count=1
 Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 [HistoryLists\hlOutputDirectorry]
-Count=2
-Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
-Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+Count=3
+Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\idesi
+Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert

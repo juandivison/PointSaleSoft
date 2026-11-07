@@ -1769,7 +1769,7 @@ UDatModClientes,UDatModFactura,UDlgMotivoNCR,
   UQckFactServ8_5Farmacia, UQckCotServ8_5StandarFarmacia, UDatModPanaderia,
   UFormPrepago, UfrmValidaFactura,  UImpresionVentas, TestMainUnit,
   UPrintDevolucion, UFrmEditProvinciaMunicipio, UfrmConciliareCFConDGII,
-  USetClaveMaestra,UFingerprintIBX, UFacturaTxtBuilder, UFacturaTxtEcfFlow;
+  USetClaveMaestra,UFingerprintIBX, UFacturaTxtBuilder, UFacturaTxtEcfFlow, UEcfApiSwitch, UEcfCanalConfig;
 
 
 {$R *.dfm}
@@ -27651,6 +27651,8 @@ var
   OutputDir: string;
   LQry: TIBQuery;
   LNumeroNCF: string;
+  LRncEmisor: string;
+  LCanalConfig: TEcfCanalConfiguracion;
 
   procedure FallarOInformar(const AMensaje: string);
   begin
@@ -27673,6 +27675,7 @@ var
 begin
   _smg := '';
   LNumeroNCF := '';
+  LRncEmisor := '';
 
   LogInformacionTxt(
     'DGII INICIO. Trn=' + IntToStr(numerotrn)
@@ -27718,10 +27721,11 @@ begin
     LQry.Transaction := dmConectar.IBTransaction1;
 
     LQry.SQL.Text :=
-      'SELECT N.NUMERO_NCF ' +
+      'SELECT N.NUMERO_NCF, C.RNC_NUMERO AS RNC_EMISOR ' +
       'FROM VENTAS_MAST V ' +
       'LEFT JOIN NCF_ASIGNADOS N ' +
       '  ON N.SERIE = V.SERIE_NCF_ASIGNADO ' +
+      'LEFT JOIN COMPANIA C ON C.CODIGO = V.CIA_KEY ' +
       'WHERE V.NUMERO = :NUMERO';
 
     LQry.ParamByName('NUMERO').AsInteger := numerotrn;
@@ -27730,6 +27734,9 @@ begin
     if (not LQry.IsEmpty) and
        (not LQry.FieldByName('NUMERO_NCF').IsNull) then
       LNumeroNCF := Trim(LQry.FieldByName('NUMERO_NCF').AsString);
+    if (not LQry.IsEmpty) and
+       (not LQry.FieldByName('RNC_EMISOR').IsNull) then
+      LRncEmisor := Trim(LQry.FieldByName('RNC_EMISOR').AsString);
   finally
     LQry.Free;
   end;
@@ -27769,6 +27776,35 @@ begin
     Exit;
   end;
 
+  { CP9: resolver el canal DESPUES de validar la factura persistida.
+    Tambien bloquea ASLAN si existe un intento API del mismo TRN. }
+  LCanalConfig := ResolverCanalEcfTransaccion(
+    dmConectar.IBDatabase1, dmConectar.IBTransaction1,
+    LRncEmisor, numerotrn);
+
+  if LCanalConfig.Canal = ceIdesiApi then
+  begin
+    LogInformacionTxt(
+      'DGII API CP9 BLOQUEADO. Trn=' + IntToStr(numerotrn) +
+      ' eNCF=' + LNumeroNCF +
+      ' Ambiente=' + NombreAmbienteEcf(LCanalConfig.Ambiente)
+    );
+    if LCanalConfig.Ambiente <> aeTest then
+      raise Exception.Create(
+        'IDESI_API PROD NO habilitado. No se envio ningun e-CF.');
+    if Copy(LNumeroNCF, 1, 3) <> 'E31' then
+      raise Exception.Create(
+        'IDESI_API CP9 solo admite E31 para preparacion TEST.');
+    { Nunca se hace POST desde este cierre en CP9; evita
+      preparar un intento basado en datos aun no confirmados.
+      Se usa UEcfApiQaE31 explicitamente en ambiente TEST. }
+    raise Exception.Create(
+      'IDESI_API TEST seleccionado. En CP9 la emision automatica ' +
+      'esta bloqueada. Ejecutar preparacion QA sobre factura ' +
+      'confirmada y conciliar antes del primer POST.');
+  end;
+
+  { Desde aqui quedan IDENTICAS las dos rutas tradicionales. }
   if GlbUsarFacturaTxtECF = 1 then
   begin
     try

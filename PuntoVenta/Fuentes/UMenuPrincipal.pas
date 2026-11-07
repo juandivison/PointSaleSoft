@@ -800,6 +800,8 @@ type
     { Private declarations }
      procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
      //procedure VentasBYM;
+     procedure ConfigurarMenuEcf;
+     procedure AdministracionEcfClick(Sender: TObject);
      procedure HandleException(Sender: TObject; E: Exception);
      Procedure ShowHint(Sender: TObject);
     procedure ProcesarCierreDiaTrn;
@@ -831,7 +833,7 @@ implementation
 
 uses
 //UProcVentaRapidaByM,
-UInventarioProd, UTipoInventario,UConfirmaLicencia,
+UfrmEcfCanalConfig, UInventarioProd, UTipoInventario,UConfirmaLicencia,
   UInventarioHistorico, UCtrlIngresos, UMaestroClientes, UTransaccionesCxc,
   UAcercaDe, UDatModCompania, UDatModCxc, Uglobal,
   UBalanceCxcClientes, UDebitosycreditosaplicados, UEntradaDeUsuarios,
@@ -2437,8 +2439,68 @@ begin
   end;
 end;
 
+procedure TfrmMenuPrincipal.ConfigurarMenuEcf;
+var
+  I: Integer;
+  ItemEcf: TMenuItem;
+begin
+  if Configuracion1 = nil then Exit;
+  ItemEcf := nil;
+  for I := 0 to Configuracion1.Count - 1 do
+    if Configuracion1.Items[I].Name = 'miEcfAdminCanal' then
+    begin
+      ItemEcf := Configuracion1.Items[I];
+      Break;
+    end;
+  if ItemEcf = nil then
+  begin
+    ItemEcf := TMenuItem.Create(Self);
+    ItemEcf.Name := 'miEcfAdminCanal';
+    ItemEcf.Caption := 'e-CF: canales e intentos (TEST)';
+    ItemEcf.OnClick := AdministracionEcfClick;
+    Configuracion1.Add(ItemEcf);
+  end;
+  ItemEcf.Enabled := GlbIsAutenticado and
+    (varTipousuario in [0, 2]) and
+    (Trim(GlbUsuarioLogueado) <> '');
+  ItemEcf.Visible := ItemEcf.Enabled;
+end;
+
+procedure TfrmMenuPrincipal.AdministracionEcfClick(Sender: TObject);
+var
+  PuedeEditar: Boolean;
+begin
+  { Revalidar privilegio al hacer clic; ocultar menu no es autorizacion. }
+  if (not GlbIsAutenticado) or
+     (not (varTipousuario in [0, 2])) or
+     (Trim(GlbUsuarioLogueado) = '') or
+     (not Configuracion1.Enabled) then
+  begin
+    MessageDlg('Acceso no autorizado al mantenimiento e-CF.',
+      mtWarning, [mbOK], 0);
+    Exit;
+  end;
+  if (dmConectar = nil) or (not dmConectar.IBDatabase1.Connected) then
+  begin
+    MessageDlg('La conexion Firebird principal no esta disponible.',
+      mtError, [mbOK], 0);
+    Exit;
+  end;
+  { Tipo 0 = acceso completo en la aplicacion actual.
+    Tipo 2 = supervisor, acceso SOLO CONSULTA en esta fase. }
+  PuedeEditar := (varTipousuario = 0);
+  try
+    MostrarMantenimientoEcf(dmConectar.IBDatabase1,
+      GlbUsuarioLogueado, PuedeEditar);
+  except
+    on E: Exception do
+      MessageDlg('No se pudo abrir mantenimiento e-CF: ' + E.Message,
+        mtError, [mbOK], 0);
+  end;
+end;
 procedure TfrmMenuPrincipal.ActivaPermisos;
 begin
+  ConfigurarMenuEcf;
   case varTipousuario of
   0,2:begin
         reportes1.Enabled:=True;
@@ -2762,7 +2824,7 @@ begin
     qckSalidaRuta.Preview;
   finally
   qckSalidaRuta.Free;
-  qckSalidaRuta:=Nil;
+  qckSalidaRuta:=Nil;                     
   end;
 end;
 
@@ -5510,8 +5572,11 @@ procedure TfrmMenuPrincipal.SetLogoCia;
 var
   xGrafico : String;
 begin
-  Image2.Picture.Assign(nil);
   if dmCompania.tblCompania.Locate('codigo', GlbCodigoCia,[]) then
+  begin
+    if dmCompania.tblCompaniaRNC_NUMERO.Value = '130177092' then
+    exit;
+    Image2.Picture.Assign(nil);
     if  FileExists(dmCompania.tblCompaniaIMAGEN_DESKTOP.Value) then
     if (Length(dmCompania.tblCompaniaIMAGEN_DESKTOP.Value) > 0) then
     begin
@@ -5528,7 +5593,7 @@ begin
       if (xGrafico <> '') then
       Image2.Picture.LoadFromFile(xGrafico);
     end;
-
+  end;
   {
   if dmCompania.tblCompania.Locate('codigo', GlbCodigoCia,[]) then
     if  FileExists(dmCompania.tblCompaniaLOGOCIA.Value) then
