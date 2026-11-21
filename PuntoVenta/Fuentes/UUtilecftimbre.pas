@@ -38,7 +38,7 @@ function GetTieneeCF(trn :Integer):Boolean;
 function FindQrFileRecursive(const RootDir, FileName: string): string;
 
 implementation
-uses uglobal;
+uses uglobal, UEcfTimbreVentaLocal;
 
 function GetTieneeCF(trn :Integer):Boolean;
 var
@@ -363,65 +363,50 @@ begin
   q.Free;
 end;}//Debe ser mejorado esta muy lento
 
-function GetUrlImageTimbre(trn :Integer;var codseg:string;var femision:string):String;
-var
-  q:TIBQuery;
+function GetUrlImageTimbre(trn:Integer;var codseg:string;var femision:string):string;
+var Q:TIBQuery;Tx:TIBTransaction;Aviso,Retorno:string;Intento:Integer;Stamp:TTimbreVentaLocal;
 begin
-q := TIBQuery.Create(nil);
+  Result:='';codseg:='';femision:='';
+  Tx:=TIBTransaction.Create(nil);Q:=TIBQuery.Create(nil);
   try
-    q.Database := dmConectar.IBDatabase1;
-    q.SQL.Text :=
-      'SELECT  '+
-      'CODIGO_SEGURIDAD, FECHA_CREACION, '+ 
-      'URL_IMAGE FROM ECF_TIMBRE_LOG '+
-      'Where trn=:trn';
-    q.ParamByName('TRN').AsInteger:= trn;
-    q.open;
-    if (not q.fieldbyname('URL_IMAGE').IsNull) and (q.fieldbyname('URL_IMAGE').AsString <> '') then
+    Tx.DefaultDatabase:=dmConectar.IBDatabase1;Q.Database:=dmConectar.IBDatabase1;Q.Transaction:=Tx;
+    for Intento:=0 to 1 do
     begin
-      codseg  := q.fieldbyname('CODIGO_SEGURIDAD').AsString;
-      femision:= q.fieldbyname('FECHA_CREACION').AsString;
-      result  := q.fieldbyname('URL_IMAGE').AsString;
-    end else Result:='';
-  except
-    on E: Exception do
-    begin
-      LogInformacionTxt('Error GetRutaTimbre ->'+E.Message);
-      MessageDlg(E.Message, mtError, [mbOK], 0);
-      codseg:='';
-      femision:='';
-      Result := '';
+      Tx.StartTransaction;
+      Q.SQL.Text:='SELECT FIRST 1 R.CODIGO_SEGURIDAD,R.FECHA_EMISION,R.URL_IMAGE,R.ENCF,R.MONTO_TOTAL,C.RNC_NUMERO FROM ECF_TIMBRE_LOG R '+
+        'JOIN VENTAS_MAST V ON V.NUMERO=R.TRN JOIN NCF_ASIGNADOS N ON N.SERIE=V.SERIE_NCF_ASIGNADO '+
+        'JOIN COMPANIA C ON C.CODIGO=V.CIA_KEY WHERE R.TRN=:T AND R.ENCF=N.NUMERO_NCF AND R.CODIGO_SEGURIDAD IS NOT NULL '+
+        'AND CHAR_LENGTH(TRIM(R.CODIGO_SEGURIDAD))=6 AND R.FECHA_EMISION IS NOT NULL '+
+        'AND R.MONTO_TOTAL IS NOT NULL AND R.URL_IMAGE IS NOT NULL AND CHAR_LENGTH(TRIM(R.URL_IMAGE))>0 ORDER BY R.ID DESC';
+      Q.ParamByName('T').AsInteger:=trn;Q.Open;
+      if not Q.Eof then begin
+        Retorno:=Q.Fields[0].AsString+'|'+Q.Fields[3].AsString+'|'+
+          FormatDateTime('dd-mm-yyyy hh:nn:ss',Q.Fields[1].AsDateTime)+'|'+
+          StringReplace(FormatFloat('0.00',Q.Fields[4].AsCurrency),DecimalSeparator,'.',[rfReplaceAll])+'|urlImage='+Q.Fields[2].AsString;
+        if not LeerRetornoTimbre(Retorno,Stamp) or (Stamp.Rnc<>Trim(Q.Fields[5].AsString)) then
+          raise Exception.Create('Timbre guardado no corresponde a la factura/empresa');
+        codseg:=Stamp.Codigo;femision:=FormatDateTime('dd-mm-yyyy hh:nn:ss',Stamp.Fecha);Result:=Stamp.Url;
+        Q.Close;Tx.Rollback;Break;
+      end;
+      Q.Close;Tx.Rollback;
+      if Intento=0 then
+        if not RestaurarTimbreVentaLocal(dmConectar.IBDatabase1,trn,GlbRutaEcf,'',Aviso)then Break;
     end;
-  end;
-  q.Free;
+  except on E:Exception do begin
+    LogInformacionTxt('Timbre impresion TRN='+IntToStr(trn)+': '+E.Message);
+    Result:='';codseg:='';femision:='';
+  end;end;
+  if Tx.InTransaction then Tx.Rollback;Q.Free;Tx.Free;
 end;
 
-function GetRutaTimbre(trn :Integer;var codseg:string;var femision:string):String;
-var
-  q:TIBQuery;
+function GetRutaTimbre(trn:Integer;var codseg:string;var femision:string):string;
+var Url:string;
 begin
-q := TIBQuery.Create(nil);
+  Result:='';Url:=GetUrlImageTimbre(trn,codseg,femision);if Url='' then Exit;
   try
-    q.Database := dmConectar.IBDatabase1;
-    q.SQL.Text :=
-      'SELECT  '+
-      'CODIGO_SEGURIDAD, FECHA_CREACION, URL_IMAGE from ECF_TIMBRE_LOG '+
-      'Where trn=:trn';
-    q.ParamByName('TRN').AsInteger:= trn;
-    q.open;
-    codseg:=q.fieldbyname('CODIGO_SEGURIDAD').AsString;
-    femision:=q.fieldbyname('FECHA_CREACION').AsString;
-    result:=StringReplace(GlbRutaQREcf,'[numerotrn]',IntToStr(trn),[rfReplaceAll,rfIgnoreCase]);
-    LogInformacionTxt('Ruta QR ->'+result);
-  except
-    on E: Exception do
-    begin
-      LogInformacionTxt('Error GetRutaTimbre ->'+E.Message);
-      MessageDlg(E.Message, mtError, [mbOK], 0);
-      Result := '';
-    end;
-  end;
-  q.Free;
+    Result:=StringReplace(GlbRutaQREcf,'[numerotrn]',IntToStr(trn),[rfReplaceAll,rfIgnoreCase]);
+    CrearImagenQrTimbre(Url,Result);
+  except on E:Exception do begin Result:='';LogInformacionTxt('QR Delphi: '+E.Message);end;end;
 end;
 
 function SafePosEq(const S: string): Integer;
@@ -646,89 +631,12 @@ end;
 
 function SaveTimbreToFirebird(const ADatabase: TIBDatabase; const ATrans: TIBTransaction;
   ATRN: Integer; const ReturnTimbre: string): Boolean;
-var
-  q: TIBQuery;
-  CodigoSeg, Encf, FechaEmiStr, MontoStr, UrlImg: string;
-  dt: TDateTime;
-  monto: Double;
-  db: TIBDatabase;
-  tr: TIBTransaction;
-  p: Integer;
-  MontoLocal: string;
+var DB:TIBDatabase;T:TTimbreVentaLocal;
 begin
-  Result := False;
-  if GetTieneeCF(ATRN) then
-  begin
-    result:=True;
-    Exit;
-  end;
-  // 1) Parsear el string "returntimbre"
-  ParseReturnTimbre(ReturnTimbre, CodigoSeg, Encf, FechaEmiStr, MontoStr, UrlImg);
-
-  // 2) Convertir fecha y monto de forma compatible con D7
-  if not ParseFechaEmision(FechaEmiStr, dt) then
-    dt := Now;
-
-  // Monto viene con '.' como decimal; adaptarlo al SeparadorDecimal local si es necesario
-  MontoLocal := MontoStr;
-  if (DecimalSeparator <> '.') then
-  begin
-    // cambiar solo el separador decimal (asumiendo que no hay miles)
-    p := LastDelimiter('.0123456789', MontoLocal); // fallback simple
-    // más simple y efectivo: reemplazar '.' por DecimalSeparator
-    MontoLocal := StringReplace(MontoLocal, '.', DecimalSeparator, [rfReplaceAll]);
-  end;
-
-  if MontoLocal <> '' then
-    try
-      monto := StrToFloat(MontoLocal);
-    except
-      monto := 0;
-    end
-  else
-    monto := 0;
-
-  // 3) Determinar DB y TR a usar
-  db := ADatabase;
-  tr := ATrans;
-
-  if db = nil then db := dmConectar.IBDatabase1;
-  if tr = nil then tr := dmConectar.IBTransaction1;
-
-  q := TIBQuery.Create(nil);
-  try
-    q.Database := db;
-    q.Transaction := tr;
-    q.SQL.Text :=
-      'INSERT INTO ECF_TIMBRE_LOG '+
-      '(TRN, ENCF, CODIGO_SEGURIDAD, FECHA_EMISION, MONTO_TOTAL, URL_IMAGE) '+ //, RAW_RETURN
-      'VALUES (:TRN, :ENCF, :CODIGO_SEGURIDAD, :FECHA_EMISION, :MONTO_TOTAL, :URL_IMAGE)'; //, :RAW_RETURN
-
-    q.ParamByName('TRN').AsInteger             := ATRN;
-    q.ParamByName('ENCF').AsString             := Encf;
-    q.ParamByName('CODIGO_SEGURIDAD').AsString := CodigoSeg;
-    q.ParamByName('FECHA_EMISION').AsDateTime  := dt;
-    q.ParamByName('MONTO_TOTAL').AsCurrency      := monto;
-    q.ParamByName('URL_IMAGE').AsString        := UrlImg;
-    //evitar subirlo para ahorrar espacio en DB
-    //q.ParamByName('RAW_RETURN').AsString       := ReturnTimbre;
-
-    if not tr.InTransaction then
-      tr.StartTransaction;
-    q.ExecSQL;
-    tr.Commit;
-
-    Result := True;
-  except
-    on E: Exception do
-    begin
-      if tr.InTransaction then
-        tr.Rollback;
-      MessageDlg('Error guardando timbre: ' + E.Message, mtError, [mbOK], 0);
-      Result := False;
-    end;
-  end;
-  q.Free;
+  Result:=False;DB:=ADatabase;if DB=nil then DB:=dmConectar.IBDatabase1;
+  if not LeerRetornoTimbre(ReturnTimbre,T) then Exit;
+  // Transaccion propia: no confirma ni revierte cambios de la pantalla.
+  Result:=GuardarTimbreVentaLocal(DB,ATRN,T);
 end;
 
 procedure GuardarTimbreEjemplo(trn:Integer;ReturnTimbre:string);

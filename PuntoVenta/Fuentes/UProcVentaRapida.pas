@@ -1391,6 +1391,8 @@ type
     Function VerificaClave:Boolean;
     Function VerificaHuellas:boolean;
 
+    function PrepararSecuenciaRemotaVenta(
+      const ATipo: string; out ANcf: string; out ASerie: Integer): string;
     procedure ProcVentaConNCF(tiponcf:String; Var valorNCF:String; Var seriedoc:Integer; Var serie_asignadoncf : Integer);
 
     procedure ProcVenta(valorNCF:String; Serie_Asignadoncf:Integer; Var serieDoc:Integer);
@@ -1711,7 +1713,7 @@ var
   LSaldoPendienteCXC: Currency;
   
 implementation
-uses UDatModConectar, UGlobal, URepComprobante, UDatModCompania,UDatModReportes,
+uses UEcfSecuenciaRemota, UEcfSecuenciaVenta, UEcfSecuenciaCola, UDatModConectar, UGlobal, URepComprobante, UDatModCompania,UDatModReportes,
 UDatModClientes,UDatModFactura,UDlgMotivoNCR,
   UProcMiniInventario, UFormSelFecha, URepVentaDiaria,
    USeleccionarNCF, uFormAsignarNCFVenta, UTicketCustomSize,
@@ -1769,7 +1771,8 @@ UDatModClientes,UDatModFactura,UDlgMotivoNCR,
   UQckFactServ8_5Farmacia, UQckCotServ8_5StandarFarmacia, UDatModPanaderia,
   UFormPrepago, UfrmValidaFactura,  UImpresionVentas, TestMainUnit,
   UPrintDevolucion, UFrmEditProvinciaMunicipio, UfrmConciliareCFConDGII,
-  USetClaveMaestra,UFingerprintIBX, UFacturaTxtBuilder, UFacturaTxtEcfFlow, UEcfApiSwitch, UEcfCanalConfig;
+  USetClaveMaestra,UFingerprintIBX, UFacturaTxtBuilder, UFacturaTxtEcfFlow, UEcfApiSwitch, UEcfCanalConfig, UEcfApiRutaIngresos, UEcfApiIntento,
+  UQckFactServ8_5Ferreteria, UQckCotServ8_11Ferreteria;
 
 
 {$R *.dfm}
@@ -2612,7 +2615,11 @@ var
   VentaCompleta: Boolean;
   PasoPersistencia: string;
   MensajeValidacion: string;
+  SecRemota: Boolean;
+  RequestSecRemota: string;
 begin
+  SecRemota := False;
+  RequestSecRemota := '';
   numeroTrnVta := -1;
   MasterCreado := False;
   VentaCompleta := False;
@@ -3075,7 +3082,14 @@ end;
   if (GlbEsDebugFiscal = 1) and not CheckBox1.Checked then
   WriteToLog('Opcion para Asignar NCF desactivada');
 
-  if CheckBox1.Checked then
+  SecRemota := CheckBox1.Checked and (GlbActivaECF = 1) and
+    OrigenSecuenciaRemoto(ExtractFilePath(Application.ExeName) + 'repconf_cr.ini',
+      GlbCodigoCia, Trim(GlbCodSucursal));
+  if SecRemota then
+    RequestSecRemota := PrepararSecuenciaRemotaVenta(
+      TotalesTipoNCF.AsString, valorNCF, serie_asignadoncf);
+
+  if CheckBox1.Checked and not SecRemota then
   begin
     try
       if Assigned(frmSelNCF) then
@@ -3470,7 +3484,10 @@ end;
   end else
   begin
     ipStpInsertVentMast.Params[16].Value:= Null;
-    ipStpInsertVentMast.Params[36].Value:= Null;
+    if SecRemota then
+      ipStpInsertVentMast.Params[36].Value := TotalesTipoNCFIFiscal.Value
+    else
+      ipStpInsertVentMast.Params[36].Value:= Null;
   end;
 
   ipStpInsertVentMast.Params[39].Value:= TotalesPropina.Value;
@@ -3514,6 +3531,9 @@ end;
 
     numeroTrnVta := ipStpInsertVentMast.Params[0].Value;
     NumeroTrn := numeroTrnVta;
+    if SecRemota then
+      VincularVentaSecuenciaEnTransaccion(dmConectar.IBDatabase1,
+        ipStpInsertVentMast.Transaction, RequestSecRemota, numeroTrnVta);
     MasterCreado := True;
     VentaCompleta := False;
     isMasterSave := True;
@@ -4119,7 +4139,7 @@ end;
     Totales.Edit;
     TotalesVentaGuardada.Value := 1;
     Totales.Post;
-
+    
     VentaCompleta := True;
 
   except
@@ -4745,7 +4765,7 @@ begin
     TipoVenta := 'CREDITO'
     else
     if dmReportes.qryViewVentasMastForma_pago.value = 1 then
-      TipoVenta := 'CONTADO';
+      TipoVenta := 'CONTADO';                                             
 
       if (TipoVenta = 'CONTADO') then
       AbrirDatosParaTicket(false,false,dmReportes.qryViewVentasMastCODIGO_CTE.AsString,dmReportes.qryViewVentasMastNUMERO_DOC_PAGO.AsInteger,
@@ -4887,6 +4907,65 @@ begin
       begin                       
         UImpresionVentas.ImprimeFacturaEXDMAR(0,TipoVenta,valorNCF,'Facturas');
       end else
+   if (GlBFerreteria = 1) then  //Ferrecentro Bayahibe
+   begin
+     //qckFact8_5Ferreteria
+     UImpresionVentas.ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
+
+      TipoVenta:='CONTADO';
+      if dmReportes.qryViewVentasMastForma_pago.AsInteger in [7,8] then
+      TipoVenta := 'CREDITO'
+      else
+      if dmReportes.qryViewVentasMastForma_pago.value = 1 then
+      TipoVenta := 'CONTADO';
+
+      if (TipoVenta = 'CONTADO') then
+      AbrirDatosParaTicket(false,false,dmReportes.qryViewVentasMastCODIGO_CTE.AsString,
+      dmReportes.qryViewVentasMastNUMERO_DOC_PAGO.AsInteger,
+      dmReportes.qryViewVentasMastFECHA.Value)
+      else
+      if (TipoVenta = 'CREDITO') then
+      AbrirDatosParaTicket(false,true,dmReportes.qryViewVentasMastCODIGO_CTE.AsString,
+      dmReportes.qryViewVentasMastNUMERO_FACTURA.AsInteger,
+      dmReportes.qryViewVentasMastFECHA.Value);
+
+      if (dmreportes.qryViewVentasMastFORMA_PAGO.Value = 7) or (GlbSizeFact8x11 = 1) then
+      begin
+        qckFact8_5Ferreteria:=TqckFact8_5Ferreteria.Create(Nil);
+        try
+          if dmReportes.qryViewVentasMastMONTO_EXONERADO_ITBIS.Value > 0 then
+          begin
+            qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS Exonerado';
+          end  else
+          qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS';
+
+          qckFact8_5Ferreteria.TPag.Caption:=
+          IntToStr(qckFact8_5Ferreteria.PageNumber);
+          qckFactServ8_5Ayaco.xtipoVenta := TipoVenta;//dmFactura.qryVentaFactura.sql.text
+          qckFact8_5Ferreteria.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+          if (GlbImpReciboSinPreg = 1) then
+              qckFact8_5Ferreteria.Print
+          else
+          if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+          begin
+            qckFact8_5Ferreteria.PrinterSetup;
+            qckFact8_5Ferreteria.Print;
+          end else
+          qckFact8_5Ferreteria.Preview;
+                                                     
+          if (GlbImpReciboSinPreg = 0) then
+          if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+          begin
+            qckFact8_5Ferreteria.Preview;
+          end;
+          if GlbImpPDF then
+          if not dmFactura.qryVentaFacturaNUMERO_FACTURA.IsNull then
+          ReportExportPDF(qckFact8_5Ferreteria,GlbRutaFacturas+'\Facturas'+IntToStr(dmFactura.qryVentaFacturaNUMERO_FACTURA.Value)+'.pdf');
+          finally
+          qckFact8_5Ferreteria.Free;
+          qckFact8_5Ferreteria:=Nil;
+          end;
+   end else
     if ((GlBAyaco= 1) or (GlBTapiceria = 1) or (GlBInveraf =1)) and (GlbRec3Pulg = 0) then
     begin
       UImpresionVentas.ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
@@ -4894,7 +4973,7 @@ begin
       TipoVenta:='CONTADO';
       if dmReportes.qryViewVentasMastForma_pago.AsInteger in [7,8] then
       TipoVenta := 'CREDITO'
-      else
+      else                                                        
       if dmReportes.qryViewVentasMastForma_pago.value = 1 then
       TipoVenta := 'CONTADO';
 
@@ -6178,6 +6257,7 @@ begin
       qckRepReciboReimpTicketSurtidoraNew.Free;
       qckRepReciboReimpTicketSurtidoraNew:=Nil;
       end;
+    end;
     end;
   end; //fin impresion venta al contado
 end;
@@ -10335,7 +10415,40 @@ begin
               dmfactura.qryRepCotizaNewNOMBRE_ABREV.Value +
               dmfactura.qryRepCotizaNewNUMERO.AsString + '.pdf'),
               '', '', SW_SHOWNORMAL);
-        end
+        end                                     
+        else if (GlbFerreteria = 1 ) then
+        begin
+          qckCot8_11Ferreteria:= TqckCot8_11Ferreteria.Create(Nil);
+          try
+            if (not DirectoryExists(GlbRutaCotizaciones)) then
+              CreateDir(GlbRutaCotizaciones);
+              
+            if GlbImpPDF then
+              ReportExport(qckCot8_11Ferreteria,
+                GlbRutaCotizaciones + '\Cotizacion' +
+                dmfactura.qryRepCotizaNewNOMBRE_ABREV.Value +
+                dmfactura.qryRepCotizaNewNUMERO.AsString + '.pdf');
+
+            if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+            begin
+              qckCot8_11Ferreteria.PrinterSetup;
+              qckCot8_11Ferreteria.Print;
+            end
+            else
+              qckCot8_11Ferreteria.Preview;
+          finally
+            qckCot8_11Ferreteria.Free;
+            qckCot8_11Ferreteria:= Nil;
+          end;
+
+          if GlbImpPDF then
+            ShellExecute(0, nil, PChar(
+              ExtractFilePath(Application.ExeName) +
+              GlbRutaCotizaciones + '\Cotizacion' +
+              dmfactura.qryRepCotizaNewNOMBRE_ABREV.Value +
+              dmfactura.qryRepCotizaNewNUMERO.AsString + '.pdf'),
+              '', '', SW_SHOWNORMAL);
+        end 
         else if ((GlBAyaco = 1) or (GlBTapiceria = 1) or (GlBInveraf = 1)) then
         begin
           qckCotServ8_5Ayaco := TqckCotServ8_5Ayaco.Create(Nil);
@@ -12351,10 +12464,63 @@ begin
   end;
 end;
 
+
+function TfrmProcVentaRapida.PrepararSecuenciaRemotaVenta(
+  const ATipo: string; out ANcf: string; out ASerie: Integer): string;
+var Reserva: TRespuestaSecuencia; Usuario: Integer;
+begin
+  ANcf := '';
+  ASerie := -1;
+  if TipoCFRequiereCliente(ATipo) and
+     (tablaPropietarioCodigoPropietario.IsNull or
+      (tablaPropietarioCodigoPropietario.AsInteger <= 0)) then
+    raise Exception.Create('Se requiere cliente antes de reservar e-NCF.');
+  if (ATipo = '32') and not ValidarCompradorE32AltoMonto then
+    raise Exception.Create('Comprador E32 pendiente de validacion.');
+  if (GlbNumVtaPOSTmp = -1) then ProcInsertCtrlNumVta;
+  Result := PrepararPendienteSecuenciaVenta(dmConectar.IBDatabase1,
+    ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
+    Trim(GlbCodSucursal), GlbNumVtaPOSTmp, ATipo);
+  GlbSecECFGenerada := False;
+  Reserva := ObtenerReservaSecuenciaVenta(dmConectar.IBDatabase1,
+    ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
+    Trim(GlbCodSucursal), Result);
+  if (Reserva.Resultado = 'ASIGNADO') or (Reserva.Resultado = 'MISMA_RESERVA') then
+  begin
+    Usuario := VarUsuarioGlb;
+    if GlbcodVendedor > 0 then Usuario := GlbcodVendedor;
+    try
+      ASerie := RegistrarNcfSecuenciaVenta(dmConectar.IBDatabase1, Reserva,
+        GlbFechaTrnDiaria, tablaPropietarioCodigoPropietario.AsInteger,
+        Usuario, Totalestotalneto.AsCurrency);
+      ANcf := Reserva.ENcf;
+      GlbSecECFGenerada := True;
+    except
+      // La reserva confirmada conserva su identidad para conciliacion.
+      ASerie := -1;
+      ANcf := '';
+    end;
+  end;
+  if ANcf = '' then GlbDescNCF := 'PENDIENTE e-NCF (E' + ATipo + ')'
+  else GlbDescNCF := dmFactura.ibQryViewNCFDESCRIPCION_2018.AsString;
+  if Totales.State = dsBrowse then Totales.Edit;
+  Totalesncf_numero.AsString := ANcf;
+  TotalesqrLabelNcfDesc.AsString := GlbDescNCF;
+  if not LlenandoDatos then Totales.Post;
+end;
+
 procedure TfrmProcVentaRapida.ProcVentaConNCF(tiponcf:String;var ValorNCF:String;var seriedoc:Integer; var serie_asignadoncf : Integer);
 begin
   //LogProcedure('TfrmProcVentaRapida.ProcVentaConNCF');
   //Generar y Asignar Numero de Comprobante Fiscal
+  if CheckBox1.Checked and (GlbActivaECF = 1) and
+    OrigenSecuenciaRemoto(ExtractFilePath(Application.ExeName) + 'repconf_cr.ini',
+      GlbCodigoCia, Trim(GlbCodSucursal)) then
+  begin
+    PrepararSecuenciaRemotaVenta(tipoNCF, valorNCF, serie_asignadoncf);
+    serieDoc := -1;
+    Exit;
+  end;
   valorNCF:='';
   serieDoc:= -1;//indica que no se generó el NCF
   
@@ -13549,7 +13715,13 @@ procedure TfrmProcVentaRapida.ProcVenta(valorNCF:String;Serie_Asignadoncf:Intege
 var
   xexiste : boolean;
   cantidadanterior:real;
+  RequestSecRemota: string;
 begin
+  RequestSecRemota := '';
+  if CheckBox1.Checked and (GlbActivaECF = 1) then
+    RequestSecRemota := PrepararPendienteSecuenciaVenta(dmConectar.IBDatabase1,
+      ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
+      Trim(GlbCodSucursal), GlbNumVtaPOSTmp, TotalesTipoNCF.AsString);
   //LogProcedure('TfrmProcVentaRapida.ProcVenta');
   xexiste := false;
 
@@ -13682,6 +13854,9 @@ begin
   end;
 
   numeroTrnVta:= ipStpInsertVentMast.Params[0].Value;
+  if RequestSecRemota <> '' then
+    VincularVentaSecuenciaEnTransaccion(dmConectar.IBDatabase1,
+        ipStpInsertVentMast.Transaction, RequestSecRemota, numeroTrnVta);
   ProcUpdateCtrlNumVta(numeroTrnVta);
   ProcGuardarDatosCoti(numeroTrnVta);
    
@@ -27653,6 +27828,8 @@ var
   LNumeroNCF: string;
   LRncEmisor: string;
   LCanalConfig: TEcfCanalConfiguracion;
+  LTieneIntento: Boolean;
+  LIntento: TEcfApiIntento;
 
   procedure FallarOInformar(const AMensaje: string);
   begin
@@ -27778,30 +27955,39 @@ begin
 
   { CP9: resolver el canal DESPUES de validar la factura persistida.
     Tambien bloquea ASLAN si existe un intento API del mismo TRN. }
-  LCanalConfig := ResolverCanalEcfTransaccion(
+  LCanalConfig := ResolverCanalEcfConsulta(
     dmConectar.IBDatabase1, dmConectar.IBTransaction1,
-    LRncEmisor, numerotrn);
+    LRncEmisor, numerotrn, LTieneIntento, LIntento);
+
+  if EsVentaSecuenciaRemota(dmConectar.IBDatabase1,
+    dmConectar.IBTransaction1, numerotrn) and
+    ((LCanalConfig.Canal <> ceIdesiApi) or (LCanalConfig.Ambiente <> aeTest)) then
+  begin
+    FallarOInformar('La reserva remota de QA requiere canal IDESI_API en TEST.');
+    Exit;
+  end;
 
   if LCanalConfig.Canal = ceIdesiApi then
   begin
-    LogInformacionTxt(
-      'DGII API CP9 BLOQUEADO. Trn=' + IntToStr(numerotrn) +
-      ' eNCF=' + LNumeroNCF +
-      ' Ambiente=' + NombreAmbienteEcf(LCanalConfig.Ambiente)
-    );
-    if LCanalConfig.Ambiente <> aeTest then
-      raise Exception.Create(
-        'IDESI_API PROD NO habilitado. No se envio ningun e-CF.');
-    if Copy(LNumeroNCF, 1, 3) <> 'E31' then
-      raise Exception.Create(
-        'IDESI_API CP9 solo admite E31 para preparacion TEST.');
-    { Nunca se hace POST desde este cierre en CP9; evita
-      preparar un intento basado en datos aun no confirmados.
-      Se usa UEcfApiQaE31 explicitamente en ambiente TEST. }
-    raise Exception.Create(
-      'IDESI_API TEST seleccionado. En CP9 la emision automatica ' +
-      'esta bloqueada. Ejecutar preparacion QA sobre factura ' +
-      'confirmada y conciliar antes del primer POST.');
+    try
+      if ProcesarIdesiSiCorresponde(numerotrn, GlbUsarFacturaTxtECF,
+         GlbRutaEcf, ExtractFilePath(Application.ExeName) +
+         'repconf_cr.ini', _smg) then
+      begin
+        LogInformacionTxt('DGII IDESI_API. Trn=' + IntToStr(numerotrn) +
+          ' e-NCF=' + LNumeroNCF + ' ' + _smg);
+        if GlbEsDebugFiscal = 1 then
+          MessageDlg(_smg, mtInformation, [mbOK], 0);
+        Exit;
+      end;
+    except
+      on E: Exception do
+      begin
+        FallarOInformar('IDESI API: ' + E.Message);
+        Exit;
+      end;
+    end;
+    Exit;
   end;
 
   { Desde aqui quedan IDENTICAS las dos rutas tradicionales. }
@@ -27811,7 +27997,7 @@ begin
       OutputDir :=
         IncludeTrailingPathDelimiter(
           ExtractFilePath(
-            ExpandFileName(GlbRutaEcf)
+            ExpandFileName(GlbRutaEcf)       
           )
         ) + 'factura_txt';
 
@@ -33100,7 +33286,7 @@ begin
       GlbNumVtaPOS;
 
     LSql.ExecQuery;
-
+  
     {
       4. Verificación posterior.
     }
@@ -33115,7 +33301,7 @@ begin
     LQry.ParamByName('GLBNUMVTAPOS').AsInteger :=
       GlbNumVtaPOS;
 
-    LQry.Open;
+    LQry.Open;         
 
     if LQry.FieldByName('CANT').AsInteger > 0 then
     begin

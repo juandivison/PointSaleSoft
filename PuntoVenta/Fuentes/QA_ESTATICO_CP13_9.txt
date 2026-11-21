@@ -1,0 +1,9 @@
+PASS switch legacy conservado
+PASS switch consulta read only
+PASS wrapper E31 TEST
+PASS multitipo 5
+PASS una llamada POST sin bucles
+PASS no llama UUtilecf
+PASS GET separado de POST
+PASS sin invocaciones CommitRetaining
+PASS cierre units

@@ -2,9 +2,12 @@ unit UEcfApiIntento;
 
 {
   PointSaleSoft / Delphi 7 / IBX / Firebird 2.5.
-  CP8: diario local de intentos API. No llama la red, no toca la transaccion
-  de venta existente: usa una transaccion IBX propia, con COMMIT explicito.
-  El JSON recibido ya debe estar serializado en bytes UTF-8. NO convertirlo.
+  CP12-H3: usa EXCLUSIVAMENTE dmConectar.IBDatabase1/IBTransaction1.
+  PrepararIntentoApiE31 NO hace COMMIT: su orquestador QA lo controla.
+  Las transiciones HTTP confirman antes del POST. Si IBTransaction1 ya
+  estaba activa, CommitRetaining requiere autorizacion del operador TEST;
+  puede confirmar cambios ajenos, por lo que NO es un commit silencioso.
+  El JSON es un snapshot inmutable UTF-8: NO convertirlo.
 }
 
 interface
@@ -35,21 +38,30 @@ function PrepararIntentoApiE31(
   const AConfig: TEcfCanalConfiguracion;
   ANumeroTrn: Integer;
   const AENcf, AJsonUtf8, AIdIntento: string): TEcfApiIntento;
+{ Multi-ingreso: E31/E32/E34/E44/E45; caller controla COMMIT. }
+function PrepararIntentoApiIngresos(
+  ADatabase: TIBDatabase;
+  const AConfig: TEcfCanalConfiguracion;
+  ANumeroTrn: Integer;
+  const AENcf, AJsonUtf8, AIdIntento: string): TEcfApiIntento;
 function CargarIntentoApiPorFactura(
   ADatabase: TIBDatabase; const ARncEmisor: string;
   ANumeroTrn: Integer; out AIntento: TEcfApiIntento): Boolean;
 procedure MarcarIntentoApiTransmitiendo(
-  ADatabase: TIBDatabase; const AIdIntento: string);
+  ADatabase: TIBDatabase; const AIdIntento: string;
+  AAutorizarCommitRetaining: Boolean = False);
 procedure RegistrarResultadoHttpIntento(
   ADatabase: TIBDatabase; const AIdIntento: string;
-  AHttpStatus: Integer; const AResponseUtf8: AnsiString);
+  AHttpStatus: Integer; const AResponseUtf8: AnsiString;
+  AAutorizarCommitRetaining: Boolean = False);
 procedure MarcarIntentoApiAmbiguo(
-  ADatabase: TIBDatabase; const AIdIntento: string);
+  ADatabase: TIBDatabase; const AIdIntento: string;
+  AAutorizarCommitRetaining: Boolean = False);
 
 implementation
 
 uses
-  DB, IBQuery;
+  DB, IBQuery, UDatModConectar;
 
 function NuevoIdIntentoEcf: string;
 var
@@ -68,22 +80,16 @@ begin
     raise Exception.Create('No existe conexion Firebird activa para ECF_API_INTENTO.');
 end;
 
-function NuevaTransaccion(ADatabase: TIBDatabase): TIBTransaction;
+function TransaccionGlobal(ADatabase: TIBDatabase): TIBTransaction;
 begin
   ValidarBase(ADatabase);
-  Result := TIBTransaction.Create(nil);
-  Result.DefaultDatabase := ADatabase;
-  Result.Params.Clear;
-  Result.Params.Add('read_committed');
-  Result.Params.Add('rec_version');
-  Result.Params.Add('wait');
-  Result.Params.Add('write');
-  try
-    Result.StartTransaction;
-  except
-    Result.Free;
-    raise;
-  end;
+  if dmConectar = nil then
+    raise Exception.Create('dmConectar no disponible para intento API.');
+  if ADatabase <> dmConectar.IBDatabase1 then
+    raise Exception.Create('Intento API debe utilizar dmConectar.IBDatabase1.');
+  Result := dmConectar.IBTransaction1;
+  if (Result = nil) or (Result.DefaultDatabase <> ADatabase) then
+    raise Exception.Create('IBTransaction1 no vinculada con IBDatabase1.');
 end;
 
 function NuevaQuery(ADatabase: TIBDatabase; ATx: TIBTransaction): TIBQuery;
@@ -129,7 +135,7 @@ begin
   end;
 end;
 
-function PrepararIntentoApiE31(
+function PrepararIntentoApiIngresos(
   ADatabase: TIBDatabase;
   const AConfig: TEcfCanalConfiguracion;
   ANumeroTrn: Integer;
@@ -139,20 +145,30 @@ var
   Q: TIBQuery;
   G: string;
   I: Integer;
+  Tipo: string;
+  Ambiente: string;
+  Previo: TEcfApiIntento;
 begin
   ValidarBase(ADatabase);
   if AConfig.Canal <> ceIdesiApi then
     raise Exception.Create('El canal configurado no es IDESI_API.');
-  { CP8 deliberadamente TEST-only; evita un POST productivo prematuro. }
-  if AConfig.Ambiente <> aeTest then
-    raise Exception.Create('CP8: emision API PROD bloqueada. Solo TEST.');
-  if (AConfig.BaseUrl <> 'https://api-staging.idesisa.com') or
-     (AConfig.ClientId <> 'idesi-staging') then
-    raise Exception.Create('Configuracion TEST de API no corresponde al ambiente esperado.');
+  Ambiente := NombreAmbienteEcf(AConfig.Ambiente);
+  if (Ambiente <> 'TEST') and (Ambiente <> 'PROD') then
+    raise Exception.Create('Ambiente IDESI API no soportado.');
+  if ((Ambiente = 'TEST') and
+      (AConfig.BaseUrl <> 'https://api-staging.idesisa.com')) or
+     ((Ambiente = 'PROD') and
+      (AConfig.BaseUrl <> 'https://api.idesisa.com')) then
+    raise Exception.Create('Host IDESI API no corresponde al ambiente.');
+  if Trim(AConfig.ClientId) = '' then
+    raise Exception.Create('ClientId efectivo IDESI no configurado.');
   if (Trim(AConfig.RncEmisor) = '') or (ANumeroTrn <= 0) then
-    raise Exception.Create('RNC y transaccion obligatorios para registrar el intento.');
-  if (Length(AENcf) <> 13) or (Copy(AENcf,1,3) <> 'E31') then
-    raise Exception.Create('CP8 solo admite E31.');
+    raise Exception.Create('RNC y transaccion obligatorios para el intento.');
+  Tipo := Copy(AENcf,1,3);
+  if (Length(AENcf) <> 13) or
+     ((Tipo <> 'E31') and (Tipo <> 'E32') and (Tipo <> 'E34') and
+      (Tipo <> 'E44') and (Tipo <> 'E45')) then
+    raise Exception.Create('Tipo e-CF no soportado por API publica de ingresos.');
   for I := 4 to 13 do
     if not (AENcf[I] in ['0'..'9']) then
       raise Exception.Create('e-NCF contiene caracteres invalidos.');
@@ -185,45 +201,63 @@ begin
   if Pos('"externalReference":"' + Result.ExternalReference + '"', AJsonUtf8) = 0 then
     raise Exception.Create('ExternalReference del JSON no es la identidad del intento.');
 
-  Tx := NuevaTransaccion(ADatabase);
+  Tx := TransaccionGlobal(ADatabase);
+  if not Tx.InTransaction then
+    raise Exception.Create('Preparacion sin transaccion global activa. Usar UEcfApiQaE31.');
+
+  { Verificar ausencia de intento dentro de la misma transaccion.
+    Requiere adicionalmente UNIQUE(RNC_EMISOR,NUMERO_TRN) en Firebird. }
+  if CargarIntentoApiPorFactura(ADatabase,AConfig.RncEmisor,
+     ANumeroTrn,Previo) then
+    raise Exception.Create('Existe intento API previo: ' + Previo.IdIntento +
+      '. Solo puede consultarse/conciliarse; no preparar otro POST.');
+
+  Q := NuevaQuery(ADatabase, Tx);
   try
-    try
-      Q := NuevaQuery(ADatabase, Tx);
-    try
-      Q.SQL.Text :=
-        'INSERT INTO ECF_API_INTENTO (' +
-        'ID_INTENTO,RNC_EMISOR,NUMERO_TRN,ENCF,CANAL_ENVIO,API_AMBIENTE,' +
-        'BASE_URL,CLIENT_ID,EXTERNAL_REFERENCE,IDEMPOTENCY_KEY,CORRELATION_ID,' +
-        'REQUEST_BODY,REQUEST_BYTES,ESTADO_LOCAL) VALUES (' +
-        ':ID,:RNC,:TRN,:ENCF,:CANAL,:AMB,:URL,:CLIENT,:EXT,:IDEMP,:CORR,' +
-        ':BODY,:BYTES,:ESTADO)';
-      Q.ParamByName('ID').AsString := G;
-      Q.ParamByName('RNC').AsString := Result.RncEmisor;
-      Q.ParamByName('TRN').AsInteger := ANumeroTrn;
-      Q.ParamByName('ENCF').AsString := AENcf;
-      Q.ParamByName('CANAL').AsString := 'IDESI_API';
-      Q.ParamByName('AMB').AsString := Result.Ambiente;
-      Q.ParamByName('URL').AsString := Result.BaseUrl;
-      Q.ParamByName('CLIENT').AsString := Result.ClientId;
-      Q.ParamByName('EXT').AsString := Result.ExternalReference;
-      Q.ParamByName('IDEMP').AsString := Result.IdempotencyKey;
-      Q.ParamByName('CORR').AsString := Result.CorrelationId;
-      Q.ParamByName('BYTES').AsInteger := Length(Result.RequestUtf8);
-      Q.ParamByName('ESTADO').AsString := Result.EstadoLocal;
-      PonerBlob(Q, 'BODY', Result.RequestUtf8);
-      Q.ExecSQL;
-      { Indispensable: COMMIT del body original ANTES de transmitir. }
-      Tx.Commit;
-    finally
-      Q.Free;
-    end;
-    except
-      if Tx.InTransaction then Tx.Rollback;
-      raise;
-    end;
+    Q.SQL.Text :=
+      'INSERT INTO ECF_API_INTENTO (' +
+      'ID_INTENTO,RNC_EMISOR,NUMERO_TRN,ENCF,CANAL_ENVIO,API_AMBIENTE,' +
+      'BASE_URL,CLIENT_ID,EXTERNAL_REFERENCE,IDEMPOTENCY_KEY,CORRELATION_ID,' +
+      'REQUEST_BODY,REQUEST_BYTES,ESTADO_LOCAL) VALUES (' +
+      ':ID,:RNC,:TRN,:ENCF,:CANAL,:AMB,:URL,:CLIENT,:EXT,:IDEMP,:CORR,' +
+      ':BODY,:BYTES,:ESTADO)';
+    Q.ParamByName('ID').AsString := G;
+    Q.ParamByName('RNC').AsString := Result.RncEmisor;
+    Q.ParamByName('TRN').AsInteger := ANumeroTrn;
+    Q.ParamByName('ENCF').AsString := AENcf;
+    Q.ParamByName('CANAL').AsString := 'IDESI_API';
+    Q.ParamByName('AMB').AsString := Result.Ambiente;
+    Q.ParamByName('URL').AsString := Result.BaseUrl;
+    Q.ParamByName('CLIENT').AsString := Result.ClientId;
+    Q.ParamByName('EXT').AsString := Result.ExternalReference;
+    Q.ParamByName('IDEMP').AsString := Result.IdempotencyKey;
+    Q.ParamByName('CORR').AsString := Result.CorrelationId;
+    Q.ParamByName('BYTES').AsInteger := Length(Result.RequestUtf8);
+    Q.ParamByName('ESTADO').AsString := Result.EstadoLocal;
+    PonerBlob(Q, 'BODY', Result.RequestUtf8);
+    Q.ExecSQL;
+    if Q.RowsAffected <> 1 then
+      raise Exception.Create('No fue insertado el intento API.');
+    { El orquestador QA confirma el intento completo ANTES del POST. }
   finally
-    Tx.Free;
+    Q.Free;
   end;
+end;
+
+function PrepararIntentoApiE31(
+  ADatabase: TIBDatabase;
+  const AConfig: TEcfCanalConfiguracion;
+  ANumeroTrn: Integer;
+  const AENcf, AJsonUtf8, AIdIntento: string): TEcfApiIntento;
+begin
+  { Mantener contrato CP12 TEST-only para el formulario QA existente. }
+  if (AConfig.Ambiente <> aeTest) or
+     (AConfig.BaseUrl <> 'https://api-staging.idesisa.com') or
+     (AConfig.ClientId <> 'idesi-staging') or
+     (Copy(AENcf,1,3) <> 'E31') then
+    raise Exception.Create('PrepararIntentoApiE31 permanece limitado a E31 TEST.');
+  Result := PrepararIntentoApiIngresos(ADatabase,AConfig,ANumeroTrn,
+    AENcf,AJsonUtf8,AIdIntento);
 end;
 
 function CargarIntentoApiPorFactura(
@@ -232,14 +266,16 @@ function CargarIntentoApiPorFactura(
 var
   Tx: TIBTransaction;
   Q: TIBQuery;
+  IniciadaAqui: Boolean;
 begin
   Result := False;
   AIntento.IdIntento := '';
   AIntento.RequestUtf8 := '';
-  Tx := NuevaTransaccion(ADatabase);
+  Tx := TransaccionGlobal(ADatabase);
+  IniciadaAqui := not Tx.InTransaction;
+  if IniciadaAqui then Tx.StartTransaction;
   try
-    try
-      Q := NuevaQuery(ADatabase, Tx);
+    Q := NuevaQuery(ADatabase, Tx);
     try
       Q.SQL.Text :=
         'SELECT * FROM ECF_API_INTENTO ' +
@@ -271,31 +307,54 @@ begin
         Result := True;
       end;
       Q.Close;
-      Tx.Commit;
     finally
       Q.Free;
     end;
-    except
-      if Tx.InTransaction then Tx.Rollback;
-      raise;
-    end;
   finally
-    Tx.Free;
+    if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
   end;
 end;
 
 procedure CambiarEstadoIntento(
   ADatabase: TIBDatabase; const AIdIntento, AOrigen, ADestino: string;
   AHttpStatus: Integer; const AResponseUtf8: AnsiString;
-  AGuardarRespuesta: Boolean);
+  AGuardarRespuesta: Boolean; AAutorizarCommitRetaining: Boolean);
 var
   Tx: TIBTransaction;
   Q: TIBQuery;
-begin
-  Tx := NuevaTransaccion(ADatabase);
-  try
+  ActivaAlEntrar: Boolean;
+  SavepointCreado: Boolean;
+
+  procedure EjecutarControlTx(const ASql: string);
+  var
+    C: TIBQuery;
+  begin
+    C := NuevaQuery(ADatabase, Tx);
     try
-      Q := NuevaQuery(ADatabase, Tx);
+      C.SQL.Text := ASql;
+      C.ExecSQL;
+    finally
+      C.Free;
+    end;
+  end;
+begin
+  Tx := TransaccionGlobal(ADatabase);
+  ActivaAlEntrar := Tx.InTransaction;
+  if ActivaAlEntrar and (not AAutorizarCommitRetaining) then
+    raise Exception.Create('Transicion HTTP bloqueada: transaccion global activa ' +
+      'sin autorizacion de CommitRetaining.');
+  if not ActivaAlEntrar then
+    Tx.StartTransaction;
+  SavepointCreado := False;
+  try
+    if ActivaAlEntrar then
+    begin
+      { Un solo CommitRetaining al confirmar la transicion; el caller
+        ya valido y persisitio su venta en el flujo comercial. }
+      EjecutarControlTx('SAVEPOINT SP_ECF_API_TRANSICION');
+      SavepointCreado := True;
+    end;
+    Q := NuevaQuery(ADatabase, Tx);
     try
       if AGuardarRespuesta then
         Q.SQL.Text :=
@@ -320,29 +379,49 @@ begin
       if Q.RowsAffected <> 1 then
         raise Exception.Create('Transicion de intento no autorizada: ' +
           AOrigen + ' -> ' + ADestino + ' (' + AIdIntento + ').');
-      Tx.Commit;
+      if ActivaAlEntrar then
+        Tx.CommitRetaining
+      else
+        Tx.Commit;
     finally
       Q.Free;
     end;
-    except
-      if Tx.InTransaction then Tx.Rollback;
+  except
+    on E: Exception do
+    begin
+      if ActivaAlEntrar then
+      begin
+        if SavepointCreado and Tx.InTransaction then
+        begin
+          try
+            EjecutarControlTx('ROLLBACK TO SAVEPOINT SP_ECF_API_TRANSICION');
+          except
+            on E2: Exception do
+              raise Exception.Create('Fallo al revertir la transicion ECF: ' +
+                E2.Message + '. Error original: ' + E.Message);
+          end;
+        end;
+      end
+      else if Tx.InTransaction then
+        Tx.Rollback;
       raise;
     end;
-  finally
-    Tx.Free;
   end;
 end;
 
 procedure MarcarIntentoApiTransmitiendo(
-  ADatabase: TIBDatabase; const AIdIntento: string);
+  ADatabase: TIBDatabase; const AIdIntento: string;
+  AAutorizarCommitRetaining: Boolean);
 begin
   CambiarEstadoIntento(ADatabase, AIdIntento,
-    'PREPARADO', 'TRANSMITIENDO', 0, '', False);
+    'PREPARADO', 'TRANSMITIENDO', 0, '', False,
+    AAutorizarCommitRetaining);
 end;
 
 procedure RegistrarResultadoHttpIntento(
   ADatabase: TIBDatabase; const AIdIntento: string;
-  AHttpStatus: Integer; const AResponseUtf8: AnsiString);
+  AHttpStatus: Integer; const AResponseUtf8: AnsiString;
+  AAutorizarCommitRetaining: Boolean);
 begin
   if (AHttpStatus < 100) or (AHttpStatus > 599) then
     raise Exception.Create('Codigo HTTP invalido.');
@@ -350,17 +429,21 @@ begin
     Incluso HTTP 2xx NO significa aceptacion fiscal. Verificar /details. }
   if (AHttpStatus = 408) or (AHttpStatus >= 500) then
     CambiarEstadoIntento(ADatabase, AIdIntento,
-      'TRANSMITIENDO', 'AMBIGUO', AHttpStatus, AResponseUtf8, True)
+      'TRANSMITIENDO', 'AMBIGUO', AHttpStatus, AResponseUtf8, True,
+      AAutorizarCommitRetaining)
   else
     CambiarEstadoIntento(ADatabase, AIdIntento,
-      'TRANSMITIENDO', 'HTTP_RECIBIDO', AHttpStatus, AResponseUtf8, True);
+      'TRANSMITIENDO', 'HTTP_RECIBIDO', AHttpStatus, AResponseUtf8, True,
+      AAutorizarCommitRetaining);
 end;
 
 procedure MarcarIntentoApiAmbiguo(
-  ADatabase: TIBDatabase; const AIdIntento: string);
+  ADatabase: TIBDatabase; const AIdIntento: string;
+  AAutorizarCommitRetaining: Boolean);
 begin
   CambiarEstadoIntento(ADatabase, AIdIntento,
-    'TRANSMITIENDO', 'AMBIGUO', 0, '', False);
+    'TRANSMITIENDO', 'AMBIGUO', 0, '', False,
+    AAutorizarCommitRetaining);
 end;
 
 end.

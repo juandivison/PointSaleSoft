@@ -1,10 +1,10 @@
 unit UFacturaTxtBuilder;
 
 interface
-
+             
 uses
   Classes, SysUtils, DB, IBDatabase, IBQuery;
-
+                                                                       
 type
   EFacturaTxtBuilder = class(Exception);
 
@@ -19,6 +19,9 @@ type
   private
     FDatabase: TIBDatabase;
     FTransaction: TIBTransaction;
+    FUsaReservaRemota: Boolean;
+    FFechaReservaRemota: TDateTime;
+    function FechaVencimientoSecuenciaTxt(QMaster: TIBQuery): string;
 
     function CreateQuery(const ASql: string): TIBQuery;
     procedure EnsureConnected;
@@ -68,6 +71,8 @@ type
     procedure WriteUtf8NoBom(const AFileName, AContent: string);
   public
     constructor Create(ADatabase: TIBDatabase; ATransaction: TIBTransaction);
+    function BuildFacturaTxtContent(const ANumeroTransaccion: Integer;
+      out AENcf, ATipoEcf: string; out ADetailCount: Integer): string;
     function GenerateFacturaTxt(const ANumeroTransaccion: Integer; const AOutputFile: string): TFacturaTxtBuildResult;
   end;
 
@@ -242,8 +247,20 @@ begin
   end;
 end;
 
-function TFacturaTxtBuilder.LoadMaster(const ANumeroTransaccion: Integer): TIBQuery;
+
+function TFacturaTxtBuilder.FechaVencimientoSecuenciaTxt(QMaster: TIBQuery): string;
 begin
+  if FUsaReservaRemota then
+    Result := FormatDateTime('dd"-"mm"-"yyyy', FFechaReservaRemota)
+  else
+    Result := DateFieldToTxt(QMaster.FieldByName('FechaVencimientoSecuencia'));
+end;
+
+function TFacturaTxtBuilder.LoadMaster(const ANumeroTransaccion: Integer): TIBQuery;
+var Reserva: TIBQuery;
+begin
+  FUsaReservaRemota := False;
+  FFechaReservaRemota := 0;
   Result := CreateQuery(SQL_ECF_MASTER_DATA);
   Result.ParamByName('NumeroTransaccion').AsInteger := ANumeroTransaccion;
   Result.Open;
@@ -251,6 +268,39 @@ begin
   begin
     Result.Free;
     raise EFacturaTxtBuilder.CreateFmt('No se encontró información maestra e-CF para la transacción %d.', [ANumeroTransaccion]);
+  end;
+  try
+    Reserva := CreateQuery('SELECT RDB$RELATION_NAME FROM RDB$RELATIONS ' +
+      'WHERE RDB$RELATION_NAME=''ECF_SEC_SOLICITUD''');
+    try
+      Reserva.Open;
+      if not Reserva.Eof then
+      begin
+        Reserva.Close;
+        Reserva.SQL.Text := 'SELECT ENCF, FECHA_VENCE, ESTADO FROM ECF_SEC_SOLICITUD ' +
+          'WHERE NUMERO_TRN=:N';
+        Reserva.ParamByName('N').AsInteger := ANumeroTransaccion;
+        Reserva.Open;
+        if not Reserva.Eof then
+        begin
+          if (Reserva.FieldByName('ESTADO').AsString <> 'RESERVADA') or
+             Reserva.FieldByName('FECHA_VENCE').IsNull or
+             (Reserva.FieldByName('ENCF').AsString <>
+              Result.FieldByName('ClaveAcceso').AsString) then
+            raise EFacturaTxtBuilder.Create('Reserva remota no conciliada con la venta.');
+          FFechaReservaRemota := Reserva.FieldByName('FECHA_VENCE').AsDateTime;
+          FUsaReservaRemota := True;
+          Reserva.Next;
+          if not Reserva.Eof then
+            raise EFacturaTxtBuilder.Create('Varias solicitudes remotas para la venta.');
+        end;
+      end;
+    finally
+      Reserva.Free;
+    end;
+  except
+    Result.Free;
+    raise;
   end;
 end;
 
@@ -822,7 +872,7 @@ begin
     Fields[15] := Payments[6];
     Fields[16] := Payments[7];
     if (TipoEcf = 'E31') or (TipoEcf = 'E44') or (TipoEcf = 'E45') then
-      Fields[17] := DateFieldToTxt(QMaster.FieldByName('FechaVencimientoSecuencia'))
+      Fields[17] := FechaVencimientoSecuenciaTxt(QMaster)
     else
       Fields[17] := '';
     Fields[18] := TipoIngresos;
@@ -1527,7 +1577,8 @@ begin
   Result := JoinFields(Fields);
 end;
 
-function TFacturaTxtBuilder.GenerateFacturaTxt(const ANumeroTransaccion: Integer; const AOutputFile: string): TFacturaTxtBuildResult;
+function TFacturaTxtBuilder.BuildFacturaTxtContent(const ANumeroTransaccion: Integer;
+  out AENcf, ATipoEcf: string; out ADetailCount: Integer): string;
 var
   StartedTx: Boolean;
   QMaster, QDetail, QPago, QPagoRef, QComentarios: TIBQuery;
@@ -1541,6 +1592,9 @@ var
   DescGlobal, RecargoGlobal, PropinaGlobal: Currency;
   DetalleE44, TotalE44Esperado, TotalMaster: Currency;
 begin
+  AENcf := '';
+  ATipoEcf := '';
+  ADetailCount := 0;
   EnsureConnected;
   StartedTx := not FTransaction.InTransaction;
   if StartedTx then
@@ -1644,7 +1698,7 @@ end;
 
       if (TipoEcf = 'E31') or (TipoEcf = 'E44') or (TipoEcf = 'E45') then
       begin
-        FechaVencSec := DateFieldToTxt(QMaster.FieldByName('FechaVencimientoSecuencia'));
+        FechaVencSec := FechaVencimientoSecuenciaTxt(QMaster);
         if FechaVencSec = '' then
           raise EFacturaTxtBuilder.Create(
             TipoEcf + ' requiere FechaVencimientoSecuencia para Factura.txt.'
@@ -1725,20 +1779,16 @@ end;
       Adjustments := BuildAdjustmentLines(QMaster, QDetail, EsOperacionE44);
       FiscalTotals := BuildFiscalTotalsLine(QMaster, EsOperacionE44);
 
-      if Trim(AOutputFile) = '' then
-        raise EFacturaTxtBuilder.Create('La ruta de salida de Factura.txt es obligatoria.');
-
+      { Fuente fiscal en memoria: no escribe archivo ni ejecuta IdesiToolECF. }
       Content := TStringList.Create;
       Content.Add(Header);
       Content.AddStrings(Details);
       Content.AddStrings(Adjustments);
       Content.Add(FiscalTotals);
-      WriteUtf8NoBom(AOutputFile, Content.Text);
-
-      Result.OutputFile := AOutputFile;
-      Result.ENcf := NullToStrTrim(QMaster.FieldByName('ClaveAcceso'));
-      Result.TipoEcf := TipoEcf;
-      Result.DetailCount := Details.Count;
+      Result := Content.Text;
+      AENcf := NullToStrTrim(QMaster.FieldByName('ClaveAcceso'));
+      ATipoEcf := TipoEcf;
+      ADetailCount := Details.Count;
 
       if StartedTx then
         FTransaction.Rollback;
@@ -1757,6 +1807,21 @@ end;
     QDetail.Free;
     QMaster.Free;
   end;
+end;
+
+
+function TFacturaTxtBuilder.GenerateFacturaTxt(
+  const ANumeroTransaccion: Integer;
+  const AOutputFile: string): TFacturaTxtBuildResult;
+var
+  Content: string;
+begin
+  if Trim(AOutputFile) = '' then
+    raise EFacturaTxtBuilder.Create('La ruta de salida de Factura.txt es obligatoria.');
+  Content := BuildFacturaTxtContent(ANumeroTransaccion,
+    Result.ENcf, Result.TipoEcf, Result.DetailCount);
+  WriteUtf8NoBom(AOutputFile, Content);
+  Result.OutputFile := AOutputFile;
 end;
 
 end.

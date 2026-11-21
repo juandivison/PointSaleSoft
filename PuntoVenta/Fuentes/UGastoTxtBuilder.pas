@@ -26,6 +26,7 @@ type
     function LoadMaster(const ATrn: Integer): TIBQuery;
     function LoadDetail(const ATrn: Integer): TIBQuery;
 
+    function VencimientoRemoto(ATrn:Integer; const AENcf:string; out AFecha:TDateTime):Boolean;
     function BuildHeaderLine(QMaster: TIBQuery): string;
     function BuildDetailLines(QDetail: TIBQuery): TStringList;
     function BuildPaymentLines(QMaster: TIBQuery): TStringList;
@@ -58,10 +59,10 @@ const
     '  m.TIPO_CF AS TIPO_ECF, ' +
     '  COALESCE(NULLIF(TRIM(m.ECF), ''''), NULLIF(TRIM(na.ECF), ''''), ' +
     '           NULLIF(TRIM(na.NUMERO_NCF), '''')) AS ENCF, ' +
-    '  (SELECT FIRST 1 d.FECHA_VENCE ' +
-    '     FROM DGII_SERIE_NFC d ' +
-    '    WHERE d.TIPO_CF = m.TIPO_CF AND d.ACTIVO = 1 ' +
-    '    ORDER BY d.FECHA_VENCE DESC) AS FECHA_VENCE_SECUENCIA, ' +
+    '  (SELECT COUNT(*) FROM DGII_SERIE_NFC d ' +
+    '    WHERE d.TIPO_CF = m.TIPO_CF AND d.ACTIVO = 1) AS SERIES_ACTIVAS, ' +
+    '  (SELECT MIN(d.FECHA_VENCE) FROM DGII_SERIE_NFC d ' +
+    '    WHERE d.TIPO_CF = m.TIPO_CF AND d.ACTIVO = 1) AS FECHA_VENCE_SECUENCIA, ' +
     '  CASE m.FPAGO WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE NULL END AS TIPO_PAGO, ' +
     '  CASE WHEN m.FPAGO = 2 THEN m.FECHA_VENCE ELSE NULL END AS FECHA_LIMITE_PAGO, ' +
     '  CASE WHEN m.TIPO_CF = ''43'' THEN NULL ELSE m.IND_MONTO_GRAVADO END AS IND_MONTO_GRAVADO, ' +
@@ -329,10 +330,32 @@ begin
   end;
 end;
 
+function TGastoTxtBuilder.VencimientoRemoto(ATrn:Integer;
+  const AENcf:string; out AFecha:TDateTime):Boolean;
+var Q:TIBQuery;
+begin
+  Result:=False;AFecha:=0;
+  Q:=CreateQuery('SELECT RDB$RELATION_NAME FROM RDB$RELATIONS WHERE RDB$RELATION_NAME=''ECF_SEC_SOLICITUD''');
+  try
+    Q.Open;if Q.Eof then Exit;Q.Close;
+    Q.SQL.Text:='SELECT S.FECHA_VENCE FROM ECF_SEC_SOLICITUD S '+
+      'JOIN TRANS_OPERACION_MASTER M ON M.NUMERO=:N '+
+      'JOIN COMPANIA C ON C.CODIGO=M.CIA_KEY '+
+      'WHERE S.RNC_EMISOR=TRIM(C.RNC_NUMERO) AND S.SUCURSAL_ID=TRIM(C.NUM_SUCURSAL) '+
+      'AND S.AMBIENTE=''TEST'' AND S.DOCUMENTO_CLAVE='+
+      '''GASTO-CIA-''||CAST(M.CIA_KEY AS VARCHAR(12))||''-TRN-''||CAST(M.NUMERO AS VARCHAR(12)) '+
+      'AND S.ENCF=:E';
+    Q.ParamByName('N').AsInteger:=ATrn;Q.ParamByName('E').AsString:=AENcf;Q.Open;
+    if Q.Eof then Exit;
+    AFecha:=Q.FieldByName('FECHA_VENCE').AsDateTime;Result:=True;
+  finally Q.Free;end;
+end;
+
 function TGastoTxtBuilder.BuildHeaderLine(QMaster: TIBQuery): string;
 var
   F: array[0..18] of string;
   TipoCF: string;
+  FechaRemota:TDateTime;
 begin
   TipoCF := Trim(QMaster.FieldByName('TIPO_ECF').AsString);
 
@@ -341,7 +364,17 @@ begin
   F[2] := NullToText(QMaster.FieldByName('ENCF'));
   F[3] := TipoCF;
   F[4] := DateFieldToTxt(QMaster.FieldByName('FECHA_EMISION'));
+  if VencimientoRemoto(QMaster.FieldByName('TRN').AsInteger,
+    QMaster.FieldByName('ENCF').AsString,FechaRemota) then
+    F[5]:=FormatDateTime('dd-mm-yyyy',FechaRemota)
+  else begin
+  if QMaster.FieldByName('SERIES_ACTIVAS').AsInteger > 1 then
+    raise EGastoTxtBuilder.Create(
+      'Hay varias series activas de este tipo. No se puede determinar el ' +
+      'vencimiento del e-NCF reservado. Revise el lote antes de enviar; ' +
+      'no es necesario consumir otra secuencia para corregir este dato.');
   F[5] := DateFieldToTxt(QMaster.FieldByName('FECHA_VENCE_SECUENCIA'));
+  end;
 
   if TipoCF = '41' then
   begin
@@ -427,12 +460,16 @@ begin
   if TipoCF <> '41' then
     Exit;
 
-  if QMaster.FieldByName('FORMA_PAGO_ECF').IsNull then
-    raise EGastoTxtBuilder.Create(
-      'E41 no tiene una forma de pago e-CF valida.');
-
   F[0] := '3';
-  F[1] := NullToText(QMaster.FieldByName('FORMA_PAGO_ECF'));
+  if QMaster.FieldByName('TIPO_PAGO').AsInteger = 2 then
+    F[1] := '4'
+  else begin
+    if QMaster.FieldByName('FORMA_PAGO_ECF').IsNull then
+      raise EGastoTxtBuilder.Create('E41 no tiene una forma de pago e-CF valida.');
+    F[1] := NullToText(QMaster.FieldByName('FORMA_PAGO_ECF'));
+    if F[1] = '4' then
+      raise EGastoTxtBuilder.Create('E41 al contado no puede usar Venta a Credito. Revise la forma de pago.');
+  end;
   F[2] := AmountFieldToTxt(QMaster.FieldByName('MONTO_PAGADO_PROVEEDOR'));
   Result.Add(JoinFields(F));
 end;

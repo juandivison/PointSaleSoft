@@ -776,7 +776,9 @@ uses
   URepIR13 in '..\Reportes\URepIR13.pas' {qckRepIR13: TQuickRep},
   UFormSepararNombre in 'UFormSepararNombre.pas' {frmSepararNombre},
   UformConsultarVerificaMontosVtas in 'UformConsultarVerificaMontosVtas.pas' {frmConsultarVtasVerDiff},
-  URepPagoComisionesXVta in '..\Reportes\URepPagoComisionesXVta.pas' {qckRepPagoComisionesXVta: TQuickRep};
+  URepPagoComisionesXVta in '..\Reportes\URepPagoComisionesXVta.pas' {qckRepPagoComisionesXVta: TQuickRep},
+  UQckCotServ8_11Ferreteria in '..\Reportes\UQckCotServ8_11Ferreteria.pas' {qckCot8_11Ferreteria: TQuickRep},
+  UQckFactServ8_5Ferreteria in '..\Reportes\UQckFactServ8_5Ferreteria.pas' {qckFact8_5Ferreteria: TQuickRep};
 
 {$E exe}
 
@@ -1069,10 +1071,5 @@ begin
     Application.Run;
   finally                                  
     GlbCerrandoSistema := True;
-    //ShutdownTrace('Application.Run retorno. Iniciando cierre controlado.');
-    //FreeApplicationOwnedComponentsWithTrace;
-    //ShutdownTrace('Cierre controlado terminado.');
   end;
 end.
-
-

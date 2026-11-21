@@ -20,7 +20,7 @@ function PrepararFacturaE31ParaApiTest(
 implementation
 
 uses
-  DB, IBQuery, UFacturaTxtBuilder, UEcfCanalConfig, UEcfApiV1Json;
+  DB, IBQuery, UFacturaTxtBuilder, UEcfCanalConfig, UEcfApiV1Json, UDatModConectar;
 
 function LeerRncEmisorDeFactura(
   ADatabase: TIBDatabase; ATransaction: TIBTransaction;
@@ -84,6 +84,9 @@ begin
   if (ADatabase = nil) or (ATransaction = nil) or
      (not ADatabase.Connected) or (not ATransaction.InTransaction) then
     raise Exception.Create('Se requiere conexion y transaccion IBX activas.');
+  if (dmConectar = nil) or (ADatabase <> dmConectar.IBDatabase1) or
+     (ATransaction <> dmConectar.IBTransaction1) then
+    raise Exception.Create('Preparacion E31 solo admite dmConectar.IBTransaction1.');
   if ANumeroTrn <= 0 then
     raise Exception.Create('Numero de transaccion invalido.');
   Rnc := LeerRncEmisorDeFactura(ADatabase,ATransaction,ANumeroTrn);

@@ -10,7 +10,8 @@ function ProcesarEnvioEcfGasto(
   const AExePath: string;
   ATrn: Integer;
   out AResultado: TGastoEcfCliResult;
-  out AMensaje: string                                                                  
+  out AMensaje: string;
+  ADescargarXml:Boolean=True
 ): Boolean;
 
 function ResultadoRequiereReasignacionSecuencia(
@@ -30,6 +31,9 @@ procedure RegistrarLogEcfGasto(
   const AContexto: string;
   const AMensaje: string
 );
+
+procedure PersistirResultadoEcfGasto(ADatabase: TIBDatabase; ATrn, ACiaKey: Integer;
+  const ATipoCF, AENCF: string; const AResultado: TGastoEcfCliResult);
 
 implementation
 
@@ -262,6 +266,11 @@ var
   Estado: string;
 begin
   Estado := UpperCase(Trim(AResultado.Estado));
+  if (Estado <> 'RECHAZADO') and (Estado <> 'SECUENCIA_USADA') then
+  begin
+    Result := False;
+    Exit;
+  end;
 
   Result :=
     (Estado = 'SECUENCIA_USADA') or
@@ -289,25 +298,15 @@ begin
 end;
 
 function EstadoNormalizado(const AEstado: string): string;
-var
-  S: string;
+var S: string;
 begin
   S := UpperCase(Trim(AEstado));
-
-  if Pos('ACEPTADO', S) > 0 then
-    Result := 'ACEPTADO'
-  else if Pos('SECUENCIA_USADA', S) > 0 then
-    Result := 'SECUENCIA_USADA'
-  else if (Pos('IN_PROCESS', S) > 0) or
-          (Pos('EN PROCESO', S) > 0) or
-          (Pos('PENDIENTE', S) > 0) then
-    Result := 'IN_PROCESS'
-  else if Pos('RECH_LOCAL', S) > 0 then
-    Result := 'RECH_LOCAL'
-  else if Pos('RECHAZADO', S) > 0 then
-    Result := 'RECHAZADO'
-  else
-    Result := 'ERROR';
+  if (S = 'ACEPTADO') or (S = 'ACEPTADO CONDICIONAL') then Result := 'ACEPTADO'
+  else if (S = 'IN_PROCESS') or (S = 'EN PROCESO') or (S = 'PENDIENTE') then Result := 'IN_PROCESS'
+  else if (S = 'SECUENCIA_USADA') or (S = 'RECH_LOCAL') or
+          (S = 'RECHAZADO') or (S = 'NOT_FOUND') or (S = 'NO_CONFIRMADO') or
+          (S = 'ERROR') then Result := S
+  else Result := 'NO_CONFIRMADO';
 end;
 
 function MensajeCompletoParaPersistir(
@@ -332,6 +331,100 @@ begin
   else
     Result := Completo;
 end;
+
+
+{ Obtiene la longitud real del campo MENSAJE en Firebird }
+function MaxCaracteresMensaje(
+  ADatabase: TIBDatabase;
+  ATransaction: TIBTransaction;
+  const ATabla: string): Integer;
+var
+  Meta: TIBQuery;
+  TipoCampo: Integer;
+begin
+  Meta := TIBQuery.Create(nil);
+  try
+    ConfigurarQuery(Meta, ADatabase, ATransaction);
+
+    Meta.SQL.Text :=
+      'SELECT F.RDB$FIELD_TYPE AS TIPO_CAMPO, ' +
+      '       F.RDB$CHARACTER_LENGTH AS MAX_CARACTERES ' +
+      'FROM RDB$RELATION_FIELDS RF ' +
+      'JOIN RDB$FIELDS F ' +
+      '  ON F.RDB$FIELD_NAME = RF.RDB$FIELD_SOURCE ' +
+      'WHERE RF.RDB$RELATION_NAME = :TABLA ' +
+      '  AND RF.RDB$FIELD_NAME = ''MENSAJE''';
+
+    Meta.ParamByName('TABLA').AsString :=
+      UpperCase(Trim(ATabla));
+
+    Meta.Open;
+
+    if Meta.IsEmpty then
+      raise EEnvioEcfGasto.CreateFmt(
+        'No se encuentra metadata de %s.MENSAJE.',
+        [ATabla]);
+
+    TipoCampo := Meta.FieldByName('TIPO_CAMPO').AsInteger;
+
+    if (TipoCampo = 14) or (TipoCampo = 37) then
+    begin
+      if Meta.FieldByName('MAX_CARACTERES').IsNull then
+        raise EEnvioEcfGasto.CreateFmt(
+          'Longitud no disponible para %s.MENSAJE.',
+          [ATabla]);
+
+      Result :=
+        Meta.FieldByName('MAX_CARACTERES').AsInteger;
+
+      if Result <= 0 then
+        raise EEnvioEcfGasto.CreateFmt(
+          'Longitud invalida para %s.MENSAJE.',
+          [ATabla]);
+
+      if Result > 1024 then
+        Result := 1024;
+    end
+    else if TipoCampo = 261 then
+      Result := 1024
+    else
+      raise EEnvioEcfGasto.CreateFmt(
+        'Tipo no soportado en %s.MENSAJE (%d).',
+        [ATabla, TipoCampo]);
+  finally
+    Meta.Free;
+  end;
+end;
+
+{ Ajusta el mensaje a la capacidad real de la columna }
+function MensajeParaCampo(
+  const ATexto, ATabla: string;
+  const AMaxCaracteres: Integer): string;
+const
+  MARCA_LOG = ' [ver log GASTOS]';
+begin
+  if Length(ATexto) <= AMaxCaracteres then
+  begin
+    Result := ATexto;
+    Exit;
+  end;
+
+  if AMaxCaracteres > Length(MARCA_LOG) then
+    Result :=
+      Copy(ATexto, 1,
+        AMaxCaracteres - Length(MARCA_LOG)) +
+      MARCA_LOG
+  else
+    Result := Copy(ATexto, 1, AMaxCaracteres);
+
+  RegistrarLogEcfGasto(
+    'MENSAJE_RESUMIDO',
+    'Tabla=' + ATabla +
+    ' Original=' + IntToStr(Length(ATexto)) +
+    ' Guardado=' + IntToStr(Length(Result))
+  );
+end;
+
 
 procedure CargarSnapshot(
   ADatabase: TIBDatabase;
@@ -470,7 +563,15 @@ begin
     Q.ParamByName('ESTADO_NUEVO').AsString := Copy(Estado, 1, 32);
     Q.ParamByName('PRESERVAR_ACEPTADO').AsInteger :=
       Ord(Estado <> 'ACEPTADO');
-    Q.ParamByName('MENSAJE').AsString := Copy(MensajePersistir, 1, 1024);
+    
+    Q.ParamByName('MENSAJE').AsString :=
+    MensajeParaCampo(
+      MensajePersistir,
+      'ECF_RESERVA',
+      MaxCaracteresMensaje(
+        ADatabase, Tr, 'ECF_RESERVA')
+    );
+
 
     if AResultado.TieneTimbre and
        (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
@@ -525,7 +626,15 @@ begin
       Q.ParamByName('TRACK_ID').AsString :=
         Copy(Trim(AResultado.TrackId), 1, 100);
 
-    Q.ParamByName('MENSAJE').AsString := Copy(MensajePersistir, 1, 1024);
+    
+    Q.ParamByName('MENSAJE').AsString :=
+    MensajeParaCampo(
+      MensajePersistir,
+      'ECF_GASTO_ENVIO',
+      MaxCaracteresMensaje(
+        ADatabase, Tr, 'ECF_GASTO_ENVIO')
+    );
+
 
     if AResultado.TieneTimbre and
        (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
@@ -606,7 +715,9 @@ begin
         Q.ParamByName('TRACK_ID').AsString :=
           Copy(Trim(AResultado.TrackId), 1, 100);
 
-      Q.ParamByName('MENSAJE').AsString := Copy(MensajePersistir, 1, 1024);
+      Q.ParamByName('MENSAJE').AsString := MensajeParaCampo(
+        MensajePersistir, 'ECF_GASTO_ENVIO',
+        MaxCaracteresMensaje(ADatabase, Tr, 'ECF_GASTO_ENVIO'));
 
       if AResultado.TieneTimbre and
          (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
@@ -662,12 +773,24 @@ begin
   end;
 end;               
 
+procedure PersistirResultadoEcfGasto(ADatabase: TIBDatabase; ATrn, ACiaKey: Integer;
+  const ATipoCF, AENCF: string; const AResultado: TGastoEcfCliResult);
+var
+  Snapshot: TGastoEnvioSnapshot;
+begin
+  Snapshot.CiaKey := ACiaKey;
+  Snapshot.TipoCF := ATipoCF;
+  Snapshot.ENCF := AENCF;
+  PersistirResultado(ADatabase, ATrn, Snapshot, AResultado);
+end;
+
 function ProcesarEnvioEcfGasto(
   ADatabase: TIBDatabase;
   const AExePath: string;
   ATrn: Integer;
   out AResultado: TGastoEcfCliResult;
-  out AMensaje: string
+  out AMensaje: string;
+  ADescargarXml:Boolean
 ): Boolean;
 var
   Snapshot: TGastoEnvioSnapshot;
@@ -709,7 +832,7 @@ begin
       AExePath,
       ATrn,
       AResultado,
-      ErrorCli
+      ErrorCli,600000,ADescargarXml
     );
 
     { La decisión de reasignar no puede depender de que el CLI haya terminado

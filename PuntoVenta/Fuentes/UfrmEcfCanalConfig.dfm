@@ -1,6 +1,6 @@
 object frmEcfCanalConfig: TfrmEcfCanalConfig
-  Left = 180
-  Top = 90
+  Left = 315
+  Top = 217
   BorderStyle = bsDialog
   Caption = 'PointSaleSoft - Administracion de canal e-CF'
   ClientHeight = 565
@@ -13,8 +13,8 @@ object frmEcfCanalConfig: TfrmEcfCanalConfig
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
-  OnShow = FormShow
   OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object pgPrincipal: TPageControl
@@ -33,27 +33,30 @@ object frmEcfCanalConfig: TfrmEcfCanalConfig
         Width = 890
         Height = 40
         AutoSize = False
-        Caption = 'Selector de transporte fiscal por RNC emisor. La configuracion ASLAN se conserva por defecto. No se almacenan secretos ni tokens en estas tablas.'
+        Caption = 
+          'Selector de transporte fiscal por RNC emisor. La configuracion A' +
+          'SLAN se conserva por defecto. No se almacenan secretos ni tokens' +
+          ' en estas tablas.'
         WordWrap = True
       end
       object lblEmisor: TLabel
         Left = 18
         Top = 72
-        Width = 78
+        Width = 59
         Height = 13
         Caption = 'RNC emisor:'
       end
       object lblCanal: TLabel
         Left = 18
         Top = 136
-        Width = 61
+        Width = 60
         Height = 13
         Caption = 'Canal envio:'
       end
       object lblAmbiente: TLabel
         Left = 290
         Top = 136
-        Width = 84
+        Width = 69
         Height = 13
         Caption = 'Ambiente API:'
       end
@@ -82,7 +85,7 @@ object frmEcfCanalConfig: TfrmEcfCanalConfig
       object lblMotivo: TLabel
         Left = 18
         Top = 271
-        Width = 165
+        Width = 142
         Height = 13
         Caption = 'Motivo del cambio (auditoria):'
       end
@@ -145,7 +148,6 @@ object frmEcfCanalConfig: TfrmEcfCanalConfig
         Width = 140
         Height = 32
         Caption = 'Guardar y auditar'
-        Default = False
         TabOrder = 4
         OnClick = btnGuardarClick
       end
@@ -165,7 +167,7 @@ object frmEcfCanalConfig: TfrmEcfCanalConfig
       object lblFiltro: TLabel
         Left = 16
         Top = 19
-        Width = 267
+        Width = 241
         Height = 13
         Caption = 'Estado local (RNC seleccionado en Configuracion):'
       end
@@ -191,7 +193,7 @@ object frmEcfCanalConfig: TfrmEcfCanalConfig
         Width = 210
         Height = 21
         Style = csDropDownList
-        ItemHeight = 13
+        ItemHeight = 0
         TabOrder = 0
       end
       object btnBuscarIntentos: TButton

@@ -213,7 +213,7 @@ USES UDatModFactura, uglobal, UDatModClientes, UFormCambiarCteFact,
   UfrmlECF_TIMBRE_LOG, UFormAsignareCFAVentasSineCF, UModoConsumoToCredito,
   UBuscarClientesPersonasP, UFormNCFAsignados, USetClaveMaestra,
   UFrmCartaRutaTemplate, UFrmCartaSaldoTemplate,UAuditoriaECF,
-  UformConsultarVerificaMontosVtas, UXmlSalesImporter;
+  UformConsultarVerificaMontosVtas, UXmlSalesImporter, UEcfApiRutaIngresos;
 {$R *.dfm}
 
 procedure TfrmConsultaFacturas.BitBtn1Click(Sender: TObject);
@@ -1403,6 +1403,21 @@ begin
   end;
   if numerotrn = 0 then exit;
   if GlbValidarECF = 0 then exit;
+  try
+    if ProcesarIdesiSiCorresponde(numerotrn, GlbUsarFacturaTxtECF,
+       GlbRutaEcf, ExtractFilePath(Application.ExeName) +
+       'repconf_cr.ini', _smg) then
+    begin
+      MessageBox(0, PChar(_smg), 'IDESI API', MB_ICONINFORMATION or MB_OK);
+      Exit;
+    end;
+  except
+    on E: Exception do
+    begin
+      MessageBox(0, PChar(E.Message), 'IDESI API', MB_ICONERROR or MB_OK);
+      Exit;
+    end;
+  end;
   if UUtilecf.EjecutarECF_y_Mostrar(GlbRutaEcf, IntToStr(numerotrn),_smg) then
     MessageBox(0, Pchar(_smg), 'Facturación Electrónica', MB_ICONINFORMATION or MB_OK)
   else

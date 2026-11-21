@@ -185,12 +185,41 @@ begin
   end;
 end;
 
+{ Devuelve cadena vacia cuando la cabecera opcional no esta presente.
+  GetResponseHeader puede generar una excepcion COM en ese caso. }
+function ValorCabeceraOpcional(const AEncabezados, ANombre: string): string;
+var
+  Inicio, Fin, Separador: Integer;
+  Linea: string;
+begin
+  Result := '';
+  Inicio := 1;
+  while Inicio <= Length(AEncabezados) do
+  begin
+    Fin := Inicio;
+    while (Fin <= Length(AEncabezados)) and (AEncabezados[Fin] <> #10) do
+      Inc(Fin);
+    Linea := Copy(AEncabezados, Inicio, Fin - Inicio);
+    if (Linea <> '') and (Linea[Length(Linea)] = #13) then
+      Delete(Linea, Length(Linea), 1);
+    Separador := Pos(':', Linea);
+    if (Separador > 0) and
+       SameText(Trim(Copy(Linea, 1, Separador - 1)), ANombre) then
+    begin
+      Result := Trim(Copy(Linea, Separador + 1, MaxInt));
+      Exit;
+    end;
+    Inicio := Fin + 1;
+  end;
+end;
+
 function EjecutarHttp(
   const AMetodo, AUrl, AContentType, ABearer, AIdempotencyKey,
   ACorrelationId: string; const ABodyUtf8: AnsiString): TEcfApiRespuestaHttp;
 var
   Http: OleVariant;
   ByteBody, ByteReply: OleVariant;
+  Encabezados: string;
 begin
   Result.StatusCode := 0;
   Result.BodyUtf8 := '';
@@ -221,10 +250,13 @@ begin
   Result.StatusCode := Integer(Http.Status);
   ByteReply := Http.ResponseBody;
   Result.BodyUtf8 := BytesDeRespuesta(ByteReply);
-  try
-    Result.IdempotencyReplayed := string(Http.GetResponseHeader('Idempotency-Replayed'));
-  except
-    Result.IdempotencyReplayed := '';
+  { Esta cabecera solo es relevante en POST de emision con clave estable.
+    Su ausencia es normal: no se debe disparar una excepcion COM. }
+  if SameText(AMetodo, 'POST') and (AIdempotencyKey <> '') then
+  begin
+    Encabezados := string(Http.GetAllResponseHeaders);
+    Result.IdempotencyReplayed :=
+      ValorCabeceraOpcional(Encabezados, 'Idempotency-Replayed');
   end;
 end;
 

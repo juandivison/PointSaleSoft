@@ -108,6 +108,7 @@ interface
     GlbModeEdit : boolean;
     GlbInsertarEnLoan : Smallint;
     GlBExpert, GlBAyaco,GlBInveraf, Glbcolmado : smallint;
+    GlBFerreteria:Smallint;
     GlBTapiceria:Smallint;
     GLBProsesur:Smallint;
     GLBMTEGroup :Smallint;
@@ -1542,6 +1543,7 @@ var
   F: TFileStream;
   s: AnsiString;
 begin
+  if GlbEsDebugFiscal = 0 then exit;
   if Not FileExists(ExtractFilePath( Application.ExeName )+'\'+ExtractFileName(Application.ExeName) + 'loop_log.txt') then
 
   begin
@@ -1560,6 +1562,8 @@ var
   F: TFileStream;
   s: AnsiString;
 begin
+  if GlbEsDebugFiscal = 0 then exit;
+  
   if Not FileExists(ExtractFilePath( Application.ExeName )+'\'+ExtractFileName(Application.ExeName) + '_log.txt') then
 
   begin
@@ -4511,7 +4515,9 @@ var
 FN:String;
 begin
   //Exit;//Configurar aqui para usar Parametro
-  if GlbEsDebugEntradas = 0 then exit;
+
+  if (GlbEsDebugEntradas = 0) and (GlbEsDebugFiscal = 0)  then exit;
+  
   // Getting the filename for the logfile (In this case the Filename is 'application-exename.log'
   FN := ChangeFileExt(Application.Exename, '.log');
 

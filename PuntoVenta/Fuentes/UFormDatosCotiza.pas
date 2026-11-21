@@ -244,7 +244,8 @@ uses UDatModConectar, Uglobal, UFormSelFecha, UDatModFactura,
   UQckCotiza8_5_F_1BB, UDatosVentas, UFormOrdenTrabajo,
   UQckCotServ8_5Ayaco, UQckCotServ8_5AyacoRep, frmImprimirDoc,
   UQckCotizaServ8_5EXDMar, UDatmodDatosGenerales, UQckCotServ8_5SAM,
-  UQckCotServ8_5Standar, UQckCotServ8_5StandarFarmacia;
+  UQckCotServ8_5Standar, UQckCotServ8_5StandarFarmacia,
+  UQckCotServ8_11Ferreteria;
 
 {$R *.dfm}
 
@@ -425,7 +426,7 @@ var
   flag : boolean;
   X, Count : Integer;
 begin
-  GlbRutaLogoDoc:='';
+  GlbRutaLogoDoc:=''; 
   if GetFormatoTipoDoc(2,GlbRutaLogoDoc) then  //2 	Cotizacion 8.5 Estandar
      GlbDocStandar:=1
   else
@@ -476,6 +477,36 @@ begin
     if CheckBox2.Checked then
     ShellExecute(0,nil,PChar(glbZipFile),'','',SW_SHOWNORMAL);
 
+  end else
+  if (GlBFerreteria= 1) AND (GlbSizeCotiza8x11 = 1) then
+  begin
+     qckCot8_11Ferreteria:=TqckCot8_11Ferreteria.Create(Nil);
+    try
+      if (Not DirectoryExists('Informes')) then
+      CreateDir('Informes');
+      if (Not DirectoryExists('Informes\Cotizaciones')) then
+      CreateDir('Informes\Cotizaciones');
+
+      if CheckBox2.Checked then
+      ReportExport(qckCotServ8_5Ayaco,
+      GlbRutaCotizaciones+'\Cotizacion_'+dmfactura.qryRepCotizaNewNOMBRE_ABREV.Value+dmfactura.qryRepCotizaNewNUMERO.AsString+'.pdf');
+
+      if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+      begin
+        qckCot8_11Ferreteria.PrinterSetup;
+        qckCot8_11Ferreteria.Print;
+      end else
+      qckCot8_11Ferreteria.Preview;
+    finally
+    qckCot8_11Ferreteria.Free;
+    qckCot8_11Ferreteria:=Nil;
+    end;
+
+    if CheckBox2.Checked then
+      ShellExecute(0,nil,PChar(
+      ExtractFilePath(Application.ExeName)+
+      'Informes\Cotizaciones\Cotizacion_'+dmfactura.qryRepCotizaNewNOMBRE_ABREV.Value+dmfactura.qryRepCotizaNewNUMERO.AsString+'.pdf'
+      ),'','',SW_SHOWNORMAL);
   end else
   if ((GlBAyaco = 1) or (GlBInveraf =1) or (GlBTapiceria = 1)) AND (GlbSizeCotiza8x11 = 1) then
   begin

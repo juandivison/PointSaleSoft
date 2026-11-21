@@ -5,8 +5,11 @@ unit UfrmEcfCanalConfig;
   CP12: mantenimiento administrativo de ECF_CANAL_CONFIG y consulta
   EXCLUSIVAMENTE de lectura de ECF_API_INTENTO.
 
-  NO transmite e-CF, NO modifica ECF_API_INTENTO ni ECF_TIMBRE_LOG,
-  NO modifica la transaccion de venta ni la transaccion global de IBX.
+  CP12-H3: permite QA E31 TEST EXCLUSIVAMENTE MANUAL en pestaña separada.
+  No activa envios en el cierre de venta ni modifica ECF_TIMBRE_LOG.
+  Usa exclusivamente dmConectar.IBDatabase1 / IBTransaction1.
+  Nunca finaliza transacciones activadas por otro modulo.
+  La escritura es atomica mediante la transaccion compartida y SAVEPOINT.
   PROD no puede activarse desde este formulario.
   No implementar acceso desde el menu sin validar privilegios fiscales.
 }
@@ -15,7 +18,7 @@ interface
 
 uses
   Windows, SysUtils, Classes, Controls, Forms, Dialogs, StdCtrls,
-  ExtCtrls, ComCtrls, Grids, IBDatabase, IBQuery, DB;
+  ExtCtrls, ComCtrls, Grids, IBDatabase, IBQuery, DB, UEcfCanalConfig;
 
 type
   TfrmEcfCanalConfig = class(TForm)
@@ -73,9 +76,40 @@ type
     FAmbienteAnterior: string;
     FFechaAnterior: TDateTime;
     FFechaAnteriorNula: Boolean;
+    FFechaAnteriorSql: string;
     FIndiceEmisor: Integer;
     FRncs: TStringList;
-    function TransaccionNueva(AEscritura: Boolean): TIBTransaction;
+    FBtnProbarApiTest: TButton;
+    FBtnProbarApiProd: TButton;
+    FBtnProbarOAuthTest: TButton;
+    FLblOAuthTest: TLabel;
+    FTabE31Test: TTabSheet;
+    FEdtE31Trn: TEdit;
+    FBtnPrepararE31: TButton;
+    FBtnEnviarE31: TButton;
+    FBtnConciliarE31: TButton;
+    FMemoE31: TMemo;
+    FLblEndpointApi: TLabel;
+    FLblResultadoApi: TLabel;
+    FEstadoApiTest: string;
+    FEstadoApiProd: string;
+    procedure CrearControlesSaludApi;
+    procedure ActualizarEndpointApi;
+    procedure ActualizarResultadoApi;
+    procedure ProbarSaludApi(AAmbiente: TAmbienteEcf);
+    procedure btnProbarApiTestClick(Sender: TObject);
+    procedure btnProbarApiProdClick(Sender: TObject);
+    procedure btnProbarOAuthTestClick(Sender: TObject);
+    procedure CrearControlesE31Test;
+    function ConfiguracionTestPersistida: TEcfCanalConfiguracion;
+    procedure btnPrepararE31Click(Sender: TObject);
+    procedure btnEnviarE31Click(Sender: TObject);
+    procedure btnConciliarE31Click(Sender: TObject);
+    procedure MostrarIntentoE31(const AIntentoId, AENcf, AEstado: string;
+      ANumeroTrn, ARequestBytes: Integer; const ABodyUtf8: AnsiString);
+    function SolicitarSecretoOAuthTest(out ASecret: string): Boolean;
+    function TransaccionNueva(AEscritura: Boolean;
+      out AIniciadaAqui: Boolean): TIBTransaction;
     function ConsultaNueva(ATx: TIBTransaction): TIBQuery;
     function TablaExiste(ATx: TIBTransaction; const ANombre: string): Boolean;
     function RncSeleccionado: string;
@@ -101,6 +135,10 @@ procedure MostrarMantenimientoEcf(ADatabase: TIBDatabase;
   const AUsuarioApp: string; AEdicionAutorizada: Boolean);
 
 implementation
+
+uses UDatModConectar, UEcfApiHealth, UEcfApiOAuthTest,
+  UEcfApiIntento, UEcfApiQaE31, UEcfApiEnvioE31, UEcfApiHttp,
+  UEcfApiConsultaE31;
 
 {$R *.dfm}
 
@@ -151,6 +189,8 @@ begin
   FAutorizado := False;
   FExisteIntentos := False;
   FExisteAuditoria := False;
+  FEstadoApiTest := 'Sin comprobar';
+  FEstadoApiProd := 'Sin comprobar';
 end;
 
 destructor TfrmEcfCanalConfig.Destroy;
@@ -164,43 +204,47 @@ procedure TfrmEcfCanalConfig.Preparar(ADatabase: TIBDatabase;
 begin
   if FInicializado then
     raise Exception.Create('Formulario e-CF ya inicializado.');
-  if (ADatabase = nil) or (not ADatabase.Connected) then
-    raise Exception.Create('No hay conexion Firebird disponible.');
-  FDatabase := ADatabase;
+  if dmConectar = nil then
+    raise Exception.Create('dmConectar no esta disponible.');
+  if (ADatabase = nil) or (ADatabase <> dmConectar.IBDatabase1) or
+     (not dmConectar.IBDatabase1.Connected) then
+    raise Exception.Create('Se requiere dmConectar.IBDatabase1 conectado.');
+  if (dmConectar.IBTransaction1 = nil) or
+     (dmConectar.IBTransaction1.DefaultDatabase <> dmConectar.IBDatabase1) then
+    raise Exception.Create('IBTransaction1 no esta asociado a IBDatabase1.');
+  FDatabase := dmConectar.IBDatabase1;
   FUsuarioApp := Trim(AUsuarioApp);
   FAutorizado := AEdicionAutorizada;
   if FAutorizado and (FUsuarioApp = '') then
     raise Exception.Create('No se permite editar sin usuario autenticado.');
 end;
 
-function TfrmEcfCanalConfig.TransaccionNueva(
-  AEscritura: Boolean): TIBTransaction;
+function TfrmEcfCanalConfig.TransaccionNueva(AEscritura: Boolean;
+  out AIniciadaAqui: Boolean): TIBTransaction;
 begin
-  if (FDatabase = nil) or (not FDatabase.Connected) then
-    raise Exception.Create('Conexion Firebird no disponible.');
-  Result := TIBTransaction.Create(nil);
-  try
-    Result.DefaultDatabase := FDatabase;
-    Result.Params.Clear;
-    Result.Params.Add('read_committed');
-    Result.Params.Add('rec_version');
-    Result.Params.Add('wait');
-    if AEscritura then
-      Result.Params.Add('write')
-    else
-      Result.Params.Add('read');
+  if (dmConectar = nil) or (FDatabase <> dmConectar.IBDatabase1) or
+     (not FDatabase.Connected) then
+    raise Exception.Create('Conexion global Firebird no disponible.');
+  Result := dmConectar.IBTransaction1;
+  if (Result = nil) or (Result.DefaultDatabase <> FDatabase) then
+    raise Exception.Create('Transaccion global IBTransaction1 no vinculada.');
+  if AEscritura and not FAutorizado then
+    raise Exception.Create('Usuario sin permiso de escritura fiscal.');
+
+  { No alterar Params de la transaccion global ni crear otra transaccion.
+    El propietario del modulo que ya la inicio conserva el control del COMMIT. }
+  AIniciadaAqui := not Result.InTransaction;
+  if AIniciadaAqui then
     Result.StartTransaction;
-  except
-    Result.Free;
-    raise;
-  end;
 end;
 
 function TfrmEcfCanalConfig.ConsultaNueva(
   ATx: TIBTransaction): TIBQuery;
 begin
+  if ATx <> dmConectar.IBTransaction1 then
+    raise Exception.Create('Consulta con transaccion ajena a dmConectar.');
   Result := TIBQuery.Create(nil);
-  Result.Database := FDatabase;
+  Result.Database := dmConectar.IBDatabase1;
   Result.Transaction := ATx;
 end;
 
@@ -304,6 +348,7 @@ end;
 procedure TfrmEcfCanalConfig.ConsultarAuditoria;
 var
   Tx: TIBTransaction;
+  IniciadaAqui: Boolean;
   Q: TIBQuery;
   Rnc: string;
   I: Integer;
@@ -318,7 +363,7 @@ begin
   end;
   Rnc := RncSeleccionado;
   if Rnc = '' then Exit;
-  Tx := TransaccionNueva(False);
+  Tx := TransaccionNueva(False, IniciadaAqui);
   try
     Q := ConsultaNueva(Tx);
     try
@@ -354,18 +399,19 @@ begin
           Q.Next;
         end;
         Q.Close;
-        Tx.Commit;
+        if IniciadaAqui then Tx.Commit;
         lblResumenAuditoria.Caption := 'RNC ' + Rnc + ': ' +
           IntToStr(I - 1) + ' cambio(s) mostrados (maximo 100).';
       except
-        if Tx.InTransaction then Tx.Rollback;
+        if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
         raise;
       end;
     finally
       Q.Free;
     end;
   finally
-    Tx.Free;
+    { IBTransaction1 es propiedad de dmConectar; NO liberar. }
+    if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
   end;
 end;
 
@@ -380,11 +426,576 @@ begin
   end;
 end;
 
+procedure TfrmEcfCanalConfig.CrearControlesE31Test;
+var
+  L: TLabel;
+begin
+  if FTabE31Test <> nil then Exit;
+  FTabE31Test := TTabSheet.Create(Self);
+  FTabE31Test.PageControl := pgPrincipal;
+  FTabE31Test.Name := 'tsPruebaE31Test';
+  FTabE31Test.Caption := 'E31 TEST (manual)';
+  FTabE31Test.TabVisible := FAutorizado;
+
+  L := TLabel.Create(Self);
+  L.Parent := FTabE31Test;
+  L.SetBounds(20, 20, 850, 36);
+  L.AutoSize := False;
+  L.WordWrap := True;
+  L.Caption := 'SOLO QA E31 / IDESI_API TEST. Factura comercial YA confirmada. ' +
+    'Primero preparar y revisar; despues enviar una sola vez.';
+
+  L := TLabel.Create(Self);
+  L.Parent := FTabE31Test;
+  L.SetBounds(20, 70, 150, 18);
+  L.Caption := 'Numero de transaccion:';
+
+  FEdtE31Trn := TEdit.Create(Self);
+  FEdtE31Trn.Parent := FTabE31Test;
+  FEdtE31Trn.Name := 'edtE31TestTrn';
+  FEdtE31Trn.SetBounds(175, 66, 130, 24);
+  FEdtE31Trn.MaxLength := 10;
+
+  FBtnPrepararE31 := TButton.Create(Self);
+  FBtnPrepararE31.Parent := FTabE31Test;
+  FBtnPrepararE31.SetBounds(322, 63, 195, 31);
+  FBtnPrepararE31.Caption := '1. Preparar E31 TEST';
+  FBtnPrepararE31.OnClick := btnPrepararE31Click;
+
+  FBtnEnviarE31 := TButton.Create(Self);
+  FBtnEnviarE31.Parent := FTabE31Test;
+  FBtnEnviarE31.SetBounds(531, 63, 195, 31);
+  FBtnEnviarE31.Caption := '2. Enviar E31 TEST';
+  FBtnEnviarE31.OnClick := btnEnviarE31Click;
+
+  FBtnConciliarE31 := TButton.Create(Self);
+  FBtnConciliarE31.Parent := FTabE31Test;
+  FBtnConciliarE31.SetBounds(531, 104, 195, 31);
+  FBtnConciliarE31.Caption := '3. Conciliar / XML';
+  FBtnConciliarE31.OnClick := btnConciliarE31Click;
+
+  L := TLabel.Create(Self);
+  L.Parent := FTabE31Test;
+  L.SetBounds(20, 151, 875, 42);
+  L.AutoSize := False;
+  L.WordWrap := True;
+  L.Caption := 'OBLIGATORIO: comprobar moneda DOP, importe, comprador, ' +
+    'e-NCF TEST disponible y ausencia de emision previa ASLAN/DGII. ' +
+    'Un HTTP 200 no equivale a aceptacion fiscal.';
+
+  FMemoE31 := TMemo.Create(Self);
+  FMemoE31.Parent := FTabE31Test;
+  FMemoE31.Name := 'memoE31TestResultado';
+  FMemoE31.SetBounds(20, 202, 860, 256);
+  FMemoE31.ReadOnly := True;
+  FMemoE31.ScrollBars := ssBoth;
+  FMemoE31.WordWrap := False;
+  FMemoE31.Lines.Text :=
+    'Sin factura preparada. Esta pestaña NO emite automaticamente.';
+end;
+
+function TfrmEcfCanalConfig.ConfiguracionTestPersistida:
+  TEcfCanalConfiguracion;
+var
+  Tx: TIBTransaction;
+  IniciadaAqui: Boolean;
+begin
+  if not FAutorizado then
+    raise Exception.Create('Solo administradores fiscales pueden probar la emision.');
+  if RncSeleccionado <> '130177092' then
+    raise Exception.Create('Esta prueba E31 esta limitada al RNC de IDESI SRL.');
+  if HayCambios then
+    raise Exception.Create('Existen cambios de canal sin guardar. Recargue datos.');
+  Tx := TransaccionNueva(False, IniciadaAqui);
+  try
+    Result := CargarConfiguracionCanalEcf(
+      dmConectar.IBDatabase1,Tx,RncSeleccionado);
+  finally
+    if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
+  end;
+  if (Result.Canal <> ceIdesiApi) or (Result.Ambiente <> aeTest) or
+     (Result.BaseUrl <> 'https://api-staging.idesisa.com') or
+     (Result.ClientId <> 'idesi-staging') then
+    raise Exception.Create('El RNC debe tener IDESI_API / TEST persistido.');
+end;
+
+procedure TfrmEcfCanalConfig.MostrarIntentoE31(
+  const AIntentoId, AENcf, AEstado: string;
+  ANumeroTrn, ARequestBytes: Integer; const ABodyUtf8: AnsiString);
+begin
+  FMemoE31.Clear;
+  FMemoE31.Lines.Add('RNC = 130177092 | Ambiente TEST');
+  FMemoE31.Lines.Add('TRN = ' + IntToStr(ANumeroTrn));
+  FMemoE31.Lines.Add('e-NCF = ' + AENcf);
+  FMemoE31.Lines.Add('ID_INTENTO = ' + AIntentoId);
+  FMemoE31.Lines.Add('ESTADO = ' + AEstado);
+  FMemoE31.Lines.Add('REQUEST_BYTES = ' + IntToStr(ARequestBytes));
+  FMemoE31.Lines.Add('REVISAR JSON antes de enviar:');
+  FMemoE31.Lines.Add('------------------------------------------');
+  { Vista informativa. El envio usa los bytes originales del BLOB, no Memo. }
+  FMemoE31.Lines.Add(string(ABodyUtf8));
+end;
+
+procedure TfrmEcfCanalConfig.btnPrepararE31Click(Sender: TObject);
+var
+  Config: TEcfCanalConfiguracion;
+  Intento: TEcfApiIntento;
+  NumeroTrn: Integer;
+  Carpeta: string;
+  AutorizarCommitRetaining: Boolean;
+begin
+  FBtnPrepararE31.Enabled := False;
+  try
+    try
+      Config := ConfiguracionTestPersistida;
+      if (not TryStrToInt(Trim(FEdtE31Trn.Text),NumeroTrn)) or
+         (NumeroTrn <= 0) then
+        raise Exception.Create('Especifique NUMERO_TRN entero positivo.');
+      if CargarIntentoApiPorFactura(FDatabase,Config.RncEmisor,
+        NumeroTrn,Intento) then
+      begin
+        MostrarIntentoE31(Intento.IdIntento,Intento.ENcf,
+          Intento.EstadoLocal,NumeroTrn,Length(Intento.RequestUtf8),
+          Intento.RequestUtf8);
+        MessageDlg('Ya existe el intento ' + Intento.IdIntento + '. ' +
+          'No se regenero el JSON. Revisar estado.',mtInformation,[mbOK],0);
+        Exit;
+      end;
+
+      if MessageDlg('Preparar E31 sobre factura YA CONFIRMADA ' +
+        IntToStr(NumeroTrn) + ' del RNC 130177092? ' + #13#10 +
+        'No hace envio HTTP. SOLO TEST.', mtConfirmation,
+        [mbYes,mbNo],0) <> mrYes then Exit;
+
+      AutorizarCommitRetaining := dmConectar.IBTransaction1.InTransaction;
+      if AutorizarCommitRetaining then
+        if MessageDlg(
+          'IBTransaction1 esta activa (puede ser solo por lecturas).' + #13#10 +
+          'CommitRetaining CONFIRMARA cualquier cambio pendiente ' +
+          'de otros modulos sobre esta transaccion global.' + #13#10 +
+          'Asegurese de que no haya operaciones comerciales sin confirmar.' + #13#10 +
+          'Autoriza CommitRetaining para preparar E31 TEST?',
+          mtWarning,[mbYes,mbNo],0) <> mrYes then Exit;
+
+      Carpeta := IncludeTrailingPathDelimiter(GetEnvironmentVariable('TEMP')) +
+        'PointSaleSoft_EcfApi_Test';
+      Intento := PrepararE31TestDesdeFacturaConfirmada(FDatabase,
+        NumeroTrn,Carpeta,AutorizarCommitRetaining);
+      MostrarIntentoE31(Intento.IdIntento,Intento.ENcf,
+        Intento.EstadoLocal,NumeroTrn,Length(Intento.RequestUtf8),
+        Intento.RequestUtf8);
+      ConsultarIntentos;
+      MessageDlg('Intento PREPARADO y confirmado en Firebird. ' +
+        'Revise el JSON y el e-NCF antes del POST.',mtInformation,[mbOK],0);
+    except
+      on E: Exception do
+        MessageDlg('Preparacion E31 TEST bloqueada: ' + E.Message,
+          mtError,[mbOK],0);
+    end;
+  finally
+    FBtnPrepararE31.Enabled := True;
+  end;
+end;
+
+procedure TfrmEcfCanalConfig.btnEnviarE31Click(Sender: TObject);
+var
+  Config: TEcfCanalConfiguracion;
+  Intento: TEcfApiIntento;
+  Respuesta: TEcfApiRespuestaHttp;
+  NumeroTrn: Integer;
+  Confirmacion, Secret: string;
+  AutorizarCommitRetaining: Boolean;
+begin
+  FBtnEnviarE31.Enabled := False;
+  Secret := '';
+  try
+    try
+      Config := ConfiguracionTestPersistida;
+      if (not TryStrToInt(Trim(FEdtE31Trn.Text),NumeroTrn)) or
+         (NumeroTrn <= 0) then
+        raise Exception.Create('Especifique NUMERO_TRN entero positivo.');
+      if not CargarIntentoApiPorFactura(FDatabase,Config.RncEmisor,
+        NumeroTrn,Intento) then
+        raise Exception.Create('Primero prepare y confirme el intento E31 TEST.');
+      if Intento.EstadoLocal <> 'PREPARADO' then
+        raise Exception.Create('Intento en estado ' + Intento.EstadoLocal +
+          '. NO reintentar; primero conciliar.');
+      if (Intento.Ambiente <> 'TEST') or
+         (Intento.BaseUrl <> Config.BaseUrl) or
+         (Copy(Intento.ENcf,1,3) <> 'E31') then
+        raise Exception.Create('Intento/ambiente/tipo no coinciden con el canal TEST.');
+
+      MostrarIntentoE31(Intento.IdIntento,Intento.ENcf,
+        Intento.EstadoLocal,NumeroTrn,Length(Intento.RequestUtf8),
+        Intento.RequestUtf8);
+      Confirmacion := '';
+      if not InputQuery('Confirmacion fiscal TEST',
+        'Escriba exactamente el e-NCF que verifico libre en TEST:',
+        Confirmacion) then Exit;
+      if Trim(Confirmacion) <> Intento.ENcf then
+        raise Exception.Create('Confirmacion e-NCF no coincide. POST bloqueado.');
+      if MessageDlg(
+        'ULTIMA CONFIRMACION DE EMISION TEST' + #13#10 +
+        'RNC: ' + Intento.RncEmisor + #13#10 +
+        'TRN: ' + IntToStr(NumeroTrn) + #13#10 +
+        'e-NCF: ' + Intento.ENcf + #13#10 +
+        'Compruebe importe, comprador, moneda DOP y secuencia TEST.' + #13#10 +
+        'Se enviara UNA SOLA VEZ a https://api-staging.idesisa.com.' + #13#10 +
+        'Confirmar POST fiscal TEST?',mtWarning,[mbYes,mbNo],0) <> mrYes then
+        Exit;
+      AutorizarCommitRetaining := dmConectar.IBTransaction1.InTransaction;
+      if AutorizarCommitRetaining then
+        if MessageDlg(
+          'IBTransaction1 sigue activa.' + #13#10 +
+          'El POST TEST exige guardar TRANSMITIENDO ANTES de la red.' + #13#10 +
+          'CommitRetaining confirma TODOS los cambios pendientes en ' +
+          'la transaccion global.' + #13#10 +
+          'Autoriza CommitRetaining antes de enviar E31 TEST?',
+          mtWarning,[mbYes,mbNo],0) <> mrYes then Exit;
+      if not SolicitarSecretoOAuthTest(Secret) then Exit;
+
+      Respuesta := EjecutarPrimerPostE31Test(FDatabase,Config,
+        NumeroTrn,Secret,True,AutorizarCommitRetaining);
+      FMemoE31.Lines.Add('------------------------------------------');
+      FMemoE31.Lines.Add('POST TEST HTTP ' + IntToStr(Respuesta.StatusCode));
+      FMemoE31.Lines.Add('Respuesta (no implica aceptacion DGII):');
+      FMemoE31.Lines.Add(string(Respuesta.BodyUtf8));
+      ConsultarIntentos;
+      MessageDlg('POST TEST respondio HTTP ' +
+        IntToStr(Respuesta.StatusCode) + '. ' +
+        'No equivale a aceptacion fiscal. Verificar /details, XML y auditoria.',
+        mtInformation,[mbOK],0);
+    except
+      on E: Exception do
+        MessageDlg('Envio E31 TEST interrumpido: ' + E.Message + #13#10 +
+          'Revisar ECF_API_INTENTO. Si TRANSMITIENDO/AMBIGUO: NO reemitir.',
+          mtError,[mbOK],0);
+    end;
+  finally
+    Secret := '';
+    FBtnEnviarE31.Enabled := True;
+  end;
+end;
+
+procedure TfrmEcfCanalConfig.btnConciliarE31Click(Sender: TObject);
+var
+  Config: TEcfCanalConfiguracion;
+  Intento: TEcfApiIntento;
+  NumeroTrn: Integer;
+  Secret, Token: string;
+  Datos: TConsultaE31Test;
+begin
+  FBtnConciliarE31.Enabled := False;
+  Secret := '';
+  Token := '';
+  try
+    try
+      Config := ConfiguracionTestPersistida;
+      if (not TryStrToInt(Trim(FEdtE31Trn.Text),NumeroTrn)) or
+         (NumeroTrn <= 0) then
+        raise Exception.Create('Indique el numero de transaccion E31.');
+      if not CargarIntentoApiPorFactura(FDatabase,Config.RncEmisor,
+        NumeroTrn,Intento) then
+        raise Exception.Create('No existe intento persistido para ese TRN.');
+      if (Intento.RncEmisor <> Config.RncEmisor) or
+         (Intento.NumeroTrn <> NumeroTrn) or
+         (Intento.Ambiente <> 'TEST') or
+         (Intento.BaseUrl <> Config.BaseUrl) or
+         (Copy(Intento.ENcf,1,3) <> 'E31') then
+        raise Exception.Create('Intento no corresponde al RNC, canal o TEST.');
+      if Intento.EstadoLocal = 'PREPARADO' then
+        raise Exception.Create('La factura esta PREPARADA, pero no se ha enviado. ' +
+          'Conciliacion remota no sustituye la emision.');
+      if not SolicitarSecretoOAuthTest(Secret) then Exit;
+      Token := ObtenerTokenIdesiTestCacheGlobal(Config,Secret);
+      Secret := '';
+      FMemoE31.Clear;
+      FMemoE31.Lines.Add('CONCILIACION TEST SOLO GET; SIN POST');
+      FMemoE31.Lines.Add('TRN=' + IntToStr(NumeroTrn) +
+        ' RNC=' + Config.RncEmisor + ' e-NCF=' + Intento.ENcf);
+      FMemoE31.Lines.Add('Estado local previo: ' + Intento.EstadoLocal);
+      FMemoE31.Lines.Add('No se modifica Firebird ni el estado local.');
+      FMemoE31.Lines.Add('----------------------------------------');
+      Datos := ConsultarE31YRecuperarXmlTest(Config,Token,Intento.ENcf,
+        NumeroTrn);
+      FMemoE31.Lines.Add('ESTADO DGII: HTTP ' + IntToStr(Datos.EstadoHttp));
+      FMemoE31.Lines.Add(string(Datos.EstadoJson));
+      FMemoE31.Lines.Add('----------------------------------------');
+      FMemoE31.Lines.Add('METADATOS: HTTP ' + IntToStr(Datos.MetadataHttp));
+      FMemoE31.Lines.Add(string(Datos.MetadataJson));
+      FMemoE31.Lines.Add('----------------------------------------');
+      FMemoE31.Lines.Add('XML FIRMADO: HTTP ' + IntToStr(Datos.XmlHttp));
+      if Datos.ArchivoXml <> '' then
+      begin
+        FMemoE31.Lines.Add('XML descargado (' + IntToStr(Datos.XmlBytes) +
+          ' bytes): ' + Datos.ArchivoXml);
+        FMemoE31.Lines.Add('Validar firma digital y contenido de XML ' +
+          'antes de importar el documento al ERP.');
+      end
+      else
+        FMemoE31.Lines.Add(Datos.XmlDetalle);
+      FMemoE31.Lines.Add('Verificar currentStatusVerified=true y ' +
+        'status=ACCEPTED en la respuesta de DGII.');
+      MessageDlg('GET finalizados. Revise el Memo: estado DGII, ' +
+        'metadatos y XML. Sin nuevos envios ni escrituras Firebird.',
+        mtInformation,[mbOK],0);
+    except
+      on E: Exception do
+        MessageDlg('Conciliacion E31 TEST: ' + E.Message +
+          #13#10 + 'No se realizo POST. No reemitir el comprobante.',
+          mtError,[mbOK],0);
+    end;
+  finally
+    Secret := '';
+    Token := '';
+    FBtnConciliarE31.Enabled := True;
+  end;
+end;
+
+procedure TfrmEcfCanalConfig.CrearControlesSaludApi;
+begin
+  { Controles dinamicos para no modificar el DFM existente de Delphi 7. }
+  if FBtnProbarApiTest <> nil then Exit;
+
+  FBtnProbarApiTest := TButton.Create(Self);
+  FBtnProbarApiTest.Parent := tsConfiguracion;
+  FBtnProbarApiTest.Name := 'btnProbarApiTest';
+  FBtnProbarApiTest.SetBounds(327, 402, 145, 32);
+  FBtnProbarApiTest.Caption := 'Probar API TEST';
+  FBtnProbarApiTest.OnClick := btnProbarApiTestClick;
+
+  FBtnProbarApiProd := TButton.Create(Self);
+  FBtnProbarApiProd.Parent := tsConfiguracion;
+  FBtnProbarApiProd.Name := 'btnProbarApiProd';
+  FBtnProbarApiProd.SetBounds(483, 402, 145, 32);
+  FBtnProbarApiProd.Caption := 'Probar API PROD';
+  FBtnProbarApiProd.OnClick := btnProbarApiProdClick;
+
+  FBtnProbarOAuthTest := TButton.Create(Self);
+  FBtnProbarOAuthTest.Parent := tsConfiguracion;
+  FBtnProbarOAuthTest.Name := 'btnProbarOAuthTest';
+  FBtnProbarOAuthTest.SetBounds(646, 402, 184, 32);
+  FBtnProbarOAuthTest.Caption := 'Probar OAuth TEST';
+  FBtnProbarOAuthTest.OnClick := btnProbarOAuthTestClick;
+
+  FLblEndpointApi := TLabel.Create(Self);
+  FLblEndpointApi.Parent := tsConfiguracion;
+  FLblEndpointApi.Name := 'lblEndpointApi';
+  FLblEndpointApi.AutoSize := False;
+  FLblEndpointApi.SetBounds(18, 321, 895, 18);
+
+  FLblResultadoApi := TLabel.Create(Self);
+  FLblResultadoApi.Parent := tsConfiguracion;
+  FLblResultadoApi.Name := 'lblResultadoApi';
+  FLblResultadoApi.AutoSize := False;
+  FLblResultadoApi.SetBounds(18, 444, 895, 36);
+  FLblResultadoApi.WordWrap := True;
+
+  FLblOAuthTest := TLabel.Create(Self);
+  FLblOAuthTest.Parent := tsConfiguracion;
+  FLblOAuthTest.Name := 'lblOAuthTest';
+  FLblOAuthTest.AutoSize := False;
+  FLblOAuthTest.SetBounds(18, 480, 895, 18);
+  FLblOAuthTest.Caption := 'OAuth TEST: pendiente (no se ha solicitado token).';
+
+  ActualizarResultadoApi;
+  ActualizarEndpointApi;
+end;
+
+procedure TfrmEcfCanalConfig.ActualizarEndpointApi;
+var
+  Ambiente: TAmbienteEcf;
+  Texto: string;
+begin
+  if FLblEndpointApi = nil then Exit;
+  if not FConfigExiste then
+    Texto := 'Canal persistido: sin configuracion registrada'
+  else if FCanalAnterior <> 'IDESI_API' then
+    Texto := 'Canal persistido: ' + FCanalAnterior +
+      ' (no utiliza endpoint IDESI API)'
+  else
+  begin
+    if FAmbienteAnterior = 'PROD' then
+      Ambiente := aeProd
+    else
+      Ambiente := aeTest;
+    Texto := 'Endpoint persistido: ' + UrlBaseIdesiApi(Ambiente) +
+      '  |  client_id: ' + ClientIdIdesiApi(Ambiente);
+  end;
+  if HayCambios then
+    Texto := 'CAMBIOS SIN GUARDAR. ' + Texto;
+  FLblEndpointApi.Caption := Texto;
+end;
+
+procedure TfrmEcfCanalConfig.ActualizarResultadoApi;
+begin
+  if FLblResultadoApi = nil then Exit;
+  FLblResultadoApi.Caption :=
+    'TEST: ' + FEstadoApiTest + #13#10 +
+    'PROD: ' + FEstadoApiProd;
+end;
+
+procedure TfrmEcfCanalConfig.ProbarSaludApi(AAmbiente: TAmbienteEcf);
+var
+  Respuesta: TEcfApiHealthResultado;
+  Texto: string;
+  CursorAnterior: TCursor;
+begin
+  { No se inicia transaccion, no se consulta Firebird ni se cambia el canal. }
+  if (FBtnProbarApiTest = nil) or (FBtnProbarApiProd = nil) then Exit;
+  FBtnProbarApiTest.Enabled := False;
+  FBtnProbarApiProd.Enabled := False;
+  CursorAnterior := Screen.Cursor;
+  Screen.Cursor := crHourGlass;
+  try
+    Respuesta := ConsultarSaludIdesiApi(AAmbiente);
+    Texto := Respuesta.Detalle + ' | ' + Respuesta.Url;
+    if AAmbiente = aeTest then
+      FEstadoApiTest := Texto
+    else
+      FEstadoApiProd := Texto;
+    ActualizarResultadoApi;
+  finally
+    Screen.Cursor := CursorAnterior;
+    FBtnProbarApiTest.Enabled := True;
+    FBtnProbarApiProd.Enabled := True;
+  end;
+end;
+
+procedure TfrmEcfCanalConfig.btnProbarApiTestClick(Sender: TObject);
+begin
+  ProbarSaludApi(aeTest);
+end;
+
+procedure TfrmEcfCanalConfig.btnProbarApiProdClick(Sender: TObject);
+begin
+  ProbarSaludApi(aeProd);
+end;
+
+function TfrmEcfCanalConfig.SolicitarSecretoOAuthTest(
+  out ASecret: string): Boolean;
+var
+  Ventana: TForm;
+  Aviso: TLabel;
+  Entrada: TEdit;
+  Aceptar: TButton;
+  Cancelar: TButton;
+begin
+  Result := False;
+  ASecret := '';
+  Ventana := TForm.CreateNew(nil);
+  try
+    Ventana.Caption := 'IDESI API TEST - Autenticacion OAuth';
+    Ventana.BorderStyle := bsDialog;
+    Ventana.Position := poScreenCenter;
+    Ventana.ClientWidth := 520;
+    Ventana.ClientHeight := 154;
+
+    Aviso := TLabel.Create(Ventana);
+    Aviso.Parent := Ventana;
+    Aviso.SetBounds(16, 12, 480, 37);
+    Aviso.AutoSize := False;
+    Aviso.WordWrap := True;
+    Aviso.Caption := 'Ingrese el client_secret de idesi-staging. ' +
+      'No se guarda en Firebird ni en archivos.';
+
+    Entrada := TEdit.Create(Ventana);
+    Entrada.Parent := Ventana;
+    Entrada.SetBounds(16, 58, 488, 24);
+    Entrada.PasswordChar := '*';
+    Entrada.MaxLength := 512;
+
+    Aceptar := TButton.Create(Ventana);
+    Aceptar.Parent := Ventana;
+    Aceptar.Caption := 'Comprobar';
+    Aceptar.SetBounds(308, 107, 94, 28);
+    Aceptar.Default := True;
+    Aceptar.ModalResult := mrOk;
+
+    Cancelar := TButton.Create(Ventana);
+    Cancelar.Parent := Ventana;
+    Cancelar.Caption := 'Cancelar';
+    Cancelar.SetBounds(410, 107, 94, 28);
+    Cancelar.Cancel := True;
+    Cancelar.ModalResult := mrCancel;
+
+    Ventana.ActiveControl := Entrada;
+    if Ventana.ShowModal = mrOk then
+    begin
+      if Trim(Entrada.Text) <> '' then
+      begin
+        ASecret := Entrada.Text;
+        Result := True;
+      end;
+    end;
+    Entrada.Text := '';
+  finally
+    Ventana.Free;
+  end;
+end;
+
+procedure TfrmEcfCanalConfig.btnProbarOAuthTestClick(Sender: TObject);
+var
+  Config: TEcfCanalConfiguracion;
+  Secret: string;
+  Respuesta: TEcfApiOAuthTestResultado;
+  CursorAnterior: TCursor;
+begin
+  { Solo pruebe el RNC/ambiente YA PERSISTIDOS; no se cambia Firebird. }
+  if (not FAutorizado) or (not FConfigExiste) or
+     (FCanalAnterior <> 'IDESI_API') or (FAmbienteAnterior <> 'TEST') or
+     HayCambios or (RncSeleccionado = '') then
+  begin
+    MessageDlg('Guarde primero IDESI_API / TEST para el RNC seleccionado ' +
+      'y recargue los datos. No debe haber cambios pendientes.',
+      mtWarning, [mbOK], 0);
+    Exit;
+  end;
+
+  Secret := '';
+  if not SolicitarSecretoOAuthTest(Secret) then Exit;
+  try
+    Config.RncEmisor := RncSeleccionado;
+    Config.Canal := ceIdesiApi;
+    Config.Ambiente := aeTest;
+    Config.BaseUrl := UrlBaseIdesiApi(aeTest);
+    Config.ClientId := ClientIdIdesiApi(aeTest);
+
+    FBtnProbarOAuthTest.Enabled := False;
+    FBtnProbarApiTest.Enabled := False;
+    FBtnProbarApiProd.Enabled := False;
+    CursorAnterior := Screen.Cursor;
+    Screen.Cursor := crHourGlass;
+    try
+      FLblOAuthTest.Caption := 'OAuth TEST: consultando autorizacion...';
+      FLblOAuthTest.Repaint;
+      Respuesta := ProbarAutenticacionIdesiApiTest(Config, Secret);
+      FLblOAuthTest.Caption := Respuesta.Detalle;
+    finally
+      Screen.Cursor := CursorAnterior;
+      FBtnProbarApiProd.Enabled := True;
+      FBtnProbarApiTest.Enabled := True;
+      FBtnProbarOAuthTest.Enabled := True;
+    end;
+  except
+    on E: Exception do
+    begin
+      { No se muestran access_token, client_secret ni el body HTTP. }
+      FLblOAuthTest.Caption := 'OAuth TEST: error (' + E.ClassName + ').';
+      MessageDlg('No se completo la verificacion OAuth TEST: ' +
+        E.Message, mtError, [mbOK], 0);
+    end;
+  end;
+  Secret := '';
+end;
+
 procedure TfrmEcfCanalConfig.FormShow(Sender: TObject);
 begin
   if FInicializado then
     Exit;
   FInicializado := True;
+  CrearControlesSaludApi;
+  CrearControlesE31Test;
   cboCanal.Items.Clear;
   cboCanal.Items.Add('ASLAN');
   cboCanal.Items.Add('IDESI_API');
@@ -433,21 +1044,23 @@ end;
 procedure TfrmEcfCanalConfig.VerificarEsquema;
 var
   Tx: TIBTransaction;
+  IniciadaAqui: Boolean;
   TieneConfig: Boolean;
 begin
-  Tx := TransaccionNueva(False);
+  Tx := TransaccionNueva(False, IniciadaAqui);
   try
     try
       TieneConfig := TablaExiste(Tx, 'ECF_CANAL_CONFIG');
       FExisteIntentos := TablaExiste(Tx, 'ECF_API_INTENTO');
       FExisteAuditoria := TablaExiste(Tx, 'ECF_CANAL_CONFIG_AUDIT');
-      Tx.Commit;
+      if IniciadaAqui then Tx.Commit;
     except
-      if Tx.InTransaction then Tx.Rollback;
+      if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
       raise;
     end;
   finally
-    Tx.Free;
+    { IBTransaction1 es propiedad de dmConectar; NO liberar. }
+    if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
   end;
   if not TieneConfig then
     raise Exception.Create('Falta ECF_CANAL_CONFIG: ejecutar migracion 01 en BD de desarrollo.');
@@ -456,12 +1069,13 @@ end;
 procedure TfrmEcfCanalConfig.CargarEmisores;
 var
   Tx: TIBTransaction;
+  IniciadaAqui: Boolean;
   Q: TIBQuery;
   Rnc, Nombre: string;
 begin
   FRncs.Clear;
   cboEmisor.Items.Clear;
-  Tx := TransaccionNueva(False);
+  Tx := TransaccionNueva(False, IniciadaAqui);
   try
     Q := ConsultaNueva(Tx);
     try
@@ -480,22 +1094,24 @@ begin
           Q.Next;
         end;
         Q.Close;
-        Tx.Commit;
+        if IniciadaAqui then Tx.Commit;
       except
-        if Tx.InTransaction then Tx.Rollback;
+        if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
         raise;
       end;
     finally
       Q.Free;
     end;
   finally
-    Tx.Free;
+    { IBTransaction1 es propiedad de dmConectar; NO liberar. }
+    if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
   end;
 end;
 
 procedure TfrmEcfCanalConfig.CargarConfiguracion;
 var
   Tx: TIBTransaction;
+  IniciadaAqui: Boolean;
   Q: TIBQuery;
   Rnc: string;
 begin
@@ -506,15 +1122,17 @@ begin
     FConfigExiste := False;
     FFechaAnteriorNula := True;
     FFechaAnterior := 0;
+    FFechaAnteriorSql := '';
     FCanalAnterior := 'ASLAN';
     FAmbienteAnterior := 'TEST';
-    Tx := TransaccionNueva(False);
+    Tx := TransaccionNueva(False, IniciadaAqui);
     try
       Q := ConsultaNueva(Tx);
       try
         try
           Q.SQL.Text :=
-            'SELECT CANAL_ENVIO, API_AMBIENTE, FECHA_ACTUALIZACION ' +
+            'SELECT CANAL_ENVIO, API_AMBIENTE, FECHA_ACTUALIZACION, ' +
+            'CAST(FECHA_ACTUALIZACION AS VARCHAR(24)) AS FECHA_SQL ' +
             'FROM ECF_CANAL_CONFIG WHERE RNC_EMISOR = :RNC';
           Q.ParamByName('RNC').AsString := Rnc;
           Q.Open;
@@ -527,19 +1145,23 @@ begin
               Q.FieldByName('API_AMBIENTE').AsString));
             FFechaAnteriorNula := Q.FieldByName('FECHA_ACTUALIZACION').IsNull;
             if not FFechaAnteriorNula then
+            begin
               FFechaAnterior := Q.FieldByName('FECHA_ACTUALIZACION').AsDateTime;
+              FFechaAnteriorSql := Q.FieldByName('FECHA_SQL').AsString;
+            end;
           end;
           Q.Close;
-          Tx.Commit;
+          if IniciadaAqui then Tx.Commit;
         except
-          if Tx.InTransaction then Tx.Rollback;
+          if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
           raise;
         end;
       finally
         Q.Free;
       end;
     finally
-      Tx.Free;
+      { IBTransaction1 es propiedad de dmConectar; NO liberar. }
+      if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
     end;
     if (FCanalAnterior <> 'ASLAN') and
        (FCanalAnterior <> 'IDESI_API') then
@@ -568,6 +1190,7 @@ end;
 
 procedure TfrmEcfCanalConfig.ActualizarControles;
 begin
+  ActualizarEndpointApi;
   btnGuardar.Enabled := FAutorizado and (RncSeleccionado <> '') and
     FExisteAuditoria;
   cboCanal.Enabled := FAutorizado and (RncSeleccionado <> '');
@@ -632,11 +1255,13 @@ end;
 procedure TfrmEcfCanalConfig.GuardarConfiguracion;
 var
   Tx: TIBTransaction;
+  IniciadaAqui: Boolean;
   Q: TIBQuery;
   Rnc, CanalNuevo, AmbienteNuevo, Motivo: string;
   CambioDeRuta: Boolean;
   Pendientes: Integer;
   Afectadas: Integer;
+  SavepointActivo: Boolean;
 begin
   if not FAutorizado then
     raise Exception.Create('Usuario no autorizado a editar configuracion fiscal.');
@@ -676,11 +1301,20 @@ begin
     'Motivo: ' + Motivo,
     mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit;
 
-  Tx := TransaccionNueva(True);
+  Tx := TransaccionNueva(True, IniciadaAqui);
+  SavepointActivo := False;
   try
     Q := ConsultaNueva(Tx);
     try
       try
+        if not IniciadaAqui then
+        begin
+          { Preserva operaciones pendientes que otros formularios hayan realizado
+            dentro de la misma transaccion global. }
+          Q.SQL.Text := 'SAVEPOINT SP_UFRM_ECFCANAL';
+          Q.ExecSQL;
+          SavepointActivo := True;
+        end;
         if FExisteIntentos then
         begin
           Q.SQL.Text :=
@@ -705,14 +1339,14 @@ begin
           if FFechaAnteriorNula then
             Q.SQL.Add('AND FECHA_ACTUALIZACION IS NULL')
           else
-            Q.SQL.Add('AND FECHA_ACTUALIZACION = :ANTFECHA');
+            Q.SQL.Add('AND CAST(FECHA_ACTUALIZACION AS VARCHAR(24)) = :ANTFECHA');
           Q.ParamByName('NUEVOCANAL').AsString := CanalNuevo;
           Q.ParamByName('NUEVOAMB').AsString := AmbienteNuevo;
           Q.ParamByName('RNC').AsString := Rnc;
           Q.ParamByName('ANTCANAL').AsString := FCanalAnterior;
           Q.ParamByName('ANTAMB').AsString := FAmbienteAnterior;
           if not FFechaAnteriorNula then
-            Q.ParamByName('ANTFECHA').AsDateTime := FFechaAnterior;
+            Q.ParamByName('ANTFECHA').AsString := FFechaAnteriorSql;
           Q.ExecSQL;
           Afectadas := Q.RowsAffected;
           if Afectadas <> 1 then
@@ -761,21 +1395,45 @@ begin
         Q.ExecSQL;
         if Q.RowsAffected <> 1 then
           raise Exception.Create('Fallo al registrar auditoria fiscal.');
-        Tx.Commit;
+        if SavepointActivo then
+        begin
+          Q.SQL.Text := 'RELEASE SAVEPOINT SP_UFRM_ECFCANAL';
+          Q.ExecSQL;
+          SavepointActivo := False;
+        end;
+        if IniciadaAqui then Tx.Commit;
       except
-        if Tx.InTransaction then Tx.Rollback;
+        if IniciadaAqui then
+        begin
+          if Tx.InTransaction then Tx.Rollback;
+        end
+        else if SavepointActivo then
+        begin
+          { Deshacer solo el cambio de este formulario, no la transaccion ajena. }
+          Q.SQL.Text := 'ROLLBACK TO SAVEPOINT SP_UFRM_ECFCANAL';
+          Q.ExecSQL;
+          Q.SQL.Text := 'RELEASE SAVEPOINT SP_UFRM_ECFCANAL';
+          Q.ExecSQL;
+          SavepointActivo := False;
+        end;
         raise;
       end;
     finally
       Q.Free;
     end;
   finally
-    Tx.Free;
+    { IBTransaction1 es propiedad de dmConectar; NO liberar. }
+    if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
   end;
-  { El COMMIT ya ocurrio. Un fallo posterior de lectura NO debe
-    presentarse falsamente como un fallo del guardado fiscal. }
-  MessageDlg('Configuracion y auditoria guardadas correctamente.',
-    mtInformation, [mbOK], 0);
+  { Solo si la iniciamos se hizo COMMIT aqui. Si habia una transaccion
+    global ajena, los cambios quedan sujetos a su COMMIT/ROLLBACK. }
+  if IniciadaAqui then
+    MessageDlg('Configuracion y auditoria confirmadas en Firebird.',
+      mtInformation, [mbOK], 0)
+  else
+    MessageDlg('Configuracion y auditoria actualizadas en IBTransaction1.' +
+      #13#10 + 'PENDIENTE: el proceso propietario debe confirmar la ' +
+      'transaccion global (COMMIT).', mtWarning, [mbOK], 0);
   try
     CargarConfiguracion;
     ConsultarIntentos;
@@ -784,8 +1442,8 @@ begin
     on E: Exception do
     begin
       btnGuardar.Enabled := False;
-      MessageDlg('Guardado confirmado; fallo la actualizacion visual. ' +
-        'Cierre y reabra el formulario. Detalle: ' + E.Message,
+      MessageDlg('Actualizacion SQL realizada; fallo la lectura visual. ' +
+        'Verifique el estado de la transaccion global. Detalle: ' + E.Message,
         mtWarning, [mbOK], 0);
     end;
   end;
@@ -824,6 +1482,7 @@ end;
 procedure TfrmEcfCanalConfig.ConsultarIntentos;
 var
   Tx: TIBTransaction;
+  IniciadaAqui: Boolean;
   Q: TIBQuery;
   Rnc, Estado: string;
   I, C: Integer;
@@ -840,7 +1499,7 @@ begin
   Estado := '';
   if cboFiltroEstado.ItemIndex > 0 then
     Estado := cboFiltroEstado.Text;
-  Tx := TransaccionNueva(False);
+  Tx := TransaccionNueva(False, IniciadaAqui);
   try
     Q := ConsultaNueva(Tx);
     try
@@ -873,7 +1532,7 @@ begin
           Q.Next;
         end;
         Q.Close;
-        Tx.Commit;
+        if IniciadaAqui then Tx.Commit;
         C := I - 1;
         lblResumenIntentos.Caption := 'RNC ' + Rnc + ': ' +
           IntToStr(C) + ' intento(s) mostrados (maximo 100).';
@@ -882,14 +1541,15 @@ begin
         else
           lblIdentidad.Caption := 'Sin intentos para el filtro.';
       except
-        if Tx.InTransaction then Tx.Rollback;
+        if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
         raise;
       end;
     finally
       Q.Free;
     end;
   finally
-    Tx.Free;
+    { IBTransaction1 es propiedad de dmConectar; NO liberar. }
+    if IniciadaAqui and Tx.InTransaction then Tx.Rollback;
   end;
 end;
 

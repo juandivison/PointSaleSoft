@@ -1,4 +1,13 @@
 unit UMenuPrincipal;
+//Compilar Normal
+//powershell.exe -NoProfile -ExecutionPolicy Bypass `
+//  -File "C:\Temp\Compilar-PointSaleSoft.ps1"
+
+//Compilar todas unidades
+//powershell.exe -NoProfile -ExecutionPolicy Bypass `
+//  -File "C:\Temp\Compilar-PointSaleSoft.ps1" `
+//  -Reconstruir -TimeoutSeg 1200
+
 //sistema de farmacia
 ///GLBRUTADB="Dealer" --estoy usando este para factura electronica
 //https://decasystems.com.do/farmacom.php
@@ -479,11 +488,11 @@ type
     NovedadesTSS1: TMenuItem;
     PensionAlimenticia1: TMenuItem;
     HistricoNmina1: TMenuItem;
-    RegistroGastosECF1: TMenuItem;
     PopupCostosYGRep: TPopupMenu;
     RelaciondeGastos1: TMenuItem;
     RelacinGastos6062: TMenuItem;
     ExportaraExcel6061: TMenuItem;
+    RegistroGastosECF1: TMenuItem;
     procedure Salir1Click(Sender: TObject);
     
     procedure ransaccionesDiarias1Click(Sender: TObject);
@@ -1761,6 +1770,7 @@ begin
   GlBBurgos:= 0;
   GlBAyaco := 0;
   GlBExpert:= 0;
+  GlbFerreteria:=0;
   //Para evitar que me copien la aplicacion
   strA:=StringReplace(dmCompania.tblCompaniarnc_numero.value,'-','',[rfIgnoreCase,rfReplaceAll]);
   {if ( strA <> '07900012779') then
@@ -1869,6 +1879,10 @@ begin
 
   if (strA = '131657052') then
   GlbFarmacia := 1;
+  if (dmCompania.tblCompaniarnc_numero.value = '133-77034-2') or
+     (dmCompania.tblCompaniarnc_numero.value = '133770342') then
+    GlBFerreteria:=1
+  else
   //else
   //Tapizado y Decoraciones By J&S --santiaguito
   if (dmCompania.tblCompaniarnc_numero.value = '133-45144-1') or

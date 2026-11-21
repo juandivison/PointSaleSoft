@@ -1,0 +1,17 @@
+CP13.10 - VERIFICACION ESTATICA, NO COMPILACION
+
+OK: TCanalEnvioEcf en UEcfCanalConfig.pas
+OK: TAmbienteEcf en UEcfCanalConfig.pas
+OK: TEcfCanalConfiguracion en UEcfCanalConfig.pas
+OK: CargarConfiguracionCanalEcf en UEcfCanalConfig.pas
+OK: NombreCanalEcf en UEcfCanalConfig.pas
+OK: NombreAmbienteEcf en UEcfCanalConfig.pas
+OK: UrlBaseIdesiApi en UEcfCanalConfig.pas
+OK: ClientIdIdesiApi en UEcfCanalConfig.pas
+OK: 11 puntos de llamada del mapa cotejados contra fuentes adjuntos.
+OK: cuatro consultas SQL de solo lectura preparadas.
+PENDIENTE: revisar resultado de unicidad en Firebird real.
+PENDIENTE: verificar estado de IBTransaction1 en F5, credito, NCR y formularios.
+PENDIENTE: compilacion Delphi 7 / IBX real.
+PENDIENTE: integracion de botones y GET con interpretacion de metadata.
+SIN POST, sin ALTER TABLE, sin modificaciones de los fuentes originales.

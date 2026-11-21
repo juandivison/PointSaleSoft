@@ -158,6 +158,8 @@ type
     procedure QRLabel2Print(sender: TObject; var Value: String);
     //procedure SetParameterValues;
   private
+    FAlturaBancoOriginal: Integer;
+    procedure PrepararCuentasBancarias;
 
   public
      xtipoVenta : string;
@@ -171,7 +173,7 @@ var
 implementation
 uses UDatModCompania, UDatModClientes, UGlobal,
   UDatmodDatosGenerales, UTestImpFiscal,  URepComprobante,{ UDatModFactura, }UDatModReportes, UQckFactServ8_5BB,
-  UDatModFactura, UQrJpgHelper, UUtilecftimbre;
+  UDatModFactura, UQrJpgHelper, UUtilecftimbre, UCuentasBancoFactura;
 
 {$R *.DFM}
 
@@ -390,6 +392,44 @@ begin
   end;
 end;
 
+procedure TqckFactServ8_5Ayaco.PrepararCuentasBancarias;
+var AlturaLineas: Integer;
+begin
+  if FAlturaBancoOriginal = 0 then FAlturaBancoOriginal := ChildBand4.Height;
+  ChildBand4.Height := FAlturaBancoOriginal;
+  QRMemo1.Lines.Clear; QRMemo2.Lines.Clear;
+  QRMemo3.Lines.Clear; QRMemo4.Lines.Clear;
+  QRMemo1.Enabled := False; QRMemo1.Visible := False;
+  QRMemo2.Enabled := False; QRMemo2.Visible := False;
+  QRMemo3.Enabled := False; QRMemo3.Visible := False;
+  QRMemo4.Enabled := False; QRMemo4.Visible := False;
+
+  if (GlBAyaco <> 1) and (GlBTapiceria <> 1) then Exit;
+  if not dmReportes.qryViewVentasMast.Active or dmReportes.qryViewVentasMast.IsEmpty then Exit;
+  if not (dmReportes.qryViewVentasMastFORMA_PAGO.AsInteger in [7, 8]) then Exit;
+  if dmReportes.qryViewVentasMastCIA_KEY.AsInteger <= 0 then
+    raise Exception.Create('La factura no tiene empresa valida para consultar las cuentas bancarias.');
+
+  // La consulta ya filtra CIA_KEY y ACTIVAENFCT=1. Refrescar para cada factura.
+  dmFactura.qryctabcofact.Close;
+  dmFactura.qryctabcofact.ParamByName('ciakey').AsInteger :=
+    dmReportes.qryViewVentasMastCIA_KEY.AsInteger;
+  dmFactura.qryctabcofact.Open;
+  CargarLineasCuentasBanco(dmFactura.qryctabcofact, QRMemo1.Lines);
+  if QRMemo1.Lines.Count = 0 then Exit;
+
+  QRMemo1.Top := QRMemo2.Top;
+  QRMemo1.AutoSize := False;
+  QRMemo1.AutoStretch := True;
+  QRMemo1.WordWrap := True;
+  AlturaLineas := QRMemo1.Lines.Count * (Abs(QRMemo1.Font.Height) + 3) + 4;
+  QRMemo1.Height := AlturaLineas;
+  if QRMemo1.Top + AlturaLineas + 4 > ChildBand4.Height then
+    ChildBand4.Height := QRMemo1.Top + AlturaLineas + 4;
+  QRMemo1.Enabled := True;
+  QRMemo1.Visible := True;
+end;
+
 procedure TqckFactServ8_5Ayaco.ChildBand4BeforePrint(Sender: TQRCustomBand;
   var PrintBand: Boolean);
 var
@@ -452,56 +492,7 @@ begin
     end;
   end;
 
-  if (GlBAyaco = 0) and (GlBTapiceria = 0) then
-  begin
-    QRMemo1.Enabled:=False;
-    QRMemo2.Enabled:=False;
-    QRMemo3.Enabled:=False;
-    QRMemo4.Enabled:=False;
-  end else
-  if (GlbShowCtaBanco = 0) and (dmfactura.qryctabcofact.RecordCount = 0) then
-  begin
-    QRMemo1.Enabled:=False;
-    QRMemo2.Enabled:=False;
-    QRMemo3.Enabled:=False;
-    QRMemo4.Enabled:=False;
-  end else
-  begin
-    if (dmfactura.qryctabcofact.RecordCount >= 1) and (GlBAyaco = 0) and (GlBTapiceria = 1) then
-    begin
-      QRMemo3.Visible:=False;
-      QRMemo4.Visible:=False;
-      QRMemo4.Lines.Clear;
-      QRMemo3.Lines.Clear;
-      QRMemo2.Visible:=True;
-      QRMemo2.Lines.Clear;
-      QRMemo1.Visible:=True;
-      QRMemo1.Lines.Clear;
-      dmfactura.qryctabcofact.first;
-      while not dmfactura.qryctabcofact.eof do
-      begin
-        QRMemo2.Lines.Add(dmfactura.qryctabcofactFACT_DESCBANCO.Value);
-        QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_TITLAR.Value);
-        QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_DESCNUMCTA.Value);
-        dmfactura.qryctabcofact.Next;
-      end;
-    end else
-    if (dmfactura.qryctabcofact.RecordCount = 1) and (GlBAyaco = 1) then
-    begin
-      {QRMemo3.Visible:=False;
-      QRMemo4.Visible:=False;
-      QRMemo4.Lines.Clear;
-      QRMemo3.Lines.Clear;
-      QRMemo2.Visible:=True;
-      QRMemo2.Lines.Clear;
-      QRMemo2.Lines.Add(dmfactura.qryctabcofactFACT_DESCBANCO.Value);
-
-      QRMemo1.Visible:=True;
-      QRMemo1.Lines.Clear;
-      QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_TITLAR.Value);
-      QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_DESCNUMCTA.Value); }
-    end;
-  end;
+  PrepararCuentasBancarias;
 end;
 
 procedure TqckFactServ8_5Ayaco.QRDBText32Print(sender: TObject;

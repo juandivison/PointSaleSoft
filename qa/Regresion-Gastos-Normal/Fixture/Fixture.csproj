@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+ <PropertyGroup><IdesiRuntimeDir Condition="'$(IdesiRuntimeDir)' == ''">$(PSS_IDESI_RUNTIME)</IdesiRuntimeDir><IdesiRuntimeDir Condition="'$(IdesiRuntimeDir)' == ''">C:/Proyectos/IdesiToolECF/bin/Debug/net9.0</IdesiRuntimeDir></PropertyGroup>
+ <ItemGroup>
+  <Reference Include="IdesiToolECF"><HintPath>$(IdesiRuntimeDir)/IdesiToolECF.dll</HintPath></Reference>
+  <Reference Include="DGIIFacturaElectronica"><HintPath>$(IdesiRuntimeDir)/DGIIFacturaElectronica.dll</HintPath></Reference>
+ </ItemGroup>
+</Project>

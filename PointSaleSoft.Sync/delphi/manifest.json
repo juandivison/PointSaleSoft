@@ -1,0 +1,14 @@
+[
+  {
+    "source": "C:\\Users\\nosiv\\Documents\\ChatGPT\\Facturacion Electronica RD\\PointSaleSoft.Sync\\delphi\\UInventarioProd.pas",
+    "target": "C:\\Proyectos\\PointSaleSoftResp\\PuntoVenta\\Fuentes\\UInventarioProd.pas",
+    "before": "26b1477af4eae0435a8399bb36506150addcc47d9abd19b0e6cd54982d1c0f61",
+    "after": "93716f52e107aca11fb4a63db462911245c0fd7399d9fc7dd05fb6ae9922d6d7"
+  },
+  {
+    "source": "C:\\Users\\nosiv\\Documents\\ChatGPT\\Facturacion Electronica RD\\PointSaleSoft.Sync\\delphi\\UPuenteCatalogoConfig.pas",
+    "target": "C:\\Proyectos\\PointSaleSoftResp\\PuntoVenta\\Fuentes\\UPuenteCatalogoConfig.pas",
+    "before": null,
+    "after": "d3567fcfd5cbbfa89484f619b73f606ec1c7efde026d795d6ad728b017219537"
+  }
+]

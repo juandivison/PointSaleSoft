@@ -1228,19 +1228,50 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
           Left = 16
           Top = 84
           Width = 398
-          Height = 132
+          Height = 56
           ReadOnly = True
           ScrollBars = ssVertical
           TabOrder = 0
         end
+        object chkDescargarXmlFirmado: TCheckBox
+          Left = 16
+          Top = 148
+          Width = 214
+          Height = 17
+          Caption = 'Descargar XML firmado'
+          Checked = True
+          State = cbChecked
+          TabOrder = 1
+          OnClick = chkDescargarXmlFirmadoClick
+        end
+        object btnRecuperarTimbre: TBitBtn
+          Left = 16
+          Top = 174
+          Width = 194
+          Height = 32
+          Caption = 'Recuperar timbre'
+          Enabled = False
+          TabOrder = 2
+          OnClick = btnRecuperarTimbreClick
+        end
+        object btnDescargarXmlFirmado: TBitBtn
+          Left = 220
+          Top = 174
+          Width = 194
+          Height = 32
+          Caption = 'Descargar XML firmado'
+          Enabled = False
+          TabOrder = 3
+          OnClick = btnDescargarXmlFirmadoClick
+        end
         object btnImprimirEcf: TBitBtn
           Left = 16
-          Top = 228
+          Top = 220
           Width = 398
           Height = 40
           Caption = 'Imprimir / PDF / Email'
           Enabled = False
-          TabOrder = 1
+          TabOrder = 4
           OnClick = btnImprimirEcfClick
         end
       end
@@ -1444,8 +1475,8 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
       'where TIPO_CF = :TIPO_CF'
       '  and ACTIVO = 1'
       'order by FECHA_VENCE, NCF')
-    Left = 192
-    Top = 680
+    Left = 200
+    Top = 608
     ParamData = <
       item
         DataType = ftString
@@ -1464,8 +1495,8 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
       'where CIA_KEY = :CIA_KEY'
       '  and TRN = :TRN'
       'order by COALESCE(FECHA_UPDATE, FECHA_CREACION) desc')
-    Left = 232
-    Top = 680
+    Left = 296
+    Top = 568
     ParamData = <
       item
         DataType = ftInteger

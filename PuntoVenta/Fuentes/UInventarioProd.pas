@@ -632,7 +632,7 @@ uses UDatModInventario, uglobal, UTipoInventario, UCambiarPrecios,
   UFormFiltrarTasaItbis, URegistro, UFormLote, UFormDimensionProd,
   UDatModPanaderia, UfrmInvPrecioAudit, UFormAuditoriaInv,
   ULabelImpCodBarra, USincronizarTablaInv,USincronizarPrecioUnidadSurtidora,
-  UFormEntreClave, USetClaveMaestra, UDatosVentas;
+  UFormEntreClave, USetClaveMaestra, UDatosVentas, UInventarioCodigoGrupo, UPuenteCatalogoConfig;
 
 {$R *.dfm}
 
@@ -654,7 +654,8 @@ begin
     if (xCodB <> '') then
     begin    
       dmInventario.tblInventarioProdCODIGO_BARRA.Value := xCodB;
-      dmInventario.tblInventarioProdCODIGO_TEXTO.Value := xCodB;
+      if GlbFerreteria <> 1 then
+        dmInventario.tblInventarioProdCODIGO_TEXTO.Value := xCodB;
     end;
     if (GlBCuadros = 1) then
     begin
@@ -666,6 +667,8 @@ begin
       dmInventario.tblInventarioProdTIPO.Value:=qrytipoInvLookupCCODIGO.Value;
       qrytipoInvLookupC.EnableControls;
     end;
+    if GlbFerreteria = 1 then
+      dmInventario.tblInventarioProdTIPO.AsInteger := 1;
     dmInventario.tblInventarioProdFECHA.Value :=ExtraerFecha(Date);
     dmInventario.tblInventarioProdBLCE_CANT_ENTRADA.Value:= 0;
     dmInventario.tblInventarioProdBLCE_CANT_SALIDA.Value := 0;
@@ -1071,6 +1074,8 @@ begin
       GUARDAR INVENTARIO_PRODUCTO
       ==========================================================
     }
+    VerificarPuenteCatalogo(dmInventario.tblInventarioProd.Database,
+      dmInventario.tblInventarioProd.Transaction);
     GlbSalvarQuery(dmInventario.tblInventarioProd);
 
     {
@@ -1204,7 +1209,7 @@ begin
       ==========================================================
     }
     try
-      if GlbProsesur = 1 then
+      if (GlbProsesur = 1) and (not PuenteCatalogoActivo) then
       begin
         ConfigurarDatasetsSincronizacion;
 
@@ -1570,6 +1575,15 @@ begin
   begin
     BitBtn41.Visible:=true;
     BitBtn41.BringToFront;
+  end;
+  if GlbFerreteria = 1 then
+  begin
+    // Categorias no utilizadas en esta modalidad; el grupo es el prefijo.
+    RxDBLookupCombo3.Visible := False;
+    RxDBLookupCombo4.Visible := False;
+    Label35.Visible := False;
+    Label36.Visible := False;
+    TInventarioCodigoGrupo.Create(Self, TabSheet1, dmInventario.tblInventarioProd);
   end;
 end;
 
@@ -3650,6 +3664,7 @@ end;
 
 procedure TfrmInventarioProd.SincronizarProductoActual;
 begin
+  if PuenteCatalogoActivo then Exit;
   USincronizarTablaInv.SincronizarInventarioProducto(
     dmInventario.tblInventarioProd,
     tblInvComer1ro
@@ -3662,6 +3677,13 @@ var
   CodProductoOrigen: Integer;
   CantPrecios: Integer;
 begin
+  if PuenteCatalogoActivo then
+  begin
+    VerificarPuenteCatalogo(dmInventario.tblInventarioProd.Database,
+      dmInventario.tblInventarioProd.Transaction);
+    GlbSalvarQuery(dmInventario.tblInventarioProd);
+    Exit;
+  end;
   if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
     dmInventario.tblInventarioProd.Post;
 

@@ -31,6 +31,8 @@ function CargarConfiguracionCanalEcf(
 
 function NombreCanalEcf(ACanal: TCanalEnvioEcf): string;
 function NombreAmbienteEcf(AAmbiente: TAmbienteEcf): string;
+function UrlBaseIdesiApi(AAmbiente: TAmbienteEcf): string;
+function ClientIdIdesiApi(AAmbiente: TAmbienteEcf): string;
 
 implementation
 
@@ -57,6 +59,26 @@ begin
   end;
 end;
 
+function UrlBaseIdesiApi(AAmbiente: TAmbienteEcf): string;
+begin
+  case AAmbiente of
+    aeTest: Result := 'https://api-staging.idesisa.com';
+    aeProd: Result := 'https://api.idesisa.com';
+  else
+    raise Exception.Create('Ambiente IDESI API no reconocido.');
+  end;
+end;
+
+function ClientIdIdesiApi(AAmbiente: TAmbienteEcf): string;
+begin
+  case AAmbiente of
+    aeTest: Result := 'idesi-staging';
+    aeProd: Result := 'idesi-prod';
+  else
+    raise Exception.Create('Ambiente IDESI API no reconocido.');
+  end;
+end;
+
 function CargarConfiguracionCanalEcf(
   ADatabase: TIBDatabase;
   ATransaction: TIBTransaction;
@@ -80,7 +102,7 @@ begin
     raise Exception.Create('CargarConfiguracionCanalEcf: RNC emisor obligatorio.');
 
   { Fallback conservador para un RNC que todavia no haya sido configurado.
-    No se permite apuntar a IDESI_API por un valor implÃ­cito. }
+    No se permite apuntar a IDESI_API por un valor implícito. }
   Result.Canal := ceAslan;
   Result.Ambiente := aeTest;
   Result.BaseUrl := '';
@@ -121,20 +143,8 @@ begin
 
   if Result.Canal = ceIdesiApi then
   begin
-    case Result.Ambiente of
-      aeTest:
-        begin
-          Result.BaseUrl := 'https://api-staging.idesisa.com';
-          Result.ClientId := 'idesi-staging';
-        end;
-      aeProd:
-        begin
-          Result.BaseUrl := 'https://api.idesisa.com';
-          Result.ClientId := 'idesi-prod';
-        end;
-    else
-      raise Exception.Create('Ambiente de IDESI API no soportado.');
-    end;
+    Result.BaseUrl := UrlBaseIdesiApi(Result.Ambiente);
+    Result.ClientId := ClientIdIdesiApi(Result.Ambiente);
   end;
 end;
 

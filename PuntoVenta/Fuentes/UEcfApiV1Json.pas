@@ -3,7 +3,7 @@ unit UEcfApiV1Json;
 {
   PointSaleSoft / Delphi 7
   Convierte un Factura.txt V2 YA GENERADO en un JSON publico IDESI API v1.
-  Primer alcance: E31 exclusivamente. No emite ni recalcula datos fiscales.
+  Alcance: E31, E32, E34, E44 y E45. No emite ni recalcula datos fiscales.
   Se preservan literales numericos y el contenido UTF-8 del TXT.
   No modificar la fuente Factura.txt, ni intentar enviar con este modulo.
 }
@@ -15,6 +15,10 @@ uses
 
 function ConstruirJsonE31PublicV1(
   const ARutaFacturaTxt, ARncEmisor, AReferenciaExterna: string): string;
+function ConstruirJsonIngresosPublicV1(
+  const ARutaFacturaTxt, ARncEmisor, AReferenciaExterna: string): string;
+function ConstruirJsonIngresosPublicV1DesdeContenido(
+  const AContenidoUtf8, ARncEmisor, AReferenciaExterna: string): string;
 
 implementation
 
@@ -142,26 +146,64 @@ begin
   Result := JsonTexto(ANombre) + ':' + JsonNumero(AValor, AContexto);
 end;
 
-function ConstruirJsonE31PublicV1(
-  const ARutaFacturaTxt, ARncEmisor, AReferenciaExterna: string): string;
+function SoloDigitos(const S: string): string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 1 to Length(S) do
+    if S[I] in ['0'..'9'] then
+      Result := Result + S[I];
+end;
+
+function FormatoIdentificacionAceptable(const S: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := True;
+  for I := 1 to Length(S) do
+    if not (S[I] in ['0'..'9', '-', ' ', '.']) then
+    begin
+      Result := False;
+      Exit;
+    end;
+end;
+
+function MontoFiscal(const S: string): Currency;
+var
+  V: Extended;
+  Code: Integer;
+begin
+  Val(JsonNumero(S, 'totals.totalAmount'), V, Code);
+  if Code <> 0 then
+    raise Exception.Create('totals.totalAmount: importe fiscal invalido.');
+  if (V < 0) or (V > 999999999999.99) then
+    raise Exception.Create('totals.totalAmount: importe fuera de rango.');
+  Result := V;
+end;
+
+function ConstruirJsonIngresosPublicV1DesdeContenido(
+  const AContenidoUtf8, ARncEmisor, AReferenciaExterna: string): string;
 var
   Archivo, Campos, H: TStringList;
   I, Metodo, NumeroItems, NumeroTotales: Integer;
-  Linea, Ecf, ItemsJson, AjustesJson, PagosJson, TotalesJson: string;
-  BuyerJson, DocJson, Rnc: string;
+  Linea, Ecf, TipoEcf, TipoReferencia, TotalMontoTxt: string;
+  ItemsJson, AjustesJson, PagosJson, TotalesJson: string;
+  BuyerJson, DocJson, Rnc, Identificacion: string;
+  ClienteConNombre, EnviarCompradorE32: Boolean;
+  TotalE32: Currency;
 begin
   if Trim(ARncEmisor) = '' then
     raise Exception.Create('companyRnc es obligatorio.');
   if Trim(AReferenciaExterna) = '' then
     raise Exception.Create('externalReference es obligatoria.');
-  if not FileExists(ARutaFacturaTxt) then
-    raise Exception.Create('No existe el Factura.txt: ' + ARutaFacturaTxt);
 
   Archivo := TStringList.Create;
   Campos := TStringList.Create;
   H := TStringList.Create;
   try
-    Archivo.LoadFromFile(ARutaFacturaTxt);
+    { AContenidoUtf8 ya esta codificado en UTF-8; conservar bytes. }
+    Archivo.Text := AContenidoUtf8;
     if Archivo.Count < 3 then
       raise Exception.Create('Factura.txt debe contener cabecera, detalle y totales.');
     SepararCamposTxt(Archivo[0], H);
@@ -170,15 +212,28 @@ begin
       raise Exception.Create('El registro inicial debe ser cabecera tipo 2.');
 
     Ecf := Trim(H[1]);
-    if (Length(Ecf) <> 13) or (Copy(Ecf, 1, 3) <> 'E31') then
-      raise Exception.Create('UEcfApiV1Json solo admite E31 con 13 caracteres.');
+    TipoEcf := Copy(Ecf, 1, 3);
+    if (Length(Ecf) <> 13) or
+       ((TipoEcf <> 'E31') and (TipoEcf <> 'E32') and
+        (TipoEcf <> 'E34') and (TipoEcf <> 'E44') and
+        (TipoEcf <> 'E45')) then
+      raise Exception.Create('Contrato publico v1 admite E31, E32, E34, E44 y E45.');
     for I := 4 to Length(Ecf) do
       if not (Ecf[I] in ['0'..'9']) then
-        raise Exception.Create('e-NCF E31 contiene caracteres invalidos.');
-    if Trim(H[4]) <> '' then
-      raise Exception.Create('E31 no debe tener NCFReferencia.');
-    if (Trim(H[2]) = '') or (Trim(H[3]) = '') then
-      raise Exception.Create('E31 requiere nombre y RNC del comprador.');
+        raise Exception.Create('e-NCF contiene caracteres invalidos.');
+    TipoReferencia := Copy(Trim(H[4]), 1, 3);
+    if (TipoEcf <> 'E34') and (Trim(H[4]) <> '') then
+      raise Exception.Create('Solo E34 admite NCFReferencia en el perfil v1.');
+    if (TipoEcf = 'E34') and
+       ((Length(Trim(H[4])) <> 13) or
+        ((TipoReferencia <> 'E31') and (TipoReferencia <> 'E32') and
+         (TipoReferencia <> 'E44') and (TipoReferencia <> 'E45'))) then
+      raise Exception.Create('E34 requiere referencia E31/E32/E44/E45.');
+    if (TipoEcf = 'E31') or (TipoEcf = 'E44') or
+       (TipoEcf = 'E45') or
+       ((TipoEcf = 'E34') and (TipoReferencia <> 'E32')) then
+      if (Trim(H[2]) = '') or (Trim(H[3]) = '') then
+        raise Exception.Create(TipoEcf + ' requiere nombre e identificacion del comprador.');
 
     Rnc := Trim(ARncEmisor);
     BuyerJson := '';
@@ -216,6 +271,7 @@ begin
     TotalesJson := '';
     NumeroItems := 0;
     NumeroTotales := 0;
+    TotalMontoTxt := '';
 
     for I := 1 to Archivo.Count - 1 do
     begin
@@ -273,6 +329,7 @@ begin
       begin
         ExigirCampos(Campos, 7, 'Totales Factura.txt V2');
         Inc(NumeroTotales);
+        TotalMontoTxt := Campos[1];
         if NumeroTotales <> 1 then
           raise Exception.Create('Solo debe existir un bloque fiscal de totales.');
         TotalesJson := '{' + CampoNumero('totalAmount', Campos[1], 'totals.totalAmount');
@@ -293,17 +350,66 @@ begin
     end;
 
     if NumeroItems = 0 then
-      raise Exception.Create('El documento E31 no tiene items.');
+      raise Exception.Create('El documento e-CF no tiene items.');
     if NumeroTotales <> 1 then
-      raise Exception.Create('El documento E31 no tiene totales fiscales tipo 4.');
+      raise Exception.Create('El documento e-CF no tiene totales fiscales tipo 4.');
+
+    { E32: identificar comprador solo cuando corresponde fiscalmente.
+      No se consulta OFV ni se cambia la ficha del cliente en Firebird. }
+    if TipoEcf = 'E32' then
+    begin
+      Identificacion := SoloDigitos(Trim(H[3]));
+      ClienteConNombre := (Trim(H[2]) <> '') and
+        (not SameText(Trim(H[2]), '***Generico***'));
+      TotalE32 := MontoFiscal(TotalMontoTxt);
+      if TotalE32 >= 250000 then
+      begin
+        if (not FormatoIdentificacionAceptable(Trim(H[3]))) or
+           ((Length(Identificacion) <> 9) and
+            (Length(Identificacion) <> 11)) or (not ClienteConNombre) then
+          raise Exception.Create(
+            'E32 >= RD$250,000 requiere RNC/Cedula (9/11 digitos) y nombre real.');
+        EnviarCompradorE32 := True;
+      end
+      else
+        EnviarCompradorE32 := FormatoIdentificacionAceptable(Trim(H[3])) and
+          (Length(Identificacion) = 9) and ClienteConNombre;
+      BuyerJson := '';
+      if EnviarCompradorE32 then
+      begin
+        BuyerJson := CampoTexto('name', H[2]) + ',' +
+          CampoTexto('rnc', Identificacion);
+        if Trim(H[22]) <> '' then
+          BuyerJson := BuyerJson + ',' + CampoTexto('municipalityCode', H[22]);
+        if Trim(H[23]) <> '' then
+          BuyerJson := BuyerJson + ',' + CampoTexto('provinceCode', H[23]);
+      end;
+    end;
 
     DocJson := '{' +
-      CampoTexto('type', 'E31') + ',' +
-      CampoTexto('eNcf', Ecf) + ',' +
-      CampoTexto('sequenceExpirationDate', FechaIso(H[17], 'sequenceExpirationDate')) + ',' +
+      CampoTexto('type', TipoEcf) + ',' +
+      CampoTexto('eNcf', Ecf);
+    if (TipoEcf = 'E31') or (TipoEcf = 'E44') or (TipoEcf = 'E45') then
+      DocJson := DocJson + ',' +
+        CampoTexto('sequenceExpirationDate', FechaIso(H[17], 'sequenceExpirationDate'));
+    DocJson := DocJson + ',' +
       CampoTexto('issueDate', FechaIso(H[19], 'issueDate')) + ',' +
-      CampoTexto('incomeType', H[18]) + ',' +
-      '"paymentCondition":' + JsonEntero(H[20], 'paymentCondition', 1, 3);
+      CampoTexto('incomeType', H[18]);
+    if Trim(H[20]) <> '' then
+      DocJson := DocJson + ',' + '"paymentCondition":' +
+        JsonEntero(H[20], 'paymentCondition', 1, 3)
+    else if TipoEcf <> 'E34' then
+      raise Exception.Create(TipoEcf + ' requiere paymentCondition.');
+    if TipoEcf = 'E34' then
+    begin
+      { El adaptador de API v1 solo acepta modificationCode 1..3.
+        No convertir silenciosamente motivos 4 o 5. }
+      DocJson := DocJson + ',"reference":{' +
+        CampoTexto('eNcf', Trim(H[4])) + ',' +
+        CampoTexto('issueDate', FechaIso(H[24], 'reference.issueDate')) + ',' +
+        '"modificationCode":' +
+        JsonEntero(H[25], 'reference.modificationCode', 1, 3) + '}';
+    end;
 
     if Trim(H[21]) <> '' then
       DocJson := DocJson + ',"taxIncludedIndicator":' +
@@ -331,6 +437,48 @@ begin
   finally
     H.Free;
     Campos.Free;
+    Archivo.Free;
+  end;
+end;
+
+
+function ConstruirJsonIngresosPublicV1(
+  const ARutaFacturaTxt, ARncEmisor, AReferenciaExterna: string): string;
+var
+  Archivo: TStringList;
+begin
+  if not FileExists(ARutaFacturaTxt) then
+    raise Exception.Create('No existe el Factura.txt: ' + ARutaFacturaTxt);
+  Archivo := TStringList.Create;
+  try
+    Archivo.LoadFromFile(ARutaFacturaTxt);
+    Result := ConstruirJsonIngresosPublicV1DesdeContenido(
+      Archivo.Text, ARncEmisor, AReferenciaExterna);
+  finally
+    Archivo.Free;
+  end;
+end;
+
+function ConstruirJsonE31PublicV1(
+  const ARutaFacturaTxt, ARncEmisor, AReferenciaExterna: string): string;
+var
+  Archivo, Cabecera: TStringList;
+begin
+  if not FileExists(ARutaFacturaTxt) then
+    raise Exception.Create('No existe el Factura.txt: ' + ARutaFacturaTxt);
+  Archivo := TStringList.Create;
+  Cabecera := TStringList.Create;
+  try
+    Archivo.LoadFromFile(ARutaFacturaTxt);
+    if Archivo.Count = 0 then
+      raise Exception.Create('Factura.txt vacio.');
+    SepararCamposTxt(Archivo[0], Cabecera);
+    if (Cabecera.Count < 2) or (Copy(Trim(Cabecera[1]),1,3) <> 'E31') then
+      raise Exception.Create('ConstruirJsonE31PublicV1 solo admite E31.');
+    Result := ConstruirJsonIngresosPublicV1DesdeContenido(
+      Archivo.Text, ARncEmisor, AReferenciaExterna);
+  finally
+    Cabecera.Free;
     Archivo.Free;
   end;
 end;

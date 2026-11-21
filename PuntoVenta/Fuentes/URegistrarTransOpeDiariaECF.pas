@@ -159,6 +159,9 @@ type
     lblTrackId: TLabel;
     memoMensajeDgii: TMemo;
     btnImprimirEcf: TBitBtn;
+    chkDescargarXmlFirmado:TCheckBox;
+    btnDescargarXmlFirmado:TBitBtn;
+    btnRecuperarTimbre:TBitBtn;
     qryTasaItbis: TIBQuery;
     dsTasaItbis: TDataSource;
     tblTipoPagoCxp: TIBTable;
@@ -208,6 +211,9 @@ type
     procedure cmbSerieEcfChange(Sender: TObject);
     procedure btnReservarEcfClick(Sender: TObject);
     procedure btnImprimirEcfClick(Sender: TObject);
+    procedure chkDescargarXmlFirmadoClick(Sender:TObject);
+    procedure btnDescargarXmlFirmadoClick(Sender:TObject);
+    procedure btnRecuperarTimbreClick(Sender:TObject);
     procedure pcPrincipalChange(Sender: TObject);
     procedure btnConsultarTransaccionesClick(Sender: TObject);
     procedure btnAbrirTransaccionClick(Sender: TObject);
@@ -293,8 +299,8 @@ uses
   UDatModRegOpeDiaria, UDatModConectar, UGlobal, UBuscarProveedores,
   UFormProductosServicios, UEcfReservaGastos, UUtilecfGastos,
   UEcfEnvioGastos, UAsignarTerritorioProveedorECF,
-  UEcfGastoImpresion, UGastoTxtEcfFlow,
-  UFormProveedores;
+  UEcfGastoImpresion, UGastoTxtEcfFlow, UEcfApiRutaGastos,
+  UFormProveedores, UEcfGuardarDataset, UEcfGastoXml, UEcfGastoRecuperacion;
 
 {$R *.dfm}
 
@@ -826,7 +832,7 @@ begin
       Exit;
     end;
 
-    GlbSalvarQuery(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
+    GuardarDatasetEcf(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
     AbrirDetalleActual;
     edtMontoPagado.Text := FormatearMonto(
       dtmTransOpeDiaria.tblRegTransOpeDiariaMastMONTO.AsCurrency);
@@ -840,9 +846,11 @@ end;
 procedure TfrmRegTransOpeDiariaECF.btnGuardarClick(Sender: TObject);
 begin
   if dtmTransOpeDiaria.tblRegTransOpeDiariaDet.State in [dsEdit, dsInsert] then
-    GuardarDetalle
-  else
-    GuardarMaestro;
+  begin
+    GuardarDetalle;
+    if dtmTransOpeDiaria.tblRegTransOpeDiariaDet.State in [dsEdit, dsInsert] then Exit;
+  end;
+  GuardarMaestro;
 end;
 
 procedure TfrmRegTransOpeDiariaECF.btnCancelarClick(Sender: TObject);
@@ -1379,7 +1387,7 @@ begin
   dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Edit;
   try
     dtmTransOpeDiaria.tblRegTransOpeDiariaMastMONTO.AsCurrency := FResumenNeto;
-    GlbSalvarQuery(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
+    GuardarDatasetEcf(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
   except
     if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State in [dsEdit, dsInsert] then
       dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Cancel;
@@ -1619,7 +1627,7 @@ begin
 
     dtmTransOpeDiaria.tblRegTransOpeDiariaDetCODIGO_USUARIO.AsInteger :=
       VarUsuarioGlb;
-    GlbSalvarQuery(dtmTransOpeDiaria.tblRegTransOpeDiariaDet);
+    GuardarDatasetEcf(dtmTransOpeDiaria.tblRegTransOpeDiariaDet);
   finally
     Mensajes.Free;
   end;
@@ -1887,7 +1895,7 @@ begin
     dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Edit;
 
   dtmTransOpeDiaria.tblRegTransOpeDiariaMastMONTO.AsCurrency := Monto;
-  GlbSalvarQuery(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
+  GuardarDatasetEcf(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
   edtMontoPagado.Text := FormatearMonto(Monto);
 end;
 
@@ -2172,6 +2180,16 @@ begin
     Exit;
   end;
 
+  if GastoUsaSecuenciaRemota(dmConectar.IBDatabase1,
+    dtmTransOpeDiaria.tblRegTransOpeDiariaMastCIA_KEY.AsInteger) then
+  begin
+    Info:=TSerieEcfInfo.Create;
+    Info.Serie:='';Info.DivNegocio:='';Info.PECF:='';Info.AICF:='';
+    Info.TipoCF:=Tipo;Info.UltimoCorrelativo:=0;Info.FechaVence:=0;
+    cmbSerieEcf.Items.AddObject('REMOTO - asignacion central al reservar',Info);
+    cmbSerieEcf.ItemIndex:=0;ActualizarInfoSerie;Exit;
+  end;
+
   qrySerieEcf.Close;
   qrySerieEcf.ParamByName('TIPO_CF').AsString := Tipo;
   qrySerieEcf.Open;
@@ -2211,6 +2229,13 @@ procedure TfrmRegTransOpeDiariaECF.ActualizarInfoSerie;
 var
   Info: TSerieEcfInfo;
 begin
+  if GastoUsaSecuenciaRemota(dmConectar.IBDatabase1,
+    dtmTransOpeDiaria.tblRegTransOpeDiariaMastCIA_KEY.AsInteger) then
+  begin
+    lblProximaSecuencia.Caption:='Secuencia remota: se asigna al reservar';
+    lblVencimientoSecuencia.Caption:='Vencimiento: del lote remoto';
+    Exit;
+  end;
   Info := SerieSeleccionada;
   if Info = nil then
   begin
@@ -2660,6 +2685,10 @@ begin
     (not MasterEditando) and
     (not DetalleEditando);
   btnImprimirEcf.Enabled := TieneMaster and EstaAceptado;
+  btnRecuperarTimbre.Enabled:=TieneMaster and EstaReservado and
+    not MasterEditando and not DetalleEditando;
+  btnDescargarXmlFirmado.Enabled:=chkDescargarXmlFirmado.Checked and
+    TieneMaster and EstaReservado and not MasterEditando and not DetalleEditando;
 
   cmbProveedor.Enabled := MasterEditando and not Bloqueado;
   btnBuscarProveedor.Enabled := cmbProveedor.Enabled;
@@ -2730,6 +2759,52 @@ begin
 
   CargarSeriesEcf;
   ActualizarBotones;
+end;
+
+procedure TfrmRegTransOpeDiariaECF.btnRecuperarTimbreClick(Sender:TObject);
+var ExePath,ErrorPath,Mensaje:string;Trn:Integer;Ok:Boolean;
+begin
+  if not btnRecuperarTimbre.Enabled then Exit;
+  if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State in [dsEdit,dsInsert] then Exit;
+  if dtmTransOpeDiaria.tblRegTransOpeDiariaDet.State in [dsEdit,dsInsert] then Exit;
+  if not ResolverEjecutableEcfGastos(ExePath,ErrorPath)then begin
+    MessageDlg(ErrorPath,mtError,[mbOK],0);Exit;
+  end;
+  Trn:=dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO.AsInteger;
+  btnRecuperarTimbre.Enabled:=False;btnEnviarEcf.Enabled:=False;
+  btnDescargarXmlFirmado.Enabled:=False;Self.Enabled:=False;Screen.Cursor:=crHourGlass;
+  try
+    Ok:=RecuperarTimbreEcfGasto(dmConectar.IBDatabase1,dmConectar.IBTransaction1,
+      Trn,ExePath,chkDescargarXmlFirmado.Checked,Mensaje);
+    CargarEstadoEnvio;
+  finally Screen.Cursor:=crDefault;Self.Enabled:=True;ActualizarBotones;end;
+  if Ok then MessageDlg(Mensaje,mtInformation,[mbOK],0)
+  else MessageDlg(Mensaje,mtWarning,[mbOK],0);
+end;
+
+procedure TfrmRegTransOpeDiariaECF.chkDescargarXmlFirmadoClick(Sender:TObject);
+begin ActualizarBotones;end;
+
+procedure TfrmRegTransOpeDiariaECF.btnDescargarXmlFirmadoClick(Sender:TObject);
+var ExePath,ErrorPath,Mensaje:string;Trn:Integer;
+begin
+  if not chkDescargarXmlFirmado.Checked then Exit;
+  if not dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Active or
+     dtmTransOpeDiaria.tblRegTransOpeDiariaMast.IsEmpty then Exit;
+  if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State in [dsEdit,dsInsert] then begin
+    MessageDlg('Guarde el documento antes de descargar el XML.',mtInformation,[mbOK],0);Exit;
+  end;
+  if not ResolverEjecutableEcfGastos(ExePath,ErrorPath)then begin
+    MessageDlg(ErrorPath,mtError,[mbOK],0);Exit;
+  end;
+  Trn:=dtmTransOpeDiaria.tblRegTransOpeDiariaMastNUMERO.AsInteger;
+  btnDescargarXmlFirmado.Enabled:=False;Screen.Cursor:=crHourGlass;
+  try
+    if DescargarXmlFirmadoGasto(dmConectar.IBDatabase1,dmConectar.IBTransaction1,
+      Trn,ExePath,chkDescargarXmlFirmado.Checked,Mensaje)then
+      MessageDlg(Mensaje,mtInformation,[mbOK],0)
+    else MessageDlg(Mensaje,mtInformation,[mbOK],0);
+  finally Screen.Cursor:=crDefault;ActualizarBotones;end;
 end;
 
 procedure TfrmRegTransOpeDiariaECF.btnImprimirEcfClick(
@@ -2894,7 +2969,7 @@ begin
     Importante:
     NO reasignamos inmediatamente cuando llega el rechazo. Primero el usuario
     corrige el documento. Solo al volver a pulsar Enviar, después de validar
-    nuevamente, se genera la nueva secuencia.
+    nuevamente, se solicita autorizacion para una nueva secuencia.
   }
   CargarEstadoEnvio;
 
@@ -2941,6 +3016,12 @@ begin
       ' TrackId=' + FTrackIdEnvio +
       #13#10 + MensajeReasignacion
     );
+
+    if Application.MessageBox(PChar(
+         'El e-NCF ' + ENCFRechazado + ' ya tiene un intento fiscal.' + #13#10 +
+         'Se conservara en el historico. Autoriza consumir una nueva secuencia?'),
+         'Autorizar nueva secuencia', MB_YESNO or MB_ICONQUESTION or MB_DEFBUTTON2) <> IDYES then
+      Exit;
 
     if not ReasignarSecuenciaEcfGasto(
              dmConectar.IBDatabase1,
@@ -3006,7 +3087,10 @@ begin
         ' RutaTxt=' + BoolToStr(GlbUsarFacturaTxtECF = 1, True)
       );
 
-      if GlbUsarFacturaTxtECF = 1 then
+      if ProcesarGastoIdesiSiCorresponde(dmConectar.IBDatabase1,Trn,
+        ExePath,Resultado,Mensaje,chkDescargarXmlFirmado.Checked) then
+        EnvioProcesado:=True
+      else if GlbUsarFacturaTxtECF = 1 then
       begin
         EnvioProcesado := ProcesarEnvioEcfGastoTxt(
                             dmConectar.IBDatabase1,
@@ -3015,7 +3099,7 @@ begin
                             Trn,
                             GastoTxtOutputDir,
                             Resultado,
-                            Mensaje);
+                            Mensaje,chkDescargarXmlFirmado.Checked);
       end
       else
       begin
@@ -3025,7 +3109,7 @@ begin
                             ExePath,
                             Trn,
                             Resultado,
-                            Mensaje);
+                            Mensaje,chkDescargarXmlFirmado.Checked);
       end;
       //RegistrarLogEcfGasto(EnvioProcesado);
       RegistrarLogEcfGasto(
@@ -3058,7 +3142,7 @@ begin
         Estado := UpperCase(Trim(Resultado.Estado));
 
       { Solo ahora un fallo tÃ©cnico real detiene el proceso. }
-      if (not EnvioProcesado) and (Estado <> 'SECUENCIA_USADA') then
+      if not EnvioProcesado then
       begin
         RegistrarLogEcfGasto(
           'FORM_ENVIO_ERROR_TECNICO',
@@ -3125,7 +3209,13 @@ begin
             dtmTransOpeDiaria.tblRegTransOpeDiariaMastECF.AsString
           ));
 
-      if not ReasignarSecuenciaEcfGasto(
+      if Application.MessageBox(PChar(
+         'El e-NCF ' + ENCFRechazado + ' ya tiene un intento fiscal.' + #13#10 +
+         'Se conservara en el historico. Autoriza consumir una nueva secuencia?'),
+         'Autorizar nueva secuencia', MB_YESNO or MB_ICONQUESTION or MB_DEFBUTTON2) <> IDYES then
+      Exit;
+
+    if not ReasignarSecuenciaEcfGasto(
                dmConectar.IBDatabase1,
                Trn,
                VarUsuarioGlb,
@@ -3200,7 +3290,7 @@ begin
 
     if Reasignaciones > 0 then
       Mensaje := Mensaje + #13#10 +
-        'Secuencias reasignadas automaticamente: ' +
+        'Sustituciones autorizadas: ' +
         IntToStr(Reasignaciones);
 
     MessageDlg(Mensaje, mtInformation, [mbOK], 0);
@@ -3219,7 +3309,7 @@ begin
       'TrackId: ' + Resultado.TrackId + #13#10 +
       Resultado.Mensaje + #13#10#13#10 +
       'Corrija el documento. En el próximo envío PointSaleSoft ' +
-      'asignará una nueva secuencia.',
+      'pedira autorizacion antes de asignar otra secuencia.',
       mtError, [mbOK], 0)
   else if ResultadoEsRechazadoSinTrackId(Resultado) then
     MessageDlg(

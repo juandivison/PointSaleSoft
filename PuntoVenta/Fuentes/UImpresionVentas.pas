@@ -83,7 +83,7 @@ UDatModClientes,UDatModFactura,
   UFormConsultaCertAvanzado, UQckFactServ8_5_SAMNewMuturs,
   URepReimpTicketSurtidoraNew, UFormBuscarMotor, UDatModVehiculo,
   UQckFactServ8_5Farmacia, UQckCotServ8_5StandarFarmacia, UDatModPanaderia,
-  UFormPrepago, UfrmValidaFactura,  TestMainUnit;
+  UFormPrepago, UfrmValidaFactura,  TestMainUnit,UQckFactServ8_5Ferreteria;
 
  var
    TipoVenta : String;
@@ -393,6 +393,40 @@ begin
       qckRepReciboReimpTicketSurtidoraNew:=Nil;
       end; 
       exit;
+      end else
+      if (GlBFerreteria = 1) and (GlbSizeFact8x11 = 1)  then  //Ferrecentro Bayahibe
+      begin
+     //qckFact8_5Ferreteria
+        qckFact8_5Ferreteria:=TqckFact8_5Ferreteria.Create(Nil);
+            try
+             if dmFactura.qryVentaFacturaMONTO_EXONERADO_ITBIS.Value > 0 then
+             begin
+               qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS Exonerado';
+             end  else
+             qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS';
+             qckFact8_5Ferreteria.TPag.Caption:=
+             IntToStr(qckFact8_5Ferreteria.PageNumber);
+             qckFact8_5Ferreteria.xtipoVenta := 'Devolución';
+             qckFact8_5Ferreteria.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+             if (GlbImpReciboSinPreg = 1) then
+                 qckFact8_5Ferreteria.Print
+             else
+             if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+             begin
+               qckFact8_5Ferreteria.PrinterSetup;
+               qckFact8_5Ferreteria.Print;
+             end else
+             qckFact8_5Ferreteria.Preview;
+
+             if (GlbImpReciboSinPreg = 0) then
+             if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+             begin
+               qckFact8_5Ferreteria.Preview;
+             end;
+             finally
+             qckFact8_5Ferreteria.Free;
+             qckFact8_5Ferreteria:=Nil;
+         end;
       end else
       if (GlbSizeFact8x11 = 1) and ((GlBAyaco = 1) or (GlBTapiceria = 1) or (GlBInveraf =1) or (GlBExpert = 1)) then
           begin
@@ -723,6 +757,40 @@ begin
             qckFactServ_8_5Standard:=Nil;
             end;
           end else
+         if (GlBFerreteria = 1) and (GlbSizeFact8x11 = 1) then
+          begin
+            qckFact8_5Ferreteria:=TqckFact8_5Ferreteria.Create(Nil);
+            try
+             if dmFactura.qryVentaFacturaMONTO_EXONERADO_ITBIS.Value > 0 then
+             begin
+               //qckFactServ8_5Ayaco.QRLabel25.left:=505;
+               qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS Exonerado';
+             end  else
+             qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS';
+              qckFact8_5Ferreteria.TPag.Caption:=
+              IntToStr(qckFact8_5Ferreteria.PageNumber);
+              qckFact8_5Ferreteria.xtipoVenta := 'Devolución';
+              qckFact8_5Ferreteria.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+              if (GlbImpReciboSinPreg = 1) then
+                 qckFact8_5Ferreteria.Print
+              else
+              if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+              begin
+                qckFact8_5Ferreteria.PrinterSetup;
+                qckFact8_5Ferreteria.Print;
+              end else
+              qckFact8_5Ferreteria.Preview;
+
+              if (GlbImpReciboSinPreg = 0) then
+              if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+              begin
+                qckFact8_5Ferreteria.Preview;
+              end;
+            finally
+            qckFact8_5Ferreteria.Free;
+            qckFact8_5Ferreteria:=Nil;
+          end;
+        end else
           if (GlBAyaco = 1) or (GlbSizeFact8x11 = 1) or (GlBTapiceria = 1) or (GlBInveraf =1) then
           begin
             qckFactServ8_5Ayaco:=TqckFactServ8_5Ayaco.Create(Nil);
@@ -865,7 +933,51 @@ begin
   if (UpperCase(GLBFormatoFactura) = 'FORMAFACOCO') then
   ImprimirFacturaRepuesto(dmfactura.qryFactReimpMaster.Params[0].Value)
   else
-  if (GlBAyaco = 1) or (GlbSizeFact8x11 = 1) or (GlBTapiceria = 1) or (GlBInveraf =1) then
+  if (GlBFerreteria = 1) and (GlbSizeFact8x11 = 1) then  //Ferrecentro Bayahibe
+      begin
+     //qckFact8_5Ferreteria
+        qckFact8_5Ferreteria:=TqckFact8_5Ferreteria.Create(Nil);
+        try
+          qckFact8_5Ferreteria.TPag.Caption:=
+          IntToStr(qckFact8_5Ferreteria.PageNumber);
+          qckFact8_5Ferreteria.xtipoVenta := TipoVenta;
+          qckFact8_5Ferreteria.valorNCF:= dmReportes.qryViewVentasMastNUMERO_NCF.Value;
+          if dmReportes.qryViewVentasMastMONTO_EXONERADO_ITBIS.Value > 0 then
+          begin
+            //qckFactServ8_5Ayaco.QRLabel25.left:=505;
+            qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS Exonerado';
+          end  else
+          qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS';
+
+          if (GlbImpReciboSinPreg = 1) then
+            qckFact8_5Ferreteria.Print
+            else
+            if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+            begin
+              qckFact8_5Ferreteria.PrinterSetup;
+              qckFact8_5Ferreteria.Print;
+            end else
+            qckFact8_5Ferreteria.Preview;
+
+            if (GlbImpReciboSinPreg = 0) then
+            if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+            begin 
+              qckFact8_5Ferreteria.Preview;
+            end;
+            if GlbImpPDF then
+            begin
+        if not dmReportes.qryViewVentasMastNUMERO_FACTURA.IsNull then
+        ReportExportPDF(qckFact8_5Ferreteria,GlbRutaFacturas+'\Facturas'+IntToStr(dmReportes.qryViewVentasMastNUMERO_FACTURA.Value)+'.pdf')
+        else
+        ReportExportPDF(qckFact8_5Ferreteria,GlbRutaFacturas+'\Facturas'+IntToStr(dmReportes.qryViewVentasMastNUMERO_DOC_PAGO.AsInteger)+'.pdf')
+        end;
+        finally
+        qckFact8_5Ferreteria.Free;
+        qckFact8_5Ferreteria:=Nil;
+        end;
+        exit;
+    end else
+    if (GlBAyaco = 1) or (GlbSizeFact8x11 = 1) or (GlBTapiceria = 1) or (GlBInveraf =1) then
       begin
         qckFactServ8_5Ayaco:=TqckFactServ8_5Ayaco.Create(Nil);
         try
@@ -1891,6 +2003,75 @@ begin
      frmConsultaFacturas.Free;
      frmConsultaFacturas:=NIL;
      END;
+    end else
+    if (glbFerreteria = 1) and (GlbSizeFact8x11 = 1) then
+    begin
+      TipoVenta:='CONTADO';
+      if dmfactura.qryVentaFacturaFORMA_PAGO.AsInteger in [7,8] then
+      TipoVenta := 'CREDITO'
+      else
+      if dmfactura.qryVentaFacturaFORMA_PAGO.value = 1 then
+      TipoVenta := 'CONTADO';
+
+      frmConsultaFacturas:=TfrmConsultaFacturas.Create(Nil);
+      try
+       frmConsultaFacturas.rdgCredito.Checked := True;
+       frmConsultaFacturas.EditN1.SetInteger(serieDoc);
+       frmConsultaFacturas.BitBtn1Click(nil);
+
+      if dmfactura.qryVentaFacturaNumero.value = 0 then
+      Exit;
+
+      dmreportes.qryViewVentasMast.Close;
+      dmreportes.qryViewVentasMast.Params[0].Value:= dmfactura.qryVentaFacturaNUMERO.Value;
+      dmreportes.qryViewVentasMast.Open;//dmreportes.qryViewVentasMast.sql.text
+      ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
+
+       frmProcVentaRapida.LlenarrxSolDatoscte(dmFactura.qryVentaFacturaCODIGO_CTE.Value);
+       if frmConsultaFacturas.rdgCredito.Checked then
+          TipoVenta:='CREDITO'
+       else
+          tipoVenta:='CONTADO';
+
+       qckFact8_5Ferreteria:=TqckFact8_5Ferreteria.Create(Nil);
+       try
+         qckFact8_5Ferreteria.TPag.Caption:=
+         IntToStr(qckFact8_5Ferreteria.PageNumber);
+         qckFact8_5Ferreteria.xtipoVenta := TipoVenta;
+         qckFact8_5Ferreteria.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+
+         if dmReportes.qryViewVentasMastMONTO_EXONERADO_ITBIS.Value > 0 then
+         begin
+           //qckFactServ8_5Ayaco.QRLabel25.left:=505;
+           qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS Exonerado';
+         end else
+         qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS';
+         if (GlbImpReciboSinPreg = 1) then
+           qckFact8_5Ferreteria.Print
+           else
+           if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+           begin
+             qckFact8_5Ferreteria.PrinterSetup;
+             qckFact8_5Ferreteria.Print;
+           end else
+           qckFact8_5Ferreteria.Preview;
+           if GlbImpPDF then
+           ReportExport(qckFact8_5Ferreteria,GlbRutaFacturas+'\Factura'+dmFactura.qryVentaFacturaNUMERO_FACTURA.AsString+'.pdf');
+
+           if (GlbImpReciboSinPreg = 0) then
+           if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+            begin
+              qckFact8_5Ferreteria.Preview;
+            end;
+        finally
+        qckFact8_5Ferreteria.Free;
+        qckFact8_5Ferreteria:=Nil;
+        end;
+        finally
+        if Assigned(frmConsultaFacturas) then
+           frmConsultaFacturas.Free;
+           frmConsultaFacturas:=Nil;
+       end;
     end else
     if (GlBAyaco= 1) or (GlbSizeFact8x11 = 1) or (GLBTapiceria = 1) or (GlBInveraf =1) then
     begin
@@ -3693,6 +3874,49 @@ if (GlbFarmacia = 1) and (GlbRec55Pulg = 1) then
         end;
         end;
       end else
+      if (GLBFerreteria = 1) and (GlbSizeFact8x11 = 1) then
+      begin
+        //qckFact8_5Ferreteria
+          qckFact8_5Ferreteria:=TqckFact8_5Ferreteria.Create(Nil);
+           try
+             qckFactServ8_5Ayaco.TPag.Caption:=
+             IntToStr(qckFact8_5Ferreteria.PageNumber);
+             qckFact8_5Ferreteria.xtipoVenta := 'Factura';
+             qckFact8_5Ferreteria.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+
+             if dmFactura.qryVentaFacturaMONTO_EXONERADO_ITBIS.Value > 0 then
+             begin
+               qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS Exonerado';
+             end  else
+             qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS';
+
+             if (GlbImpReciboSinPreg = 1) then
+                qckFact8_5Ferreteria.Print
+              else
+              if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+              begin
+                qckFact8_5Ferreteria.PrinterSetup;
+                qckFact8_5Ferreteria.Print;
+              end else
+              qckFact8_5Ferreteria.Preview;
+
+            if (GlbImpReciboSinPreg = 0) then
+            if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+            begin 
+              qckFact8_5Ferreteria.Preview;
+            end;
+            if GlbImpPDF then
+            begin
+            if not dmReportes.qryViewVentasMastNUMERO_DOC_PAGO.IsNull then
+            ReportExportPDF(qckFact8_5Ferreteria,GlbRutaFacturas+'\FacturaModificada'+IntToStr(dmReportes.qryViewVentasMastNUMERO_DOC_PAGO.AsInteger)+'.pdf')
+            else
+            ReportExportPDF(qckFact8_5Ferreteria,GlbRutaFacturas+'\FacturaModificada'+IntToStr(dmReportes.qryViewVentasMastNumeroDocCldo.AsInteger)+'.pdf')
+            end;
+        finally                            
+        qckFact8_5Ferreteria.Free;
+        qckFact8_5Ferreteria:=Nil;
+        end;
+      end else
       if (GlBAyaco = 1) or (GlbSizeFact8x11 = 1) or (GlBTapiceria = 1) or (GlBInveraf =1) then
          begin
            qckFactServ8_5Ayaco:=TqckFactServ8_5Ayaco.Create(Nil);
@@ -4870,6 +5094,55 @@ begin
         qckFactServ_8_5SAMNew.Free;
         qckFactServ_8_5SAMNew:=Nil;
         end;
+        end;
+      end else
+      if (GlbFerreteria = 1) and (GlbSizeFact8x11 = 1) then
+      begin
+      //qckFact8_5Ferreteria
+      dmreportes.qryViewVentasMast.Close;
+      dmreportes.qryViewVentasMast.Params[0].Value:= dmfactura.qryVentaFacturaNUMERO.Value;
+      dmreportes.qryViewVentasMast.Open;
+      ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
+      qckFact8_5Ferreteria:=TqckFact8_5Ferreteria.Create(Nil);
+      try
+          if dmReportes.qryViewVentasMastMONTO_EXONERADO_ITBIS.Value > 0 then
+          begin
+            //qckFactServ8_5Ayaco.QRLabel25.left:=505;
+            qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS Exonerado';
+          end  else
+          qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS';
+        qckFact8_5Ferreteria.TPag.Caption:=
+        IntToStr(qckFact8_5Ferreteria.PageNumber);
+        if GlbEsCopia then
+        qckFact8_5Ferreteria.xtipoVenta := TipoVenta +' (Copia)'
+        else qckFact8_5Ferreteria.xtipoVenta := TipoVenta;
+        qckFact8_5Ferreteria.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+        if (GlbImpReciboSinPreg = 1) then
+           qckFact8_5Ferreteria.Print
+        else
+        if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+        begin
+          qckFact8_5Ferreteria.PrinterSetup;
+          qckFact8_5Ferreteria.Print;
+        end else
+        qckFact8_5Ferreteria.Preview;
+
+        if (GlbImpReciboSinPreg = 0) then
+        if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+        begin
+          qckFact8_5Ferreteria.Preview;
+        end;
+        if GlbImpPDF then
+        begin
+        if not dmFactura.qryVentaFacturaNUMERO_FACTURA.IsNull then
+        ReportExportPDF(qckFact8_5Ferreteria,GlbRutaFacturas+'\Facturas'+IntToStr(dmFactura.qryVentaFacturaNUMERO_FACTURA.Value)+'.pdf')
+        else
+        if not dmFactura.qryVentaFacturaNUMERO_DOC_PAGO.IsNull then
+        ReportExportPDF(qckFact8_5Ferreteria,GlbRutaFacturas+'\Facturas'+IntToStr(dmFactura.qryVentaFacturaNUMERO_DOC_PAGO.AsInteger)+'.pdf')
+        end;
+        finally
+        qckFact8_5Ferreteria.Free;
+        qckFact8_5Ferreteria:=Nil;
         end;
       end else
     if (GlBAyaco= 1) or (GlbSizeFact8x11 = 1) or (GlBTapiceria = 1) or (GlBInveraf =1) then
@@ -6572,6 +6845,51 @@ begin
         end;
           //end;
       end else
+      if (glbFerreteria = 1) and (GlbSizeFact8x11 = 1) then
+      begin
+        //qckFact8_5Ferreteria
+        dmreportes.qryViewVentasMast.Close;
+        dmreportes.qryViewVentasMast.Params[0].Value:= dmfactura.qryVentaFacturaNUMERO.Value;
+        dmreportes.qryViewVentasMast.Open;
+        ProcSetPathlogoTipoServicio(dmReportes.qryViewVentasMastTIPO_AFILIADO.Value);
+      if (dmreportes.qryViewVentasMastFORMA_PAGO.Value = 7) or ((GlbSizeFact8x11 = 1) and (GlbRec3Pulg = 0)) then
+      begin
+        qckFact8_5Ferreteria:=TqckFact8_5Ferreteria.Create(Nil);
+        try
+          if dmReportes.qryViewVentasMastMONTO_EXONERADO_ITBIS.Value > 0 then
+          begin
+            //qckFact8_5Ferreteria.QRLabel25.left:=505;
+            qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS Exonerado';
+          end  else
+          qckFact8_5Ferreteria.QRLabel25.Caption :='ITBIS';
+
+          qckFact8_5Ferreteria.TPag.Caption:=
+          IntToStr(qckFact8_5Ferreteria.PageNumber);
+          qckFact8_5Ferreteria.xtipoVenta := TipoVenta;//dmFactura.qryVentaFactura.sql.text
+          qckFact8_5Ferreteria.valorNCF:= dmFactura.qryVentaFacturaNUMERO_NCF.Value;
+          if (GlbImpReciboSinPreg = 1) then
+              qckFact8_5Ferreteria.Print
+          else
+          if MessageDlg('Imprimir?', mtInformation, [mbYes, mbNo], 0) = mrYes then
+          begin
+            qckFact8_5Ferreteria.PrinterSetup;
+            qckFact8_5Ferreteria.Print;
+          end else
+          qckFact8_5Ferreteria.Preview;
+
+          if (GlbImpReciboSinPreg = 0) then
+          if MessageDlg('Re-imprimir', mtInformation, [mbNo, mbYes], 0) = mrYes then
+          begin
+            qckFact8_5Ferreteria.Preview;
+          end;
+          if GlbImpPDF then
+          if not dmFactura.qryVentaFacturaNUMERO_FACTURA.IsNull then
+          ReportExportPDF(qckFact8_5Ferreteria,GlbRutaFacturas+'\Facturas'+IntToStr(dmFactura.qryVentaFacturaNUMERO_FACTURA.Value)+'.pdf');
+          finally
+          qckFact8_5Ferreteria.Free;
+          qckFact8_5Ferreteria:=Nil;
+          end;
+      end else
     if ((GlBAyaco= 1) or (GlbSizeFact8x11 = 1) or (GlBTapiceria = 1)) or (GlBInveraf =1) then
        //and (GlbRec3Pulg = 0) and (TipoVenta ='FACTURA') then
     begin
@@ -8147,6 +8465,7 @@ begin
           qckRepReciboReimpTicketSurtidoraNew:=Nil;
         end;
       end;
+  end;
 end;
 
 

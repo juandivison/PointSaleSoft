@@ -18,13 +18,14 @@ function ProcesarEnvioEcfGastoTxt(
   ATrn: Integer;
   const AOutputDir: string;
   out AResultado: TGastoEcfCliResult;
-  out AMensaje: string
+  out AMensaje: string;
+  ADescargarXml:Boolean=True
 ): Boolean;
 
 implementation
 
 uses
-  DB, UUtilecf;
+  DB, UUtilecf, UEcfEnvioGastos;
 
 type
   EGastoTxtEcfFlow = class(Exception);
@@ -418,245 +419,11 @@ begin
       'La operacion no tiene un e-NCF reservado valido.');
 end;
 
-procedure PersistirResultado(
-  ADatabase: TIBDatabase;
-  ATrn: Integer;
-  const ASnapshot: TGastoEnvioSnapshot;
-  const AResultado: TGastoEcfCliResult);
-var
-  Tr: TIBTransaction;
-  Q: TIBQuery;
-  Estado: string;
-  HashDoc: string;
-  ENCFResultado: string;
-  IdEnvio: Integer;
+procedure PersistirResultado(ADatabase: TIBDatabase; ATrn: Integer;
+  const ASnapshot: TGastoEnvioSnapshot; const AResultado: TGastoEcfCliResult);
 begin
-  Estado := EstadoNormalizado(AResultado.Estado);
-  HashDoc := BuildReservaKey(
-    ASnapshot.CiaKey,
-    ATrn,
-    ASnapshot.TipoCF);
-
-  ENCFResultado := UpperCase(Trim(AResultado.ENCF));
-  if ENCFResultado = '' then
-    ENCFResultado := ASnapshot.ENCF;
-
-  if ENCFResultado <> ASnapshot.ENCF then
-    raise EGastoTxtEcfFlow.CreateFmt(
-      'IdesiToolECF devolvio el e-NCF %s, distinto al reservado %s.',
-      [ENCFResultado, ASnapshot.ENCF]);
-
-  Tr := TIBTransaction.Create(nil);
-  Q := TIBQuery.Create(nil);
-  try
-    ConfigurarTransaccion(Tr, ADatabase);
-    Tr.StartTransaction;
-    ConfigurarQuery(Q, ADatabase, Tr);
-
-    Q.SQL.Text :=
-      'UPDATE ECF_RESERVA SET ' +
-      '  ESTADO = CASE ' +
-      '    WHEN ESTADO = ''ACEPTADO'' THEN ''ACEPTADO'' ' +
-      '    ELSE CAST(:ESTADO_NUEVO AS VARCHAR(32)) END, ' +
-      '  MENSAJE = CASE ' +
-      '    WHEN ESTADO = ''ACEPTADO'' AND :PRESERVAR_ACEPTADO = 1 THEN MENSAJE ' +
-      '    ELSE :MENSAJE END, ' +
-      '  UPDATED_AT = CURRENT_TIMESTAMP, ' +
-      '  CODIGO_SEGURIDAD = COALESCE(:CODIGO_SEGURIDAD, CODIGO_SEGURIDAD), ' +
-      '  FECHA_FIRMA = COALESCE(:FECHA_FIRMA, FECHA_FIRMA) ' +
-      'WHERE HASH_DOC = :HASH_DOC AND NCF = :NCF';
-
-    Q.ParamByName('ESTADO_NUEVO').AsString := Copy(Estado, 1, 32);
-    Q.ParamByName('PRESERVAR_ACEPTADO').AsInteger := Ord(Estado <> 'ACEPTADO');
-    Q.ParamByName('MENSAJE').AsString := Copy(AResultado.Mensaje, 1, 1024);
-
-    if AResultado.TieneTimbre and
-       (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
-      Q.ParamByName('CODIGO_SEGURIDAD').AsString :=
-        Copy(Trim(AResultado.Timbre.CodigoSeguridad), 1, 64)
-    else
-      Q.ParamByName('CODIGO_SEGURIDAD').Clear;
-
-    if AResultado.TieneTimbre and
-       AResultado.Timbre.TieneFechaFirma then
-      Q.ParamByName('FECHA_FIRMA').AsDateTime :=
-        AResultado.Timbre.FechaFirma
-    else
-      Q.ParamByName('FECHA_FIRMA').Clear;
-
-    Q.ParamByName('HASH_DOC').AsString := HashDoc;
-    Q.ParamByName('NCF').AsString := ASnapshot.ENCF;
-    Q.ExecSQL;
-
-    if Q.RowsAffected <> 1 then
-      raise EGastoTxtEcfFlow.Create(
-        'No se encontro ECF_RESERVA para el gasto.');
-
-    Q.Close;
-    Q.SQL.Text :=
-      'UPDATE ECF_GASTO_ENVIO SET ' +
-      '  ESTADO = CASE ' +
-      '    WHEN ESTADO = ''ACEPTADO'' THEN ''ACEPTADO'' ' +
-      '    ELSE CAST(:ESTADO_NUEVO AS VARCHAR(32)) END, ' +
-      '  TRACK_ID = COALESCE(:TRACK_ID, TRACK_ID), ' +
-      '  MENSAJE = CASE ' +
-      '    WHEN ESTADO = ''ACEPTADO'' AND :PRESERVAR_ACEPTADO = 1 THEN MENSAJE ' +
-      '    ELSE :MENSAJE END, ' +
-      '  INTENTOS = COALESCE(INTENTOS, 0) + 1, ' +
-      '  CODIGO_SEGURIDAD = COALESCE(:CODIGO_SEGURIDAD, CODIGO_SEGURIDAD), ' +
-      '  FECHA_EMISION = COALESCE(:FECHA_EMISION, FECHA_EMISION), ' +
-      '  FECHA_FIRMA = COALESCE(:FECHA_FIRMA, FECHA_FIRMA), ' +
-      '  MONTO_TOTAL = COALESCE(:MONTO_TOTAL, MONTO_TOTAL), ' +
-      '  URL_IMAGE = COALESCE(:URL_IMAGE, URL_IMAGE), ' +
-      '  XML_FIRMADO = COALESCE(:XML_FIRMADO, XML_FIRMADO), ' +
-      '  FECHA_UPDATE = CURRENT_TIMESTAMP ' +
-      'WHERE CIA_KEY = :CIA_KEY AND ENCF = :ENCF';
-
-    Q.ParamByName('ESTADO_NUEVO').AsString := Copy(Estado, 1, 32);
-    Q.ParamByName('PRESERVAR_ACEPTADO').AsInteger := Ord(Estado <> 'ACEPTADO');
-
-    if Trim(AResultado.TrackId) = '' then
-      Q.ParamByName('TRACK_ID').Clear
-    else
-      Q.ParamByName('TRACK_ID').AsString :=
-        Copy(Trim(AResultado.TrackId), 1, 100);
-
-    Q.ParamByName('MENSAJE').AsString := Copy(AResultado.Mensaje, 1, 1024);
-
-    if AResultado.TieneTimbre and
-       (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
-      Q.ParamByName('CODIGO_SEGURIDAD').AsString :=
-        Copy(Trim(AResultado.Timbre.CodigoSeguridad), 1, 64)
-    else
-      Q.ParamByName('CODIGO_SEGURIDAD').Clear;
-
-    if AResultado.TieneTimbre and
-       AResultado.Timbre.TieneFechaEmision then
-      Q.ParamByName('FECHA_EMISION').AsDateTime :=
-        AResultado.Timbre.FechaEmision
-    else
-      Q.ParamByName('FECHA_EMISION').Clear;
-
-    if AResultado.TieneTimbre and
-       AResultado.Timbre.TieneFechaFirma then
-      Q.ParamByName('FECHA_FIRMA').AsDateTime :=
-        AResultado.Timbre.FechaFirma
-    else
-      Q.ParamByName('FECHA_FIRMA').Clear;
-
-    if AResultado.TieneTimbre and
-       AResultado.Timbre.TieneMontoTotal then
-      Q.ParamByName('MONTO_TOTAL').AsCurrency :=
-        AResultado.Timbre.MontoTotal
-    else
-      Q.ParamByName('MONTO_TOTAL').Clear;
-
-    if AResultado.TieneTimbre and
-       (Trim(AResultado.Timbre.UrlImage) <> '') then
-      Q.ParamByName('URL_IMAGE').AsString :=
-        Copy(Trim(AResultado.Timbre.UrlImage), 1, 1024)
-    else
-      Q.ParamByName('URL_IMAGE').Clear;
-
-    if AResultado.TieneTimbre and
-       (Trim(AResultado.Timbre.XmlFirmado) <> '') then
-      Q.ParamByName('XML_FIRMADO').AsString :=
-        Copy(Trim(AResultado.Timbre.XmlFirmado), 1, 1024)
-    else
-      Q.ParamByName('XML_FIRMADO').Clear;
-
-    Q.ParamByName('CIA_KEY').AsInteger := ASnapshot.CiaKey;
-    Q.ParamByName('ENCF').AsString := ASnapshot.ENCF;
-    Q.ExecSQL;
-
-    if Q.RowsAffected = 0 then
-    begin
-      Q.Close;
-      Q.SQL.Text :=
-        'SELECT GEN_ID(GEN_ECF_GASTO_ENVIO_ID, 1) AS ID ' +
-        'FROM RDB$DATABASE';
-      Q.Open;
-      IdEnvio := Q.FieldByName('ID').AsInteger;
-      Q.Close;
-
-      Q.SQL.Text :=
-        'INSERT INTO ECF_GASTO_ENVIO (' +
-        '  ID, CIA_KEY, TRN, TIPO_CF, ENCF, ESTADO, TRACK_ID, MENSAJE, ' +
-        '  INTENTOS, CODIGO_SEGURIDAD, FECHA_EMISION, FECHA_FIRMA, ' +
-        '  MONTO_TOTAL, URL_IMAGE, XML_FIRMADO, FECHA_CREACION' +
-        ') VALUES (' +
-        '  :ID, :CIA_KEY, :TRN, :TIPO_CF, :ENCF, :ESTADO, :TRACK_ID, ' +
-        '  :MENSAJE, 1, :CODIGO_SEGURIDAD, :FECHA_EMISION, :FECHA_FIRMA, ' +
-        '  :MONTO_TOTAL, :URL_IMAGE, :XML_FIRMADO, CURRENT_TIMESTAMP' +
-        ')';
-
-      Q.ParamByName('ID').AsInteger := IdEnvio;
-      Q.ParamByName('CIA_KEY').AsInteger := ASnapshot.CiaKey;
-      Q.ParamByName('TRN').AsInteger := ATrn;
-      Q.ParamByName('TIPO_CF').AsInteger := StrToInt(ASnapshot.TipoCF);
-      Q.ParamByName('ENCF').AsString := ASnapshot.ENCF;
-      Q.ParamByName('ESTADO').AsString := Copy(Estado, 1, 32);
-
-      if Trim(AResultado.TrackId) = '' then
-        Q.ParamByName('TRACK_ID').Clear
-      else
-        Q.ParamByName('TRACK_ID').AsString :=
-          Copy(Trim(AResultado.TrackId), 1, 100);
-
-      Q.ParamByName('MENSAJE').AsString := Copy(AResultado.Mensaje, 1, 1024);
-
-      if AResultado.TieneTimbre and
-         (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
-        Q.ParamByName('CODIGO_SEGURIDAD').AsString :=
-          Copy(Trim(AResultado.Timbre.CodigoSeguridad), 1, 64)
-      else
-        Q.ParamByName('CODIGO_SEGURIDAD').Clear;
-
-      if AResultado.TieneTimbre and
-         AResultado.Timbre.TieneFechaEmision then
-        Q.ParamByName('FECHA_EMISION').AsDateTime :=
-          AResultado.Timbre.FechaEmision
-      else
-        Q.ParamByName('FECHA_EMISION').Clear;
-
-      if AResultado.TieneTimbre and
-         AResultado.Timbre.TieneFechaFirma then
-        Q.ParamByName('FECHA_FIRMA').AsDateTime :=
-          AResultado.Timbre.FechaFirma
-      else
-        Q.ParamByName('FECHA_FIRMA').Clear;
-
-      if AResultado.TieneTimbre and
-         AResultado.Timbre.TieneMontoTotal then
-        Q.ParamByName('MONTO_TOTAL').AsCurrency :=
-          AResultado.Timbre.MontoTotal
-      else
-        Q.ParamByName('MONTO_TOTAL').Clear;
-
-      if AResultado.TieneTimbre and
-         (Trim(AResultado.Timbre.UrlImage) <> '') then
-        Q.ParamByName('URL_IMAGE').AsString :=
-          Copy(Trim(AResultado.Timbre.UrlImage), 1, 1024)
-      else
-        Q.ParamByName('URL_IMAGE').Clear;
-
-      if AResultado.TieneTimbre and
-         (Trim(AResultado.Timbre.XmlFirmado) <> '') then
-        Q.ParamByName('XML_FIRMADO').AsString :=
-          Copy(Trim(AResultado.Timbre.XmlFirmado), 1, 1024)
-      else
-        Q.ParamByName('XML_FIRMADO').Clear;
-
-      Q.ExecSQL;
-    end;
-
-    Tr.Commit;
-  finally
-    if Tr.InTransaction then
-      Tr.Rollback;
-    Q.Free;
-    Tr.Free;
-  end;
+  PersistirResultadoEcfGasto(ADatabase, ATrn, ASnapshot.CiaKey,
+    ASnapshot.TipoCF, ASnapshot.ENCF, AResultado);
 end;
 
 function ProcesarEnvioEcfGastoTxt(
@@ -666,7 +433,8 @@ function ProcesarEnvioEcfGastoTxt(
   ATrn: Integer;
   const AOutputDir: string;
   out AResultado: TGastoEcfCliResult;
-  out AMensaje: string): Boolean;
+  out AMensaje: string;
+  ADescargarXml:Boolean): Boolean;
 var
   Snapshot: TGastoEnvioSnapshot;
   Builder: TGastoTxtBuilder;
@@ -719,8 +487,8 @@ begin
 
     WorkDir := ExtractFilePath(ExeFullPath);
     CmdLine := Format(
-      '"%s" --gasto-txt "%s"',
-      [ExeFullPath, ExpandFileName(BuildRes.OutputFile)]);
+      '"%s" --gasto-txt "%s" --xml-firmado=%d',
+      [ExeFullPath, ExpandFileName(BuildRes.OutputFile),Ord(ADescargarXml)]);
 
     OutputText := '';
     ExitCode := Cardinal(-1);
@@ -752,8 +520,7 @@ begin
         'IdesiToolECF.exe no devolvio una respuesta D7G valida para Gastos.txt.';
     end;
 
-    if EsMensajeSecuenciaUtilizada(AResultado.Mensaje) or
-       EsMensajeSecuenciaUtilizada(AResultado.SalidaCompleta) then
+    if ResultadoRequiereReasignacionSecuencia(AResultado, '') then
     begin
       AResultado.Estado := 'SECUENCIA_USADA';
       if Trim(AResultado.Mensaje) = '' then

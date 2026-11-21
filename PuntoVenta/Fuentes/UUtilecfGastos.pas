@@ -40,7 +40,8 @@ function EjecutarECFGasto(
   ATrn: Integer;
   out AResultado: TGastoEcfCliResult;
   out AError: string;
-  ATimeOutMS: Cardinal = 600000
+  ATimeOutMS: Cardinal = 600000;
+  ADescargarXml:Boolean=True
 ): Boolean;
 
 implementation
@@ -563,7 +564,8 @@ function EjecutarECFGasto(
   ATrn: Integer;
   out AResultado: TGastoEcfCliResult;
   out AError: string;
-  ATimeOutMS: Cardinal
+  ATimeOutMS: Cardinal;
+  ADescargarXml:Boolean
 ): Boolean;
 var
   Output: string;
@@ -584,7 +586,7 @@ begin
 
   if not RunAndCapture(
            AExePath,
-           '--gasto ' + IntToStr(ATrn),
+           '--gasto ' + IntToStr(ATrn)+' --xml-firmado='+IntToStr(Ord(ADescargarXml)),
            ATimeOutMS,
            ExitCode,
            Output,

@@ -282,3 +282,15 @@ __recovery/
 
 modules/
 **/modules/
+
+# Consolidacion: respaldos, resultados QA y secretos permanecen locales.
+/PuntoVenta/Fuentes/Backup_*/
+/PuntoVenta/Fuentes/*.CP12_*_backup_*
+/qa/**/Build/
+/qa/**/bin/
+/qa/**/obj/
+/qa/**/Antes/
+/qa/**/Respaldo*/
+/PointSaleSoft.Sync/artifacts/
+**/*.credential.xml
+**/private/

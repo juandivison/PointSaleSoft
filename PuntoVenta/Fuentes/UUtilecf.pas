@@ -50,7 +50,7 @@ procedure PrepareFreshFacturaTxtArtifacts(const AArtifactDir: string);
 implementation
 
 uses
-  UGlobal, UUtilecftimbre;
+  UGlobal, UUtilecftimbre, UEcfTimbreVentaLocal, UDatModConectar;
 
 function UnescapePipes(const S: string): string;
 begin
@@ -338,7 +338,9 @@ var
   SL: TStringList;
   i: Integer;
   Estado, Mensaje, TrackId, Encf: string;
-  ReturnTimbre: string;
+  ReturnTimbre, TimbreAviso, PersistAviso: string;
+  InicioArtefactos:TDateTime;
+  TieneD7:Boolean;
 
   function StartsWith(const S, Prefix: string): Boolean;
   begin
@@ -496,6 +498,7 @@ var
   end;
 
 begin
+  InicioArtefactos:=Now;
   OutAll := RunAndCaptureStdOut(ExePath, TRN, ExitCode);
 
   SL := TStringList.Create;
@@ -508,25 +511,25 @@ begin
     Encf := '';
     ReturnTimbre := '';
 
-    // 1) Preferir líneas estructuradas D7| y D7T|
+    // Leer ambas lineas sin depender de su orden de salida.
     for i := SL.Count - 1 downto 0 do
     begin
-      if StartsWith(SL[i], 'D7|') then
-      begin
-        SplitPipeLine(SL[i], Estado, Mensaje, TrackId, Encf);
-        Break;
-      end
-      else if StartsWith(SL[i], 'D7T|') then
-      begin
-        ReturnTimbre := StringReplace(Copy(SL[i], 4, MaxInt), '%7C', '|', [rfReplaceAll]);
-        // seguimos buscando D7| por si aparece más arriba
-      end;
+      if StartsWith(Trim(SL[i]), 'D7|') and (Estado='') then
+        SplitPipeLine(Trim(SL[i]), Estado, Mensaje, TrackId, Encf)
+      else if StartsWith(Trim(SL[i]), 'D7T|') and (ReturnTimbre='') then
+        ReturnTimbre := UnescapePipes(Copy(Trim(SL[i]),5,MaxInt));
     end;
 
+    TieneD7:=Estado<>'';
     // 2) Si no hubo D7|, aplicar parser de respaldo sobre todo el log
     if Estado = '' then
       FallbackParse(OutAll, Estado, Mensaje, Encf);
 
+    PersistAviso:='';
+    if TieneD7 then
+      try PersistirResultadoFiscalVenta(dmConectar.IBDatabase1,StrToIntDef(TRN,0),Encf,Estado,TrackId,Mensaje);
+      except on E:Exception do PersistAviso:='Persistencia Firebird pendiente: '+E.Message;end
+    else PersistAviso:='Persistencia Firebird pendiente: resultado sin protocolo D7.';
     // 3) Mensaje final al usuario
     if not AnsiSameText(Estado, 'ACEPTADO') then
     begin
@@ -536,17 +539,33 @@ begin
         Mensaje := 'Error no especificado.';
       msg := 'e-CF: ' + Encf + #13#10 +
              'Estado: ' + PrettyEstado(Estado) + #13#10 +
-             'Error: ' + Mensaje;
+             'Error: ' + Mensaje + #13#10 + PersistAviso;
       Result := False;
       Exit;
     end;
 
     // 4) Aceptado: opcionalmente guardar timbre
     Result := True;
-    if ReturnTimbre <> '' then
-      UUtilecftimbre.GuardarTimbreEjemplo(StrToIntDef(TRN, 0), UnescapePipes(ReturnTimbre));
-
     msg := 'ECF ACEPTADO.'#13#10'TrackId: ' + TrackId + #13#10'NCF: ' + Encf;
+    if PersistAviso<>''then msg:=msg+#13#10+PersistAviso;
+    try
+      if not RestaurarTimbreVentaLocal(dmConectar.IBDatabase1,
+        StrToIntDef(TRN,0),ExePath,ReturnTimbre,TimbreAviso,InicioArtefactos) then
+        msg := msg + #13#10 + 'Timbre pendiente: ' + TimbreAviso;
+    except
+      on E: Exception do
+      begin
+        // El e-CF aceptado no se convierte en error de emision ni se reenvia.
+        msg := msg + #13#10 + 'Timbre pendiente de reparacion: ' + E.Message;
+        LogInformacionTxt('Timbre Delphi TRN='+TRN+': '+E.Message);
+      end;
+    end;
+    if Pos('pendiente',AnsiLowerCase(msg))>0 then
+    begin
+      LogInformacionTxt(msg);
+      if not IsConsole then
+        MessageDlg(msg+#13#10+'La aceptacion fiscal se conserva. No reenviar; completar persistencia local.',mtWarning,[mbOK],0);
+    end;
   finally
     SL.Free;
   end;
@@ -588,7 +607,8 @@ function EjecutarECF_CLIDown(
 var
   exitCode: Cardinal;
   so, se: string;
-  params: string;
+  params, TimbreAviso: string;
+  InicioArtefactos:TDateTime;
 begin
   // Construcción de parámetros:
   //  - Con ENCF ? --resend TRN ENCF
@@ -600,6 +620,7 @@ begin
     Result:=false;
     exit;
   end;
+  InicioArtefactos:=Now;
   Result := EjecutarProcesoCapturandoSalida(
     ExePath,
     params,
@@ -624,6 +645,13 @@ begin
 
   // Éxito si ExitCode == 0
   Result := Result and (exitCode = 0);
+  if Result then
+    try
+      if not RestaurarTimbrePorEncf(dmConectar.IBDatabase1,ENCF,ExePath,TimbreAviso,InicioArtefactos) then
+        Mensaje := Mensaje + #13#10 + 'Recuperacion de timbre pendiente: ' + TimbreAviso;
+    except on E: Exception do
+      begin Result:=False;Mensaje:=Mensaje+#13#10+'No se pudo validar timbre/XML: '+E.Message;end;
+    end;
 end;
 
 function EjecutarECF_CLI(

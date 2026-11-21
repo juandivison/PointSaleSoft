@@ -7,7 +7,7 @@ uses
   Dialogs, StdCtrls, Buttons, ComCtrls, WinSkinData, DB, ExtCtrls;
   
 type
-  TConcItem = record
+  TConcItem = record   
     Trn: Integer;
     Fecha: string;
     Ncf: string;
@@ -55,7 +55,8 @@ var
 
 implementation
 
-uses UDatModFacturaElectronica,UUtilecf,UGlobal;
+uses UDatModFacturaElectronica, UUtilecf, UGlobal, UEcfApiRutaIngresos,
+  UEcfApiTimbreLog, UDatModConectar;
 
 {$R *.dfm}
 
@@ -67,6 +68,7 @@ var
   i, total: Integer;
   _smg: string;
   canceled: Boolean;
+  ProcesadoIdesi: Boolean;
 begin
   _smg := '';
   canceled := False;
@@ -135,10 +137,23 @@ begin
     // Llamada externa (puede abrir/cerrar datasets en el DataModule sin afectarnos)
     if GlbValidarECF = 1 then
     begin
-      if not UUtilecf.EjecutarECF_y_Mostrar(GlbRutaEcf, IntToStr(items[i].Trn), _smg) then
-        LogInformacionTxt(PChar(' -Rutina Conciliar eCF- ' + _smg))
-      else
-      LogInformacionTxt(PChar(' -Rutina Conciliar eCF- ' + _smg));
+      try
+        ProcesadoIdesi := ProcesarIdesiSiCorresponde(items[i].Trn,
+          GlbUsarFacturaTxtECF,GlbRutaEcf,
+          ExtractFilePath(Application.ExeName) + 'repconf_cr.ini',_smg);
+        if not ProcesadoIdesi then
+          UUtilecf.EjecutarECF_y_Mostrar(GlbRutaEcf,
+            IntToStr(items[i].Trn),_smg);
+        LogInformacionTxt(PChar(' -Rutina Conciliar eCF- ' + _smg));
+        Memo1.Lines.Add(_smg);
+      except
+        on E: Exception do
+        begin
+          _smg := 'ERROR TRN ' + IntToStr(items[i].Trn) + ': ' + E.Message;
+          LogInformacionTxt(PChar(_smg));
+          Memo1.Lines.Add(_smg);
+        end;
+      end;
     end;
     // Pequeño respiro para UI/IO
     Sleep(100);
@@ -586,10 +601,32 @@ begin
     // Llamada externa (puede abrir/cerrar datasets en el DataModule sin afectarnos)
     if GlbValidarECF = 1 then
     begin
-      if not UUtilecf.EjecutarECF_DownQRXML(GlbRutaEcf, items[i].Ncf, _smg) then
-        LogInformacionTxt(PChar(' -Rutina Descargar QR y XML Firmado- ' + _smg))
-      else
-      LogInformacionTxt(PChar(' -Rutina Descargar QR y XML Firmado- ' + _smg));
+      { Si el documento pertenece a IDESI API, usar solo GET API.
+        No ejecutar el EXE, ni POST, ni fallback a ASLAN. }
+      try
+        if EsDocumentoCanalIdesiApi(dmConectar.IBDatabase1,
+          dmConectar.IBTransaction1,items[i].Trn) then
+        begin
+          if RecuperarTimbreIdesiApi(dmConectar.IBDatabase1,
+            dmConectar.IBTransaction1,items[i].Trn,
+            IncludeTrailingPathDelimiter(
+              ExtractFilePath(ExpandFileName(GlbRutaEcf)))+
+              'repconf_cr.ini',_smg) then
+            Memo1.Lines.Add(_smg)
+          else
+            Memo1.Lines.Add(_smg);
+        end
+        else
+          UUtilecf.EjecutarECF_DownQRXML(GlbRutaEcf,items[i].Ncf,_smg);
+        LogInformacionTxt(PChar(' -Rutina Descargar QR y XML Firmado- '+_smg));
+      except
+        on E: Exception do
+        begin
+          _smg := 'Error recuperando XML / timbre: '+E.Message;
+          Memo1.Lines.Add(_smg);
+          LogInformacionTxt(PChar(_smg));
+        end;
+      end;
     end;
     // Pequeño respiro para UI/IO
     Sleep(100);

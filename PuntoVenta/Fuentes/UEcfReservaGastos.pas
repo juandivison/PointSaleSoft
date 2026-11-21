@@ -17,6 +17,8 @@ type
     EsNueva: Boolean;
   end;
 
+function GastoUsaSecuenciaRemota(ADB:TIBDatabase; ACia:Integer):Boolean;
+
 function ReservarOReutilizarEcfGasto(
   ADatabase: TIBDatabase;
   ATrn: Integer;
@@ -61,7 +63,8 @@ function ActualizarEstadoReservaEcfGasto(
 implementation
 
 uses
-  Windows;
+  Windows, IniFiles, UEcfSecuenciaVenta, UEcfSecuenciaCola,
+  UEcfSecuenciaRemota, UEcfCanalConfig;
 
 type
   EReservaEcfGasto = class(Exception);
@@ -764,6 +767,136 @@ begin
       'No fue posible vincular el e-NCF con TRANS_OPERACION_MASTER.');
 end;
 
+function IniGastos: string;
+begin
+  Result:=ExtractFilePath(ParamStr(0))+'Idesi\repconf_cr.ini';
+  if not FileExists(Result) then Result:=ExtractFilePath(ParamStr(0))+'repconf_cr.ini';
+end;
+
+function GastoUsaSecuenciaRemota(ADB:TIBDatabase;ACia:Integer):Boolean;
+var T:TIBTransaction;Q:TIBQuery;Sucursal:string;
+begin
+  Result:=False;if ACia<=0 then Exit;
+  T:=TIBTransaction.Create(nil);Q:=TIBQuery.Create(nil);
+  try
+    ConfigurarTransaccion(T,ADB);T.StartTransaction;ConfigurarQuery(Q,ADB,T);
+    Q.SQL.Text:='SELECT NUM_SUCURSAL FROM COMPANIA WHERE CODIGO=:C';
+    Q.ParamByName('C').AsInteger:=ACia;Q.Open;
+    if Q.Eof then raise EReservaEcfGasto.Create('Empresa no encontrada.');
+    Sucursal:=Trim(Q.FieldByName('NUM_SUCURSAL').AsString);Q.Close;T.Rollback;
+    Result:=OrigenSecuenciaRemoto(IniGastos,ACia,Sucursal);
+  finally if T.InTransaction then T.Rollback;Q.Free;T.Free;end;
+end;
+
+function ReservarRemotoSiCorresponde(ADB:TIBDatabase; ATrn,AUsuario:Integer;
+  const ATipo:string; out AReserva:TReservaEcfGastoResult;
+  out AMensaje:string; out AOk:Boolean):Boolean;
+var T:TIBTransaction;Q:TIBQuery;G,Actual:TGastoSnapshot;
+  Sucursal,Rnc,Doc,Request,Hash,Ini:string;R:TRespuestaSecuencia;
+  C:TEcfCanalConfiguracion;Serie,Id:Integer;Existe:Boolean;
+begin
+  Result:=False;AOk:=False;Ini:=IniGastos;
+  T:=TIBTransaction.Create(nil);Q:=TIBQuery.Create(nil);
+  try
+    ConfigurarTransaccion(T,ADB);ConfigurarQuery(Q,ADB,T);T.StartTransaction;
+    CargarGasto(Q,ATrn,G);
+    Q.Close;Q.SQL.Text:='SELECT NUM_SUCURSAL,RNC_NUMERO FROM COMPANIA WHERE CODIGO=:C';
+    Q.ParamByName('C').AsInteger:=G.CiaKey;Q.Open;
+    if Q.Eof then raise EReservaEcfGasto.Create('Empresa del gasto no encontrada.');
+    Sucursal:=Trim(Q.FieldByName('NUM_SUCURSAL').AsString);
+    Rnc:=Trim(Q.FieldByName('RNC_NUMERO').AsString);Q.Close;
+    if not OrigenSecuenciaRemoto(Ini,G.CiaKey,Sucursal) then Exit;
+    Result:=True;
+    C:=CargarConfiguracionCanalEcf(ADB,T,Rnc);
+    if (C.Canal<>ceIdesiApi) or (C.Ambiente<>aeTest) then
+      raise EReservaEcfGasto.Create('Reserva remota de gastos requiere IDESI_API/TEST.');
+    ValidarGastoParaReserva(G,ATipo);ValidarDetallesParaReserva(Q,ATrn,ATipo,G);
+    Hash:=BuildReservaKey(G.CiaKey,ATrn,ATipo);
+    Existe:=BuscarReservaExistente(Q,Hash,ATipo,AReserva);
+    { No tomar un numero nuevo si existe numeracion anterior sin vinculo remoto. }
+    if Existe or (G.EcfActual<>'') then begin
+      Q.Close;Q.SQL.Text:='SELECT ENCF FROM ECF_SEC_SOLICITUD WHERE '+
+        'RNC_EMISOR=:R AND AMBIENTE=''TEST'' AND SUCURSAL_ID=:S AND DOCUMENTO_CLAVE=:D';
+      Q.ParamByName('R').AsString:=Rnc;Q.ParamByName('S').AsString:=Sucursal;
+      Q.ParamByName('D').AsString:=Format('GASTO-CIA-%d-TRN-%d',[G.CiaKey,ATrn]);Q.Open;
+      if Q.Eof or (Q.FieldByName('ENCF').AsString='') or
+         (G.EcfActual<>Q.FieldByName('ENCF').AsString) or
+         (Existe and (AReserva.ENCF<>Q.FieldByName('ENCF').AsString)) then
+        raise EReservaEcfGasto.Create('El gasto tiene numeracion previa. Requiere conciliacion; no se consumira otra secuencia.');
+    end;
+    Q.Close;Q.SQL.Text:='UPDATE TRANS_OPERACION_MASTER SET TIPO_CF=:P WHERE NUMERO=:N';
+    Q.ParamByName('P').AsString:=NormalizarTipoCF(ATipo);
+    Q.ParamByName('N').AsInteger:=ATrn;Q.ExecSQL;T.Commit;
+    Doc:=Format('GASTO-CIA-%d-TRN-%d',[G.CiaKey,ATrn]);
+    Request:=PrepararSolicitudSecuencia(ADB,Rnc,Sucursal,Doc,'E'+NormalizarTipoCF(ATipo));
+    R:=ObtenerReservaSecuenciaVenta(ADB,Ini,G.CiaKey,Sucursal,Request);
+    if R.ENcf='' then begin
+      AMensaje:='Gasto guardado pendiente de secuencia remota. Recuperar la misma solicitud '+Request+'.';
+      Exit;
+    end;
+    if not EsENCFValido(R.ENcf,ATipo) then
+      raise EReservaEcfGasto.Create('La reserva remota no corresponde al tipo solicitado.');
+    ValidarVencimientoSerie(G.Fecha,R.FechaVence,ATipo);
+    T.StartTransaction;
+    Q.Close;Q.SQL.Text:='SELECT NUMERO FROM TRANS_OPERACION_MASTER WHERE NUMERO=:N WITH LOCK';
+    Q.ParamByName('N').AsInteger:=ATrn;Q.Open;
+    if Q.Eof then raise EReservaEcfGasto.Create('El gasto ya no existe.');
+    CargarGasto(Q,ATrn,Actual);
+    if (Actual.CiaKey<>G.CiaKey) or (Actual.CodigoProveedor<>G.CodigoProveedor) or
+       (Actual.Monto<>G.Monto) or (Actual.Fecha<>G.Fecha) or
+       ((Actual.EcfActual<>'') and (Actual.EcfActual<>R.ENcf)) then
+      raise EReservaEcfGasto.Create('El gasto cambio durante la reserva. Conservar solicitud para conciliar.');
+    Existe:=BuscarReservaExistente(Q,Hash,ATipo,AReserva);
+    if Existe then begin
+      if AReserva.ENCF<>R.ENcf then raise EReservaEcfGasto.Create('Reserva local diferente de la remota.');
+      Id:=AReserva.IdReserva;
+    end else begin
+      Id:=GenerarIdReservaGasto(Q);
+      InsertarReserva(Q,Id,Hash,ATipo,R.ENcf,StrToInt64(R.Correlativo));
+    end;
+    Serie:=InsertarOReutilizarNcfAsignado(Q,Actual,ATipo,R.ENcf,AUsuario);
+    ActualizarMaestroGasto(Q,ATrn,Serie,ATipo,R.ENcf);
+    Q.Close;Q.SQL.Text:='UPDATE ECF_SEC_SOLICITUD SET SERIE_NCF_LOCAL=:S, '+
+      'ACTUALIZADO_EN=CURRENT_TIMESTAMP WHERE REQUEST_ID=:R AND ENCF=:E';
+    Q.ParamByName('S').AsInteger:=Serie;Q.ParamByName('R').AsString:=Request;
+    Q.ParamByName('E').AsString:=R.ENcf;Q.ExecSQL;
+    if Q.RowsAffected<>1 then raise EReservaEcfGasto.Create('No se pudo vincular la reserva remota del gasto.');
+    T.Commit;
+    AReserva.IdReserva:=Id;AReserva.SerieNcfAsignado:=Serie;
+    AReserva.TipoCF:=ATipo;AReserva.Correlativo:=StrToInt64(R.Correlativo);
+    AReserva.ENCF:=R.ENcf;AReserva.FechaVencimientoSecuencia:=R.FechaVence;
+    if not Existe then AReserva.Estado:='RESERVADO';
+    AReserva.EsNueva:=not Existe;AMensaje:='e-NCF remoto reservado: '+R.ENcf;AOk:=True;
+  finally
+    if T.InTransaction then T.Rollback;Q.Free;T.Free;
+  end;
+end;
+
+procedure ValidarOrigenLocalGasto(AQuery: TIBQuery; ACia: Integer);
+var Ini: TIniFile; Sucursal, Origen: string;
+begin
+  AQuery.Close;
+  AQuery.SQL.Text := 'SELECT NUM_SUCURSAL FROM COMPANIA WHERE CODIGO=:C';
+  AQuery.ParamByName('C').AsInteger := ACia;
+  AQuery.Open;
+  if AQuery.IsEmpty then raise EReservaEcfGasto.Create('Empresa del gasto no encontrada.');
+  Sucursal := Trim(AQuery.FieldByName('NUM_SUCURSAL').AsString);
+  AQuery.Close;
+  Ini := TIniFile.Create(IniGastos);
+  try
+    Origen := UpperCase(Trim(Ini.ReadString(
+      'ECF_SECUENCIA_' + IntToStr(ACia) + '_' + Sucursal, 'Origen', 'LOCAL')));
+    if Origen = 'REMOTO' then
+      raise EReservaEcfGasto.Create(
+        'La sustitucion REMOTA de E41/E43 requiere conciliacion. El gasto se conserva ' +
+        'sin una nueva secuencia. No se utilizara el contador LOCAL.');
+    if Origen <> 'LOCAL' then
+      raise EReservaEcfGasto.Create('Origen de secuencia no reconocido.');
+  finally
+    Ini.Free;
+  end;
+end;
+
 function ReservarEnTransaccion(
   ADatabase: TIBDatabase;
   ATransaction: TIBTransaction;
@@ -789,6 +922,7 @@ begin
     ConfigurarQuery(Q, ADatabase, ATransaction);
 
     CargarGasto(Q, ATrn, Gasto);
+    ValidarOrigenLocalGasto(Q, Gasto.CiaKey);
     ValidarGastoParaReserva(Gasto, ATipoCF);
     ValidarDetallesParaReserva(Q, ATrn, ATipoCF, Gasto);
     HashDoc := BuildReservaKey(Gasto.CiaKey, ATrn, ATipoCF);
@@ -873,6 +1007,7 @@ begin
     ConfigurarQuery(Q, ADatabase, ATransaction);
 
     CargarGasto(Q, ATrn, Gasto);
+    ValidarOrigenLocalGasto(Q, Gasto.CiaKey);
     ValidarGastoParaReserva(Gasto, ATipoCF);
     ValidarDetallesParaReserva(Q, ATrn, ATipoCF, Gasto);
 
@@ -970,6 +1105,7 @@ var
   Tr: TIBTransaction;
   Intento: Integer;
   UltimoError: string;
+  OkRemoto: Boolean;
 begin
   Result := False;
   AMensaje := '';
@@ -993,6 +1129,11 @@ begin
     AMensaje := 'El numero de operacion de gastos no es valido.';
     Exit;
   end;
+
+  try
+    if ReservarRemotoSiCorresponde(ADatabase,ATrn,ACodigoUsuario,ATipoCF,
+      AReserva,AMensaje,OkRemoto) then begin Result:=OkRemoto;Exit;end;
+  except on E:Exception do begin AMensaje:=E.Message;Exit;end;end;
 
   for Intento := 1 to 3 do
   begin
