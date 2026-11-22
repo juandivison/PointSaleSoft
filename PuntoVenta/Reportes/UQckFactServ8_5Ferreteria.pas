@@ -216,10 +216,17 @@ begin
   begin
     if SetLogoCia(_ximagen) then
     if (_ximagen <> '') then
-    QRImage1.Picture.LoadFromFile(_ximagen);
+    begin
+      QRImage1.Picture.LoadFromFile(_ximagen);
+      QRImage1.Enabled:=True;
+      QRImage1.Visible:=True;
+      QRImage1.BringToFront;           
+    end;
+    LogInformacionTxt('GlbCodigoCia = '+IntToStr(GlbCodigoCia));
+    LogInformacionTxt('Ruta Imagen logo:'+_ximagen);
     if (dmReportes.qryViewVentasMastFORMA_PAGO.Value = 6) then
     QRDBText23.Caption:='DEVOLUCION'
-    ELSE    
+    ELSE
     if dmReportes.qryViewVentasMastDESC_TIPONCF.IsNull then
     QRDBText23.Caption:='FACTURA';
     dmCompania.tblCompania.close;
