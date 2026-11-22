@@ -23341,7 +23341,7 @@ begin
     qryVence.Open
   end;
   //t EnProcesoCalculo:=False;
-
+               
   {temporal hoy
   if rxVenta.State = dsBrowse then  if Not rxVentaSerie.IsNull then
   if not rxVenta.BOF then

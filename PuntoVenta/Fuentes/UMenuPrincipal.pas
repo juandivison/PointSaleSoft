@@ -5325,7 +5325,7 @@ begin
   TIPO_DOCUMENTO_CNT :=6;//Entrada
   SISTEMA_CNT        :=18;//Transaccion ventas
   SUBSISTEMA_CNT     :=1;
-  GLBCODIGO_CIA      :=1;
+  GLBCODIGO_CIA      :=GlbCodigoCia;
   frmContabilizarVentas:=TfrmContabilizarVentas.Create(Nil);
   try
     GLBMODULO_CNT := 1;
@@ -6530,7 +6530,7 @@ begin
   TIPO_DOCUMENTO_CNT :=7;//Entrada
   SISTEMA_CNT        :=18;//Transaccion ventas
   SUBSISTEMA_CNT     :=4; //Devoluciones
-  GLBCODIGO_CIA      :=1;
+  GLBCODIGO_CIA      :=GlbCodigoCia;
   frmContabilizarVtasDevol:=TfrmContabilizarVtasDevol.Create(Nil);
   try
     GLBMODULO_CNT := 4;
@@ -6547,7 +6547,7 @@ begin
   TIPO_DOCUMENTO_CNT :=7;//Entrada
   SISTEMA_CNT        :=18;//Transaccion ventas cobro tarjetas
   SUBSISTEMA_CNT     :=2;
-  GLBCODIGO_CIA      :=1;
+  GLBCODIGO_CIA      :=GlbCodigoCia;
   frmContabilizarVentasTarjeta:=TfrmContabilizarVentasTarjeta.Create(Nil);
   try
     GLBMODULO_CNT := 1;
@@ -6661,7 +6661,7 @@ begin
   TIPO_DOCUMENTO_CNT :=2;//Entrada
   SISTEMA_CNT        :=2;//Transaccion Ingresos Cxc
   SUBSISTEMA_CNT     :=2;
-  GLBCODIGO_CIA      :=1;
+  GLBCODIGO_CIA      :=GlbCodigoCia;
   frmContabilizarIngCxc:=TfrmContabilizarIngCxc.Create(Nil);
   try
     GLBMODULO_CNT := 3;
@@ -6714,7 +6714,7 @@ begin
   TIPO_DOCUMENTO_CNT :=6;//Entrada
   SISTEMA_CNT        :=18;//Transaccion ventas a credito
   SUBSISTEMA_CNT     :=5;
-  GLBCODIGO_CIA      :=1;
+  GLBCODIGO_CIA      :=GlbCodigoCia;
   frmContabilizarVentas:=TfrmContabilizarVentas.Create(Nil);
   try
     GLBMODULO_CNT := 1;
@@ -7040,7 +7040,7 @@ begin
   TIPO_DOCUMENTO_CNT :=2;//Entrada
   SISTEMA_CNT        :=9;//Transaccion Odenes de Compra
   SUBSISTEMA_CNT     :=2;
-  GLBCODIGO_CIA      :=1;
+  GLBCODIGO_CIA      :=GlbCodigoCia;
   frmContOrdenReg:=TfrmContOrdenReg.Create(Nil);
   try
     GLBMODULO_CNT := 2;
@@ -7060,7 +7060,7 @@ begin
   TIPO_DOCUMENTO_CNT :=2;//Entrada
   SISTEMA_CNT        :=9;//Transaccion Odenes de Compra
   SUBSISTEMA_CNT     :=1;
-  GLBCODIGO_CIA      :=1;
+  GLBCODIGO_CIA      :=GlbCodigoCia;
   frmContOrdenReg:=TfrmContOrdenReg.Create(Nil);
   try
     GLBMODULO_CNT := 2;
