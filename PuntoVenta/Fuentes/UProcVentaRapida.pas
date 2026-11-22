@@ -1778,6 +1778,18 @@ UDatModClientes,UDatModFactura,UDlgMotivoNCR,
 {$R *.dfm}
 
 
+function UsarCodigoTextoFerreteria(AFerreteria: Integer;
+  const ACodigo: string): Boolean;
+var Codigo: string;
+begin
+  Result := False;
+  if AFerreteria <> 1 then Exit;
+  Codigo := Trim(ACodigo);
+  if Length(Codigo) < 2 then Exit;
+  Result := (UpCase(Codigo[1]) in ['A'..'Z']) and
+    (Codigo[2] in ['0'..'9']);
+end;
+
 //Proceso de totales inicia
 function TfrmProcVentaRapida.TipoNCFPorDefecto: string;
 begin
@@ -13517,8 +13529,10 @@ end;
 procedure TfrmProcVentaRapida.AsignarSqlText(campo, valor,OrderBy: String);
 var
   nombProc:string;
+  PorCodigoTexto: Boolean;
 begin
   //LogProcedure('TfrmProcVentaRapida.AsignarSqlText');
+  PorCodigoTexto := (GlbFerreteria = 1) and (campo = 'CODIGO_TEXTO');
   qryProductos.DisableControls;
   if qryProductos.Active then
   qryProductos.Close;
@@ -13536,6 +13550,17 @@ begin
            'Left outer join TIPO_INVENTARIO tipo_inv on tipo_inv.CODIGO = inv.TIPO ' +
            ' WHERE INV.CIA_KEY=:CIAKEY ' +
            ' ORDER BY INV.codigo, INV.tipo,INV.descripcion, INV.Referencia', [nombProc, IntToStr(GlbCodDivInventario)]);
+  end else if PorCodigoTexto then
+  begin
+    qryProductos.SQL.Text :=
+      Format('Select INV.*, tipo_inv.Descripcion Desc_tipoInv ' +
+        'From %s(%s) INV ' +
+        'inner join TIPO_INVENTARIO tipo_inv on tipo_inv.CODIGO = inv.TIPO ' +
+        'WHERE INV.CIA_KEY=:CIAKEY ' +
+        'AND UPPER(INV.CODIGO_TEXTO) STARTING WITH :CODIGOTEXTO ' +
+        'ORDER BY INV.codigo, INV.tipo, INV.descripcion, INV.Referencia',
+        [nombProc, IntToStr(GlbCodDivInventario)]);
+    qryProductos.ParamByName('CODIGOTEXTO').AsString := UpperCase(Trim(valor));
   end else
   qryProductos.SQL.Text:=
   Format('Select INV.*,tipo_inv.Descripcion Desc_tipoInv ' +
@@ -13545,17 +13570,18 @@ begin
          ' WHERE inv.CIA_KEY=:CIAKEY ' +
          ' ORDER BY INV.codigo, INV.tipo,INV.descripcion, INV.Referencia',[nombProc, IntToStr(GlbCodDivInventario), Campo, Valor]) ;
 
-  qryProductos.Params[0].Value:= glbCia_Key;
+  qryProductos.ParamByName('CIAKEY').AsInteger := glbCia_Key;
   qryProductos.Open;
 
-  if (qryProductos.RecordCount = 0) and (campo <> '') then
+  if (qryProductos.RecordCount = 0) and (campo <> '') and
+     (not PorCodigoTexto) then
   begin
     qryProductos.SQL.Text:=
     Format('Select INV.*,tipo_inv.Descripcion Desc_tipoInv  From %s(%s) INV, TIPO_INVENTARIO tipo_inv ' +
         ' WHERE INV.CIA_KEY=:CIAKEY AND inv.tipo = tipo_inv.codigo AND UPPER(inv.%s) like %s ',[nombProc, IntToStr(GlbCodDivInventario), 'codigo_texto', Valor]) +
         ' ORDER BY INV.codigo, INV.tipo,INV.descripcion, INV.Referencia';
     qryProductos.Close;
-    qryProductos.Params[0].Value:= glbCia_Key;
+    qryProductos.ParamByName('CIAKEY').AsInteger := glbCia_Key;
     qryProductos.Open;
   end;
 
@@ -23301,6 +23327,9 @@ begin
 end;
 
 procedure TfrmProcVentaRapida.edtCodigoChange(Sender: TObject);
+var
+  PorCodigoTexto: Boolean;
+  CampoBusca, ValorBusca: string;
 begin
   //LogProcedure('TfrmProcVentaRapida.edtCodigoChange');
   //GlbCalculado
@@ -23320,7 +23349,17 @@ begin
   }
   //t procCalc := False;
   rxLabelVence.Visible:= False;
-  if LectorCodBarra1.Checked then Exit;
+  PorCodigoTexto := UsarCodigoTextoFerreteria(GlbFerreteria, edtCodigo.Text);
+  if LectorCodBarra1.Checked and (not PorCodigoTexto) then
+  begin
+    if qryProductos.Params.FindParam('CODIGOTEXTO') <> nil then
+    begin
+      BuscandoPorDesc := False;
+      noExiste := False;
+      Panel2.Visible := False;
+    end;
+    Exit;
+  end;
   BuscandoPorDesc:=False;
   if (dmInventario.qryTipoUnidad.State = dsInactive) then
   AbrirUnidades;
@@ -23380,12 +23419,21 @@ begin
   begin
     sqlAsignado    := False;
     BuscandoPorDesc:= True;
-    AsignarSqlText('Descripcion', chr(39) + '%' + edtCodigo.Text +'%'+chr(39),'');
+    if PorCodigoTexto then
+    begin
+      CampoBusca := 'CODIGO_TEXTO';
+      ValorBusca := Trim(edtCodigo.Text);
+    end else
+    begin
+      CampoBusca := 'Descripcion';
+      ValorBusca := chr(39) + '%' + edtCodigo.Text + '%' + chr(39);
+    end;
+    AsignarSqlText(CampoBusca, ValorBusca, '');
     if qryProductos.State = dsInactive then
     qryProductos.Open;
     qryProductos.First;
     qryProductos.RecordCount;
-    if qryProductos.Locate('Descripcion', edtCodigo.Text, [loCaseInsensitive, loPartialKey]) then
+    if qryProductos.Locate(CampoBusca, edtCodigo.Text, [loCaseInsensitive, loPartialKey]) then
     begin
       _UsarLevelPrecio:= qryProductosUSARLEVELPRECIO.Value;
       panelTempPrecioLevels.Visible:=true;
@@ -23568,7 +23616,8 @@ begin
   if (Pos('COTIZACI',uppercase(label36.Caption)) <= 0 )  then
   EsModificandoCotiza:=False;
 
-  if LectorCodBarra1.Checked OR imbBarcode.Visible then
+  if (LectorCodBarra1.Checked OR imbBarcode.Visible) and
+     (not UsarCodigoTextoFerreteria(GlbFerreteria, edtCodigo.Text)) then
   begin
     //if Not sqlAsignado then
     pesoProd :='';
