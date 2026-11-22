@@ -5,7 +5,8 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   DB, Dialogs, StdCtrls, Mask, DBCtrls, RxLookup, Buttons, Grids, DBGrids,
-  RXDBCtrl, RXCtrls, WinSkinData, RxMemDS, RxCalc;
+  RXDBCtrl, RXCtrls, WinSkinData, RxMemDS, RxCalc,
+  UPedidoRecepcionModelo, UPedidoRecepcionDatos;
 
 type
   TfrmPrecioUnidadNivel = class(TForm)
@@ -101,12 +102,28 @@ type
 var
   frmPrecioUnidadNivel: TfrmPrecioUnidadNivel;
   PrecioAnterior:Real;
+function EditarPreciosRecepcion(const Nombre:string;Costo:Currency;
+  Modo:TPedidoModoPrecio;var Precios:TPedidoPresentaciones;
+  const Unidades:TPedidoUnidades):Boolean;
+
 implementation
 
 uses UDatModInventario, UGlobal, UFormUnidades, USincronizarPrecioUnidadSurtidora,
-  UInventarioProd, UDatModConectar;
+  UInventarioProd, UDatModConectar, UPedidoPreciosBorrador;
 
 {$R *.dfm}
+
+// El constructor CreateNew evita cargar datasets/eventos de la ventana legacy.
+// En esta modalidad se edita una copia: ni GuardarPrecio ni sincronizacion se invocan.
+function EditarPreciosRecepcion(const Nombre:string;Costo:Currency;
+  Modo:TPedidoModoPrecio;var Precios:TPedidoPresentaciones;
+  const Unidades:TPedidoUnidades):Boolean;
+var F:TfrmPrecioUnidadNivel;
+begin
+  F:=TfrmPrecioUnidadNivel.CreateNew(nil);
+  try Result:=EditarPreciosPedido(F,Nombre,Costo,Modo,Precios,Unidades);
+  finally F.Free;end;
+end;
 
 
 procedure TfrmPrecioUnidadNivel.BitBtn5Click(Sender: TObject);

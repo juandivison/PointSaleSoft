@@ -1,0 +1,5 @@
+Build/
+*.dcu
+*.exe
+*.fdb
+*.res

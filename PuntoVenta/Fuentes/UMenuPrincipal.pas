@@ -528,6 +528,7 @@ type
     procedure BalanceenRuta1Click(Sender: TObject);
     procedure BeneficioBruto1Click(Sender: TObject);
     procedure RegistroPedidos1Click(Sender: TObject);
+    procedure RegistroPedidosNuevoClick(Sender: TObject);
     procedure PreciosProductos1Click(Sender: TObject);
     procedure VentaCajaxRuta1Click(Sender: TObject);
     procedure VentaCajaxRutaResumen1Click(Sender: TObject);
@@ -864,7 +865,7 @@ UfrmEcfCanalConfig, UInventarioProd, UTipoInventario,UConfirmaLicencia,
   uFormConsultaAvisoAtraso, URepItbisResXDia, UMostrarFinancVigente,
   UConfigRep, UFormAvisoAtraso, UFormRepXTipoInv, URepEstadoCtaCxc,
   uSelSingleFechaOpc, UFormEntreClave, URegMiscelaneos, UDatModCxp,
-  ULabelImpCodBarra, UCobrarFacturas, URegPedidoProv, UConectar,
+  ULabelImpCodBarra, UCobrarFacturas, URegPedidoProv, URegPedidoProvNuevo, UPedidoRecepcionModelo, UFormPrecioXUnidadNivel, UConectar,
   UTransNcNbDev, UFormTransCxcDbCr_r, UFactServicio, UFormServFijos,
   UFormSaldAntCxc, UDatModInventario,
   URepVencimientoProd, UProdVencidos, UPagarCXPFacturas,
@@ -1177,7 +1178,15 @@ var
   VInfo: TVersionInfo;
   FAppVer, FAppBuild : String;
   AvisoE : boolean;
+  MenuPedidoNuevo: TMenuItem;
 begin
+  MenuPedidoNuevo:=TMenuItem.Create(Self);
+  MenuPedidoNuevo.Name:='RegistroPedidosNuevo';
+  MenuPedidoNuevo.Caption:='Registro de pedidos (nuevo)';
+  MenuPedidoNuevo.Tag:=RegistroPedidos1.Tag;
+  MenuPedidoNuevo.OnClick:=RegistroPedidosNuevoClick;
+  RegistroPedidos1.Parent.Insert(RegistroPedidos1.MenuIndex,MenuPedidoNuevo);
+  RegistroPedidos1.Caption:='Registro de pedidos (legacy)';
   Application.MainForm.Caption := 'ERP Enterprise System';
   //El folder informe debe estar en la carpeta BIN\Informes
   //Aqui seran guardados los reportes cuando se a indicado que se guarde.
@@ -2865,6 +2874,32 @@ begin
   frmSelFecha.Free;
   frmSelFecha:=Nil;
   end;
+end;
+
+function ResolverTasaRecepcionPedido(Fecha:TDateTime;Codigo:Integer):Double;
+begin Result:=FGlbPorcItbi(Fecha,Codigo);end;
+
+procedure TfrmMenuPrincipal.RegistroPedidosNuevoClick(Sender: TObject);
+var F:TfrmRegPedidoProvNuevo;Modo:TPedidoModoPrecio;
+begin
+  if not RegistroPedidos1.Enabled or not RegistroPedidos1.Visible then Exit;
+  if GlbUsaPUnidadLevel=1 then Modo:=ppPresentaciones
+  else if glbUsaescalaPrecio=1 then Modo:=ppNiveles else Modo:=ppSimple;
+  F:=TfrmRegPedidoProvNuevo.Create(nil);
+  try
+    F.ResolverTasa:=ResolverTasaRecepcionPedido;
+    F.OnEditarPrecios:=EditarPreciosRecepcion;
+    F.Configurar(dmConectar.IBDatabase1,glbCia_Key,GlbCodDivInventario,
+      VarUsuarioGlb,GlbFechaTrnDiaria,Modo,StrUserName,GlbAlmacen,GlbFechaVencProducto=1);
+    dmUsuarios.qryRoles.Close;dmUsuarios.qryRoles.Params[0].Value:=VarUsuarioGlb;
+    dmUsuarios.qryRoles.Open;dmUsuarios.qryRoles.First;
+    while not dmUsuarios.qryRoles.Eof do begin
+      ActivaPermiso(TForm(F),1000,dmUsuarios.qryRolesID_ROL.Value,0);
+      dmUsuarios.qryRoles.Next;
+    end;
+    F.AplicarPermisosCaptura;
+    F.ShowModal;
+  finally F.Free;end;
 end;
 
 procedure TfrmMenuPrincipal.RegistroPedidos1Click(Sender: TObject);
