@@ -300,7 +300,7 @@ uses
   UFormProductosServicios, UEcfReservaGastos, UUtilecfGastos,
   UEcfEnvioGastos, UAsignarTerritorioProveedorECF,
   UEcfGastoImpresion, UGastoTxtEcfFlow, UEcfApiRutaGastos,
-  UFormProveedores, UEcfGuardarDataset, UEcfGastoXml, UEcfGastoRecuperacion;
+  UFormProveedores, UEcfGuardarDataset, UEcfGastoXml, UEcfGastoRecuperacion, UEcfGastoPresentacion;
 
 {$R *.dfm}
 
@@ -532,6 +532,8 @@ procedure TfrmRegTransOpeDiariaECF.InicializarConsulta;
 var
   FechaBase: TDateTime;
 begin
+  qryConsultaTransacciones.Close;
+  qryConsultaTransacciones.SQL.Text := SqlConsultaGastosEcf;
   FechaBase := GlbFechaTrnDiaria;
   if FechaBase <= 0 then
     FechaBase := Date;
@@ -2362,7 +2364,12 @@ begin
       FTrackIdEnvio := qryEstadoEnvio.FieldByName('TRACK_ID').AsString;
       lblEstadoDgii.Caption := FEstadoEnvio;
       lblTrackId.Caption := FTrackIdEnvio;
-      memoMensajeDgii.Text := qryEstadoEnvio.FieldByName('MENSAJE').AsString;
+      memoMensajeDgii.Text := FormatearMensajeDgiiGasto(
+        FEstadoEnvio,FTrackIdEnvio,
+        dtmTransOpeDiaria.tblRegTransOpeDiariaMastECF.AsString,
+        qryEstadoEnvio.FieldByName('MENSAJE').AsString);
+      memoMensajeDgii.SelStart := 0;
+      memoMensajeDgii.Perform(EM_SCROLLCARET,0,0);
     end
     else if EstaReservado then
       lblEstadoDgii.Caption := 'RESERVADO';
@@ -3293,37 +3300,37 @@ begin
         'Sustituciones autorizadas: ' +
         IntToStr(Reasignaciones);
 
-    MessageDlg(Mensaje, mtInformation, [mbOK], 0);
+    MostrarAvisoGasto(Handle, Mensaje, mtInformation);
   end
   else if (Pos('IN_PROCESS', Estado) > 0) or
           (Pos('EN PROCESO', Estado) > 0) then
-    MessageDlg(
+    MostrarAvisoGasto(Handle,
       'El e-CF permanece EN PROCESO.' + #13#10 +
       'e-NCF: ' + Resultado.ENCF + #13#10 +
       'TrackId: ' + Resultado.TrackId + #13#10 +
       Resultado.Mensaje,
-      mtInformation, [mbOK], 0)
+      mtInformation)
   else if ResultadoEsRechazadoConTrackId(Resultado) then
-    MessageDlg(
+    MostrarAvisoGasto(Handle,
       'El e-CF fue RECHAZADO por DGII.' + #13#10 +
       'TrackId: ' + Resultado.TrackId + #13#10 +
       Resultado.Mensaje + #13#10#13#10 +
       'Corrija el documento. En el próximo envío PointSaleSoft ' +
       'pedira autorizacion antes de asignar otra secuencia.',
-      mtError, [mbOK], 0)
+      mtError)
   else if ResultadoEsRechazadoSinTrackId(Resultado) then
-    MessageDlg(
+    MostrarAvisoGasto(Handle,
       'El e-CF fue RECHAZADO sin TrackId.' + #13#10 +
       Resultado.Mensaje + #13#10#13#10 +
       'Corrija el documento y vuelva a enviar. Se conservará la misma ' +
       'secuencia porque no existe evidencia de recepción DGII.',
-      mtError, [mbOK], 0)
+      mtError)
   else
-    MessageDlg(
+    MostrarAvisoGasto(Handle,
       'El e-CF no fue aceptado.' + #13#10 +
       'Estado: ' + Resultado.Estado + #13#10 +
       Resultado.Mensaje,
-      mtError, [mbOK], 0);
+      mtError);
 end;
 
 procedure TfrmRegTransOpeDiariaECF.btnRecargarSeriesClick(Sender: TObject);

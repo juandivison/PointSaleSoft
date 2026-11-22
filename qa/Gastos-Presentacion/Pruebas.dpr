@@ -1,0 +1,66 @@
+program Pruebas;
+{$APPTYPE CONSOLE}
+uses SysUtils,Classes,Windows,Dialogs,IBDatabase,IBQuery,UEcfGastoPresentacion;
+var D:TIBDatabase;T:TIBTransaction;Q:TIBQuery;L,Estados:TStringList;N,Rows:Integer;
+  Msg,Raw,Original,Code:string;Owner:HWND;Flags:UINT;
+procedure Check(B:Boolean;const S:string);begin if not B then raise Exception.Create(S);Inc(N);WriteLn('PASS ',S);end;
+function FakeDialog(AOwner:HWND;const ATexto,ATitulo:string;AFlags:UINT):Integer;
+begin Owner:=AOwner;Flags:=AFlags;Result:=IDOK;end;
+function Valor(const S,K:string):string;var A,B:Integer;
+begin A:=Pos(K+'=',S)+Length(K)+1;B:=A;while(B<=Length(S))and(S[B]<>#39)do Inc(B);Result:=Copy(S,A,B-A);end;
+begin
+try
+ Check(MostrarAvisoGasto(12345,'Aceptado',mtInformation,FakeDialog)=IDOK,'confirmacion retorna OK');
+ Check(Owner=12345,'dialogo usa la ventana del gasto como propietario');
+ Check((Flags and MB_SETFOREGROUND)<>0,'dialogo solicita primer plano');
+ Check((Flags and MB_TASKMODAL)<>0,'confirmacion modal asociada a la tarea');
+ Check((Flags and MB_TOPMOST)=0,'no deja ventana siempre encima de otras aplicaciones');
+ Check((Flags and $F0)=MB_ICONINFORMATION,'icono informativo para aceptado');
+ MostrarAvisoGasto(456,'Error',mtError,FakeDialog);Check((Owner=456)and((Flags and $F0)=MB_ICONERROR),'rechazo conserva propietario e icono de error');
+ MostrarAvisoGasto(456,'Aviso',mtWarning,FakeDialog);Check((Flags and $F0)=MB_ICONWARNING,'advertencia conserva icono');
+ Raw:='D7G|ACEPTADO|{"trackId":"QA-INITIAL","codigo":"3","estado":"En Proceso","encf":"E439999999992"}|QA-INITIAL|E439999999992';Original:=Raw;
+ Msg:=FormatearMensajeDgiiGasto('ACEPTADO','QA-FINAL','E439999999992',Raw);
+ Check(Pos('Estado actual: ACEPTADO',Msg)=1,'estado actual visible primero');
+ Check(Pos('e-NCF: E439999999992',Msg)>0,'memo identifica documento');
+ Check(Pos('TrackId: QA-FINAL',Msg)>0,'memo muestra TrackId del historial actual');
+ Check(Pos('Codigo de respuesta: 3',Msg)>0,'codigo proveedor etiquetado');
+ Check(Pos('Estado reportado: En Proceso',Msg)>0,'respuesta recibida diferenciada del estado actual');
+ Check(Pos('una respuesta anterior',Msg)>0,'aceptacion no se confunde con proceso inicial');
+ Check((Pos('D7G|',Msg)=0)and(Pos('{"',Msg)=0),'memo no muestra protocolo ni JSON crudo');
+ Check(Raw=Original,'formato no altera mensaje original');
+ Check(Pos(#13#10,Msg)>0,'salida distribuida en lineas');
+ Msg:=FormatearMensajeDgiiGasto('RECHAZADO','QA','E419999999991','{"codigo":2,"mensajes":["Falta provincia","Documento invalido"]}');
+ Check((Pos('Falta provincia',Msg)>0)and(Pos('Documento invalido',Msg)>0),'lista de errores legible');
+ Msg:=FormatearMensajeDgiiGasto('RECHAZADO','','','{"mensaje":"Validaci\u00f3n local"}');
+ Check(Pos('Validaci'+Chr(243)+'n local',Msg)>0,'escapes Unicode se muestran en texto');
+ Msg:=FormatearMensajeDgiiGasto('RESERVADO','','','Sin enviar.');Check(Pos('Sin enviar.',Msg)>0,'mensaje simple se conserva');
+ Msg:=FormatearMensajeDgiiGasto('EN PROCESO','','','');Check(Msg='Estado actual: EN PROCESO','sin inventar mensaje cuando esta vacio');
+ Msg:=FormatearMensajeDgiiGasto('ERROR','','','{"codigo":');Check(Pos('Estado actual: ERROR',Msg)=1,'JSON incompleto no rompe presentacion');
+ D:=TIBDatabase.Create(nil);T:=TIBTransaction.Create(nil);Q:=TIBQuery.Create(nil);L:=TStringList.Create;Estados:=TStringList.Create;
+ try
+  L.LoadFromFile(GetEnvironmentVariable('PSS_TEST_DFM'));
+  D.DatabaseName:='localhost:'+ParamStr(1);D.SQLDialect:=1;D.LoginPrompt:=False;
+  D.Params.Values['user_name']:=Valor(L.Text,'user_name');D.Params.Values['password']:=Valor(L.Text,'password');D.Connected:=True;
+  T.DefaultDatabase:=D;Q.Database:=D;Q.Transaction:=T;T.StartTransaction;
+  Q.SQL.Text:=SqlConsultaGastosEcf;
+  Q.ParamByName('CIA_KEY').AsInteger:=1;Q.ParamByName('FECHA_DESDE').AsDateTime:=EncodeDate(2026,11,20);Q.ParamByName('FECHA_HASTA').AsDateTime:=EncodeDate(2026,11,21);Q.Open;
+  Rows:=0;while not Q.Eof do begin Inc(Rows);Code:=Q.FieldByName('NUMERO').AsString;
+   Check(Estados.IndexOfName(Code)<0,'sin filas duplicadas para gasto '+Code);
+   Estados.Add(Code+'='+Q.FieldByName('ESTADO_ECF').AsString);Q.Next;
+  end;
+  Check(Rows=6,'filtros por compania fecha y tipos E41 E43');
+  Check(Estados.Values['9001']='ACEPTADO','historial reciente prevalece sobre reserva');
+  Check(Estados.Values['9002']='RESERVADO','reserva con ID positivo aparece');
+  Check(Estados.IndexOfName('9003')>=0,'borrador sin proveedor o reserva no desaparece');
+  Check(Estados.Values['9003']='','no inventa estado para borrador');
+  Check(Estados.Values['9008']='RESERVADO','no usa aceptacion de secuencia anterior');
+  Check(Estados.Values['9009']='RECHAZADO','historial vacio permite respaldo de reserva');
+  Check(Estados.Values['9010']='','no cruza reserva de otra compania o transaccion');
+  Check((Estados.IndexOfName('9004')<0)and(Estados.IndexOfName('9005')<0),'excluye otra compania y tipo distinto');
+  Check((Estados.IndexOfName('9006')<0)and(Estados.IndexOfName('9007')<0),'rango final exclusivo');
+  Q.Close;T.Rollback;
+  Check(Pos('r.ID < 0',SqlConsultaGastosEcf)=0,'consulta no excluye IDs positivos');
+  WriteLn('PRESENTACION_GASTOS=PASS; CHECKS=',N,'; HTTP=0; EMISION=0; BASE_COMERCIAL=0');
+ finally if T.InTransaction then T.Rollback;Q.Free;T.Free;D.Free;L.Free;Estados.Free;end;
+except on E:Exception do begin WriteLn('FAIL ',E.Message);Halt(1);end;end;
+end.

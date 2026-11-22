@@ -177,7 +177,7 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
     Top = 126
     Width = 1112
     Height = 603
-    ActivePage = tsRevision
+    ActivePage = tsDatos
     Align = alClient
     TabOrder = 2
     OnChange = pcPrincipalChange
@@ -1187,7 +1187,7 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
         Left = 666
         Top = 276
         Width = 430
-        Height = 290
+        Height = 322
         Caption = 'Estado de ASLAN / DGII'
         TabOrder = 3
         object lblEstadoDgiiTitulo: TLabel
@@ -1228,14 +1228,14 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
           Left = 16
           Top = 84
           Width = 398
-          Height = 56
+          Height = 88
           ReadOnly = True
           ScrollBars = ssVertical
           TabOrder = 0
         end
         object chkDescargarXmlFirmado: TCheckBox
           Left = 16
-          Top = 148
+          Top = 180
           Width = 214
           Height = 17
           Caption = 'Descargar XML firmado'
@@ -1246,7 +1246,7 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
         end
         object btnRecuperarTimbre: TBitBtn
           Left = 16
-          Top = 174
+          Top = 206
           Width = 194
           Height = 32
           Caption = 'Recuperar timbre'
@@ -1256,7 +1256,7 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
         end
         object btnDescargarXmlFirmado: TBitBtn
           Left = 220
-          Top = 174
+          Top = 206
           Width = 194
           Height = 32
           Caption = 'Descargar XML firmado'
@@ -1266,7 +1266,7 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
         end
         object btnImprimirEcf: TBitBtn
           Left = 16
-          Top = 220
+          Top = 252
           Width = 398
           Height = 40
           Caption = 'Imprimir / PDF / Email'
@@ -1516,16 +1516,23 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
     CachedUpdates = False
     SQL.Strings = (
       'select m.NUMERO, m.FECHA, m.TIPO_CF, m.ECF, m.COD_PROVEEDOR,'
-      '       p.DESCRIPCION as PROVEEDOR, m.MONTO, m.STATUS,'
-      '       r.ESTADO as ESTADO_ECF'
+      ' p.DESCRIPCION as PROVEEDOR, m.MONTO, m.STATUS,'
+      ' coalesce('
+      '  (select first 1 nullif(trim(g.ESTADO), '''') from ECF_GASTO_ENVIO g'
+      '   where g.CIA_KEY=m.CIA_KEY and g.TRN=m.NUMERO and g.ENCF=m.ECF'
+      '   order by coalesce(g.FECHA_UPDATE,g.FECHA_CREACION) desc, g.ID desc),'
+      '  (select first 1 nullif(trim(r.ESTADO), '''') from ECF_RESERVA r'
+      '   where r.NCF=m.ECF and r.HASH_DOC='
+      '    ''GASTO|CIA=''||trim(cast(m.CIA_KEY as varchar(11)))||'
+      '    ''|TRN=''||trim(cast(m.NUMERO as varchar(11)))||'
+      '    ''|TIPO=''||trim(cast(m.TIPO_CF as varchar(2)))'
+      '   order by r.ID desc)) as ESTADO_ECF'
       'from TRANS_OPERACION_MASTER m'
-      'left join PROVEEDORES p on p.CODIGO_CTE = m.COD_PROVEEDOR'
-      'left join ECF_RESERVA r on r.NCF = m.ECF and r.ID < 0'
-      'where m.CIA_KEY = :CIA_KEY'
-      '  and m.FECHA >= :FECHA_DESDE'
-      '  and m.FECHA < :FECHA_HASTA'
-      '  and m.TIPO_CF in ('#39'41'#39', '#39'43'#39')'
-      'order by m.FECHA desc, m.NUMERO desc')
+      'left join PROVEEDORES p on p.CODIGO_CTE=m.COD_PROVEEDOR'
+      'where m.CIA_KEY=:CIA_KEY'
+      ' and m.FECHA>=:FECHA_DESDE and m.FECHA<:FECHA_HASTA'
+      ' and m.TIPO_CF in (''41'',''43'')'
+      'order by m.FECHA desc,m.NUMERO desc')
     Left = 280
     Top = 680
     ParamData = <
@@ -1547,7 +1554,7 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
   end
   object dsConsultaTransacciones: TDataSource
     DataSet = qryConsultaTransacciones
-    Left = 328
-    Top = 680
+    Left = 416
+    Top = 640
   end
 end
