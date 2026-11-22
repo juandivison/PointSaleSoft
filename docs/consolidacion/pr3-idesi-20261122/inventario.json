@@ -1,0 +1,151 @@
+{
+  "pr": "https://github.com/juandivison/IdesiToolECF/pull/3",
+  "head_origen": "08cfda5daf10c161baea522409c2a6c1d11c76b4",
+  "total": 24,
+  "artefactos": [
+    {
+      "origen": "docs/operacion/CP3-SECUENCIAS-ECF-MYSQL56-QA.sql",
+      "sha256_origen": "bf64acee9ada8bb2b97d97cb3aa62ce991a5c7a46ff54237df6986e4c3e6fc0c",
+      "destino": "docs/operacion/CP3-SECUENCIAS-ECF-MYSQL56-QA.sql",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "docs/operacion/ROADMAP-POINTSALESOFT-SECUENCIAS-ECF-MULTISUCURSAL-20261115.md",
+      "sha256_origen": "0bc181a75a122958a146670fb0ffe3308c10f4686440414cd257aa1e069e4382",
+      "destino": "docs/operacion/ROADMAP-POINTSALESOFT-SECUENCIAS-ECF-MULTISUCURSAL-20261115.md",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/CP4-USUARIO-API-QA.sql",
+      "sha256_origen": "93c0ab98901ab27be66bb17d8fbe27dedaad826ee3762631b146188eacde5081",
+      "destino": "qa/pointsalesoft-secuencias/CP4-USUARIO-API-QA.sql",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/CP4-VENCIMIENTO-QA.sql",
+      "sha256_origen": "48d77f787c6623dbdb18b5116f3591bbca91e90ad96568dda387f691873389d9",
+      "destino": "qa/pointsalesoft-secuencias/CP4-VENCIMIENTO-QA.sql",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/CP5-COLA-FB25.sql",
+      "sha256_origen": "f791853f3e1daa4837aaa55806238b6423c421ce1c98f23f1d86253a4ed80830",
+      "destino": "qa/pointsalesoft-secuencias/delphi/CP5-COLA-FB25.sql",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/CP5-NCF-LOCAL-FB25.sql",
+      "sha256_origen": "f2cdafca5e566ed79e029d936d3be40ada4a1d7a98dcd1ec6b97828ba49c834a",
+      "destino": "qa/pointsalesoft-secuencias/delphi/CP5-NCF-LOCAL-FB25.sql",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/CP5-VENTAS-PENDIENTES.patch",
+      "sha256_origen": "bb485994ea64affd272c1c41ebc84968b61626f7d9d390cfefb782c75451af70",
+      "destino": "qa/pointsalesoft-secuencias/delphi/CP5-VENTAS-PENDIENTES.patch",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/CP5ColaQA.dpr",
+      "sha256_origen": "cd53e1c5c2b841121e246dabe58890ad9bcf54b7bc52066346fe07eb3151c7c9",
+      "destino": "qa/pointsalesoft-secuencias/delphi/CP5ColaQA.dpr",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/UEcfSecuenciaCola.pas",
+      "sha256_origen": "904fc5bd9fc1542a95a66f0a9958e5f1e8bbf2c32ca1d1bb9e1e26074913206a",
+      "destino": "PuntoVenta/Fuentes/UEcfSecuenciaCola.pas",
+      "preexistente_identico_crlf": true
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/UEcfSecuenciaRemota.pas",
+      "sha256_origen": "10db7481878adc20aa96710dd2d470334b8fa274e18725f204452ac9c529f4ea",
+      "destino": "PuntoVenta/Fuentes/UEcfSecuenciaRemota.pas",
+      "preexistente_identico_crlf": true
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/UEcfSecuenciaVenta.pas",
+      "sha256_origen": "b35ef30b295e2dc8c800b6525cb0442b92f7efe47667d6d4423b8331655f3565",
+      "destino": "PuntoVenta/Fuentes/UEcfSecuenciaVenta.pas",
+      "preexistente_identico_crlf": true
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/auditoria/AUDITORIA-GASTOS.patch",
+      "sha256_origen": "06c0c1608c84b39899d325c584752612b28847d4a128a03bbfe3b1fe46d0d08a",
+      "destino": "qa/pointsalesoft-secuencias/delphi/auditoria/AUDITORIA-GASTOS.patch",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/auditoria/PARIDAD-GASTOS.patch",
+      "sha256_origen": "3408afcdc05cb0aba07886642541c99755fa9d4993781d7495e6a4c2290a57aa",
+      "destino": "qa/pointsalesoft-secuencias/delphi/auditoria/PARIDAD-GASTOS.patch",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/auditoria/README.md",
+      "sha256_origen": "27da55b6d649685d2c792da45ff3cb43a9cf7c2511cc05c7babcc687983b66bd",
+      "destino": "qa/pointsalesoft-secuencias/delphi/auditoria/README.md",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/auditoria/XML-FIRMADO-DEFAULT.patch",
+      "sha256_origen": "01fd98a0e15fa9276cdfdd9f7710da14d0d1c8b7fb1947b89e52bed46b2d2581",
+      "destino": "qa/pointsalesoft-secuencias/delphi/auditoria/XML-FIRMADO-DEFAULT.patch",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/https/CP5ConexionDelphiQA.dpr",
+      "sha256_origen": "12e6cacf419505f5188d9e646cf1c923a2ab6bccbcd129077885cb844a3ec3f4",
+      "destino": "qa/pointsalesoft-secuencias/delphi/https/CP5ConexionDelphiQA.dpr",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/https/CP5HttpsLocalQA.dpr",
+      "sha256_origen": "89f950cac201452bad958715c9fdf3e24e04801f4452bda1f3dbc16df4886c5b",
+      "destino": "qa/pointsalesoft-secuencias/delphi/https/CP5HttpsLocalQA.dpr",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/https/Preparar-CP5-QA.ps1",
+      "sha256_origen": "b7c5e8447e5db1f02adc6475c7683457425638739aba5ee0471424109ee37510",
+      "destino": "qa/pointsalesoft-secuencias/delphi/https/Preparar-CP5-QA.ps1",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/https/UEcfApiCredencialesIni.pas.patch",
+      "sha256_origen": "373d286d40fa50a7332179f146e21116c0afe098421c0e50a3a63a47385e9c47",
+      "destino": "qa/pointsalesoft-secuencias/delphi/https/UEcfApiCredencialesIni.pas.patch",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/https/UFacturaTxtBuilder.pas.patch",
+      "sha256_origen": "d770f79b2c392e21618a74b322af278d1a9fa3abf3b5acbb73c98b77d43e710d",
+      "destino": "qa/pointsalesoft-secuencias/delphi/https/UFacturaTxtBuilder.pas.patch",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/delphi/https/UProcVentaRapida.pas.patch",
+      "sha256_origen": "1549a81d17341888388ef9cdbeeaa48aaa08a38916d0a933227487f125f1e157",
+      "destino": "qa/pointsalesoft-secuencias/delphi/https/UProcVentaRapida.pas.patch",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/ecf-cp4-qa.ini.example",
+      "sha256_origen": "bfa0dd18b66962eee61fc59ce14acfd2ac1b5b94e91c641536519697d1902a7e",
+      "destino": "qa/pointsalesoft-secuencias/ecf-cp4-qa.ini.example",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/ecf-cp4-qa.php",
+      "sha256_origen": "ae09438e8ce14f75a4185ad585c2014f6fb8475d5264ab0b4d545310f0d6def1",
+      "destino": "qa/pointsalesoft-secuencias/ecf-cp4-qa.php",
+      "preexistente_identico_crlf": false
+    },
+    {
+      "origen": "qa/pointsalesoft-secuencias/impresion/BANCO-AYACO-TAPICERIA.patch",
+      "sha256_origen": "c5a5f05fe98aa37af5cba2ffb106daecd786f70c1cb5daadb53b9d204945d921",
+      "destino": "qa/pointsalesoft-secuencias/impresion/BANCO-AYACO-TAPICERIA.patch",
+      "preexistente_identico_crlf": false
+    }
+  ]
+}

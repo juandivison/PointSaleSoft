@@ -17,8 +17,41 @@ function RestaurarTimbrePorEncf(DB:TIBDatabase;const Encf,ExePath:string;out Men
 procedure CrearImagenQrTimbre(const Url,Destino:string);
 procedure PersistirResultadoFiscalVenta(DB:TIBDatabase;Trn:Integer;
   const Encf,Estado,TrackId,Mensaje:string);
+procedure ValidarIdentidadResultadoNormal(DB:TIBDatabase;Trn:Integer;
+  const Encf,ExePath,Retorno:string);
 implementation
 uses IBQuery, ComObj, Variants, UEcfApiGastoArtefactos, DelphiZXingQRCode, Graphics, JPEG, Windows;
+
+procedure ValidarIdentidadResultadoNormal(DB:TIBDatabase;Trn:Integer;
+  const Encf,ExePath,Retorno:string);
+var Tx:TIBTransaction;Q:TIBQuery;T:TTimbreVentaLocal;Rnc,LocalEncf,ConfigRnc:string;
+  L:TStringList;TieneTimbre:Boolean;
+begin
+  if (DB=nil) or not DB.Connected or (Trn<=0) then raise Exception.Create('Identidad local requerida');
+  TieneTimbre:=LeerRetornoTimbre(Retorno,T);
+  ConfigRnc:='';L:=TStringList.Create;
+  try
+    if FileExists(ExtractFilePath(ExePath)+'estandar_appsettings.json') then begin
+      L.LoadFromFile(ExtractFilePath(ExePath)+'estandar_appsettings.json');
+      ConfigRnc:=Trim(CampoJson(L.Text,'RncEmisor'));
+    end;
+  finally L.Free;end;
+  if not TieneTimbre and (ConfigRnc='') then
+    raise Exception.Create('JSON sin identidad de empresa verificable; conciliar sin reenviar');
+  Tx:=TIBTransaction.Create(nil);Q:=TIBQuery.Create(nil);
+  try
+    Tx.DefaultDatabase:=DB;Tx.Params.Add('read_committed');Tx.Params.Add('rec_version');Tx.Params.Add('nowait');
+    Q.Database:=DB;Q.Transaction:=Tx;Tx.StartTransaction;
+    Q.SQL.Text:='SELECT N.NUMERO_NCF,C.RNC_NUMERO FROM VENTAS_MAST V JOIN NCF_ASIGNADOS N ON N.SERIE=V.SERIE_NCF_ASIGNADO JOIN COMPANIA C ON C.CODIGO=V.CIA_KEY WHERE V.NUMERO=:T';
+    Q.ParamByName('T').AsInteger:=Trn;Q.Open;
+    if Q.Eof then raise Exception.Create('Venta/reserva/empresa ausente para JSON fiscal');
+    LocalEncf:=Trim(Q.Fields[0].AsString);Rnc:=Trim(Q.Fields[1].AsString);
+    if (Encf<>LocalEncf) or (Rnc='') then raise Exception.Create('JSON fiscal de otra venta');
+    if (ConfigRnc<>'') and (ConfigRnc<>Rnc) then raise Exception.Create('Motor configurado para otra empresa');
+    if TieneTimbre and ((T.Encf<>Encf) or (T.Rnc<>Rnc)) then raise Exception.Create('Timbre JSON de otra empresa/e-NCF');
+    Q.Close;Tx.Rollback;
+  finally if Tx.InTransaction then Tx.Rollback;Q.Free;Tx.Free;end;
+end;
 
 procedure PersistirResultadoFiscalVenta(DB:TIBDatabase;Trn:Integer;
   const Encf,Estado,TrackId,Mensaje:string);

@@ -50,7 +50,7 @@ procedure PrepareFreshFacturaTxtArtifacts(const AArtifactDir: string);
 implementation
 
 uses
-  UGlobal, UUtilecftimbre, UEcfTimbreVentaLocal, UDatModConectar;
+  UGlobal, UUtilecftimbre, UEcfTimbreVentaLocal, UDatModConectar, UEcfResultadoNormalJson;
 
 function UnescapePipes(const S: string): string;
 begin
@@ -340,7 +340,7 @@ var
   Estado, Mensaje, TrackId, Encf: string;
   ReturnTimbre, TimbreAviso, PersistAviso: string;
   InicioArtefactos:TDateTime;
-  TieneD7:Boolean;
+  TieneD7,TieneJson:Boolean;
 
   function StartsWith(const S, Prefix: string): Boolean;
   begin
@@ -521,15 +521,20 @@ begin
     end;
 
     TieneD7:=Estado<>'';
+    TieneJson:=False;
+    if not TieneD7 then
+      TieneJson:=LeerResultadoNormalJson(OutAll,Estado,Mensaje,TrackId,Encf);
     // 2) Si no hubo D7|, aplicar parser de respaldo sobre todo el log
     if Estado = '' then
       FallbackParse(OutAll, Estado, Mensaje, Encf);
 
     PersistAviso:='';
-    if TieneD7 then
-      try PersistirResultadoFiscalVenta(dmConectar.IBDatabase1,StrToIntDef(TRN,0),Encf,Estado,TrackId,Mensaje);
+    if TieneD7 or TieneJson then
+      try
+        if TieneJson then ValidarIdentidadResultadoNormal(dmConectar.IBDatabase1,StrToIntDef(TRN,0),Encf,ExePath,ReturnTimbre);
+        PersistirResultadoFiscalVenta(dmConectar.IBDatabase1,StrToIntDef(TRN,0),Encf,Estado,TrackId,Mensaje);
       except on E:Exception do PersistAviso:='Persistencia Firebird pendiente: '+E.Message;end
-    else PersistAviso:='Persistencia Firebird pendiente: resultado sin protocolo D7.';
+    else PersistAviso:='Persistencia Firebird pendiente: resultado sin D7 ni JSON fiscal valido.';
     // 3) Mensaje final al usuario
     if not AnsiSameText(Estado, 'ACEPTADO') then
     begin

@@ -1,0 +1,916 @@
+diff --git a/PuntoVenta/Fuentes/UEcfEnvioGastos.pas b/PuntoVenta/Fuentes/UEcfEnvioGastos.pas
+index 7180c23..aca99f8 100644
+--- a/PuntoVenta/Fuentes/UEcfEnvioGastos.pas
++++ b/PuntoVenta/Fuentes/UEcfEnvioGastos.pas
+@@ -265,6 +265,11 @@ var
+   Estado: string;
+ begin
+   Estado := UpperCase(Trim(AResultado.Estado));
++  if (Estado <> 'RECHAZADO') and (Estado <> 'SECUENCIA_USADA') then
++  begin
++    Result := False;
++    Exit;
++  end;
+ 
+   Result :=
+     (Estado = 'SECUENCIA_USADA') or
+@@ -292,25 +297,15 @@ begin
+ end;
+ 
+ function EstadoNormalizado(const AEstado: string): string;
+-var
+-  S: string;
++var S: string;
+ begin
+   S := UpperCase(Trim(AEstado));
+-
+-  if Pos('ACEPTADO', S) > 0 then
+-    Result := 'ACEPTADO'
+-  else if Pos('SECUENCIA_USADA', S) > 0 then
+-    Result := 'SECUENCIA_USADA'
+-  else if (Pos('IN_PROCESS', S) > 0) or
+-          (Pos('EN PROCESO', S) > 0) or
+-          (Pos('PENDIENTE', S) > 0) then
+-    Result := 'IN_PROCESS'
+-  else if Pos('RECH_LOCAL', S) > 0 then
+-    Result := 'RECH_LOCAL'
+-  else if Pos('RECHAZADO', S) > 0 then
+-    Result := 'RECHAZADO'
+-  else
+-    Result := 'ERROR';
++  if (S = 'ACEPTADO') or (S = 'ACEPTADO CONDICIONAL') then Result := 'ACEPTADO'
++  else if (S = 'IN_PROCESS') or (S = 'EN PROCESO') or (S = 'PENDIENTE') then Result := 'IN_PROCESS'
++  else if (S = 'SECUENCIA_USADA') or (S = 'RECH_LOCAL') or
++          (S = 'RECHAZADO') or (S = 'NOT_FOUND') or (S = 'NO_CONFIRMADO') or
++          (S = 'ERROR') then Result := S
++  else Result := 'NO_CONFIRMADO';
+ end;
+ 
+ function MensajeCompletoParaPersistir(
+diff --git a/PuntoVenta/Fuentes/UGastoTxtEcfFlow.pas b/PuntoVenta/Fuentes/UGastoTxtEcfFlow.pas
+index c75e35d..6636111 100644
+--- a/PuntoVenta/Fuentes/UGastoTxtEcfFlow.pas
++++ b/PuntoVenta/Fuentes/UGastoTxtEcfFlow.pas
+@@ -518,8 +518,7 @@ begin
+         'IdesiToolECF.exe no devolvio una respuesta D7G valida para Gastos.txt.';
+     end;
+ 
+-    if EsMensajeSecuenciaUtilizada(AResultado.Mensaje) or
+-       EsMensajeSecuenciaUtilizada(AResultado.SalidaCompleta) then
++    if ResultadoRequiereReasignacionSecuencia(AResultado, '') then
+     begin
+       AResultado.Estado := 'SECUENCIA_USADA';
+       if Trim(AResultado.Mensaje) = '' then
+diff --git a/Services/Gastos/GastoEcfProcessor.cs b/Services/Gastos/GastoEcfProcessor.cs
+index 032ec94..e766ae6 100644
+--- a/Services/Gastos/GastoEcfProcessor.cs
++++ b/Services/Gastos/GastoEcfProcessor.cs
+@@ -86,36 +86,26 @@ namespace IdesiToolECF.Services.Gastos
+             if (saveDebugArtifacts)
+                 TrySaveRequestJson(workDirectory, extraction, logger);
+ 
++            var observedTrackId = string.Empty;
+             try
+             {
+                 cancellationToken.ThrowIfCancellationRequested();
+ 
+                 var preflight = await _service
+-                    .GetStatusByENCFAsync(extraction.Master.RncEmisor, extraction.Master.ENcf)
++                    .GetStatusByENCFAsync(extraction.Master.RncEmisor, extraction.Master.ENcf, requireConclusive: true)
+                     .ConfigureAwait(false);
+ 
+                 if (preflight != null)
+                 {
++                    observedTrackId = preflight.TrackId ?? string.Empty;
++                    if (!string.IsNullOrWhiteSpace(preflight.Encf) &&
++                        !string.Equals(preflight.Encf.Trim(), extraction.Master.ENcf, StringComparison.OrdinalIgnoreCase))
++                        throw new InvalidOperationException("La consulta previa devolvio otro e-NCF; no reenviar.");
+                     var preflightState = NormalizeStatus(preflight.Estado);
+                     logger.Info(
+                         $"Preflight ASLAN/DGII. Estado={preflightState} " +
+                         $"TrackId={preflight.TrackId} ENCF={preflight.Encf}");
+ 
+-                    if (IsSequenceAlreadyUsed(preflight.Mensajes))
+-                    {
+-                        var used = BuildSequenceUsedResult(
+-                            extraction.Master.ENcf,
+-                            preflight.TrackId ?? string.Empty,
+-                            preflight.Mensajes ?? "Este número de secuencia ya ha sido utilizado.",
+-                            workDirectory);
+-
+-                        logger.Warn(
+-                            $"Preflight detectó secuencia utilizada. ENCF={used.ENcf} Mensaje={used.Mensaje}");
+-                        logger.PersistForError();
+-                        WriteTracking(workDirectory, used, extraction);
+-                        return used;
+-                    }
+-
+                     if (preflightState == "ACEPTADO")
+                     {
+                         var accepted = await BuildAcceptedResultAsync(
+@@ -131,6 +121,21 @@ namespace IdesiToolECF.Services.Gastos
+                         return accepted;
+                     }
+ 
++                    if (IsSequenceAlreadyUsed(preflight.Mensajes))
++                    {
++                        var used = BuildSequenceUsedResult(
++                            extraction.Master.ENcf,
++                            preflight.TrackId ?? string.Empty,
++                            preflight.Mensajes ?? "Este número de secuencia ya ha sido utilizado.",
++                            workDirectory);
++
++                        logger.Warn(
++                            $"Preflight detectó secuencia utilizada. ENCF={used.ENcf} Mensaje={used.Mensaje}");
++                        logger.PersistForError();
++                        WriteTracking(workDirectory, used, extraction);
++                        return used;
++                    }
++
+                     if (preflightState == "IN_PROCESS")
+                     {
+                         var pending = new GastoEcfProcessResult
+@@ -145,6 +150,17 @@ namespace IdesiToolECF.Services.Gastos
+                         WriteTracking(workDirectory, pending, extraction);
+                         return pending;
+                     }
++                    if (!string.IsNullOrWhiteSpace(preflight.TrackId))
++                    {
++                        var prior = new GastoEcfProcessResult {
++                            ExitCode = 2, Estado = preflightState,
++                            Mensaje = preflight.Mensajes ?? "Existe un intento previo. Consulte su estado antes de reenviar.",
++                            TrackId = preflight.TrackId, ENcf = extraction.Master.ENcf,
++                            WorkingDirectory = workDirectory
++                        };
++                        WriteTracking(workDirectory, prior, extraction);
++                        return prior;
++                    }
+                 }
+ 
+                 string? payloadSnapshotPath = null;
+@@ -168,7 +184,7 @@ namespace IdesiToolECF.Services.Gastos
+                 var rawResponse = await _service
+                     .SendInvoiceAsync(
+                         extraction.Factura,
+-                        payloadSnapshotPath)
++                        payloadSnapshotPath, strictFiscalResponse: true)
+                     .ConfigureAwait(false);
+ 
+                 var parsed = IdesiToolECF.DgiiResponseParser.Parse(rawResponse ?? string.Empty);
+@@ -177,11 +193,30 @@ namespace IdesiToolECF.Services.Gastos
+                 var encf = string.IsNullOrWhiteSpace(parsed.Secuencia)
+                     ? extraction.Master.ENcf
+                     : parsed.Secuencia.Trim();
++                observedTrackId = trackId;
++                if (!string.Equals(encf, extraction.Master.ENcf, StringComparison.OrdinalIgnoreCase))
++                    throw new InvalidOperationException("El proveedor devolvio otro e-NCF; conserve la reserva para revision.");
++
+                 var message = MergeMessages(parsed.Mensajes, ExtractReadableResponse(rawResponse));
+ 
+                 logger.Info(
+                     $"Respuesta inicial. Estado={state} TrackId={trackId} ENCF={encf} Mensaje={message}");
+ 
++                if (state == "ACEPTADO")
++                {
++                    var accepted = await BuildAcceptedResultAsync(
++                        extraction,
++                        trackId,
++                        message,
++                        workDirectory,
++                        logger,
++                        retrieveSignedXml,
++                        cancellationToken).ConfigureAwait(false);
++
++                    WriteTracking(workDirectory, accepted, extraction);
++                    return accepted;
++                }
++
+                 if (IsSequenceAlreadyUsed(message) || IsSequenceAlreadyUsed(rawResponse))
+                 {
+                     var used = BuildSequenceUsedResult(
+@@ -207,7 +242,7 @@ namespace IdesiToolECF.Services.Gastos
+                             delayMs: ResolvePollingDelayMs(),
+                             logDir: saveDebugArtifacts
+                                 ? workDirectory
+-                                : null)
++                                : null, strictStatus: true)
+                         .ConfigureAwait(false);
+ 
+                     if (finalStatus != null)
+@@ -216,7 +251,12 @@ namespace IdesiToolECF.Services.Gastos
+                         if (!string.IsNullOrWhiteSpace(finalStatus.TrackId))
+                             trackId = finalStatus.TrackId.Trim();
+                         if (!string.IsNullOrWhiteSpace(finalStatus.Encf))
++                        {
++                            if (!string.Equals(finalStatus.Encf.Trim(), extraction.Master.ENcf, StringComparison.OrdinalIgnoreCase))
++                                throw new InvalidOperationException("La consulta final devolvio otro e-NCF; conserve la reserva para revision.");
+                             encf = finalStatus.Encf.Trim();
++                        }
++                        observedTrackId = trackId;
+                         message = MergeMessages(message, finalStatus.Mensajes);
+ 
+                         logger.Info(
+@@ -224,21 +264,6 @@ namespace IdesiToolECF.Services.Gastos
+                     }
+                 }
+ 
+-                if (IsSequenceAlreadyUsed(message))
+-                {
+-                    var used = BuildSequenceUsedResult(
+-                        string.IsNullOrWhiteSpace(encf) ? extraction.Master.ENcf : encf,
+-                        trackId,
+-                        message,
+-                        workDirectory);
+-
+-                    logger.Warn(
+-                        $"Estado final indicó secuencia utilizada. ENCF={used.ENcf} Mensaje={used.Mensaje}");
+-                    logger.PersistForError();
+-                    WriteTracking(workDirectory, used, extraction);
+-                    return used;
+-                }
+-
+                 if (state == "ACEPTADO")
+                 {
+                     var accepted = await BuildAcceptedResultAsync(
+@@ -254,10 +279,25 @@ namespace IdesiToolECF.Services.Gastos
+                     return accepted;
+                 }
+ 
++                if (IsSequenceAlreadyUsed(message))
++                {
++                    var used = BuildSequenceUsedResult(
++                        string.IsNullOrWhiteSpace(encf) ? extraction.Master.ENcf : encf,
++                        trackId,
++                        message,
++                        workDirectory);
++
++                    logger.Warn(
++                        $"Estado final indicó secuencia utilizada. ENCF={used.ENcf} Mensaje={used.Mensaje}");
++                    logger.PersistForError();
++                    WriteTracking(workDirectory, used, extraction);
++                    return used;
++                }
++
+                 var rejected = new GastoEcfProcessResult
+                 {
+                     ExitCode = 2,
+-                    Estado = state == "IN_PROCESS" ? "IN_PROCESS" : "RECHAZADO",
++                    Estado = state,
+                     Mensaje = string.IsNullOrWhiteSpace(message)
+                         ? "ASLAN/DGII no aceptó el e-CF de gastos."
+                         : message,
+@@ -282,6 +322,7 @@ namespace IdesiToolECF.Services.Gastos
+                     Estado = "ERROR",
+                     Mensaje = "El envío del e-CF de gastos fue cancelado.",
+                     ENcf = extraction.Master.ENcf,
++                    TrackId = observedTrackId,
+                     WorkingDirectory = workDirectory
+                 };
+                 WriteTracking(workDirectory, cancelled, extraction);
+@@ -296,6 +337,7 @@ namespace IdesiToolECF.Services.Gastos
+                     Estado = "ERROR",
+                     Mensaje = ex.Message,
+                     ENcf = extraction.Master.ENcf,
++                    TrackId = observedTrackId,
+                     WorkingDirectory = workDirectory
+                 };
+                 WriteTracking(workDirectory, failed, extraction);
+@@ -583,34 +625,11 @@ namespace IdesiToolECF.Services.Gastos
+             }
+         }
+ 
+-        private static string NormalizeSendStatus(
+-            string? estadoRaw,
+-            string? estadoParsed,
+-            string? rawResponse)
+-        {
+-            var text = MergeMessages(estadoRaw, estadoParsed, rawResponse).ToUpperInvariant();
+-
+-            if (text.Contains("ACEPTADO"))
+-                return "ACEPTADO";
+-
+-            if (text.Contains("EN PROCESO") || text.Contains("IN_PROCESS") || text.Contains("PENDIENTE"))
+-                return "IN_PROCESS";
+-
+-            if (text.Contains("RECHAZADO"))
+-                return "RECHAZADO";
+-
+-            return NormalizeStatus(estadoParsed);
+-        }
++        private static string NormalizeSendStatus(string? estadoRaw, string? estadoParsed, string? rawResponse)
++            => GastoFiscalState.FromResponse(estadoRaw, estadoParsed);
+ 
+         private static string NormalizeStatus(string? raw)
+-        {
+-            var value = (raw ?? string.Empty).Trim().ToUpperInvariant();
+-            if (value.Contains("ACEPTADO")) return "ACEPTADO";
+-            if (value.Contains("EN PROCESO") || value.Contains("IN_PROCESS")) return "IN_PROCESS";
+-            if (value.Contains("NO ENCONTRADO") || value.Contains("NOT_FOUND")) return "NOT_FOUND";
+-            if (value.Contains("RECHAZADO")) return "RECHAZADO";
+-            return string.IsNullOrWhiteSpace(value) ? "RECHAZADO" : value;
+-        }
++            => GastoFiscalState.NormalizeToken(raw);
+ 
+         private static string ExtractReadableResponse(string? raw)
+         {
+diff --git a/Services/Gastos/GastoTxtProcessor.cs b/Services/Gastos/GastoTxtProcessor.cs
+index 0a544f1..90d063e 100644
+--- a/Services/Gastos/GastoTxtProcessor.cs
++++ b/Services/Gastos/GastoTxtProcessor.cs
+@@ -85,16 +85,21 @@ namespace IdesiToolECF.Services.Gastos.Txt
+             if (ShouldSaveDebugArtifacts())
+                 TrySaveRequestJson(workDirectory, extraction, log);
+ 
++            var observedTrackId = string.Empty;
+             try
+             {
+                 cancellationToken.ThrowIfCancellationRequested();
+ 
+                 var preflight = await _service
+-                    .GetStatusByENCFAsync(extraction.Master.RncEmisor, extraction.Master.ENcf)
++                    .GetStatusByENCFAsync(extraction.Master.RncEmisor, extraction.Master.ENcf, requireConclusive: true)
+                     .ConfigureAwait(false);
+ 
+                 if (preflight != null)
+                 {
++                    observedTrackId = preflight.TrackId ?? string.Empty;
++                    if (!string.IsNullOrWhiteSpace(preflight.Encf) &&
++                        !string.Equals(preflight.Encf.Trim(), extraction.Master.ENcf, StringComparison.OrdinalIgnoreCase))
++                        throw new InvalidOperationException("La consulta previa devolvio otro e-NCF; no reenviar.");
+                     var preflightState = NormalizeStatus(preflight.Estado);
+                     var preflightMessage = preflight.Mensajes ?? string.Empty;
+                     var preflightTrackId = (preflight.TrackId ?? string.Empty).Trim();
+@@ -175,13 +180,25 @@ namespace IdesiToolECF.Services.Gastos.Txt
+ 
+                         return rejectedPreflight;
+                     }
++                    if (!string.IsNullOrWhiteSpace(preflightTrackId))
++                    {
++                        var prior = new GastoEcfProcessResult {
++                            ExitCode = 2, Estado = preflightState,
++                            Mensaje = "Existe un intento previo; confirme su estado antes de reenviar.",
++                            MensajeCompleto = preflightMessage, TrackId = preflightTrackId,
++                            ENcf = extraction.Master.ENcf, WorkingDirectory = workDirectory,
++                            DecisionSecuencia = "ESPERAR_VERIFICACION"
++                        };
++                        WriteTracking(workDirectory, prior, extraction, extraction.FilePath);
++                        return prior;
++                    }
+                 }
+ 
+                 var payloadSnapshotPath = BuildPayloadSnapshotPath(workDirectory, extraction.Master.ENcf);
+                 log.Info("Payload pre-ASLAN=" + payloadSnapshotPath);
+ 
+                 var rawResponse = await _service
+-                    .SendInvoiceAsync(extraction.Factura, payloadSnapshotPath)
++                    .SendInvoiceAsync(extraction.Factura, payloadSnapshotPath, strictFiscalResponse: true)
+                     .ConfigureAwait(false);
+ 
+                 TryWriteTextArtifact(
+@@ -202,6 +219,10 @@ namespace IdesiToolECF.Services.Gastos.Txt
+                     ? extraction.Master.ENcf
+                     : parsed.Secuencia.Trim();
+ 
++                observedTrackId = trackId;
++                if (!string.Equals(encf, extraction.Master.ENcf, StringComparison.OrdinalIgnoreCase))
++                    throw new InvalidOperationException("El proveedor devolvio otro e-NCF; conserve la reserva para revision.");
++
+                 // Separar UI de diagnóstico desde el primer momento.
+                 var publicReason = CleanPublicReason(parsed.Mensajes);
+                 var fullMessage = MergeMessages(
+@@ -272,7 +293,7 @@ namespace IdesiToolECF.Services.Gastos.Txt
+                         trackId,
+                         maxAttempts: ResolvePollingAttempts(),
+                         delayMs: ResolvePollingDelayMs(),
+-                        logDir: workDirectory).ConfigureAwait(false);
++                        logDir: workDirectory, strictStatus: true).ConfigureAwait(false);
+ 
+                     if (finalStatus != null)
+                     {
+@@ -283,7 +304,12 @@ namespace IdesiToolECF.Services.Gastos.Txt
+                             trackId = finalStatus.TrackId.Trim();
+ 
+                         if (!string.IsNullOrWhiteSpace(finalStatus.Encf))
++                        {
++                            if (!string.Equals(finalStatus.Encf.Trim(), extraction.Master.ENcf, StringComparison.OrdinalIgnoreCase))
++                                throw new InvalidOperationException("La consulta final devolvio otro e-NCF; conserve la reserva para revision.");
+                             encf = finalStatus.Encf.Trim();
++                        }
++                        observedTrackId = trackId;
+ 
+                         fullMessage = MergeMessages(
+                             fullMessage,
+@@ -400,6 +426,18 @@ namespace IdesiToolECF.Services.Gastos.Txt
+                     return notFound;
+                 }
+ 
++                if (state != "RECHAZADO")
++                {
++                    var uncertain = new GastoEcfProcessResult {
++                        ExitCode = 2, Estado = "NO_CONFIRMADO", TrackId = trackId,
++                        ENcf = encf, Mensaje = "Estado fiscal no confirmado. No reenvie ni cambie la secuencia.",
++                        MensajeCompleto = fullMessage, WorkingDirectory = workDirectory,
++                        DecisionSecuencia = "ESPERAR_VERIFICACION"
++                    };
++                    WriteTracking(workDirectory, uncertain, extraction, extraction.FilePath);
++                    return uncertain;
++                }
++
+                 // Regla operativa:
+                 // RECHAZADO + TrackId   -> nueva secuencia en el próximo envío.
+                 // RECHAZADO sin TrackId -> corregir y reintentar la misma.
+@@ -433,6 +471,7 @@ namespace IdesiToolECF.Services.Gastos.Txt
+                     DecisionSecuencia = "VERIFICAR_ANTES_DE_REINTENTAR",
+                     EvidenciaDecisionSecuencia = "CANCELACION_LOCAL",
+                     ENcf = extraction.Master.ENcf,
++                    TrackId = observedTrackId,
+                     WorkingDirectory = workDirectory
+                 };
+                 WriteTracking(workDirectory, cancelled, extraction, extraction.FilePath);
+@@ -450,6 +489,7 @@ namespace IdesiToolECF.Services.Gastos.Txt
+                     DecisionSecuencia = "VERIFICAR_ANTES_DE_REINTENTAR",
+                     EvidenciaDecisionSecuencia = "EXCEPCION_NO_CLASIFICADA",
+                     ENcf = extraction.Master.ENcf,
++                    TrackId = observedTrackId,
+                     WorkingDirectory = workDirectory
+                 };
+                 WriteTracking(workDirectory, failed, extraction, extraction.FilePath);
+@@ -722,54 +762,11 @@ namespace IdesiToolECF.Services.Gastos.Txt
+                 || value.IndexOf("numero de secuencia ya ha sido utilizad", StringComparison.OrdinalIgnoreCase) >= 0;
+         }
+ 
+-        private static string NormalizeSendStatus(
+-            string? rawState,
+-            string? parsedState)
+-        {
+-            // Nunca inferir el estado a partir del cuerpo completo de la respuesta.
+-            var raw = NormalizeStatusToken(rawState);
+-            if (!string.IsNullOrWhiteSpace(raw))
+-                return raw;
+-
+-            return NormalizeStatus(parsedState);
+-        }
+-
+-        private static string NormalizeStatusToken(string? raw)
+-        {
+-            var value = (raw ?? string.Empty).Trim().ToUpperInvariant();
+-            if (value.Length == 0)
+-                return string.Empty;
+-
+-            if (value == "ACEPTADO" ||
+-                value == "ACEPTADO CONDICIONAL")
+-                return "ACEPTADO";
+-
+-            if (value == "RECHAZADO")
+-                return "RECHAZADO";
+-
+-            if (value == "EN PROCESO" ||
+-                value == "EN_PROCESO" ||
+-                value == "IN_PROCESS" ||
+-                value == "PENDIENTE")
+-                return "IN_PROCESS";
+-
+-            if (value == "NO ENCONTRADO" ||
+-                value == "NO_ENCONTRADO" ||
+-                value == "NOT_FOUND")
+-                return "NOT_FOUND";
+-
+-            return string.Empty;
+-        }
++        private static string NormalizeSendStatus(string? rawState, string? parsedState)
++            => GastoFiscalState.FromResponse(rawState, parsedState);
+ 
+         private static string NormalizeStatus(string? raw)
+-        {
+-            var value = (raw ?? string.Empty).Trim().ToUpperInvariant();
+-            if (value.Contains("ACEPTADO")) return "ACEPTADO";
+-            if (value.Contains("EN PROCESO") || value.Contains("IN_PROCESS")) return "IN_PROCESS";
+-            if (value.Contains("NO ENCONTRADO") || value.Contains("NOT_FOUND")) return "NOT_FOUND";
+-            if (value.Contains("RECHAZADO")) return "RECHAZADO";
+-            return string.IsNullOrWhiteSpace(value) ? "RECHAZADO" : value;
+-        }
++            => GastoFiscalState.NormalizeToken(raw);
+ 
+         private static GastoEcfProcessResult BuildRejectedResult(
+             string encf,
+diff --git a/Services/Gastos/GastoEcfExtractor.cs b/Services/Gastos/GastoEcfExtractor.cs
+index 2805805..1ca0a30 100644
+--- a/Services/Gastos/GastoEcfExtractor.cs
++++ b/Services/Gastos/GastoEcfExtractor.cs
+@@ -82,6 +82,9 @@ namespace IdesiToolECF.Services.Gastos
+             if (!reader.Read())
+                 throw new InvalidOperationException($"Operación de gastos {trn} no encontrada o no elegible para E41/E43.");
+ 
++            if (ReadInt(reader, "SeriesActivas") > 1)
++                throw new InvalidOperationException("Hay varias series activas del tipo de gasto; revise el vencimiento del lote antes de enviar. No se consumira otra secuencia.");
++
+             return new GastoEcfMasterRow
+             {
+                 Trn = ReadInt(reader, "TRN"),
+diff --git a/Services/ThirdPartyEcfService.cs b/Services/ThirdPartyEcfService.cs
+index f1d9a57..c481e27 100644
+--- a/Services/ThirdPartyEcfService.cs
++++ b/Services/ThirdPartyEcfService.cs
+@@ -520,7 +520,7 @@ namespace IdesiToolECF.Services
+         /// </summary>
+         public async Task<string> SendInvoiceAsync(
+             FacturaElectronica factura,
+-            string? payloadSnapshotPath)
++            string? payloadSnapshotPath, bool strictFiscalResponse = false)
+         {
+             if (factura == null)
+                 throw new ArgumentNullException(nameof(factura));
+@@ -545,6 +545,14 @@ namespace IdesiToolECF.Services
+                     //
+                 } */
+ 
++                if (strictFiscalResponse)
++                {
++                    var observed = await ObserveTrackIdsSdkEventFailClosedAsync(
++                        () => _api.EnviarFactura(factura, requireSuccess: true)).ConfigureAwait(false);
++                    if (observed.HadSdkFault || string.IsNullOrWhiteSpace(observed.Result))
++                        throw new InvalidOperationException("No se confirmo la respuesta del envio; consulte el mismo e-NCF antes de reintentar.");
++                    return observed.Result;
++                }
+                 var raw = await _api.EnviarFactura(factura);
+                 //ToDo "Si Aceptado" actualizar una tabla con el estado
+                 // === Candado: si el proveedor devuelve ACEPTADO “en limpio”, no degradar nunca ===
+@@ -591,15 +599,15 @@ namespace IdesiToolECF.Services
+ #endif
+                 return raw;
+             }
+-            catch (TaskCanceledException ex)
++            catch (TaskCanceledException ex) when (!strictFiscalResponse)
+             {
+                 return $"{{\"estado\":\"Rechazado\",\"mensajes\":[{{\"valor\":\"Timeout al enviar: {Escape(ex.Message)}\"}}]}}";
+             }
+-            catch (HttpRequestException ex)
++            catch (HttpRequestException ex) when (!strictFiscalResponse)
+             {
+                 return $"{{\"estado\":\"Rechazado\",\"mensajes\":[{{\"valor\":\"HTTP error al enviar: {Escape(ex.Message)}\"}}]}}";
+             }
+-            catch (Exception ex)
++            catch (Exception ex) when (!strictFiscalResponse)
+             {
+                 return $"{{\"estado\":\"Rechazado\",\"mensajes\":[{{\"valor\":\"Error inesperado al enviar: {Escape(ex.Message)}\"}}]}}";
+             }
+@@ -1039,7 +1047,7 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+         }
+ 
+         /// <summary>Query by TrackId – parses estado/encf/mensajes.</summary>
+-        public async Task<DgiiStatusDto?> GetStatusByTrackIdAsync(string trackId)
++        public async Task<DgiiStatusDto?> GetStatusByTrackIdAsync(string trackId, bool strictStatus = false)
+         {
+             try
+             {
+@@ -1076,7 +1084,9 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+                     var root = doc.RootElement;
+ 
+                     var estadoRaw = TryGet(root, "estado");
+-                    var estadoNorm = NormalizeStatusEstado(estadoRaw);
++                    var estadoNorm = strictStatus
++                        ? Gastos.GastoFiscalState.NormalizeToken(estadoRaw)
++                        : NormalizeStatusEstado(estadoRaw);
+                     var mensajes = CollectMensajes(root);
+ 
+                     // Si DGII no manda mensajes, ponemos algo legible para NOT_FOUND / IN_PROCESS
+@@ -1099,7 +1109,15 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+                 }
+ 
+                 // 2) Caso TEXTO PLANO (no JSON): "Estado: ...\nTrackId: ...\nMensajes: ...\nSecuencia: ..."
+-                return ParsePlainStatus(trimmed, trackId);
++                var plain = ParsePlainStatus(trimmed, trackId);
++                if (strictStatus && plain != null)
++                {
++                    var stateLine = trimmed.Replace("\r", "").Split('\n')
++                        .FirstOrDefault(line => line.TrimStart().StartsWith("Estado:", StringComparison.OrdinalIgnoreCase));
++                    var exactState = stateLine == null ? trimmed : stateLine.Substring(stateLine.IndexOf(':') + 1);
++                    plain.Estado = Gastos.GastoFiscalState.NormalizeToken(exactState);
++                }
++                return plain;
+             }
+             catch
+             {
+@@ -1117,7 +1135,7 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+             string trackId,
+             int maxAttempts = 10,
+             int delayMs = 1000,
+-            string? logDir = null)
++            string? logDir = null, bool strictStatus = false)
+         {
+             if (string.IsNullOrWhiteSpace(trackId))
+                 throw new ArgumentException("trackId requerido", nameof(trackId));
+@@ -1126,7 +1144,7 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+ 
+             for (int attempt = 1; attempt <= maxAttempts; attempt++)
+             {
+-                last = await GetStatusByTrackIdAsync(trackId);
++                last = await GetStatusByTrackIdAsync(trackId, strictStatus);
+ 
+                 if (last != null && !string.IsNullOrWhiteSpace(last.Estado))
+                 {
+@@ -1501,16 +1519,20 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+         /// </summary>
+         public async Task<DgiiStatusDto?> GetStatusByENCFAsync(
+         string rncEmisor,
+-        string encf)
++        string encf, bool requireConclusive = false)
+         {
+             try
+             {
+-                var tracks =
+-                    await _api
+-                        .ConsultarTrackId(
+-                            rncEmisor,
+-                            encf)
+-                        .ConfigureAwait(false);
++                List<TrackId>? tracks;
++                if (requireConclusive)
++                {
++                    var observed = await ObserveTrackIdsSdkEventFailClosedAsync(
++                        () => _api.ConsultarTrackId(rncEmisor, encf)).ConfigureAwait(false);
++                    if (observed.HadSdkFault)
++                        throw new InvalidOperationException("Fallo al consultar intentos previos en ASLAN; no reenviar.");
++                    tracks = observed.Result;
++                }
++                else tracks = await _api.ConsultarTrackId(rncEmisor, encf).ConfigureAwait(false);
+ 
+                 if (tracks == null ||
+                     tracks.Count == 0)
+@@ -1528,7 +1550,10 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+                     .ToList();
+ 
+                 if (trackIds.Count == 0)
++                {
++                    if (requireConclusive) throw new InvalidOperationException("ASLAN devolvio referencias sin TrackId; consulta inconclusa.");
+                     return null;
++                }
+ 
+                 var tasks = trackIds
+                     .Select(async id =>
+@@ -1536,7 +1561,7 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+                         try
+                         {
+                             return await
+-                                GetStatusByTrackIdAsync(id)
++                                GetStatusByTrackIdAsync(id, strictStatus: requireConclusive)
+                                     .ConfigureAwait(false);
+                         }
+                         catch
+@@ -1557,7 +1582,10 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+                     .ToList();
+ 
+                 if (valid.Count == 0)
++                {
++                    if (requireConclusive) throw new InvalidOperationException("No se pudo confirmar el estado de los TrackId previos; no reenviar.");
+                     return null;
++                }
+ 
+                 /*
+                   IMPORTANTE:
+@@ -1575,6 +1603,8 @@ public async Task<PriorFiscalAttemptProbeResult> ProbePriorFiscalAttemptAsync(
+ 
+                 if (accepted != null)
+                     return accepted;
++                if (requireConclusive && valid.Count != trackIds.Count)
++                    throw new InvalidOperationException("Consulta parcial de TrackId previos; no reenviar.");
+ 
+                 /*
+                   Si ninguno fue aceptado,
+diff --git a/Services/AslanScopedDocumentClient.cs b/Services/AslanScopedDocumentClient.cs
+index 6c23abe..6520707 100644
+--- a/Services/AslanScopedDocumentClient.cs
++++ b/Services/AslanScopedDocumentClient.cs
+@@ -87,10 +87,10 @@ internal sealed class AslanScopedDocumentClient
+ 
+     // Keep the complete provider JSON so the existing wrapper retains codes,
+     // messages and sequence-use evidence. Payload serialization is unchanged.
+-    public Task<string> EnviarFactura(FacturaElectronica factura)
++    public Task<string> EnviarFactura(FacturaElectronica factura, bool requireSuccess = false)
+         => ObserveAsync(() => SendAsync(HttpMethod.Post, "fe/Enviar/api/ecf",
+             new StringContent(JsonSerializer.Serialize(factura), Encoding.UTF8, "application/json"),
+-            ensureSuccess: false), string.Empty);
++            ensureSuccess: requireSuccess), string.Empty);
+ 
+     public Task<string> UploadCertificate(string path, string password, string rnc)
+         => ObserveAsync(async () =>
+diff --git a/SQL/Gastos/ecfGastoMasterData.sql b/SQL/Gastos/ecfGastoMasterData.sql
+index e9fb257..1b2226d 100644
+--- a/SQL/Gastos/ecfGastoMasterData.sql
++++ b/SQL/Gastos/ecfGastoMasterData.sql
+@@ -19,12 +19,13 @@ SELECT
+       El modulo actual utiliza una configuracion activa por tipo 41/43.
+     */
+     (
+-        SELECT FIRST 1 d.FECHA_VENCE
++        SELECT MIN(d.FECHA_VENCE)
+         FROM DGII_SERIE_NFC d
+         WHERE d.TIPO_CF = m.TIPO_CF
+           AND d.ACTIVO = 1
+-        ORDER BY d.FECHA_VENCE DESC, d.NCF DESC
+     )                                             AS FechaVencimientoSecuencia,
++    (SELECT COUNT(*) FROM DGII_SERIE_NFC d
++     WHERE d.TIPO_CF=m.TIPO_CF AND d.ACTIVO=1) AS SeriesActivas,
+ 
+     CASE m.FPAGO
+         WHEN 1 THEN 1
+diff --git a/Services/Gastos/GastoFiscalState.cs b/Services/Gastos/GastoFiscalState.cs
+new file mode 100644
+--- /dev/null
++++ b/Services/Gastos/GastoFiscalState.cs
+@@ -0,0 +1,17 @@
++using System;
++namespace IdesiToolECF.Services.Gastos;
++public static class GastoFiscalState
++{
++    public static string NormalizeToken(string? raw) => (raw ?? "").Trim().ToUpperInvariant() switch {
++        "ACEPTADO" or "ACEPTADO CONDICIONAL" => "ACEPTADO",
++        "RECHAZADO" => "RECHAZADO",
++        "EN PROCESO" or "EN_PROCESO" or "IN_PROCESS" or "PENDIENTE" => "IN_PROCESS",
++        "NO ENCONTRADO" or "NO_ENCONTRADO" or "NOT_FOUND" => "NOT_FOUND",
++        _ => "NO_CONFIRMADO"
++    };
++    public static string FromResponse(string? raw, string? parsed)
++    {
++        // Un estado primario desconocido no se sustituye por inferencias del parser.
++        return NormalizeToken(raw);
++    }
++}
+diff --git a/Tests/ExpenseRouteParityQA/ExpenseRouteParityQA.csproj b/Tests/ExpenseRouteParityQA/ExpenseRouteParityQA.csproj
+new file mode 100644
+--- /dev/null
++++ b/Tests/ExpenseRouteParityQA/ExpenseRouteParityQA.csproj
+@@ -0,0 +1,1 @@
++<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net9.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><NuGetAudit>false</NuGetAudit></PropertyGroup><ItemGroup><ProjectReference Include="../../IdesiToolECF.csproj"/></ItemGroup></Project>
+diff --git a/Tests/ExpenseRouteParityQA/Program.cs b/Tests/ExpenseRouteParityQA/Program.cs
+new file mode 100644
+--- /dev/null
++++ b/Tests/ExpenseRouteParityQA/Program.cs
+@@ -0,0 +1,113 @@
++using System.Net;
++using System.Reflection;
++using System.Text;
++using IdesiToolECF.Services;
++using System.Text.RegularExpressions;
++using FirebirdSql.Data.FirebirdClient;
++using Microsoft.Extensions.Configuration;
++using IdesiToolECF.Services.Gastos;
++using IdesiToolECF.Services.Gastos.Txt;
++using Newtonsoft.Json.Linq;
++if(args.Length!=4)throw new ArgumentException("DFM, QA FDB, SQL directory, TXT directory required");
++args[2]=Path.GetFullPath(args[2]);args[3]=Path.GetFullPath(args[3]);
++string dfm=File.ReadAllText(args[0]);
++string Read(string name)=>Regex.Match(dfm,"'"+name+"=([^']*)'").Groups[1].Value;
++var cs=new FbConnectionStringBuilder{DataSource="localhost",Database=args[1],UserID=Read("user_name"),Password=Read("password"),Dialect=1,Pooling=false};
++var values=new Dictionary<string,string?>{{"ConnectionStrings:Firebird",cs.ConnectionString},{"GastosEcf:SqlDirectory",args[2]}};
++using(var connection=new FbConnection(cs.ConnectionString)){
++ connection.Open();using var cmd=connection.CreateCommand();cmd.CommandText="SELECT RNC_NUMERO,NOMBRE,CALLEYNUMERO,ID_MUNICIPIO,ID_PROVINCIA FROM COMPANIA WHERE CODIGO=1";using var r=cmd.ExecuteReader();if(!r.Read())throw new Exception("Empresa QA ausente");
++ foreach(var pair in new[]{("Rnc","RNC_NUMERO"),("RazonSocial","NOMBRE"),("Direccion","CALLEYNUMERO"),("Municipio","ID_MUNICIPIO"),("Provincia","ID_PROVINCIA")})values["GastoTxt:Emisor:"+pair.Item1]=r[pair.Item2].ToString()?.Trim();
++}
++var cfg=new ConfigurationBuilder().AddInMemoryCollection(values).Build();
++int checks=0;
++foreach(int trn in new[]{2,3}){
++ var normal=new GastoEcfExtractor(cfg).Extract(trn.ToString());
++ var txt=new GastoTxtExtractor(cfg).ExtractFromFile(Path.Combine(args[3],"Gasto-"+trn+".txt"));
++ var a=JToken.FromObject(normal.Factura);var b=JToken.FromObject(txt.Factura);
++ var diffs=new List<string>();
++ void Compare(JToken? x,JToken? y,string path){
++  if(JToken.DeepEquals(x,y))return;
++  if(x is JObject xo&&y is JObject yo){foreach(var k in xo.Properties().Select(p=>p.Name).Union(yo.Properties().Select(p=>p.Name)))Compare(xo[k],yo[k],path+"."+k);return;}
++  if(x is JArray xa&&y is JArray ya&&xa.Count==ya.Count){for(int i=0;i<xa.Count;i++)Compare(xa[i],ya[i],path+"["+i+"]");return;}
++  diffs.Add(path);
++ }
++ Compare(a,b,"Factura");
++ if(diffs.Count>0){Console.WriteLine("FAIL TRN="+trn+" Campos distintos="+string.Join(",",diffs));Environment.ExitCode=1;}else{Console.WriteLine("PASS E"+normal.Master.TipoEcf+" --gasto y --gasto-txt: modelo fiscal completo identico");checks++;}
++}
++if(Environment.ExitCode==0)Console.WriteLine("PARIDAD_GASTOS_QA=PASS CASOS="+checks+" Sin reserva, envio fiscal ni modificaciones de datos.");
++
++var fixture=Path.Combine(args[3],"sql-ambiguedad");Directory.CreateDirectory(fixture);
++foreach(var file in Directory.GetFiles(args[2],"*.sql"))File.Copy(file,Path.Combine(fixture,Path.GetFileName(file)),true);
++var masterPath=Path.Combine(fixture,"ecfGastoMasterData.sql");var original=File.ReadAllText(masterPath);
++var poisoned=Regex.Replace(original,@"\(SELECT COUNT\(\*\) FROM DGII_SERIE_NFC d\s+WHERE d.TIPO_CF=m.TIPO_CF AND d.ACTIVO=1\) AS SeriesActivas","2 AS SeriesActivas");
++if(poisoned==original)throw new Exception("No se preparo fixture de series ambiguas");File.WriteAllText(masterPath,poisoned);
++var negative=new Dictionary<string,string?>(values){["GastosEcf:SqlDirectory"]=fixture};
++foreach(int trn in new[]{2,3}){
++ try{new GastoEcfExtractor(new ConfigurationBuilder().AddInMemoryCollection(negative).Build()).Extract(trn.ToString());throw new Exception("Se admitio vencimiento ambiguo");}
++ catch(InvalidOperationException ex) when(ex.Message.Contains("varias series activas")){Console.WriteLine("PASS TRN="+trn+" vencimiento ambiguo bloqueado antes del envio");}
++}
++var cases=new[]{
++ new Scenario("aceptado-previo","ACEPTADO","Este numero de secuencia ya ha sido utilizado.",false,false,false,"ACEPTADO",0,1),
++ new Scenario("rechazo-previo","RECHAZADO","Rechazo QA",false,false,false,"RECHAZADO",0,0),
++ new Scenario("track-no-encontrado","NO ENCONTRADO","Pendiente consulta",false,false,false,"NOT_FOUND",0,0),
++ new Scenario("estado-previo-desconocido","MISTERIO","QA",false,false,false,"NO_CONFIRMADO",0,0),
++ new Scenario("no-aceptado-no-es-aceptacion","NO ACEPTADO","QA",false,false,false,"NO_CONFIRMADO",0,0),
++ new Scenario("http500-previo","", "QA",false,true,false,"ERROR",0,0),
++ new Scenario("json-invalido-previo","", "QA",false,false,true,"ERROR",0,0),
++ new Scenario("rechazo-menciona-aceptado","RECHAZADO","El documento no fue ACEPTADO",true,false,false,"RECHAZADO",1,0),
++ new Scenario("aceptado-con-mensaje-secuencia","ACEPTADO","Este numero de secuencia ya ha sido utilizado.",true,false,false,"ACEPTADO",1,1),
++ new Scenario("post-estado-desconocido","MISTERIO","QA",true,false,false,"NO_CONFIRMADO",1,0),
++ new Scenario("xml-no-disponible","ACEPTADO","QA",true,false,false,"ACEPTADO",1,1,true),
++ new Scenario("identidad-previa-distinta","ACEPTADO","QA",false,false,false,"ERROR",0,0,WrongEncf:true),
++ new Scenario("identidad-respuesta-distinta","ACEPTADO","QA",true,false,false,"ERROR",1,0,WrongEncf:true),
++ new Scenario("identidad-final-distinta","IN_PROCESS","QA",true,false,false,"ERROR",1,0,FinalState:"ACEPTADO",WrongFinal:true),
++ new Scenario("poll-not-found","IN_PROCESS","QA",true,false,false,"NOT_FOUND",1,0,FinalState:"NO ENCONTRADO"),
++ new Scenario("poll-inconcluso","IN_PROCESS","QA",true,false,false,"NO_CONFIRMADO",1,0,FinalState:"MISTERIO"),
++ new Scenario("post-json-sin-estado","MISTERIO","QA",true,false,false,"NO_CONFIRMADO",1,0,RawResponse:"{}"),
++ new Scenario("post-json-invalido","MISTERIO","QA",true,false,false,"NO_CONFIRMADO",1,0,RawResponse:"{bad"),
++ new Scenario("post-respuesta-vacia","MISTERIO","QA",true,false,false,"ERROR",1,0,RawResponse:""),
++ new Scenario("descarga-desactivada","ACEPTADO","QA",true,false,false,"ACEPTADO",1,0,false,true)
++};
++int scenarios=0;
++foreach(int trn in new[]{2,3})foreach(bool txtRoute in new[]{false,true})foreach(var c in cases){
++ var settings=new Dictionary<string,string?>(values){
++  ["DGII:Usuario"]="offline",["DGII:Clave"]="offline",["DGII:SubscriptionKey"]="offline",["DGII:Ambiente"]="https://never-contact.invalid/TesteCF/",["DGII:RncEmisor"]=values["GastoTxt:Emisor:Rnc"],
++  ["DGII:LogDirectory"]=Path.Combine(args[3],"mock-logs"),["GastosEcf:SaveDebugArtifacts"]="false",
++  ["GastoTxt:OutputDir"]=Path.Combine(args[3],"mock-txt",c.Name),["GastosEcf:OutputDirectory"]=Path.Combine(args[3],"mock-normal",c.Name),
++  ["GastoTxt:PollingAttempts"]="1",["GastosEcf:PollingAttempts"]="1",["GastoTxt:PollingDelayMs"]="0",["GastosEcf:PollingDelayMs"]="0"
++ };
++ if(c.DisableXml)settings["DGII:RetrieveSignedXmlOnAccept"]="false";
++ var config=new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
++ var extracted=new GastoEcfExtractor(config).Extract(trn.ToString());
++ using var handler=new FakeProvider(c,extracted.Master.ENcf);using var http=new HttpClient(handler);
++ var service=new ThirdPartyEcfService(config);
++ var type=typeof(ThirdPartyEcfService).Assembly.GetType("IdesiToolECF.Services.AslanScopedDocumentClient")!;
++ var api=Activator.CreateInstance(type,BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.Public,null,new object[]{"offline","offline","https://never-contact.invalid/TesteCF/","offline","Offline/1.0",http},null)!;
++ typeof(ThirdPartyEcfService).GetField("_api",BindingFlags.Instance|BindingFlags.NonPublic)!.SetValue(service,api);
++ typeof(ThirdPartyEcfService).GetField("_httpClient",BindingFlags.Instance|BindingFlags.NonPublic)!.SetValue(service,http);
++ GastoEcfProcessResult result=txtRoute
++  ?await new GastoTxtProcessor(config,service,new GastoTxtExtractor(config)).ProcessAsync(Path.Combine(args[3],"Gasto-"+trn+".txt"))
++  :await new GastoEcfProcessor(config,service,new GastoEcfExtractor(config)).ProcessAsync(trn.ToString());
++ if(result.Estado!=c.Expected||handler.Posts!=c.Posts||handler.Xml!=c.Xml)
++  throw new Exception($"TRN={trn} TXT={txtRoute} CASO={c.Name} Estado={result.Estado} POST={handler.Posts} XML={handler.Xml}; esperado {c.Expected}/{c.Posts}/{c.Xml}");
++ if(c.Expected=="ACEPTADO"&&result.TrackId!="qa-track")throw new Exception("Se perdio TrackId de la aceptacion");
++ if(c.Xml==1&&!c.XmlFails&&!File.Exists(result.XmlFirmadoPath))throw new Exception("XML firmado no guardado");
++ if(c.XmlFails&&(!string.IsNullOrEmpty(result.XmlFirmadoPath)||result.Estado!="ACEPTADO"))throw new Exception("Fallo de artefacto altero estado fiscal");
++ scenarios++;Console.WriteLine($"PASS E{extracted.Master.TipoEcf} {(txtRoute?"TXT":"NORMAL")} {c.Name}");
++}
++Console.WriteLine($"ORQUESTACION_GASTOS_QA=PASS CASOS={scenarios}; todo HTTP simulado, sin envio fiscal.");
++record Scenario(string Name,string State,string Message,bool New,bool HttpFails,bool InvalidJson,string Expected,int Posts,int Xml,bool XmlFails=false,bool DisableXml=false,bool WrongEncf=false,string? FinalState=null,bool WrongFinal=false,string? RawResponse=null);
++sealed class FakeProvider(Scenario c,string encf):HttpMessageHandler{
++ public int Posts,Xml;
++ protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken ct){
++  if(r.RequestUri!.Host!="never-contact.invalid")throw new Exception("Destino inesperado en prueba");
++  string body;var responseEncf=c.WrongEncf?encf.Substring(0,3)+"9999999999":encf;var status=HttpStatusCode.OK;
++  if(r.Method==HttpMethod.Post){Posts++;body=c.RawResponse??System.Text.Json.JsonSerializer.Serialize(new{estado=c.State,trackId=(c.State=="ACEPTADO"||c.FinalState!=null)?"qa-track":"",encf=responseEncf,mensajes=new[]{c.Message}});}
++  else if(r.RequestUri.AbsolutePath.Contains("ConsultaTrackId")){body=c.New?"[]":"[{\"trackId\":\"qa-track\"}]";if(c.HttpFails)status=HttpStatusCode.InternalServerError;}
++  else if(r.RequestUri.AbsolutePath.Contains("ConsultaResultado"))body=c.InvalidJson?"{bad":System.Text.Json.JsonSerializer.Serialize(new{estado=c.FinalState??c.State,encf=c.WrongFinal?encf.Substring(0,3)+"9999999999":responseEncf,mensajes=new[]{c.Message}});
++  else if(r.RequestUri.AbsolutePath.Contains("DescargaXMLFirmado")){Xml++;body="<ECF><QA>firmado-simulado</QA></ECF>";if(c.XmlFails)status=HttpStatusCode.InternalServerError;}
++  else if(r.RequestUri.AbsolutePath.Contains("timbreFC"))body=System.Text.Json.JsonSerializer.Serialize(new{urlImage="https://never-contact.invalid/qr",encf,codigoSeguridad="QA1234",fechaEmision="15-11-2026",fechaFirma="18-11-2026",montoTotal="1.00"});
++  else throw new Exception("Ruta inesperada en prueba: "+r.RequestUri.AbsolutePath);
++  return Task.FromResult(new HttpResponseMessage(status){Content=new StringContent(body,Encoding.UTF8,"application/json")});
++ }
++}
+diff --git a/qa/pointsalesoft-secuencias/delphi/auditoria/GenerarGastosParidadQA.dpr b/qa/pointsalesoft-secuencias/delphi/auditoria/GenerarGastosParidadQA.dpr
+new file mode 100644
+--- /dev/null
++++ b/qa/pointsalesoft-secuencias/delphi/auditoria/GenerarGastosParidadQA.dpr
+@@ -0,0 +1,20 @@
++program GenerarGastosParidadQA;
++{$APPTYPE CONSOLE}
++uses SysUtils, Classes, IBDatabase, UGastoTxtBuilder;
++function Valor(const S,N:string):string;var P,F:Integer;
++begin P:=Pos(N+'=',S);if P=0 then raise Exception.Create('Configuracion ausente');Inc(P,Length(N)+1);F:=P;while (F<=Length(S)) and (S[F]<>#39) do Inc(F);Result:=Copy(S,P,F-P);end;
++var D:TIBDatabase;T:TIBTransaction;S:TStringList;B:TGastoTxtBuilder;R:TGastoTxtBuildResult;I:Integer;
++begin
++ if ParamCount<>3 then Halt(2);
++ D:=TIBDatabase.Create(nil);T:=TIBTransaction.Create(nil);S:=TStringList.Create;
++ try
++  S.LoadFromFile(ParamStr(1));D.DatabaseName:='localhost:'+ParamStr(2);D.SQLDialect:=1;D.LoginPrompt:=False;
++  D.Params.Values['user_name']:=Valor(S.Text,'user_name');D.Params.Values['password']:=Valor(S.Text,'password');S.Clear;
++  D.Connected:=True;T.DefaultDatabase:=D;T.Params.Add('read');T.Params.Add('read_committed');T.Params.Add('rec_version');T.StartTransaction;
++  B:=TGastoTxtBuilder.Create(D,T);
++  try
++   for I:=2 to 3 do begin R:=B.GenerateGastosTxt(I,IncludeTrailingPathDelimiter(ParamStr(3))+'Gasto-'+IntToStr(I)+'.txt');WriteLn('PASS TXT QA TRN=',I,' TIPO=',R.TipoEcf);end;
++  finally B.Free;end;
++  T.Rollback;
++ finally S.Free;T.Free;D.Free;end;
++end.
+diff --git a/qa/pointsalesoft-secuencias/delphi/auditoria/GastosPersistenciaQA.dpr b/qa/pointsalesoft-secuencias/delphi/auditoria/GastosPersistenciaQA.dpr
+index 4de07a5..1f5b2a1 100644
+--- a/qa/pointsalesoft-secuencias/delphi/auditoria/GastosPersistenciaQA.dpr
++++ b/qa/pointsalesoft-secuencias/delphi/auditoria/GastosPersistenciaQA.dpr
+@@ -18,6 +18,11 @@ begin
+    D.DatabaseName:='localhost:'+ParamStr(2);D.SQLDialect:=1;D.LoginPrompt:=False;
+    D.Params.Values['user_name']:=DfmValue(S.Text,'user_name');D.Params.Values['password']:=DfmValue(S.Text,'password');S.Clear;D.Connected:=True;
+    T.DefaultDatabase:=D;T.Params.Add('read_committed');T.Params.Add('rec_version');Q.Database:=D;Q.Transaction:=T;
++   R.Mensaje:='Este numero de secuencia ya ha sido utilizado.';R.SalidaCompleta:=R.Mensaje;
++   R.Estado:='ACEPTADO';Check(not ResultadoRequiereReasignacionSecuencia(R,''),'aceptacion domina mensajes de secuencia');
++   R.Estado:='IN_PROCESS';Check(not ResultadoRequiereReasignacionSecuencia(R,''),'en proceso no reasigna');
++   R.Estado:='NOT_FOUND';Check(not ResultadoRequiereReasignacionSecuencia(R,''),'not found no reasigna');
++   R.Estado:='NO_CONFIRMADO';Check(not ResultadoRequiereReasignacionSecuencia(R,''),'estado inconcluso no reasigna');
+    for I:=1 to 2 do begin
+     if I=1 then Tipo:='41' else Tipo:='43';Encf:='E'+Tipo+'9999999991';Hash:=Format('GASTO|CIA=%d|TRN=%d|TIPO=%s',[Id,Id,Tipo]);
+     Stage:='preparar';T.StartTransaction;
+@@ -28,9 +33,11 @@ begin
+     Stage:='persistir';PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);
+     T.StartTransaction;Q.SQL.Text:='SELECT ESTADO,CHAR_LENGTH(MENSAJE) L FROM ECF_RESERVA WHERE ID=:I';Q.ParamByName('I').AsInteger:=Id-I;Q.Open;Check((Q.FieldByName('ESTADO').AsString='RECHAZADO') and (Q.FieldByName('L').AsInteger=255),'E'+Tipo+' rechazo largo persistido en reserva');Q.Close;
+     Q.SQL.Text:='SELECT INTENTOS,TRACK_ID,CHAR_LENGTH(MENSAJE) L FROM ECF_GASTO_ENVIO WHERE CIA_KEY=:I AND ENCF=:N';Q.ParamByName('I').AsInteger:=Id;Q.ParamByName('N').AsString:=Encf;Q.Open;Check((Q.FieldByName('INTENTOS').AsInteger=1) and (Q.FieldByName('TRACK_ID').AsString='QA-TRACK') and (Q.FieldByName('L').AsInteger=1024),'historial insertado atomico');Q.Close;T.Rollback;
++    R.Estado:='NO_CONFIRMADO';R.Mensaje:='QA consulta inconclusa';PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);
++    T.StartTransaction;Q.SQL.Text:='SELECT ESTADO FROM ECF_GASTO_ENVIO WHERE CIA_KEY=:I AND ENCF=:N';Q.ParamByName('I').AsInteger:=Id;Q.ParamByName('N').AsString:=Encf;Q.Open;Check(Q.FieldByName('ESTADO').AsString='NO_CONFIRMADO','estado inconcluso persistido');Q.Close;T.Rollback;
+     R.Estado:='ACEPTADO';R.Mensaje:='QA aceptado';PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);
+     R.Estado:='PENDIENTE';R.Mensaje:='QA consulta pendiente';PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);
+-    T.StartTransaction;Q.SQL.Text:='SELECT ESTADO,INTENTOS FROM ECF_GASTO_ENVIO WHERE CIA_KEY=:I AND ENCF=:N';Q.ParamByName('I').AsInteger:=Id;Q.ParamByName('N').AsString:=Encf;Q.Open;Check((Q.FieldByName('ESTADO').AsString='ACEPTADO') and (Q.FieldByName('INTENTOS').AsInteger=3),'consulta no degrada aceptacion');Q.Close;T.Rollback;
++    T.StartTransaction;Q.SQL.Text:='SELECT ESTADO,INTENTOS FROM ECF_GASTO_ENVIO WHERE CIA_KEY=:I AND ENCF=:N';Q.ParamByName('I').AsInteger:=Id;Q.ParamByName('N').AsString:=Encf;Q.Open;Check((Q.FieldByName('ESTADO').AsString='ACEPTADO') and (Q.FieldByName('INTENTOS').AsInteger=4),'consulta no degrada aceptacion');Q.Close;T.Rollback;
+     R.ENCF:='E'+Tipo+'9999999992';Conflict:=False;try PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);except Conflict:=True;end;Check(Conflict,'e-NCF distinto rechazado');
+    end;
+    Data:=TIBDataSet.Create(nil);

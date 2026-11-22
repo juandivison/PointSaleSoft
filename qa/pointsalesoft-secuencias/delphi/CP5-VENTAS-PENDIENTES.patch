@@ -1,0 +1,75 @@
+--- a/PuntoVenta/Fuentes/UProcVentaRapida.pas
++++ b/PuntoVenta/Fuentes/UProcVentaRapida.pas
+@@ -1714 +1714 @@ implementation
+-uses UDatModConectar, UGlobal, URepComprobante, UDatModCompania,UDatModReportes,
++uses UEcfSecuenciaVenta, UEcfSecuenciaCola, UDatModConectar, UGlobal, URepComprobante, UDatModCompania,UDatModReportes,
+@@ -2614,0 +2615,2 @@ var
++  SecRemota: Boolean;
++  RequestSecRemota: string;
+@@ -2615,0 +2618,2 @@ begin
++  SecRemota := False;
++  RequestSecRemota := '';
+@@ -3078 +3082,20 @@ end;
+-  if CheckBox1.Checked then
++  SecRemota := CheckBox1.Checked and (GlbActivaECF = 1) and
++    OrigenSecuenciaRemoto(ExtractFilePath(Application.ExeName) + 'repconf_cr.ini',
++      GlbCodigoCia, Trim(GlbCodSucursal));
++  if SecRemota then
++  begin
++    if (GlbNumVtaPOSTmp = -1) then ProcInsertCtrlNumVta;
++    RequestSecRemota := PrepararPendienteSecuenciaVenta(dmConectar.IBDatabase1,
++      ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
++      Trim(GlbCodSucursal), GlbNumVtaPOSTmp, TotalesTipoNCF.AsString);
++    GlbSecECFGenerada := False;
++    serie_asignadoncf := -1;
++    valorNCF := '';
++    GlbDescNCF := 'PENDIENTE e-NCF (E' + TotalesTipoNCF.AsString + ')';
++    if Totales.State = dsBrowse then Totales.Edit;
++    Totalesncf_numero.Clear;
++    TotalesqrLabelNcfDesc.AsString := GlbDescNCF;
++    if not LlenandoDatos then Totales.Post;
++  end;
++
++  if CheckBox1.Checked and not SecRemota then
+@@ -3473 +3496,4 @@ end;
+-    ipStpInsertVentMast.Params[36].Value:= Null;
++    if SecRemota then
++      ipStpInsertVentMast.Params[36].Value := TotalesTipoNCFIFiscal.Value
++    else
++      ipStpInsertVentMast.Params[36].Value:= Null;
+@@ -3516,0 +3543,3 @@ end;
++    if SecRemota then
++      VincularVentaSecuenciaEnTransaccion(dmConectar.IBDatabase1,
++        ipStpInsertVentMast.Transaction, RequestSecRemota, numeroTrnVta);
+@@ -12357,0 +12387,19 @@ begin
++  if CheckBox1.Checked and (GlbActivaECF = 1) and
++    OrigenSecuenciaRemoto(ExtractFilePath(Application.ExeName) + 'repconf_cr.ini',
++      GlbCodigoCia, Trim(GlbCodSucursal)) then
++  begin
++    if (GlbNumVtaPOSTmp = -1) then ProcInsertCtrlNumVta;
++    PrepararPendienteSecuenciaVenta(dmConectar.IBDatabase1,
++      ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
++      Trim(GlbCodSucursal), GlbNumVtaPOSTmp, tipoNCF);
++    GlbSecECFGenerada := False;
++    serie_asignadoncf := -1;
++    serieDoc := -1;
++    valorNCF := '';
++    GlbDescNCF := 'PENDIENTE e-NCF (E' + tipoNCF + ')';
++    if Totales.State = dsBrowse then Totales.Edit;
++    Totalesncf_numero.Clear;
++    TotalesqrLabelNcfDesc.AsString := GlbDescNCF;
++    if not LlenandoDatos then Totales.Post;
++    Exit;
++  end;
+@@ -13551,0 +13600 @@ var
++  RequestSecRemota: string;
+@@ -13552,0 +13602,5 @@ begin
++  RequestSecRemota := '';
++  if CheckBox1.Checked and (GlbActivaECF = 1) then
++    RequestSecRemota := PrepararPendienteSecuenciaVenta(dmConectar.IBDatabase1,
++      ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
++      Trim(GlbCodSucursal), GlbNumVtaPOSTmp, TotalesTipoNCF.AsString);
+@@ -13684,0 +13739,3 @@ begin
++  if RequestSecRemota <> '' then
++    VincularVentaSecuenciaEnTransaccion(dmConectar.IBDatabase1,
++        ipStpInsertVentMast.Transaction, RequestSecRemota, numeroTrnVta);

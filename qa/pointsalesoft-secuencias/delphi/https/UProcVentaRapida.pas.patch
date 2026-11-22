@@ -1,0 +1,95 @@
+--- a/PuntoVenta/Fuentes/UProcVentaRapida.pas
++++ b/PuntoVenta/Fuentes/UProcVentaRapida.pas
+@@ -1393,0 +1394,2 @@ type
++    function PrepararSecuenciaRemotaVenta(
++      const ATipo: string; out ANcf: string; out ASerie: Integer): string;
+@@ -1714 +1716 @@ implementation
+-uses UEcfSecuenciaVenta, UEcfSecuenciaCola, UDatModConectar, UGlobal, URepComprobante, UDatModCompania,UDatModReportes,
++uses UEcfSecuenciaRemota, UEcfSecuenciaVenta, UEcfSecuenciaCola, UDatModConectar, UGlobal, URepComprobante, UDatModCompania,UDatModReportes,
+@@ -3086,14 +3088,2 @@ end;
+-  begin
+-    if (GlbNumVtaPOSTmp = -1) then ProcInsertCtrlNumVta;
+-    RequestSecRemota := PrepararPendienteSecuenciaVenta(dmConectar.IBDatabase1,
+-      ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
+-      Trim(GlbCodSucursal), GlbNumVtaPOSTmp, TotalesTipoNCF.AsString);
+-    GlbSecECFGenerada := False;
+-    serie_asignadoncf := -1;
+-    valorNCF := '';
+-    GlbDescNCF := 'PENDIENTE e-NCF (E' + TotalesTipoNCF.AsString + ')';
+-    if Totales.State = dsBrowse then Totales.Edit;
+-    Totalesncf_numero.Clear;
+-    TotalesqrLabelNcfDesc.AsString := GlbDescNCF;
+-    if not LlenandoDatos then Totales.Post;
+-  end;
++    RequestSecRemota := PrepararSecuenciaRemotaVenta(
++      TotalesTipoNCF.AsString, valorNCF, serie_asignadoncf);
+@@ -12382,0 +12373,45 @@ end;
++
++function TfrmProcVentaRapida.PrepararSecuenciaRemotaVenta(
++  const ATipo: string; out ANcf: string; out ASerie: Integer): string;
++var Reserva: TRespuestaSecuencia; Usuario: Integer;
++begin
++  ANcf := '';
++  ASerie := -1;
++  if TipoCFRequiereCliente(ATipo) and
++     (tablaPropietarioCodigoPropietario.IsNull or
++      (tablaPropietarioCodigoPropietario.AsInteger <= 0)) then
++    raise Exception.Create('Se requiere cliente antes de reservar e-NCF.');
++  if (ATipo = '32') and not ValidarCompradorE32AltoMonto then
++    raise Exception.Create('Comprador E32 pendiente de validacion.');
++  if (GlbNumVtaPOSTmp = -1) then ProcInsertCtrlNumVta;
++  Result := PrepararPendienteSecuenciaVenta(dmConectar.IBDatabase1,
++    ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
++    Trim(GlbCodSucursal), GlbNumVtaPOSTmp, ATipo);
++  GlbSecECFGenerada := False;
++  Reserva := ObtenerReservaSecuenciaVenta(dmConectar.IBDatabase1,
++    ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
++    Trim(GlbCodSucursal), Result);
++  if (Reserva.Resultado = 'ASIGNADO') or (Reserva.Resultado = 'MISMA_RESERVA') then
++  begin
++    Usuario := VarUsuarioGlb;
++    if GlbcodVendedor > 0 then Usuario := GlbcodVendedor;
++    try
++      ASerie := RegistrarNcfSecuenciaVenta(dmConectar.IBDatabase1, Reserva,
++        GlbFechaTrnDiaria, tablaPropietarioCodigoPropietario.AsInteger,
++        Usuario, Totalestotalneto.AsCurrency);
++      ANcf := Reserva.ENcf;
++      GlbSecECFGenerada := True;
++    except
++      // La reserva confirmada conserva su identidad para conciliacion.
++      ASerie := -1;
++      ANcf := '';
++    end;
++  end;
++  if ANcf = '' then GlbDescNCF := 'PENDIENTE e-NCF (E' + ATipo + ')'
++  else GlbDescNCF := dmFactura.ibQryViewNCFDESCRIPCION_2018.AsString;
++  if Totales.State = dsBrowse then Totales.Edit;
++  Totalesncf_numero.AsString := ANcf;
++  TotalesqrLabelNcfDesc.AsString := GlbDescNCF;
++  if not LlenandoDatos then Totales.Post;
++end;
++
+@@ -12391,6 +12426 @@ begin
+-    if (GlbNumVtaPOSTmp = -1) then ProcInsertCtrlNumVta;
+-    PrepararPendienteSecuenciaVenta(dmConectar.IBDatabase1,
+-      ExtractFilePath(Application.ExeName) + 'repconf_cr.ini', GlbCodigoCia,
+-      Trim(GlbCodSucursal), GlbNumVtaPOSTmp, tipoNCF);
+-    GlbSecECFGenerada := False;
+-    serie_asignadoncf := -1;
++    PrepararSecuenciaRemotaVenta(tipoNCF, valorNCF, serie_asignadoncf);
+@@ -12398,6 +12427,0 @@ begin
+-    valorNCF := '';
+-    GlbDescNCF := 'PENDIENTE e-NCF (E' + tipoNCF + ')';
+-    if Totales.State = dsBrowse then Totales.Edit;
+-    Totalesncf_numero.Clear;
+-    TotalesqrLabelNcfDesc.AsString := GlbDescNCF;
+-    if not LlenandoDatos then Totales.Post;
+@@ -27843,0 +27868,8 @@ begin
++  if EsVentaSecuenciaRemota(dmConectar.IBDatabase1,
++    dmConectar.IBTransaction1, numerotrn) and
++    ((LCanalConfig.Canal <> ceIdesiApi) or (LCanalConfig.Ambiente <> aeTest)) then
++  begin
++    FallarOInformar('La reserva remota de QA requiere canal IDESI_API en TEST.');
++    Exit;
++  end;
++

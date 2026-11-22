@@ -1,0 +1,630 @@
+diff --git a/PuntoVenta/Fuentes/UEcfEnvioGastos.pas b/PuntoVenta/Fuentes/UEcfEnvioGastos.pas
+index 2dd6250..7180c23 100644
+--- a/PuntoVenta/Fuentes/UEcfEnvioGastos.pas
++++ b/PuntoVenta/Fuentes/UEcfEnvioGastos.pas
+@@ -31,6 +31,9 @@ procedure RegistrarLogEcfGasto(
+   const AMensaje: string
+ );
+ 
++procedure PersistirResultadoEcfGasto(ADatabase: TIBDatabase; ATrn, ACiaKey: Integer;
++  const ATipoCF, AENCF: string; const AResultado: TGastoEcfCliResult);
++
+ implementation
+ 
+ uses
+@@ -716,7 +719,9 @@ begin
+         Q.ParamByName('TRACK_ID').AsString :=
+           Copy(Trim(AResultado.TrackId), 1, 100);
+ 
+-      Q.ParamByName('MENSAJE').AsString := Copy(MensajePersistir, 1, 1024);
++      Q.ParamByName('MENSAJE').AsString := MensajeParaCampo(
++        MensajePersistir, 'ECF_GASTO_ENVIO',
++        MaxCaracteresMensaje(ADatabase, Tr, 'ECF_GASTO_ENVIO'));
+ 
+       if AResultado.TieneTimbre and
+          (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
+@@ -772,6 +777,17 @@ begin
+   end;
+ end;               
+ 
++procedure PersistirResultadoEcfGasto(ADatabase: TIBDatabase; ATrn, ACiaKey: Integer;
++  const ATipoCF, AENCF: string; const AResultado: TGastoEcfCliResult);
++var
++  Snapshot: TGastoEnvioSnapshot;
++begin
++  Snapshot.CiaKey := ACiaKey;
++  Snapshot.TipoCF := ATipoCF;
++  Snapshot.ENCF := AENCF;
++  PersistirResultado(ADatabase, ATrn, Snapshot, AResultado);
++end;
++
+ function ProcesarEnvioEcfGasto(
+   ADatabase: TIBDatabase;
+   const AExePath: string;
+diff --git a/PuntoVenta/Fuentes/UGastoTxtEcfFlow.pas b/PuntoVenta/Fuentes/UGastoTxtEcfFlow.pas
+index 2c411d9..c75e35d 100644
+--- a/PuntoVenta/Fuentes/UGastoTxtEcfFlow.pas
++++ b/PuntoVenta/Fuentes/UGastoTxtEcfFlow.pas
+@@ -24,7 +24,7 @@ function ProcesarEnvioEcfGastoTxt(
+ implementation
+ 
+ uses
+-  DB, UUtilecf;
++  DB, UUtilecf, UEcfEnvioGastos;
+ 
+ type
+   EGastoTxtEcfFlow = class(Exception);
+@@ -418,245 +418,11 @@ begin
+       'La operacion no tiene un e-NCF reservado valido.');
+ end;
+ 
+-procedure PersistirResultado(
+-  ADatabase: TIBDatabase;
+-  ATrn: Integer;
+-  const ASnapshot: TGastoEnvioSnapshot;
+-  const AResultado: TGastoEcfCliResult);
+-var
+-  Tr: TIBTransaction;
+-  Q: TIBQuery;
+-  Estado: string;
+-  HashDoc: string;
+-  ENCFResultado: string;
+-  IdEnvio: Integer;
++procedure PersistirResultado(ADatabase: TIBDatabase; ATrn: Integer;
++  const ASnapshot: TGastoEnvioSnapshot; const AResultado: TGastoEcfCliResult);
+ begin
+-  Estado := EstadoNormalizado(AResultado.Estado);
+-  HashDoc := BuildReservaKey(
+-    ASnapshot.CiaKey,
+-    ATrn,
+-    ASnapshot.TipoCF);
+-
+-  ENCFResultado := UpperCase(Trim(AResultado.ENCF));
+-  if ENCFResultado = '' then
+-    ENCFResultado := ASnapshot.ENCF;
+-
+-  if ENCFResultado <> ASnapshot.ENCF then
+-    raise EGastoTxtEcfFlow.CreateFmt(
+-      'IdesiToolECF devolvio el e-NCF %s, distinto al reservado %s.',
+-      [ENCFResultado, ASnapshot.ENCF]);
+-
+-  Tr := TIBTransaction.Create(nil);
+-  Q := TIBQuery.Create(nil);
+-  try
+-    ConfigurarTransaccion(Tr, ADatabase);
+-    Tr.StartTransaction;
+-    ConfigurarQuery(Q, ADatabase, Tr);
+-
+-    Q.SQL.Text :=
+-      'UPDATE ECF_RESERVA SET ' +
+-      '  ESTADO = CASE ' +
+-      '    WHEN ESTADO = ''ACEPTADO'' THEN ''ACEPTADO'' ' +
+-      '    ELSE CAST(:ESTADO_NUEVO AS VARCHAR(32)) END, ' +
+-      '  MENSAJE = CASE ' +
+-      '    WHEN ESTADO = ''ACEPTADO'' AND :PRESERVAR_ACEPTADO = 1 THEN MENSAJE ' +
+-      '    ELSE :MENSAJE END, ' +
+-      '  UPDATED_AT = CURRENT_TIMESTAMP, ' +
+-      '  CODIGO_SEGURIDAD = COALESCE(:CODIGO_SEGURIDAD, CODIGO_SEGURIDAD), ' +
+-      '  FECHA_FIRMA = COALESCE(:FECHA_FIRMA, FECHA_FIRMA) ' +
+-      'WHERE HASH_DOC = :HASH_DOC AND NCF = :NCF';
+-
+-    Q.ParamByName('ESTADO_NUEVO').AsString := Copy(Estado, 1, 32);
+-    Q.ParamByName('PRESERVAR_ACEPTADO').AsInteger := Ord(Estado <> 'ACEPTADO');
+-    Q.ParamByName('MENSAJE').AsString := Copy(AResultado.Mensaje, 1, 1024);
+-
+-    if AResultado.TieneTimbre and
+-       (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
+-      Q.ParamByName('CODIGO_SEGURIDAD').AsString :=
+-        Copy(Trim(AResultado.Timbre.CodigoSeguridad), 1, 64)
+-    else
+-      Q.ParamByName('CODIGO_SEGURIDAD').Clear;
+-
+-    if AResultado.TieneTimbre and
+-       AResultado.Timbre.TieneFechaFirma then
+-      Q.ParamByName('FECHA_FIRMA').AsDateTime :=
+-        AResultado.Timbre.FechaFirma
+-    else
+-      Q.ParamByName('FECHA_FIRMA').Clear;
+-
+-    Q.ParamByName('HASH_DOC').AsString := HashDoc;
+-    Q.ParamByName('NCF').AsString := ASnapshot.ENCF;
+-    Q.ExecSQL;
+-
+-    if Q.RowsAffected <> 1 then
+-      raise EGastoTxtEcfFlow.Create(
+-        'No se encontro ECF_RESERVA para el gasto.');
+-
+-    Q.Close;
+-    Q.SQL.Text :=
+-      'UPDATE ECF_GASTO_ENVIO SET ' +
+-      '  ESTADO = CASE ' +
+-      '    WHEN ESTADO = ''ACEPTADO'' THEN ''ACEPTADO'' ' +
+-      '    ELSE CAST(:ESTADO_NUEVO AS VARCHAR(32)) END, ' +
+-      '  TRACK_ID = COALESCE(:TRACK_ID, TRACK_ID), ' +
+-      '  MENSAJE = CASE ' +
+-      '    WHEN ESTADO = ''ACEPTADO'' AND :PRESERVAR_ACEPTADO = 1 THEN MENSAJE ' +
+-      '    ELSE :MENSAJE END, ' +
+-      '  INTENTOS = COALESCE(INTENTOS, 0) + 1, ' +
+-      '  CODIGO_SEGURIDAD = COALESCE(:CODIGO_SEGURIDAD, CODIGO_SEGURIDAD), ' +
+-      '  FECHA_EMISION = COALESCE(:FECHA_EMISION, FECHA_EMISION), ' +
+-      '  FECHA_FIRMA = COALESCE(:FECHA_FIRMA, FECHA_FIRMA), ' +
+-      '  MONTO_TOTAL = COALESCE(:MONTO_TOTAL, MONTO_TOTAL), ' +
+-      '  URL_IMAGE = COALESCE(:URL_IMAGE, URL_IMAGE), ' +
+-      '  XML_FIRMADO = COALESCE(:XML_FIRMADO, XML_FIRMADO), ' +
+-      '  FECHA_UPDATE = CURRENT_TIMESTAMP ' +
+-      'WHERE CIA_KEY = :CIA_KEY AND ENCF = :ENCF';
+-
+-    Q.ParamByName('ESTADO_NUEVO').AsString := Copy(Estado, 1, 32);
+-    Q.ParamByName('PRESERVAR_ACEPTADO').AsInteger := Ord(Estado <> 'ACEPTADO');
+-
+-    if Trim(AResultado.TrackId) = '' then
+-      Q.ParamByName('TRACK_ID').Clear
+-    else
+-      Q.ParamByName('TRACK_ID').AsString :=
+-        Copy(Trim(AResultado.TrackId), 1, 100);
+-
+-    Q.ParamByName('MENSAJE').AsString := Copy(AResultado.Mensaje, 1, 1024);
+-
+-    if AResultado.TieneTimbre and
+-       (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
+-      Q.ParamByName('CODIGO_SEGURIDAD').AsString :=
+-        Copy(Trim(AResultado.Timbre.CodigoSeguridad), 1, 64)
+-    else
+-      Q.ParamByName('CODIGO_SEGURIDAD').Clear;
+-
+-    if AResultado.TieneTimbre and
+-       AResultado.Timbre.TieneFechaEmision then
+-      Q.ParamByName('FECHA_EMISION').AsDateTime :=
+-        AResultado.Timbre.FechaEmision
+-    else
+-      Q.ParamByName('FECHA_EMISION').Clear;
+-
+-    if AResultado.TieneTimbre and
+-       AResultado.Timbre.TieneFechaFirma then
+-      Q.ParamByName('FECHA_FIRMA').AsDateTime :=
+-        AResultado.Timbre.FechaFirma
+-    else
+-      Q.ParamByName('FECHA_FIRMA').Clear;
+-
+-    if AResultado.TieneTimbre and
+-       AResultado.Timbre.TieneMontoTotal then
+-      Q.ParamByName('MONTO_TOTAL').AsCurrency :=
+-        AResultado.Timbre.MontoTotal
+-    else
+-      Q.ParamByName('MONTO_TOTAL').Clear;
+-
+-    if AResultado.TieneTimbre and
+-       (Trim(AResultado.Timbre.UrlImage) <> '') then
+-      Q.ParamByName('URL_IMAGE').AsString :=
+-        Copy(Trim(AResultado.Timbre.UrlImage), 1, 1024)
+-    else
+-      Q.ParamByName('URL_IMAGE').Clear;
+-
+-    if AResultado.TieneTimbre and
+-       (Trim(AResultado.Timbre.XmlFirmado) <> '') then
+-      Q.ParamByName('XML_FIRMADO').AsString :=
+-        Copy(Trim(AResultado.Timbre.XmlFirmado), 1, 1024)
+-    else
+-      Q.ParamByName('XML_FIRMADO').Clear;
+-
+-    Q.ParamByName('CIA_KEY').AsInteger := ASnapshot.CiaKey;
+-    Q.ParamByName('ENCF').AsString := ASnapshot.ENCF;
+-    Q.ExecSQL;
+-
+-    if Q.RowsAffected = 0 then
+-    begin
+-      Q.Close;
+-      Q.SQL.Text :=
+-        'SELECT GEN_ID(GEN_ECF_GASTO_ENVIO_ID, 1) AS ID ' +
+-        'FROM RDB$DATABASE';
+-      Q.Open;
+-      IdEnvio := Q.FieldByName('ID').AsInteger;
+-      Q.Close;
+-
+-      Q.SQL.Text :=
+-        'INSERT INTO ECF_GASTO_ENVIO (' +
+-        '  ID, CIA_KEY, TRN, TIPO_CF, ENCF, ESTADO, TRACK_ID, MENSAJE, ' +
+-        '  INTENTOS, CODIGO_SEGURIDAD, FECHA_EMISION, FECHA_FIRMA, ' +
+-        '  MONTO_TOTAL, URL_IMAGE, XML_FIRMADO, FECHA_CREACION' +
+-        ') VALUES (' +
+-        '  :ID, :CIA_KEY, :TRN, :TIPO_CF, :ENCF, :ESTADO, :TRACK_ID, ' +
+-        '  :MENSAJE, 1, :CODIGO_SEGURIDAD, :FECHA_EMISION, :FECHA_FIRMA, ' +
+-        '  :MONTO_TOTAL, :URL_IMAGE, :XML_FIRMADO, CURRENT_TIMESTAMP' +
+-        ')';
+-
+-      Q.ParamByName('ID').AsInteger := IdEnvio;
+-      Q.ParamByName('CIA_KEY').AsInteger := ASnapshot.CiaKey;
+-      Q.ParamByName('TRN').AsInteger := ATrn;
+-      Q.ParamByName('TIPO_CF').AsInteger := StrToInt(ASnapshot.TipoCF);
+-      Q.ParamByName('ENCF').AsString := ASnapshot.ENCF;
+-      Q.ParamByName('ESTADO').AsString := Copy(Estado, 1, 32);
+-
+-      if Trim(AResultado.TrackId) = '' then
+-        Q.ParamByName('TRACK_ID').Clear
+-      else
+-        Q.ParamByName('TRACK_ID').AsString :=
+-          Copy(Trim(AResultado.TrackId), 1, 100);
+-
+-      Q.ParamByName('MENSAJE').AsString := Copy(AResultado.Mensaje, 1, 1024);
+-
+-      if AResultado.TieneTimbre and
+-         (Trim(AResultado.Timbre.CodigoSeguridad) <> '') then
+-        Q.ParamByName('CODIGO_SEGURIDAD').AsString :=
+-          Copy(Trim(AResultado.Timbre.CodigoSeguridad), 1, 64)
+-      else
+-        Q.ParamByName('CODIGO_SEGURIDAD').Clear;
+-
+-      if AResultado.TieneTimbre and
+-         AResultado.Timbre.TieneFechaEmision then
+-        Q.ParamByName('FECHA_EMISION').AsDateTime :=
+-          AResultado.Timbre.FechaEmision
+-      else
+-        Q.ParamByName('FECHA_EMISION').Clear;
+-
+-      if AResultado.TieneTimbre and
+-         AResultado.Timbre.TieneFechaFirma then
+-        Q.ParamByName('FECHA_FIRMA').AsDateTime :=
+-          AResultado.Timbre.FechaFirma
+-      else
+-        Q.ParamByName('FECHA_FIRMA').Clear;
+-
+-      if AResultado.TieneTimbre and
+-         AResultado.Timbre.TieneMontoTotal then
+-        Q.ParamByName('MONTO_TOTAL').AsCurrency :=
+-          AResultado.Timbre.MontoTotal
+-      else
+-        Q.ParamByName('MONTO_TOTAL').Clear;
+-
+-      if AResultado.TieneTimbre and
+-         (Trim(AResultado.Timbre.UrlImage) <> '') then
+-        Q.ParamByName('URL_IMAGE').AsString :=
+-          Copy(Trim(AResultado.Timbre.UrlImage), 1, 1024)
+-      else
+-        Q.ParamByName('URL_IMAGE').Clear;
+-
+-      if AResultado.TieneTimbre and
+-         (Trim(AResultado.Timbre.XmlFirmado) <> '') then
+-        Q.ParamByName('XML_FIRMADO').AsString :=
+-          Copy(Trim(AResultado.Timbre.XmlFirmado), 1, 1024)
+-      else
+-        Q.ParamByName('XML_FIRMADO').Clear;
+-
+-      Q.ExecSQL;
+-    end;
+-
+-    Tr.Commit;
+-  finally
+-    if Tr.InTransaction then
+-      Tr.Rollback;
+-    Q.Free;
+-    Tr.Free;
+-  end;
++  PersistirResultadoEcfGasto(ADatabase, ATrn, ASnapshot.CiaKey,
++    ASnapshot.TipoCF, ASnapshot.ENCF, AResultado);
+ end;
+ 
+ function ProcesarEnvioEcfGastoTxt(
+diff --git a/PuntoVenta/Fuentes/URegistrarTransOpeDiariaECF.pas b/PuntoVenta/Fuentes/URegistrarTransOpeDiariaECF.pas
+index d5344ec..2e11a84 100644
+--- a/PuntoVenta/Fuentes/URegistrarTransOpeDiariaECF.pas
++++ b/PuntoVenta/Fuentes/URegistrarTransOpeDiariaECF.pas
+@@ -294,7 +294,7 @@ uses
+   UFormProductosServicios, UEcfReservaGastos, UUtilecfGastos,
+   UEcfEnvioGastos, UAsignarTerritorioProveedorECF,
+   UEcfGastoImpresion, UGastoTxtEcfFlow,
+-  UFormProveedores;
++  UFormProveedores, UEcfGuardarDataset;
+ 
+ {$R *.dfm}
+ 
+@@ -826,7 +826,7 @@ begin
+       Exit;
+     end;
+ 
+-    GlbSalvarQuery(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
++    GuardarDatasetEcf(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
+     AbrirDetalleActual;
+     edtMontoPagado.Text := FormatearMonto(
+       dtmTransOpeDiaria.tblRegTransOpeDiariaMastMONTO.AsCurrency);
+@@ -840,9 +840,11 @@ end;
+ procedure TfrmRegTransOpeDiariaECF.btnGuardarClick(Sender: TObject);
+ begin
+   if dtmTransOpeDiaria.tblRegTransOpeDiariaDet.State in [dsEdit, dsInsert] then
+-    GuardarDetalle
+-  else
+-    GuardarMaestro;
++  begin
++    GuardarDetalle;
++    if dtmTransOpeDiaria.tblRegTransOpeDiariaDet.State in [dsEdit, dsInsert] then Exit;
++  end;
++  GuardarMaestro;
+ end;
+ 
+ procedure TfrmRegTransOpeDiariaECF.btnCancelarClick(Sender: TObject);
+@@ -1379,7 +1381,7 @@ begin
+   dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Edit;
+   try
+     dtmTransOpeDiaria.tblRegTransOpeDiariaMastMONTO.AsCurrency := FResumenNeto;
+-    GlbSalvarQuery(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
++    GuardarDatasetEcf(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
+   except
+     if dtmTransOpeDiaria.tblRegTransOpeDiariaMast.State in [dsEdit, dsInsert] then
+       dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Cancel;
+@@ -1619,7 +1621,7 @@ begin
+ 
+     dtmTransOpeDiaria.tblRegTransOpeDiariaDetCODIGO_USUARIO.AsInteger :=
+       VarUsuarioGlb;
+-    GlbSalvarQuery(dtmTransOpeDiaria.tblRegTransOpeDiariaDet);
++    GuardarDatasetEcf(dtmTransOpeDiaria.tblRegTransOpeDiariaDet);
+   finally
+     Mensajes.Free;
+   end;
+@@ -1887,7 +1889,7 @@ begin
+     dtmTransOpeDiaria.tblRegTransOpeDiariaMast.Edit;
+ 
+   dtmTransOpeDiaria.tblRegTransOpeDiariaMastMONTO.AsCurrency := Monto;
+-  GlbSalvarQuery(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
++  GuardarDatasetEcf(dtmTransOpeDiaria.tblRegTransOpeDiariaMast);
+   edtMontoPagado.Text := FormatearMonto(Monto);
+ end;
+ 
+@@ -2894,7 +2896,7 @@ begin
+     Importante:
+     NO reasignamos inmediatamente cuando llega el rechazo. Primero el usuario
+     corrige el documento. Solo al volver a pulsar Enviar, después de validar
+-    nuevamente, se genera la nueva secuencia.
++    nuevamente, se solicita autorizacion para una nueva secuencia.
+   }
+   CargarEstadoEnvio;
+ 
+@@ -2942,6 +2944,12 @@ begin
+       #13#10 + MensajeReasignacion
+     );
+ 
++    if Application.MessageBox(PChar(
++         'El e-NCF ' + ENCFRechazado + ' ya tiene un intento fiscal.' + #13#10 +
++         'Se conservara en el historico. Autoriza consumir una nueva secuencia?'),
++         'Autorizar nueva secuencia', MB_YESNO or MB_ICONQUESTION or MB_DEFBUTTON2) <> IDYES then
++      Exit;
++
+     if not ReasignarSecuenciaEcfGasto(
+              dmConectar.IBDatabase1,
+              Trn,
+@@ -3058,7 +3066,7 @@ begin
+         Estado := UpperCase(Trim(Resultado.Estado));
+ 
+       { Solo ahora un fallo tÃ©cnico real detiene el proceso. }
+-      if (not EnvioProcesado) and (Estado <> 'SECUENCIA_USADA') then
++      if not EnvioProcesado then
+       begin
+         RegistrarLogEcfGasto(
+           'FORM_ENVIO_ERROR_TECNICO',
+@@ -3125,7 +3133,13 @@ begin
+             dtmTransOpeDiaria.tblRegTransOpeDiariaMastECF.AsString
+           ));
+ 
+-      if not ReasignarSecuenciaEcfGasto(
++      if Application.MessageBox(PChar(
++         'El e-NCF ' + ENCFRechazado + ' ya tiene un intento fiscal.' + #13#10 +
++         'Se conservara en el historico. Autoriza consumir una nueva secuencia?'),
++         'Autorizar nueva secuencia', MB_YESNO or MB_ICONQUESTION or MB_DEFBUTTON2) <> IDYES then
++      Exit;
++
++    if not ReasignarSecuenciaEcfGasto(
+                dmConectar.IBDatabase1,
+                Trn,
+                VarUsuarioGlb,
+@@ -3200,7 +3214,7 @@ begin
+ 
+     if Reasignaciones > 0 then
+       Mensaje := Mensaje + #13#10 +
+-        'Secuencias reasignadas automaticamente: ' +
++        'Sustituciones autorizadas: ' +
+         IntToStr(Reasignaciones);
+ 
+     MessageDlg(Mensaje, mtInformation, [mbOK], 0);
+@@ -3219,7 +3233,7 @@ begin
+       'TrackId: ' + Resultado.TrackId + #13#10 +
+       Resultado.Mensaje + #13#10#13#10 +
+       'Corrija el documento. En el próximo envío PointSaleSoft ' +
+-      'asignará una nueva secuencia.',
++      'pedira autorizacion antes de asignar otra secuencia.',
+       mtError, [mbOK], 0)
+   else if ResultadoEsRechazadoSinTrackId(Resultado) then
+     MessageDlg(
+diff --git a/PuntoVenta/Fuentes/UGastoTxtBuilder.pas b/PuntoVenta/Fuentes/UGastoTxtBuilder.pas
+index b54cf78..4f6c717 100644
+--- a/PuntoVenta/Fuentes/UGastoTxtBuilder.pas
++++ b/PuntoVenta/Fuentes/UGastoTxtBuilder.pas
+@@ -58,10 +58,10 @@ const
+     '  m.TIPO_CF AS TIPO_ECF, ' +
+     '  COALESCE(NULLIF(TRIM(m.ECF), ''''), NULLIF(TRIM(na.ECF), ''''), ' +
+     '           NULLIF(TRIM(na.NUMERO_NCF), '''')) AS ENCF, ' +
+-    '  (SELECT FIRST 1 d.FECHA_VENCE ' +
+-    '     FROM DGII_SERIE_NFC d ' +
+-    '    WHERE d.TIPO_CF = m.TIPO_CF AND d.ACTIVO = 1 ' +
+-    '    ORDER BY d.FECHA_VENCE DESC) AS FECHA_VENCE_SECUENCIA, ' +
++    '  (SELECT COUNT(*) FROM DGII_SERIE_NFC d ' +
++    '    WHERE d.TIPO_CF = m.TIPO_CF AND d.ACTIVO = 1) AS SERIES_ACTIVAS, ' +
++    '  (SELECT MIN(d.FECHA_VENCE) FROM DGII_SERIE_NFC d ' +
++    '    WHERE d.TIPO_CF = m.TIPO_CF AND d.ACTIVO = 1) AS FECHA_VENCE_SECUENCIA, ' +
+     '  CASE m.FPAGO WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE NULL END AS TIPO_PAGO, ' +
+     '  CASE WHEN m.FPAGO = 2 THEN m.FECHA_VENCE ELSE NULL END AS FECHA_LIMITE_PAGO, ' +
+     '  CASE WHEN m.TIPO_CF = ''43'' THEN NULL ELSE m.IND_MONTO_GRAVADO END AS IND_MONTO_GRAVADO, ' +
+@@ -341,6 +341,11 @@ begin
+   F[2] := NullToText(QMaster.FieldByName('ENCF'));
+   F[3] := TipoCF;
+   F[4] := DateFieldToTxt(QMaster.FieldByName('FECHA_EMISION'));
++  if QMaster.FieldByName('SERIES_ACTIVAS').AsInteger > 1 then
++    raise EGastoTxtBuilder.Create(
++      'Hay varias series activas de este tipo. No se puede determinar el ' +
++      'vencimiento del e-NCF reservado. Revise el lote antes de enviar; ' +
++      'no es necesario consumir otra secuencia para corregir este dato.');
+   F[5] := DateFieldToTxt(QMaster.FieldByName('FECHA_VENCE_SECUENCIA'));
+ 
+   if TipoCF = '41' then
+diff --git a/PuntoVenta/Fuentes/UEcfReservaGastos.pas b/PuntoVenta/Fuentes/UEcfReservaGastos.pas
+index e7940ac..b78e14c 100644
+--- a/PuntoVenta/Fuentes/UEcfReservaGastos.pas
++++ b/PuntoVenta/Fuentes/UEcfReservaGastos.pas
+@@ -61,7 +61,7 @@ function ActualizarEstadoReservaEcfGasto(
+ implementation
+ 
+ uses
+-  Windows;
++  Windows, IniFiles;
+ 
+ type
+   EReservaEcfGasto = class(Exception);
+@@ -764,6 +764,31 @@ begin
+       'No fue posible vincular el e-NCF con TRANS_OPERACION_MASTER.');
+ end;
+ 
++procedure ValidarOrigenLocalGasto(AQuery: TIBQuery; ACia: Integer);
++var Ini: TIniFile; Sucursal, Origen: string;
++begin
++  AQuery.Close;
++  AQuery.SQL.Text := 'SELECT NUM_SUCURSAL FROM COMPANIA WHERE CODIGO=:C';
++  AQuery.ParamByName('C').AsInteger := ACia;
++  AQuery.Open;
++  if AQuery.IsEmpty then raise EReservaEcfGasto.Create('Empresa del gasto no encontrada.');
++  Sucursal := Trim(AQuery.FieldByName('NUM_SUCURSAL').AsString);
++  AQuery.Close;
++  Ini := TIniFile.Create(ExtractFilePath(ParamStr(0)) + 'repconf_cr.ini');
++  try
++    Origen := UpperCase(Trim(Ini.ReadString(
++      'ECF_SECUENCIA_' + IntToStr(ACia) + '_' + Sucursal, 'Origen', 'LOCAL')));
++    if Origen = 'REMOTO' then
++      raise EReservaEcfGasto.Create(
++        'La reserva HTTPS de E41/E43 aun no esta integrada. El gasto se conserva ' +
++        'sin una nueva secuencia. No se utilizara el contador LOCAL.');
++    if Origen <> 'LOCAL' then
++      raise EReservaEcfGasto.Create('Origen de secuencia no reconocido.');
++  finally
++    Ini.Free;
++  end;
++end;
++
+ function ReservarEnTransaccion(
+   ADatabase: TIBDatabase;
+   ATransaction: TIBTransaction;
+@@ -789,6 +814,7 @@ begin
+     ConfigurarQuery(Q, ADatabase, ATransaction);
+ 
+     CargarGasto(Q, ATrn, Gasto);
++    ValidarOrigenLocalGasto(Q, Gasto.CiaKey);
+     ValidarGastoParaReserva(Gasto, ATipoCF);
+     ValidarDetallesParaReserva(Q, ATrn, ATipoCF, Gasto);
+     HashDoc := BuildReservaKey(Gasto.CiaKey, ATrn, ATipoCF);
+@@ -873,6 +899,7 @@ begin
+     ConfigurarQuery(Q, ADatabase, ATransaction);
+ 
+     CargarGasto(Q, ATrn, Gasto);
++    ValidarOrigenLocalGasto(Q, Gasto.CiaKey);
+     ValidarGastoParaReserva(Gasto, ATipoCF);
+     ValidarDetallesParaReserva(Q, ATrn, ATipoCF, Gasto);
+ 
+diff --git a/PuntoVenta/Fuentes/UEcfGuardarDataset.pas b/PuntoVenta/Fuentes/UEcfGuardarDataset.pas
+new file mode 100644
+--- /dev/null
++++ b/PuntoVenta/Fuentes/UEcfGuardarDataset.pas
+@@ -0,0 +1,24 @@
++unit UEcfGuardarDataset;
++interface
++uses DB, IBDatabase, IBCustomDataSet;
++procedure GuardarDatasetEcf(ADataSet: TIBDataSet);
++implementation
++uses SysUtils;
++procedure GuardarDatasetEcf(ADataSet: TIBDataSet);
++begin
++  if ADataSet = nil then raise Exception.Create('No existe dataset de gastos.');
++  if not (ADataSet.State in [dsEdit, dsInsert]) and not ADataSet.UpdatesPending then Exit;
++  if not ADataSet.Transaction.InTransaction then ADataSet.Transaction.StartTransaction;
++  try
++    if ADataSet.State in [dsEdit, dsInsert] then ADataSet.Post;
++    if ADataSet.UpdatesPending then ADataSet.ApplyUpdates;
++    ADataSet.Transaction.CommitRetaining;
++  except
++    // La excepcion original debe llegar a la pantalla: no afirmar que se guardo.
++    if ADataSet.Transaction.InTransaction then
++      ADataSet.Transaction.RollbackRetaining;
++    ADataSet.CancelUpdates;
++    raise;
++  end;
++end;
++end.
+diff --git a/qa/pointsalesoft-secuencias/delphi/auditoria/GastosPersistenciaQA.dpr b/qa/pointsalesoft-secuencias/delphi/auditoria/GastosPersistenciaQA.dpr
+new file mode 100644
+--- /dev/null
++++ b/qa/pointsalesoft-secuencias/delphi/auditoria/GastosPersistenciaQA.dpr
+@@ -0,0 +1,60 @@
++program GastosPersistenciaQA;
++{$APPTYPE CONSOLE}
++uses SysUtils, Classes, IBDatabase, IBQuery, IBCustomDataSet, UEcfGuardarDataset, UGlobal in 'TestSupport\UGlobal.pas',
++ UUtilecfGastos, UEcfEnvioGastos in 'UEcfEnvioGastos.pas';
++function DfmValue(const S,N:string):string;
++var P,F:Integer;
++begin P:=Pos(N+'=',S);if P=0 then raise Exception.Create('Configuracion ausente');Inc(P,Length(N)+1);F:=P;while (F<=Length(S)) and (S[F]<>#39) do Inc(F);Result:=Copy(S,P,F-P);end;
++procedure Check(B:Boolean;const N:string);
++begin if not B then raise Exception.Create(N);WriteLn('PASS ',N);end;
++var D:TIBDatabase;T:TIBTransaction;Q:TIBQuery;S:TStringList;R:TGastoEcfCliResult;
++ Data:TIBDataSet; I,Id:Integer;Tipo,Encf,Hash,Stage:string;Conflict:Boolean;
++begin
++ if ParamCount<>2 then begin WriteLn('Uso: GastosPersistenciaQA archivo_datos.dfm base_qa.fdb');Halt(2);end;
++ D:=TIBDatabase.Create(nil);T:=TIBTransaction.Create(nil);Q:=TIBQuery.Create(nil);S:=TStringList.Create;Stage:='conexion';Id:=-1900000000-Random(999999);
++ try
++  try
++   S.LoadFromFile(ParamStr(1));
++   D.DatabaseName:='localhost:'+ParamStr(2);D.SQLDialect:=1;D.LoginPrompt:=False;
++   D.Params.Values['user_name']:=DfmValue(S.Text,'user_name');D.Params.Values['password']:=DfmValue(S.Text,'password');S.Clear;D.Connected:=True;
++   T.DefaultDatabase:=D;T.Params.Add('read_committed');T.Params.Add('rec_version');Q.Database:=D;Q.Transaction:=T;
++   for I:=1 to 2 do begin
++    if I=1 then Tipo:='41' else Tipo:='43';Encf:='E'+Tipo+'9999999991';Hash:=Format('GASTO|CIA=%d|TRN=%d|TIPO=%s',[Id,Id,Tipo]);
++    Stage:='preparar';T.StartTransaction;
++    Q.SQL.Text:='SELECT COUNT(*) N FROM ECF_RESERVA WHERE NCF=:N';Q.ParamByName('N').AsString:=Encf;Q.Open;Check(Q.FieldByName('N').AsInteger=0,'e-NCF sintetico disponible');Q.Close;
++    Q.SQL.Text:='INSERT INTO ECF_RESERVA(ID,HASH_DOC,SERIE,TIPO_CF,CORRELATIVO,NCF,ESTADO,CREATED_AT) VALUES(:I,:H,''E'',:TIPO,9999999991,:N,''RESERVADO'',CURRENT_TIMESTAMP)';
++    Q.ParamByName('I').AsInteger:=Id-I;Q.ParamByName('H').AsString:=Hash;Q.ParamByName('TIPO').AsInteger:=StrToInt(Tipo);Q.ParamByName('N').AsString:=Encf;Q.ExecSQL;T.Commit;
++    R.Estado:='RECHAZADO';R.Mensaje:=StringOfChar('M',1600);R.SalidaCompleta:='Respuesta QA completa';R.TrackId:='QA-TRACK';R.ENCF:=Encf;R.TieneTimbre:=False;
++    Stage:='persistir';PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);
++    T.StartTransaction;Q.SQL.Text:='SELECT ESTADO,CHAR_LENGTH(MENSAJE) L FROM ECF_RESERVA WHERE ID=:I';Q.ParamByName('I').AsInteger:=Id-I;Q.Open;Check((Q.FieldByName('ESTADO').AsString='RECHAZADO') and (Q.FieldByName('L').AsInteger=255),'E'+Tipo+' rechazo largo persistido en reserva');Q.Close;
++    Q.SQL.Text:='SELECT INTENTOS,TRACK_ID,CHAR_LENGTH(MENSAJE) L FROM ECF_GASTO_ENVIO WHERE CIA_KEY=:I AND ENCF=:N';Q.ParamByName('I').AsInteger:=Id;Q.ParamByName('N').AsString:=Encf;Q.Open;Check((Q.FieldByName('INTENTOS').AsInteger=1) and (Q.FieldByName('TRACK_ID').AsString='QA-TRACK') and (Q.FieldByName('L').AsInteger=1024),'historial insertado atomico');Q.Close;T.Rollback;
++    R.Estado:='ACEPTADO';R.Mensaje:='QA aceptado';PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);
++    R.Estado:='PENDIENTE';R.Mensaje:='QA consulta pendiente';PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);
++    T.StartTransaction;Q.SQL.Text:='SELECT ESTADO,INTENTOS FROM ECF_GASTO_ENVIO WHERE CIA_KEY=:I AND ENCF=:N';Q.ParamByName('I').AsInteger:=Id;Q.ParamByName('N').AsString:=Encf;Q.Open;Check((Q.FieldByName('ESTADO').AsString='ACEPTADO') and (Q.FieldByName('INTENTOS').AsInteger=3),'consulta no degrada aceptacion');Q.Close;T.Rollback;
++    R.ENCF:='E'+Tipo+'9999999992';Conflict:=False;try PersistirResultadoEcfGasto(D,Id,Id,Tipo,Encf,R);except Conflict:=True;end;Check(Conflict,'e-NCF distinto rechazado');
++   end;
++   Data:=TIBDataSet.Create(nil);
++   try
++    Data.Database:=D;Data.Transaction:=T;Data.CachedUpdates:=True;
++    Data.SelectSQL.Text:='SELECT ID,MENSAJE FROM ECF_RESERVA WHERE ID='+IntToStr(Id-1);
++    Data.ModifySQL.Text:='UPDATE ECF_RESERVA SET MENSAJE=:MENSAJE WHERE ID=:OLD_ID';
++    Data.Open;Data.Edit;Data.FieldByName('MENSAJE').AsString:='QA guardado confirmado';GuardarDatasetEcf(Data);
++    Q.Close;Q.SQL.Text:='SELECT MENSAJE FROM ECF_RESERVA WHERE ID='+IntToStr(Id-1);Q.Open;Check(Q.FieldByName('MENSAJE').AsString='QA guardado confirmado','dataset confirma escritura');Q.Close;
++    Data.Close;Data.ModifySQL.Text:='UPDATE ECF_RESERVA SET ID=NULL,MENSAJE=:MENSAJE WHERE ID=:OLD_ID';Data.Open;
++    Data.Edit;Data.FieldByName('MENSAJE').AsString:='QA fallo provocado';Conflict:=False;
++    try GuardarDatasetEcf(Data);except Conflict:=True;end;
++    Check(Conflict,'dataset propaga fallo de persistencia');
++    Q.SQL.Text:='SELECT MENSAJE FROM ECF_RESERVA WHERE ID='+IntToStr(Id-1);Q.Open;Check(Q.FieldByName('MENSAJE').AsString='QA guardado confirmado','fallo conserva dato confirmado');Q.Close;
++    Data.Close;T.Rollback;
++   finally Data.Free;end;
++   R.ENCF:='E419999999993';Conflict:=False;try PersistirResultadoEcfGasto(D,Id,Id,'41',R.ENCF,R);except Conflict:=True;end;Check(Conflict,'reserva ausente revierte persistencia');
++   WriteLn('GASTOS_PERSISTENCIA_QA=PASS');
++  except on E:Exception do begin WriteLn('GASTOS_PERSISTENCIA_QA=FAIL ETAPA=',Stage,' ',E.Message);ExitCode:=1;end;end;
++ finally
++  if T.InTransaction then T.Rollback;
++  if D.Connected then begin
++   T.StartTransaction;Q.Close;Q.SQL.Text:='DELETE FROM ECF_GASTO_ENVIO WHERE CIA_KEY=:I';Q.ParamByName('I').AsInteger:=Id;Q.ExecSQL;
++   Q.SQL.Text:='DELETE FROM ECF_RESERVA WHERE ID IN (:A,:B) AND HASH_DOC STARTING WITH :H';Q.ParamByName('A').AsInteger:=Id-1;Q.ParamByName('B').AsInteger:=Id-2;Q.ParamByName('H').AsString:='GASTO|CIA='+IntToStr(Id)+'|';Q.ExecSQL;T.Commit;
++  end;Q.Free;T.Free;D.Free;S.Free;
++ end;
++end.
+diff --git a/qa/pointsalesoft-secuencias/delphi/auditoria/TestSupport/UGlobal.pas b/qa/pointsalesoft-secuencias/delphi/auditoria/TestSupport/UGlobal.pas
+new file mode 100644
+--- /dev/null
++++ b/qa/pointsalesoft-secuencias/delphi/auditoria/TestSupport/UGlobal.pas
+@@ -0,0 +1,5 @@
++unit UGlobal;
++interface
++var GlbRutaEcf: string;
++implementation
++end.

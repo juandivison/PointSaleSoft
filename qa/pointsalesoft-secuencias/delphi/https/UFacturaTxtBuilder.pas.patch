@@ -1,0 +1,61 @@
+--- a/PuntoVenta/Fuentes/UFacturaTxtBuilder.pas
++++ b/PuntoVenta/Fuentes/UFacturaTxtBuilder.pas
+@@ -21,0 +22,3 @@ type
++    FUsaReservaRemota: Boolean;
++    FFechaReservaRemota: TDateTime;
++    function FechaVencimientoSecuenciaTxt(QMaster: TIBQuery): string;
+@@ -246,0 +250,9 @@ end;
++
++function TFacturaTxtBuilder.FechaVencimientoSecuenciaTxt(QMaster: TIBQuery): string;
++begin
++  if FUsaReservaRemota then
++    Result := FormatDateTime('dd"-"mm"-"yyyy', FFechaReservaRemota)
++  else
++    Result := DateFieldToTxt(QMaster.FieldByName('FechaVencimientoSecuencia'));
++end;
++
+@@ -247,0 +260 @@ function TFacturaTxtBuilder.LoadMaster(const ANumeroTransaccion: Integer): TIBQu
++var Reserva: TIBQuery;
+@@ -248,0 +262,2 @@ begin
++  FUsaReservaRemota := False;
++  FFechaReservaRemota := 0;
+@@ -256,0 +272,33 @@ begin
++  try
++    Reserva := CreateQuery('SELECT RDB$RELATION_NAME FROM RDB$RELATIONS ' +
++      'WHERE RDB$RELATION_NAME=''ECF_SEC_SOLICITUD''');
++    try
++      Reserva.Open;
++      if not Reserva.Eof then
++      begin
++        Reserva.Close;
++        Reserva.SQL.Text := 'SELECT ENCF, FECHA_VENCE, ESTADO FROM ECF_SEC_SOLICITUD ' +
++          'WHERE NUMERO_TRN=:N';
++        Reserva.ParamByName('N').AsInteger := ANumeroTransaccion;
++        Reserva.Open;
++        if not Reserva.Eof then
++        begin
++          if (Reserva.FieldByName('ESTADO').AsString <> 'RESERVADA') or
++             Reserva.FieldByName('FECHA_VENCE').IsNull or
++             (Reserva.FieldByName('ENCF').AsString <>
++              Result.FieldByName('ClaveAcceso').AsString) then
++            raise EFacturaTxtBuilder.Create('Reserva remota no conciliada con la venta.');
++          FFechaReservaRemota := Reserva.FieldByName('FECHA_VENCE').AsDateTime;
++          FUsaReservaRemota := True;
++          Reserva.Next;
++          if not Reserva.Eof then
++            raise EFacturaTxtBuilder.Create('Varias solicitudes remotas para la venta.');
++        end;
++      end;
++    finally
++      Reserva.Free;
++    end;
++  except
++    Result.Free;
++    raise;
++  end;
+@@ -827 +875 @@ begin
+-      Fields[17] := DateFieldToTxt(QMaster.FieldByName('FechaVencimientoSecuencia'))
++      Fields[17] := FechaVencimientoSecuenciaTxt(QMaster)
+@@ -1653 +1701 @@ end;
+-        FechaVencSec := DateFieldToTxt(QMaster.FieldByName('FechaVencimientoSecuencia'));
++        FechaVencSec := FechaVencimientoSecuenciaTxt(QMaster);

@@ -1,0 +1,11 @@
+dsn = "mysql:host=HOST_QUE_FUNCIONO;port=3306;dbname=idesimysqldb_qa"
+user = "USUARIO_QA"
+password = "CONTRASENA_QA"
+qa_post_commit_delay = "0"
+
+[cliente_qa01]
+token_sha256 = "HASH_QUE_YA_FUNCIONO"
+rnc = "000000000"
+ambiente = "TEST"
+sucursal = "QA01"
+tipo = "E31"

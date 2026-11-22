@@ -1,0 +1,6 @@
+--- a/PuntoVenta/Fuentes/UEcfApiCredencialesIni.pas
++++ b/PuntoVenta/Fuentes/UEcfApiCredencialesIni.pas
+@@ -31,0 +32,3 @@ function UrlIdesiPorAmbiente(const AAmbiente: string): string;
++function CifrarDPAPI(const ATexto, ASeccion: string): string;
++function DescifrarDPAPI(const AProtegido, ASeccion: string): string;
++

@@ -1,0 +1,198 @@
+diff --git a/PuntoVenta/Reportes/UQckFactServ8_5Ayaco.pas b/PuntoVenta/Reportes/UQckFactServ8_5Ayaco.pas
+index 391f55c..d4356aa 100644
+--- a/PuntoVenta/Reportes/UQckFactServ8_5Ayaco.pas
++++ b/PuntoVenta/Reportes/UQckFactServ8_5Ayaco.pas
+@@ -158,6 +158,8 @@ type
+     procedure QRLabel2Print(sender: TObject; var Value: String);
+     //procedure SetParameterValues;
+   private
++    FAlturaBancoOriginal: Integer;
++    procedure PrepararCuentasBancarias;
+ 
+   public
+      xtipoVenta : string;
+@@ -171,7 +173,7 @@ var
+ implementation
+ uses UDatModCompania, UDatModClientes, UGlobal,
+   UDatmodDatosGenerales, UTestImpFiscal,  URepComprobante,{ UDatModFactura, }UDatModReportes, UQckFactServ8_5BB,
+-  UDatModFactura, UQrJpgHelper, UUtilecftimbre;
++  UDatModFactura, UQrJpgHelper, UUtilecftimbre, UCuentasBancoFactura;
+ 
+ {$R *.DFM}
+ 
+@@ -390,6 +392,44 @@ begin
+   end;
+ end;
+ 
++procedure TqckFactServ8_5Ayaco.PrepararCuentasBancarias;
++var AlturaLineas: Integer;
++begin
++  if FAlturaBancoOriginal = 0 then FAlturaBancoOriginal := ChildBand4.Height;
++  ChildBand4.Height := FAlturaBancoOriginal;
++  QRMemo1.Lines.Clear; QRMemo2.Lines.Clear;
++  QRMemo3.Lines.Clear; QRMemo4.Lines.Clear;
++  QRMemo1.Enabled := False; QRMemo1.Visible := False;
++  QRMemo2.Enabled := False; QRMemo2.Visible := False;
++  QRMemo3.Enabled := False; QRMemo3.Visible := False;
++  QRMemo4.Enabled := False; QRMemo4.Visible := False;
++
++  if (GlBAyaco <> 1) and (GlBTapiceria <> 1) then Exit;
++  if not dmReportes.qryViewVentasMast.Active or dmReportes.qryViewVentasMast.IsEmpty then Exit;
++  if not (dmReportes.qryViewVentasMastFORMA_PAGO.AsInteger in [7, 8]) then Exit;
++  if dmReportes.qryViewVentasMastCIA_KEY.AsInteger <= 0 then
++    raise Exception.Create('La factura no tiene empresa valida para consultar las cuentas bancarias.');
++
++  // La consulta ya filtra CIA_KEY y ACTIVAENFCT=1. Refrescar para cada factura.
++  dmFactura.qryctabcofact.Close;
++  dmFactura.qryctabcofact.ParamByName('ciakey').AsInteger :=
++    dmReportes.qryViewVentasMastCIA_KEY.AsInteger;
++  dmFactura.qryctabcofact.Open;
++  CargarLineasCuentasBanco(dmFactura.qryctabcofact, QRMemo1.Lines);
++  if QRMemo1.Lines.Count = 0 then Exit;
++
++  QRMemo1.Top := QRMemo2.Top;
++  QRMemo1.AutoSize := False;
++  QRMemo1.AutoStretch := True;
++  QRMemo1.WordWrap := True;
++  AlturaLineas := QRMemo1.Lines.Count * (Abs(QRMemo1.Font.Height) + 3) + 4;
++  QRMemo1.Height := AlturaLineas;
++  if QRMemo1.Top + AlturaLineas + 4 > ChildBand4.Height then
++    ChildBand4.Height := QRMemo1.Top + AlturaLineas + 4;
++  QRMemo1.Enabled := True;
++  QRMemo1.Visible := True;
++end;
++
+ procedure TqckFactServ8_5Ayaco.ChildBand4BeforePrint(Sender: TQRCustomBand;
+   var PrintBand: Boolean);
+ var
+@@ -452,56 +492,7 @@ begin
+     end;
+   end;
+ 
+-  if (GlBAyaco = 0) and (GlBTapiceria = 0) then
+-  begin
+-    QRMemo1.Enabled:=False;
+-    QRMemo2.Enabled:=False;
+-    QRMemo3.Enabled:=False;
+-    QRMemo4.Enabled:=False;
+-  end else
+-  if (GlbShowCtaBanco = 0) and (dmfactura.qryctabcofact.RecordCount = 0) then
+-  begin
+-    QRMemo1.Enabled:=False;
+-    QRMemo2.Enabled:=False;
+-    QRMemo3.Enabled:=False;
+-    QRMemo4.Enabled:=False;
+-  end else
+-  begin
+-    if (dmfactura.qryctabcofact.RecordCount >= 1) and (GlBAyaco = 0) and (GlBTapiceria = 1) then
+-    begin
+-      QRMemo3.Visible:=False;
+-      QRMemo4.Visible:=False;
+-      QRMemo4.Lines.Clear;
+-      QRMemo3.Lines.Clear;
+-      QRMemo2.Visible:=True;
+-      QRMemo2.Lines.Clear;
+-      QRMemo1.Visible:=True;
+-      QRMemo1.Lines.Clear;
+-      dmfactura.qryctabcofact.first;
+-      while not dmfactura.qryctabcofact.eof do
+-      begin
+-        QRMemo2.Lines.Add(dmfactura.qryctabcofactFACT_DESCBANCO.Value);
+-        QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_TITLAR.Value);
+-        QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_DESCNUMCTA.Value);
+-        dmfactura.qryctabcofact.Next;
+-      end;
+-    end else
+-    if (dmfactura.qryctabcofact.RecordCount = 1) and (GlBAyaco = 1) then
+-    begin
+-      {QRMemo3.Visible:=False;
+-      QRMemo4.Visible:=False;
+-      QRMemo4.Lines.Clear;
+-      QRMemo3.Lines.Clear;
+-      QRMemo2.Visible:=True;
+-      QRMemo2.Lines.Clear;
+-      QRMemo2.Lines.Add(dmfactura.qryctabcofactFACT_DESCBANCO.Value);
+-
+-      QRMemo1.Visible:=True;
+-      QRMemo1.Lines.Clear;
+-      QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_TITLAR.Value);
+-      QRMemo1.Lines.Add(dmfactura.qryctabcofactFACT_DESCNUMCTA.Value); }
+-    end;
+-  end;
++  PrepararCuentasBancarias;
+ end;
+ 
+ procedure TqckFactServ8_5Ayaco.QRDBText32Print(sender: TObject;
+diff --git a/PuntoVenta/Fuentes/UCuentasBancoFactura.pas b/PuntoVenta/Fuentes/UCuentasBancoFactura.pas
+new file mode 100644
+--- /dev/null
++++ b/PuntoVenta/Fuentes/UCuentasBancoFactura.pas
+@@ -0,0 +1,34 @@
++unit UCuentasBancoFactura;
++interface
++uses Classes, DB;
++procedure CargarLineasCuentasBanco(AData: TDataSet; ALines: TStrings);
++implementation
++uses SysUtils;
++procedure CargarLineasCuentasBanco(AData: TDataSet; ALines: TStrings);
++var Banco, Titular, Cuenta: string;
++begin
++  ALines.Clear;
++  if (AData = nil) or not AData.Active then Exit;
++  AData.DisableControls;
++  try
++    AData.First;
++    while not AData.Eof do
++    begin
++      Banco := Trim(AData.FieldByName('FACT_DESCBANCO').AsString);
++      Titular := Trim(AData.FieldByName('FACT_TITLAR').AsString);
++      Cuenta := Trim(AData.FieldByName('FACT_DESCNUMCTA').AsString);
++      if (Banco <> '') or (Titular <> '') or (Cuenta <> '') then
++      begin
++        if ALines.Count > 0 then ALines.Add('');
++        if Banco <> '' then ALines.Add(Banco);
++        if Titular <> '' then ALines.Add(Titular);
++        if Cuenta <> '' then ALines.Add(Cuenta);
++      end;
++      AData.Next;
++    end;
++  finally
++    AData.First;
++    AData.EnableControls;
++  end;
++end;
++end.
+diff --git a/qa/pointsalesoft-secuencias/impresion/BancoAyacoQA.dpr b/qa/pointsalesoft-secuencias/impresion/BancoAyacoQA.dpr
+new file mode 100644
+--- /dev/null
++++ b/qa/pointsalesoft-secuencias/impresion/BancoAyacoQA.dpr
+@@ -0,0 +1,29 @@
++program BancoAyacoQA;
++{$APPTYPE CONSOLE}
++uses SysUtils,Classes,IBDatabase,IBQuery,UCuentasBancoFactura;
++function Valor(const S,N:string):string;var P,F:Integer;
++begin P:=Pos(N+'=',S);if P=0 then raise Exception.Create('Configuracion ausente');Inc(P,Length(N)+1);F:=P;while(F<=Length(S))and(S[F]<>#39)do Inc(F);Result:=Copy(S,P,F-P);end;
++procedure Check(B:Boolean;const N:string);begin if not B then raise Exception.Create(N);WriteLn('PASS ',N);end;
++var D:TIBDatabase;T:TIBTransaction;Q:TIBQuery;S,L:TStringList;Base,Fila1,Fila2,Fila3:string;
++procedure Abrir(const Filas:string;Cia:Integer);
++begin Q.Close;Q.SQL.Text:='WITH BANCOS_DET(CIA_KEY,ACTIVAENFCT,FACT_DESCBANCO,FACT_TITLAR,FACT_DESCNUMCTA) AS ('+Filas+') '+Base;Q.ParamByName('ciakey').AsInteger:=Cia;Q.Open;CargarLineasCuentasBanco(Q,L);end;
++begin
++ if ParamCount<>2 then Halt(2);
++ D:=TIBDatabase.Create(nil);T:=TIBTransaction.Create(nil);Q:=TIBQuery.Create(nil);S:=TStringList.Create;L:=TStringList.Create;
++ try
++  S.LoadFromFile(ParamStr(1));D.DatabaseName:='localhost:'+ParamStr(2);D.SQLDialect:=1;D.LoginPrompt:=False;D.Params.Values['user_name']:=Valor(S.Text,'user_name');D.Params.Values['password']:=Valor(S.Text,'password');S.Clear;D.Connected:=True;
++  T.DefaultDatabase:=D;T.Params.Add('read');T.Params.Add('read_committed');T.Params.Add('rec_version');T.StartTransaction;Q.Database:=D;Q.Transaction:=T;
++  Base:='SELECT r.FACT_DESCBANCO,r.FACT_TITLAR,r.FACT_DESCNUMCTA FROM BANCOS_DET R WHERE r.CIA_KEY=:ciakey AND r.ACTIVAENFCT=1';
++  Fila1:='SELECT 1,1,CAST(''BANCO QA UNO'' AS VARCHAR(40)),CAST(''TITULAR QA UNO'' AS VARCHAR(60)),CAST(''CUENTA-QA-001'' AS VARCHAR(50)) FROM RDB$DATABASE';
++  Fila2:=' UNION ALL SELECT 1,0,''BANCO INACTIVO'',''TITULAR INACTIVO'',''NO-IMPRIMIR'' FROM RDB$DATABASE';
++  Fila3:=' UNION ALL SELECT 2,1,''BANCO OTRA CIA'',''TITULAR OTRA CIA'',''CUENTA-OTRA-CIA'' FROM RDB$DATABASE';
++  Abrir(Fila1+Fila2+Fila3,1);Check((L.Count=3)and(L[0]='BANCO QA UNO')and(L[2]='CUENTA-QA-001'),'solo cuenta marcada de la empresa');
++  Abrir(Fila1+Fila2+Fila3,2);Check((L.Count=3)and(L[0]='BANCO OTRA CIA'),'aislamiento por empresa');
++  Abrir(Fila1+Fila2+Fila3,99);Check(L.Count=0,'sin filas limpia datos anteriores');
++  Abrir(Fila1+' UNION ALL SELECT 1,1,''BANCO QA DOS'',''TITULAR QA DOS'',''CUENTA-QA-002'' FROM RDB$DATABASE',1);Check((L.Count=7)and(L[4]='BANCO QA DOS')and(L[6]='CUENTA-QA-002'),'varias cuentas con nombre titular y numero');
++  CargarLineasCuentasBanco(Q,L);Check(L.Count=7,'reimpresion no duplica lineas');
++  Abrir('SELECT 1,1,CAST(NULL AS VARCHAR(40)),CAST(NULL AS VARCHAR(60)),CAST(NULL AS VARCHAR(50)) FROM RDB$DATABASE',1);Check(L.Count=0,'campos nulos no imprimen valores anteriores');
++  Abrir('SELECT 1,CAST(NULL AS SMALLINT),CAST(''BANCO NO MARCADO'' AS VARCHAR(40)),CAST(''QA'' AS VARCHAR(60)),CAST(''NO-IMPRIMIR'' AS VARCHAR(50)) FROM RDB$DATABASE',1);Check(L.Count=0,'indicador nulo no autoriza impresion');
++  Q.Close;T.Rollback;WriteLn('BANCO_AYACO_QA=PASS SIN_MODIFICACIONES');
++ finally if T.InTransaction then T.Rollback;L.Free;S.Free;Q.Free;T.Free;D.Free;end;
++end.
