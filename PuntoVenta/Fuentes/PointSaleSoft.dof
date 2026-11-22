@@ -90,17 +90,17 @@ MaxStackSize=1048576
 ImageBase=4194304
 ExeDescription=
 [Directories]
-OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\idesi
+OutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\ferrecentro
 UnitOutputDir=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 PackageDLLOutputDir=
 PackageDCPOutputDir=
-SearchPath=
+SearchPath=C:\Program Files (x86)\Borland\Delphi7
 Packages=vcl;rtl;vclx;indy;inet;xmlrtl;vclie;inetdbbde;inetdbxpress;dbrtl;dsnap;dsnapcon;vcldb;soaprtl;VclSmp;dbexpress;dbxcds;inetdb;bdertl;vcldbx;webdsnap;websnap;adortl;ibxpress;teeui;teedb;tee;dss;visualclx;visualdbclx;vclactnband;vclshlctrls;IntrawebDB_50_70;Intraweb_50_70;Rave50CLX;Rave50VCL;dclaxserver;QRExports;qrpt70;CompD7Idesi;IdesiRentCarApp;PdfCratorPilotV1;KpVclZip4;pkBarcode;prPackage6;acntD7_R;Idesicustomcomp
 Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=/GLBRUTADB="IDESI_PROD"
+RunParams=/GLBRUTADB="Ferrecentro"
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -138,11 +138,15 @@ c:\program files (x86)\borland\delphi7\Projects\Bpl\PerlRegExD7.bpl=TPerlRegEx -
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
+[HistoryLists\hlSearchPath]
+Count=1
+Item0=C:\Program Files (x86)\Borland\Delphi7
 [HistoryLists\hlUnitOutputDirectory]
 Count=1
 Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Dcu
 [HistoryLists\hlOutputDirectorry]
-Count=3
-Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\idesi
-Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
-Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert
+Count=4
+Item0=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\ferrecentro
+Item1=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\idesi
+Item2=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Electronica
+Item3=C:\Proyectos\PointSaleSoftResp\PuntoVenta\Bin\Expert

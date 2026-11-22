@@ -177,7 +177,7 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
     Top = 126
     Width = 1112
     Height = 603
-    ActivePage = tsDatos
+    ActivePage = tsRevision
     Align = alClient
     TabOrder = 2
     OnChange = pcPrincipalChange
@@ -1518,20 +1518,24 @@ object frmRegTransOpeDiariaECF: TfrmRegTransOpeDiariaECF
       'select m.NUMERO, m.FECHA, m.TIPO_CF, m.ECF, m.COD_PROVEEDOR,'
       ' p.DESCRIPCION as PROVEEDOR, m.MONTO, m.STATUS,'
       ' coalesce('
-      '  (select first 1 nullif(trim(g.ESTADO), '''') from ECF_GASTO_ENVIO g'
+      
+        '  (select first 1 nullif(trim(g.ESTADO), '#39#39') from ECF_GASTO_ENVI' +
+        'O g'
       '   where g.CIA_KEY=m.CIA_KEY and g.TRN=m.NUMERO and g.ENCF=m.ECF'
-      '   order by coalesce(g.FECHA_UPDATE,g.FECHA_CREACION) desc, g.ID desc),'
-      '  (select first 1 nullif(trim(r.ESTADO), '''') from ECF_RESERVA r'
+      
+        '   order by coalesce(g.FECHA_UPDATE,g.FECHA_CREACION) desc, g.ID' +
+        ' desc),'
+      '  (select first 1 nullif(trim(r.ESTADO), '#39#39') from ECF_RESERVA r'
       '   where r.NCF=m.ECF and r.HASH_DOC='
-      '    ''GASTO|CIA=''||trim(cast(m.CIA_KEY as varchar(11)))||'
-      '    ''|TRN=''||trim(cast(m.NUMERO as varchar(11)))||'
-      '    ''|TIPO=''||trim(cast(m.TIPO_CF as varchar(2)))'
+      '    '#39'GASTO|CIA='#39'||trim(cast(m.CIA_KEY as varchar(11)))||'
+      '    '#39'|TRN='#39'||trim(cast(m.NUMERO as varchar(11)))||'
+      '    '#39'|TIPO='#39'||trim(cast(m.TIPO_CF as varchar(2)))'
       '   order by r.ID desc)) as ESTADO_ECF'
       'from TRANS_OPERACION_MASTER m'
       'left join PROVEEDORES p on p.CODIGO_CTE=m.COD_PROVEEDOR'
       'where m.CIA_KEY=:CIA_KEY'
       ' and m.FECHA>=:FECHA_DESDE and m.FECHA<:FECHA_HASTA'
-      ' and m.TIPO_CF in (''41'',''43'')'
+      ' and m.TIPO_CF in ('#39'41'#39','#39'43'#39')'
       'order by m.FECHA desc,m.NUMERO desc')
     Left = 280
     Top = 680
