@@ -1,0 +1,12 @@
+; Guardar FUERA del directorio publico (ej. /database/ecf-config-central-qa.ini)
+; Cuenta de SQL con privilegios minimos para el servicio.
+dsn = "mysql:host=MYSQL_HOST;port=3306;dbname=BASE_QA;charset=utf8"
+user = "USUARIO_SERVICIO_QA"
+password = "CONTRASENA_SERVICIO"
+ambiente = "TEST"
+; 32 bytes aleatorios, codificados como 64 digitos hex. NUNCA incluir reales en Git.
+master_key_hex = "REEMPLAZAR_HEX_ALEATORIO_64"
+; Hash SHA256 hex de un token ADMIN de 32 bytes aleatorios para oficina principal.
+admin_token_sha256 = "REEMPLAZAR_SHA256_64"
+; URL exacta del reservador QA (mismo servidor/origen HTTPS)
+reservas_url = "https://SERVIDOR_CONFIABLE/ecf-cp4-qa.php"
