@@ -12,7 +12,7 @@ header('X-Content-Type-Options: nosniff');
 function responder($http, $datos) {
     http_response_code($http);
     header('Content-Type: application/json; charset=UTF-8');
-    echo json_encode($datos, JSON_UNESCAPED_UNICODE);
+    echo json_encode($datos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 function dato($entrada, $clave, $regex, $max) {
