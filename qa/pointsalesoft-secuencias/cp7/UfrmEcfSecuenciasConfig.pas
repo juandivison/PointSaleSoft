@@ -485,6 +485,12 @@ begin
       ActualUrl:=Ini.ReadString(FSeccion,'UrlActivacion','');
       Dispositivo:=Ini.ReadString(FSeccion,'DispositivoId','');
     finally Ini.Free; end;
+    { No reemplazar una activacion en uso por otra solicitud. El alta
+      incremental de tipos requiere preservar la credencial vigente. }
+    if PrevEstado='ACTIVA' then
+      raise Exception.Create('Esta sucursal ya tiene activacion central ACTIVA. '+
+        'Para ampliar tipos se requiere el proceso de autorizacion adicional '+
+        'sin desactivar las secuencias vigentes.');
     if Dispositivo='' then Dispositivo:=IdNuevo;
     if (PrevId<>'') and (PrevEstado<>'ACTIVA') then
     begin
