@@ -73,6 +73,9 @@ FLUJO HUMANO
 5. La SUCURSAL pulsa Consultar aprobacion.
 6. El sistema guarda tokens DPAPI, confirma al servidor y solo entonces
    marca Origen_E31 / Origen_E32 como REMOTO. E33-E47 quedan pendientes.
+   Una activacion ACTIVA no puede ser reemplazada por una solicitud nueva
+   desde el formulario: la ampliacion de tipos requiere un flujo aparte
+   que conserve las credenciales y reservas fiscales vigentes.
 7. En la venta, se conserva la cola durable y la no-reasignacion si falla
    la comunicacion, hasta pruebas de QA integral.
 
