@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""CP7 QA: reemplaza formulario anterior y habilita endpoint HTTPS
-recibido por aprovisionamiento central, preservando la prueba legacy CP4.
-NO cambia UProcVentaRapida ni el menu previamente integrado.
+"""CP7 QA: actualiza el configurador E31-E47 y sus adaptadores de secuencias.
+No modifica ventas ni el menu. Nunca escribe con --verificar.
+Si el formulario local fue modificado, requiere autorizacion EXPLICITA para
+reemplazarlo; siempre conserva una copia en backup-ecf-cp7-*.
 """
 import argparse
 import datetime
@@ -115,6 +116,8 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument('fuentes',type=Path)
     p.add_argument('--verificar',action='store_true')
+    p.add_argument('--aceptar-reemplazo-formulario',action='store_true',
+        help='Autorizar reemplazo del .pas local diferente, conservando respaldo completo')
     a=p.parse_args()
     src=a.fuentes.resolve()
     if not src.is_dir():raise RuntimeError('No existe Fuentes: '+str(src))
@@ -128,8 +131,34 @@ def main():
         path=src/n
         if not path.is_file():raise RuntimeError('Falta: '+str(path))
         olds[n]=path.read_bytes()
-    if hashlib.sha256(olds[OLD_FORM].replace(b'\r\n',b'\n')).hexdigest()!=OLD_SHA:
-        raise RuntimeError('El formulario local difiere del prototipo original; no sobrescribir cambios del usuario.')
+    # El hash canonico pertenece al prototipo entregado anteriormente.
+    # Solo normalizamos CRLF y BOM; NUNCA ignoramos cambios de codigo.
+    original_norm = olds[OLD_FORM].replace(b'\r\n', b'\n')
+    if original_norm.startswith(b'\xef\xbb\xbf'):
+        original_norm = original_norm[3:]
+    actual_sha = hashlib.sha256(original_norm).hexdigest()
+    coincide_prototipo = (actual_sha == OLD_SHA)
+    if not coincide_prototipo:
+        # No aceptamos archivos con otra unit, ni siquiera con la opcion explicita.
+        comienzo = original_norm.lstrip().decode('latin-1')
+        if not comienzo.startswith('unit UfrmEcfSecuenciasConfig;') or \
+           'TfrmEcfSecuenciasConfig = class(TForm)' not in comienzo or \
+           'MostrarConfiguracionSecuencias(' not in comienzo:
+            raise RuntimeError('El archivo local no es un formulario de secuencias reconocido; no reemplazar.')
+        if 'CP7 QA' in comienzo[:1000]:
+            raise RuntimeError('El formulario local ya parece CP7. No se aplicara el parche dos veces.')
+        print('AVISO: el formulario local NO coincide con el prototipo original.')
+        print('  SHA-256 esperado: '+OLD_SHA)
+        print('  SHA-256 local:    '+actual_sha)
+        print('  Bytes actuales:   '+str(len(olds[OLD_FORM])))
+        if not a.aceptar_reemplazo_formulario:
+            raise RuntimeError(
+                'Proteccion contra sobrescritura activada. Revise sus cambios locales. '
+                'Para reemplazar conscientemente el formulario, agregue '
+                '--aceptar-reemplazo-formulario. Se creara respaldo antes de escribir.')
+        print('  REEMPLAZO EXPLICITAMENTE AUTORIZADO: se respaldara el archivo local.')
+    else:
+        print('OK: formulario local coincide con el prototipo anterior.')
     edits[OLD_FORM]=form_new.read_bytes()
     if b'\r\n' in olds[OLD_FORM]:
         edits[OLD_FORM]=edits[OLD_FORM].replace(b'\n',b'\r\n')
