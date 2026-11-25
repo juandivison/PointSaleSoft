@@ -34,8 +34,73 @@ void Sql(string cs,string sql)
 {
     using var c=new FbConnection(cs);c.Open();using var tx=c.BeginTransaction();using var q=new FbCommand(sql,c,tx);q.ExecuteNonQuery();tx.Commit();
 }
-var main=new FirebirdCatalog(mainCs);var branch=new FirebirdCatalog(branchCs);
-var policy=main.DiscoverPolicy();Check(policy.Tables.Any(t=>t.Name=="PRECIO_UNIDADSURTIDORA"),"incluye precios por unidad");
+var main=  new FirebirdCatalog(mainCs);
+var branch=new FirebirdCatalog(branchCs);
+bool centralizarCosto = args.Contains("--centralized-cost");
+
+// Generar ambos contratos para validar compatibilidad.
+var policyLocal = main.DiscoverPolicy(false);
+var policyCentralizada = main.DiscoverPolicy(true);
+
+// Seleccionar el contrato activo para toda la ejecucion.
+var policy = centralizarCosto
+    ? policyCentralizada
+    : policyLocal;
+
+Console.WriteLine(
+    "MODO_COSTO=" +
+    (centralizarCosto ? "CENTRALIZADO" : "LOCAL")
+);
+
+Check(
+    policy.Tables.Any(
+        t => t.Name == "PRECIO_UNIDADSURTIDORA"),
+    "incluye precios por unidad"
+);
+
+Check(
+    policy.Table("INVENTARIO_PRODUCTO")
+        .Fields.Contains("PRECIO_COMPRA") == centralizarCosto,
+    "contrato corresponde al modo solicitado"
+);
+
+Check(
+    !policyLocal.Table("INVENTARIO_PRODUCTO")
+        .Fields.Contains("PRECIO_COMPRA"),
+    "contrato anterior excluye costo"
+);
+
+Check(
+    policyCentralizada.Table("INVENTARIO_PRODUCTO")
+        .Fields.Contains("PRECIO_COMPRA"),
+    "contrato centralizado incluye costo"
+);
+
+Check(
+    main.DiscoverPolicy().Hash == policyLocal.Hash,
+    "contrato predeterminado conserva PolicyHash"
+);
+
+Check(
+    policyCentralizada.Hash != policyLocal.Hash,
+    "contrato centralizado genera nuevo PolicyHash"
+);
+
+Check(
+    !policyCentralizada.Table("INVENTARIO_PRODUCTO")
+        .Fields.Contains("CANTIDAD"),
+    "contrato centralizado excluye existencias"
+);
+
+Check(
+    !policyCentralizada.Table("INVENTARIO_PRODUCTO")
+        .Fields.Contains("BLCE_CANT_ENTRADA") &&
+    !policyCentralizada.Table("INVENTARIO_PRODUCTO")
+        .Fields.Contains("BLCE_CANT_SALIDA"),
+    "contrato centralizado excluye acumulados"
+);
+
+branch.ValidateSchema(policyCentralizada);
 Check(!policy.Table("INVENTARIO_PRODUCTO").Fields.Contains("CANTIDAD"),"stock fuera del contrato");
 Check(policy.Table("UNIDADES").Fields.Contains("CANTIDAD"),"factor de conversion dentro del contrato");
 Reject(()=>new CatalogPolicy([new("INVENTARIO_PRODUCTO",["CODIGO"],["CODIGO","CANTIDAD"],0)]).Validate(),"rechaza contrato que copie stock");
@@ -70,7 +135,45 @@ Check(first!.Changes.Single(c=>c.Table=="INVENTARIO_PRODUCTO").Values.ContainsKe
 Check(!first.Changes.Single(c=>c.Table=="INVENTARIO_PRODUCTO").Values.ContainsKey("CANTIDAD"),"captura excluye stock fuente");
 branch.Apply(policy,first,"PROSESUR_QA",epoch);main.Published(first.EventId);
 Check(Convert.ToDouble(Scalar(branchCs,$"SELECT CANTIDAD FROM INVENTARIO_PRODUCTO WHERE CODIGO={code}"))==0,"producto nuevo nace con cero stock");
-Sql(branchCs,$"UPDATE INVENTARIO_PRODUCTO SET CANTIDAD=7,BLCE_CANT_ENTRADA=9,BLCE_CANT_SALIDA=2,PRECIO_COMPRA=40 WHERE CODIGO={code}");
+if (centralizarCosto)
+{
+    Sql(branchCs,
+        $"UPDATE INVENTARIO_PRODUCTO SET " +
+        $"CANTIDAD=7,BLCE_CANT_ENTRADA=9," +
+        $"BLCE_CANT_SALIDA=2 WHERE CODIGO={code}");
+
+    bool costoBloqueado = false;
+
+    try
+    {
+        Sql(branchCs,
+            $"UPDATE INVENTARIO_PRODUCTO SET " +
+            $"PRECIO_COMPRA=987.65 WHERE CODIGO={code}");
+    }
+    catch (FbException ex)
+    {
+        if (!ex.Message.Contains(
+            "PSSYNC_READONLY",
+            StringComparison.OrdinalIgnoreCase))
+            throw;
+
+        costoBloqueado = true;
+    }
+
+    Check(
+        costoBloqueado,
+        "sucursal no puede modificar costo centralizado"
+    );
+}
+else
+{
+    Sql(branchCs,
+        $"UPDATE INVENTARIO_PRODUCTO SET " +
+        $"CANTIDAD=7,BLCE_CANT_ENTRADA=9," +
+        $"BLCE_CANT_SALIDA=2,PRECIO_COMPRA=40 " +
+        $"WHERE CODIGO={code}");
+}
+
 Sql(mainCs,$"UPDATE INVENTARIO_PRODUCTO SET DESCRIPCION='Descripcion nueva',PRECIO=200 WHERE CODIGO={code}");
 var second=main.NextPending(policy,"PROSESUR_QA",epoch)!;
 Sql(mainCs,$"UPDATE INVENTARIO_PRODUCTO SET PRECIO=300 WHERE CODIGO={code}");
@@ -81,7 +184,111 @@ branch.Apply(policy,second,"PROSESUR_QA",epoch);
 Check(Convert.ToDouble(Scalar(branchCs,$"SELECT PRECIO FROM INVENTARIO_PRODUCTO WHERE CODIGO={code}"))==300,"envio antiguo no retrocede precio");
 Check(Convert.ToString(Scalar(branchCs,$"SELECT DESCRIPCION FROM INVENTARIO_PRODUCTO WHERE CODIGO={code}"))=="Descripcion nueva","actualiza descripcion sin conflicto falso");
 Check(Convert.ToDouble(Scalar(branchCs,$"SELECT CANTIDAD FROM INVENTARIO_PRODUCTO WHERE CODIGO={code}"))==7,"precio nuevo preserva existencias locales");
-Check(Convert.ToDouble(Scalar(branchCs,$"SELECT PRECIO_COMPRA FROM INVENTARIO_PRODUCTO WHERE CODIGO={code}"))==40,"preserva costo local");
+
+if (!centralizarCosto)
+{
+    Check(
+        Convert.ToDecimal(Scalar(branchCs,
+            $"SELECT PRECIO_COMPRA FROM INVENTARIO_PRODUCTO " +
+            $"WHERE CODIGO={code}")) == 40m,
+        "preserva costo local"
+    );
+}
+else
+{
+    // Drenar eventos QA anteriores antes de aislar el cambio.
+    while (main.NextPending(policy, "PROSESUR_QA", epoch)
+           is { } pending)
+    {
+        branch.Apply(policy, pending, "PROSESUR_QA", epoch);
+        main.Published(pending.EventId);
+    }
+
+    var costoAnterior = Scalar(mainCs,
+        $"SELECT PRECIO_COMPRA FROM INVENTARIO_PRODUCTO " +
+        $"WHERE CODIGO={code}");
+
+    decimal costoNuevo =
+        costoAnterior is null or DBNull
+            ? 75.25m
+            : Convert.ToDecimal(costoAnterior) + 10m;
+
+    string costoSql = costoNuevo.ToString(
+        CultureInfo.InvariantCulture);
+
+    // Modificar exclusivamente el costo.
+    Sql(mainCs,
+        $"UPDATE INVENTARIO_PRODUCTO SET " +
+        $"PRECIO_COMPRA={costoSql} WHERE CODIGO={code}");
+
+    var costoEvent = main.NextPending(
+        policy, "PROSESUR_QA", epoch);
+
+    Check(
+        costoEvent is not null,
+        "cambio exclusivo de costo genera evento"
+    );
+
+    var productoEvento = costoEvent!.Changes.Single(
+        c => c.Table == "INVENTARIO_PRODUCTO" &&
+             c.Key[0] == code.ToString(
+                 CultureInfo.InvariantCulture));
+
+    Check(
+        productoEvento.Values.ContainsKey("PRECIO_COMPRA"),
+        "evento incluye precio de compra"
+    );
+
+    Check(
+        branch.Apply(policy, costoEvent,
+            "PROSESUR_QA", epoch),
+        "sucursal aplica evento de costo"
+    );
+
+    main.Published(costoEvent.EventId);
+
+    Check(
+        Convert.ToDecimal(Scalar(branchCs,
+            $"SELECT PRECIO_COMPRA FROM INVENTARIO_PRODUCTO " +
+            $"WHERE CODIGO={code}")) == costoNuevo,
+        "costo centralizado persistido correctamente"
+    );
+
+    Check(
+        Convert.ToDecimal(Scalar(branchCs,
+            $"SELECT CANTIDAD FROM INVENTARIO_PRODUCTO " +
+            $"WHERE CODIGO={code}")) == 7m,
+        "sincronizar costo conserva existencias"
+    );
+
+    Check(
+        Convert.ToDecimal(Scalar(branchCs,
+            $"SELECT BLCE_CANT_ENTRADA FROM INVENTARIO_PRODUCTO " +
+            $"WHERE CODIGO={code}")) == 9m,
+        "sincronizar costo conserva entradas"
+    );
+
+    Check(
+        Convert.ToDecimal(Scalar(branchCs,
+            $"SELECT BLCE_CANT_SALIDA FROM INVENTARIO_PRODUCTO " +
+            $"WHERE CODIGO={code}")) == 2m,
+        "sincronizar costo conserva salidas"
+    );
+
+    Check(
+        !branch.Apply(policy, costoEvent,
+            "PROSESUR_QA", epoch),
+        "reenvio de costo es idempotente"
+    );
+
+    Check(
+        Convert.ToDecimal(Scalar(branchCs,
+            $"SELECT PRECIO FROM INVENTARIO_PRODUCTO " +
+            $"WHERE CODIGO={code}")) == 300m,
+        "cambio de costo conserva precio de venta"
+    );
+}
+
 Check(!branch.Apply(policy,third,"PROSESUR_QA",epoch),"reenvio no repite aplicacion");
 var before=Convert.ToInt32(Scalar(mainCs,"SELECT COUNT(*) FROM PSSYNC_OUTBOX"));
 Sql(mainCs,$"UPDATE INVENTARIO_PRODUCTO SET CANTIDAD=CANTIDAD-1 WHERE CODIGO={code}");

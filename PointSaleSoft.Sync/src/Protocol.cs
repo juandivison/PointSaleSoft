@@ -54,7 +54,7 @@ public sealed record CatalogPolicy(TablePolicy[] Tables)
         }
     }
     public static readonly HashSet<string> ProtectedFields = new(StringComparer.Ordinal)
-    { "CANTIDAD", "BLCE_CANT_ENTRADA", "BLCE_CANT_SALIDA", "PRECIO_COMPRA", "PRECIO_ANT",
+    { "CANTIDAD", "BLCE_CANT_ENTRADA", "BLCE_CANT_SALIDA", "PRECIO_ANT",
       "FECHA_ULTIMA_TRN", "FOTO", "RUTAIMAGEN", "CANTIDAD_REORDEN", "UBICACION", "KILOMETROS",
       "AUD_COD_USUARIO", "AUD_APP_USER", "AUD_PC_NAME" };
     public static readonly HashSet<string> KnownTables = new(StringComparer.Ordinal)

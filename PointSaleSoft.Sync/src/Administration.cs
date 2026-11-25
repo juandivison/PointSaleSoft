@@ -2,7 +2,14 @@ using System.Text.Json;
 
 namespace PointSaleSoft.Sync;
 
-public sealed record AdministrationOptions(string Tenant,string Role,string Directory,string? Epoch=null,CatalogPolicy? Policy=null);
+public sealed record AdministrationOptions(
+    string Tenant,
+    string Role,
+    string Directory,
+    string? Epoch = null,
+    CatalogPolicy? Policy = null,
+    bool CentralizarCosto = false
+);
 public sealed record SnapshotManifest(string Tenant,string Epoch,CatalogPolicy Policy,Dictionary<string,int> Counts,string[] Hashes);
 
 public static class Administration
@@ -13,18 +20,35 @@ public static class Administration
     {
         var o=Read<AdministrationOptions>(config);
         if(string.IsNullOrWhiteSpace(o.Tenant) || o.Role is not ("source" or "branch"))throw new InvalidOperationException("Identidad invalida");
-        var cs=Environment.GetEnvironmentVariable("PSSYNC_FIREBIRD")??throw new InvalidOperationException("Falta conexion privada Firebird");
+        var cs=Environment.GetEnvironmentVariable("PSSYNC_FIREBIRD")??
+        throw new InvalidOperationException("Falta conexion privada Firebird");
         var catalog=new FirebirdCatalog(cs);
         var directory=Path.GetFullPath(o.Directory);
-        if(mode=="init-source")
+        if (mode == "init-source")
         {
-            if(o.Role!="source")throw new InvalidOperationException("Requiere principal");
+            if (o.Role != "source")
+                throw new InvalidOperationException("Requiere principal");
+
             // Validate the output before changing database metadata.
-            if(System.IO.Directory.Exists(directory))throw new InvalidOperationException("El directorio de contrato ya existe");
+            if (System.IO.Directory.Exists(directory))
+                throw new InvalidOperationException(
+                    "El directorio de contrato ya existe");
+
             System.IO.Directory.CreateDirectory(directory);
-            var policy=catalog.DiscoverPolicy();var epoch=catalog.Install(policy,"source",o.Epoch);
-            File.WriteAllText(Path.Combine(directory,"source.json"),JsonSerializer.Serialize(o with{Epoch=epoch,Policy=policy},Json));
-            Console.WriteLine("SYNC_SOURCE_INITIALIZED");return;
+
+            // Generar politica segun la configuracion de costos.
+            var policy = catalog.DiscoverPolicy(o.CentralizarCosto);
+
+            var epoch = catalog.Install(policy, "source", o.Epoch);
+
+            File.WriteAllText(
+                Path.Combine(directory, "source.json"),
+                JsonSerializer.Serialize(
+                    o with { Epoch = epoch, Policy = policy },
+                    Json));
+
+            Console.WriteLine("SYNC_SOURCE_INITIALIZED");
+            return;
         }
         if(mode=="bootstrap")
         {

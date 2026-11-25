@@ -65,7 +65,7 @@ public sealed class FirebirdCatalog(string connectionString)
       "FECHA_IN","FECHA_MOD","FECHA_UPDATE","FECHA_UPD","INSERTADO_POR","MODIFICADO_POR",
       "FECHA_UPCAMPO_FECHA_HORA" };
 
-    public CatalogPolicy DiscoverPolicy()
+    public CatalogPolicy DiscoverPolicy(bool centralizarCosto = false)
     {
         using var c = Open(); using var tx = Snapshot(c); var tables = new List<TablePolicy>();
         foreach (var def in Definitions)
@@ -79,12 +79,16 @@ public sealed class FirebirdCatalog(string connectionString)
                 var f = r.GetString(0); var type = r.GetInt16(1);
                 if (type == 261 || AuditFields.Contains(f) || f.StartsWith("AUD_",StringComparison.Ordinal)) continue;
                 if (def.Name == "INVENTARIO_PRODUCTO" && CatalogPolicy.ProtectedFields.Contains(f)) continue;
+                if (def.Name == "INVENTARIO_PRODUCTO" && f == "PRECIO_COMPRA" && !centralizarCosto) continue;
                 fields.Add(SqlName.Check(f));
             }
             if (def.Keys.Any(k=>!fields.Contains(k))) throw new InvalidOperationException("Clave no soportada: " + def.Name);
             tables.Add(new(def.Name,def.Keys,fields.ToArray(),tables.Count));
         }
-        var policy = new CatalogPolicy(tables.ToArray()); policy.Validate(); tx.Rollback(); return policy;
+        var policy = new CatalogPolicy(tables.ToArray()); policy.Validate();
+        if (centralizarCosto && !policy.Tables.Any(t => t.Name == "INVENTARIO_PRODUCTO" && t.Fields.Contains("PRECIO_COMPRA")))
+            throw new InvalidOperationException("PRECIO_COMPRA no disponible en el contrato de costo centralizado");
+        tx.Rollback(); return policy;
     }
 
     public void ValidateSchema(CatalogPolicy policy)
@@ -249,8 +253,11 @@ public sealed class FirebirdCatalog(string connectionString)
     {
         VerifyNode(policy,epoch,"branch");
         using var c=Open();using var tx=Snapshot(c);
-        using(var q=Command(c,tx,"SELECT COUNT(*) FROM INVENTARIO_PRODUCTO WHERE COALESCE(CANTIDAD,0)<>0 OR COALESCE(BLCE_CANT_ENTRADA,0)<>0 OR COALESCE(BLCE_CANT_SALIDA,0)<>0 OR COALESCE(PRECIO_COMPRA,0)<>0"))
-            if(Convert.ToInt32(q.ExecuteScalar())!=0)throw new InvalidOperationException("Sucursal contiene existencias, acumulados o costos");
+        var centralizarCosto=policy.Tables.Any(t=>t.Name=="INVENTARIO_PRODUCTO" && t.Fields.Contains("PRECIO_COMPRA"));
+        var sql="SELECT COUNT(*) FROM INVENTARIO_PRODUCTO WHERE COALESCE(CANTIDAD,0)<>0 OR COALESCE(BLCE_CANT_ENTRADA,0)<>0 OR COALESCE(BLCE_CANT_SALIDA,0)<>0";
+        if(!centralizarCosto)sql+=" OR COALESCE(PRECIO_COMPRA,0)<>0";
+        using(var q=Command(c,tx,sql))
+            if(Convert.ToInt32(q.ExecuteScalar())!=0)throw new InvalidOperationException("Sucursal contiene existencias, acumulados o costos locales");
         var tables=new List<string>();var generators=new List<string>();
         using(var q=Command(c,tx,"SELECT TRIM(RDB$RELATION_NAME) FROM RDB$RELATIONS WHERE COALESCE(RDB$SYSTEM_FLAG,0)=0 AND RDB$VIEW_BLR IS NULL"))
         using(var r=q.ExecuteReader())while(r.Read())tables.Add(SqlName.Check(r.GetString(0)));
@@ -446,7 +453,10 @@ public sealed class FirebirdCatalog(string connectionString)
             using var count=Command(c,tx,$"SELECT COUNT(*) FROM {t.Name} WHERE {Where(t)}",change.Key.Cast<object?>().ToArray());
             var n=Convert.ToInt32(count.ExecuteScalar());if(n>1)throw new InvalidOperationException("Clave destino duplicada");
             Dictionary<string,Cell>? localBefore=null;
-            var localFields=new[]{"CANTIDAD","BLCE_CANT_ENTRADA","BLCE_CANT_SALIDA","PRECIO_COMPRA"};
+            // Las existencias siempre son locales. El costo solo se distribuye si el contrato lo incluye.
+            var localFields=new[]{"CANTIDAD","BLCE_CANT_ENTRADA","BLCE_CANT_SALIDA"};
+            if(!t.Fields.Contains("PRECIO_COMPRA") || change.Deleted)
+                localFields=localFields.Append("PRECIO_COMPRA").ToArray();
             var localPolicy=new TablePolicy(t.Name,t.Keys,localFields,t.Order);
             if(n==1 && t.Name=="INVENTARIO_PRODUCTO")
             {
@@ -476,8 +486,32 @@ public sealed class FirebirdCatalog(string connectionString)
                 using var verify=Command(c,tx,$"SELECT {string.Join(',',t.Fields)} FROM {t.Name} WHERE {Where(t)}",change.Key.Cast<object?>().ToArray());
                 using var r=verify.ExecuteReader();if(!r.Read())throw new InvalidOperationException("No se guardo la fila");
                 var saved=Row(r,t);
-                var differences=t.Fields.Where(f=>saved[f]!=change.Values[f]).ToArray();
-                if(differences.Length>0)throw new InvalidOperationException("El destino altero campos del catalogo: "+t.Name+" / "+string.Join(',',differences));
+                
+                var differences = t.Fields
+                .Where(f => saved[f] != change.Values[f])
+                .ToArray();
+
+                if (differences.Length > 0)
+                {
+                    var detalle = string.Join(
+                        "; ",
+                        differences.Select(f =>
+                            $"{f}: " +
+                            $"Origen=[{change.Values[f].Type}:" +
+                            $"{change.Values[f].Value ?? "NULL"}], " +
+                            $"Destino=[{saved[f].Type}:" +
+                            $"{saved[f].Value ?? "NULL"}]"
+                        )
+                    );
+
+                    throw new InvalidOperationException(
+                        "El destino altero campos del catalogo: " +
+                        $"{t.Name} / " +
+                        $"Clave=[{string.Join(",", change.Key)}] / " +
+                        $"Revision={change.Revision} / " +
+                        detalle
+                    );
+                }
             }
             if(localBefore is not null)
             {
