@@ -585,6 +585,12 @@ type
     procedure DBEdit3Enter(Sender: TObject);
   private
     { Private declarations }
+    FCatalogoSoloLectura: Boolean;
+    procedure ConfigurarProteccionPrecios;
+    procedure PrecioCentralizadoEnter(Sender: TObject);
+    procedure PrecioCentralizadoKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure AvisarPrecioCentralizado;
     Procedure CalcularPrecio(idx:smallint;porcValue:Extended);
     Procedure CalcularPorcentaje(idx:smallint;Precio:Extended);
     Function AsignarValorMinimo:Extended;
@@ -702,7 +708,7 @@ begin
   begin
     dmInventario.tblInventarioProd.Cancel;
   end else
-  if MessageDlg('Borrar artÌculo de inventario?', mtWarning,[mbYes, mbNo],0) = mrYes then
+  if MessageDlg('Borrar art√≠culo de inventario?', mtWarning,[mbYes, mbNo],0) = mrYes then
   begin
     dmInventario.tblInventarioProd.Delete;
     GlbSalvarQuery(dmInventario.tblInventarioProd);
@@ -812,7 +818,7 @@ begin
     else
     begin
       {
-        OldValue todavÌa est· disponible antes de GlbSalvarQuery.
+        OldValue todav√≠a est√° disponible antes de GlbSalvarQuery.
       }
       LOldCantidad :=
         dmInventario.tblInventarioProdCANTIDAD.OldValue;
@@ -930,7 +936,7 @@ begin
        (dmInventario.tblInventarioProdDESCRIPCION.Value = '') then
     begin
       MessageDlg(
-        'Favor indicar descripciÛn del producto.',
+        'Favor indicar descripci√≥n del producto.',
         mtError,
         [mbOK],
         0
@@ -958,7 +964,7 @@ begin
       end;
     end;
 
-    if (GlbCuadros = 1) and
+    if (not FCatalogoSoloLectura) and (GlbCuadros = 1) and
        (dmInventario.tblInventarioProdPRECIOVENTA1.Value > 0) then
       dmInventario.tblInventarioProdPRECIO_MINIMO.Value :=
         GetPrecioMinimo(
@@ -1043,7 +1049,7 @@ begin
       DETERMINAR SI HAY MOVIMIENTO MANUAL DE KARDEX
       ==========================================================
 
-      TodavÌa NO insertamos el Kardex.
+      Todav√≠a NO insertamos el Kardex.
       Primero debemos guardar correctamente INVENTARIO_PRODUCTO.
     }
     LRegistrarKardex :=
@@ -1113,7 +1119,7 @@ begin
 end;
 
     {
-      Para INSERT, obtener el CODIGO generado despuÈs del guardado.
+      Para INSERT, obtener el CODIGO generado despu√©s del guardado.
     }
     if _codProd <= 0 then
     begin
@@ -1127,13 +1133,13 @@ end;
       KARDEX POR AJUSTE MANUAL
       ==========================================================
 
-      Este cÛdigo sÛlo existe en frmInventarioProd.
+      Este c√≥digo s√≥lo existe en frmInventarioProd.
 
       Por tanto:
-        Ventas          -> NO pasan por aquÌ
-        Compras         -> NO pasan por aquÌ
-        Devoluciones    -> NO pasan por aquÌ
-        Transferencias  -> NO pasan por aquÌ
+        Ventas          -> NO pasan por aqu√≠
+        Compras         -> NO pasan por aqu√≠
+        Devoluciones    -> NO pasan por aqu√≠
+        Transferencias  -> NO pasan por aqu√≠
 
       No se duplica el Kardex generado por otros procesos.
     }
@@ -1161,7 +1167,7 @@ end;
           );
 
           MessageDlg(
-            'El producto fue guardado, pero ocurriÛ un error ' +
+            'El producto fue guardado, pero ocurri√≥ un error ' +
             'registrando el movimiento de Kardex.' +
             #13#10#13#10 +
             'Producto: ' + IntToStr(_codProd) + #13#10 +
@@ -1354,7 +1360,7 @@ begin
     if (dmInventario.tblInventarioProdDESCRIPCION.IsNull) or
        (dmInventario.tblInventarioProdDESCRIPCION.Value = '') then
     begin
-      MessageDlg('Favor indicar descripciÛn del producto.', mtError, [mbOK], 0);
+      MessageDlg('Favor indicar descripci√≥n del producto.', mtError, [mbOK], 0);
       exit;
     end;
 
@@ -1518,8 +1524,106 @@ begin
   end;
 end;
 
+procedure TfrmInventarioProd.AvisarPrecioCentralizado;
+begin
+  MessageDlg(
+    'Este valor es administrado desde la oficina principal.' +
+    #13#10 + 'No se permite modificarlo desde la sucursal.',
+    mtInformation, [mbOK], 0);
+end;
+
+procedure TfrmInventarioProd.PrecioCentralizadoEnter(Sender: TObject);
+begin
+  if FCatalogoSoloLectura and
+     (dmInventario.tblInventarioProd.State in [dsEdit, dsInsert]) then
+    AvisarPrecioCentralizado;
+end;
+
+procedure TfrmInventarioProd.PrecioCentralizadoKeyDown(Sender: TObject;
+  var Key: Word; Shift: TShiftState);
+begin
+  if not FCatalogoSoloLectura then Exit;
+  if (ssAlt in Shift) then Exit;
+
+  if (Key = VK_BACK) or (Key = VK_DELETE) or
+     ((Key = VK_INSERT) and (ssShift in Shift)) or
+     ((ssCtrl in Shift) and (Key in [Ord('V'), Ord('X'), Ord('Z')])) or
+     (not (ssCtrl in Shift) and
+       ((Key = VK_SPACE) or (Key in [48..57, 65..90, 96..111, 186..226]))) then
+  begin
+    Key := 0;
+    AvisarPrecioCentralizado;
+  end;
+end;
+
+procedure TfrmInventarioProd.ConfigurarProteccionPrecios;
+var
+  Q: TIBQuery;
+  Fuente: string;
+
+  procedure Proteger(AEdit: TDBEdit);
+  var
+    Campo: string;
+  begin
+    Campo := UpperCase(Trim(AEdit.DataField));
+    if Pos('OLD.' + Campo + ' IS DISTINCT FROM NEW.' + Campo,
+       Fuente) = 0 then Exit;
+
+    AEdit.ReadOnly := True;
+    AEdit.OnEnter := PrecioCentralizadoEnter;
+    AEdit.OnKeyDown := PrecioCentralizadoKeyDown;
+  end;
+
+begin
+  FCatalogoSoloLectura := EsSucursalCatalogoCentralizado(
+    dmInventario.tblInventarioProd.Database,
+    dmInventario.tblInventarioProd.Transaction);
+  if not FCatalogoSoloLectura then Exit;
+
+  { Leer el contrato efectivo, sin asumir que el costo es centralizado. }
+  Q := TIBQuery.Create(nil);
+  try
+    Q.Database := dmInventario.tblInventarioProd.Database;
+    Q.Transaction := dmInventario.tblInventarioProd.Transaction;
+    Q.SQL.Text :=
+      'SELECT RDB$TRIGGER_SOURCE AS FUENTE FROM RDB$TRIGGERS ' +
+      'WHERE RDB$RELATION_NAME = ''INVENTARIO_PRODUCTO'' ' +
+      'AND RDB$TRIGGER_NAME STARTING WITH ''PSSYNC_G_'' ' +
+      'AND RDB$TRIGGER_INACTIVE = 0 AND RDB$TRIGGER_TYPE = 113 ' +
+      'AND RDB$TRIGGER_SEQUENCE = 32760';
+    Q.Open;
+    if Q.Eof then
+      raise Exception.Create('No existe la proteccion del catalogo.');
+    Fuente := UpperCase(Q.FieldByName('FUENTE').AsString);
+    Q.Next;
+    if not Q.Eof then
+      raise Exception.Create('Existe mas de una proteccion del catalogo.');
+    if Pos('OLD.PRECIO IS DISTINCT FROM NEW.PRECIO', Fuente) = 0 then
+      raise Exception.Create('No se reconoce el contrato de precios.');
+  finally
+    Q.Free;
+  end;
+
+  Proteger(DBEdit3);
+  Proteger(DBEdit8);
+  Proteger(DBEdit11);
+  Proteger(DBEdit13);
+  Proteger(DBEdit22);
+  Proteger(DBEdit23);
+  Proteger(DBEdit24);
+  Proteger(DBEdit25);
+  Proteger(DBEdit26);
+  Proteger(DBEdit27);
+  Proteger(DBEdit28);
+  Proteger(DBEdit29);
+  Proteger(DBEdit30);
+
+  CheckBox1.Enabled := False;
+end;
+
 procedure TfrmInventarioProd.FormCreate(Sender: TObject);
 begin
+  ConfigurarProteccionPrecios;
   if (GlbUsaescalaPrecio = 0) then
   begin
     CheckBox1.Enabled:=False;
@@ -1661,7 +1765,7 @@ procedure TfrmInventarioProd.FormCloseQuery(Sender: TObject;
 begin
   if dmInventario.tblInventarioProd.State in [dsEdit,dsInsert] then
   begin
-    Messagedlg('Hay una transacciÛn pendiente, verifique', mtWarning,[mbok],0);
+    Messagedlg('Hay una transacci√≥n pendiente, verifique', mtWarning,[mbok],0);
     CanClose:=False;
   end else CanClose:=True;
   dmInventario.tblInventarioProd.Filtered:=False;
@@ -1734,6 +1838,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit8Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   dbedit13.Color:= clWindow;
   if dmInventario.tblInventarioProd.State In [dsEdit, dsInsert] then
   begin
@@ -1981,19 +2086,19 @@ begin
   tblPrecioUnidadXNivelComer1ro.Database := dmConectar.IBDatabase2;
   tblPrecioUnidadXNivelComer1ro.Transaction := dmConectar.IBTransaction2;
 
-  // Asegurar conexiÛn origen
+  // Asegurar conexi√≥n origen
   if not dmConectar.IBDatabase1.Connected then
     dmConectar.IBDatabase1.Connected := True;
 
-  // Asegurar conexiÛn destino
+  // Asegurar conexi√≥n destino
   if not dmConectar.IBDatabase2.Connected then
     dmConectar.IBDatabase2.Connected := True;
 
-  // Asegurar transacciÛn origen
+  // Asegurar transacci√≥n origen
   if not dmConectar.IBTransaction1.InTransaction then
     dmConectar.IBTransaction1.StartTransaction;
 
-  // Asegurar transacciÛn destino
+  // Asegurar transacci√≥n destino
   if not dmConectar.IBTransaction2.InTransaction then
     dmConectar.IBTransaction2.StartTransaction;
 end;
@@ -2095,7 +2200,7 @@ begin
   if ACodigoProducto <= 0 then
     raise Exception.Create(
       'No se puede registrar el ajuste manual de Kardex: ' +
-      'cÛdigo de producto inv·lido.'
+      'c√≥digo de producto inv√°lido.'
     );
 
   if ACantidadKardex <= 0 then
@@ -2136,7 +2241,7 @@ begin
     DBEdit11.SetFocus;
     exit;                      
   end;
-  if (GLBPrecioMayUnidad = 1) then
+  if (GLBPrecioMayUnidad = 1) or FCatalogoSoloLectura then
   begin
     xProd := dmInventario.tblInventarioProdCodigo.Value;
     frmPrecioUnidadNivel:=TfrmPrecioUnidadNivel.Create(Nil);
@@ -2152,8 +2257,9 @@ begin
       end;
       
       frmPrecioUnidadNivel.Showmodal;
-      if dmInventario.tblInventarioProdPRECIO.Value <>
-      dmInventario.tblPrecioUnidadXNivelPRECIOVENTA1.Value then
+      if (not FCatalogoSoloLectura) and
+         (dmInventario.tblInventarioProdPRECIO.Value <>
+          dmInventario.tblPrecioUnidadXNivelPRECIOVENTA1.Value) then
       begin
          dmInventario.tblInventarioProd.Edit;
          dmInventario.tblInventarioProdPRECIO.Value:=dmInventario.tblPrecioUnidadXNivelPRECIOVENTA1.Value;
@@ -2200,6 +2306,7 @@ end;
 
 procedure TfrmInventarioProd.CalcularPrecio(idx:smallint;porcValue:Extended);
 begin    //corregir
+  if FCatalogoSoloLectura then Exit;
   //if not CheckBox1.Checked then exit;
   if (GlbUsaescalaPrecio = 0) then exit;
   if (porcValue = 0) then exit;
@@ -2243,6 +2350,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit26Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   //t if not CheckBox1.Checked then exit;
   if length(DBEdit26.Text) = 0 then
   DBEdit26.Text:='0';
@@ -2251,6 +2359,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit27Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   //t if not CheckBox1.Checked then exit;
   if length(DBEdit27.Text) = 0 then
   DBEdit27.Text:='0';
@@ -2259,6 +2368,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit28Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   //t if not CheckBox1.Checked then exit;
   if length(DBEdit28.Text) = 0 then
   DBEdit28.Text:='0';
@@ -2267,6 +2377,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit29Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   //t if not CheckBox1.Checked then exit;
   if length(DBEdit29.Text) = 0 then
   DBEdit29.Text:='0';
@@ -2288,6 +2399,8 @@ end;
 procedure TfrmInventarioProd.DBEdit11Exit(Sender: TObject);
 begin
   DBEdit11.Color := clWindow;
+
+  if FCatalogoSoloLectura then Exit;
 
   DBEdit11Change(Self);
   DBEdit26Exit(Self);
@@ -2378,6 +2491,7 @@ end;
 procedure TfrmInventarioProd.CalcularPorcentaje(idx: smallint;
   Precio: Extended);
 begin
+  if FCatalogoSoloLectura then Exit;
   if not CheckBox1.Checked then exit;
   //MU = (Precio de Venta - Costo) / Precio de Venta obtenemos:
   if dmInventario.tblInventarioProd.State in [dsBrowse,dsInactive] then Exit; 
@@ -2433,6 +2547,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit22Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if (DBEdit22.Text <> '') then
   CalcularPorcentaje(1,dmInventario.tblInventarioProdPRECIOVENTA1.Value);
   if (dmInventario.tblInventarioProd.State in [dsInsert, dsEdit]) then
@@ -2441,12 +2556,14 @@ end;
 
 procedure TfrmInventarioProd.DBEdit23Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if (DBEdit23.Text <> '') then
   CalcularPorcentaje(2,dmInventario.tblInventarioProdPRECIOVENTA2.Value);
 end;
 
 procedure TfrmInventarioProd.DBEdit24Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if (GlbCuadros = 1) and (dmInventario.tblInventarioProdPRECIOVENTA1.Value > 0) then
   if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
   dmInventario.tblInventarioProdPRECIO_MINIMO.Value:=  GetPrecioMinimo(
@@ -2461,6 +2578,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit25Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if (GlbCuadros = 1) and (dmInventario.tblInventarioProdPRECIOVENTA1.Value > 0) then
   if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
   dmInventario.tblInventarioProdPRECIO_MINIMO.Value:=  GetPrecioMinimo(
@@ -2700,6 +2818,11 @@ procedure TfrmInventarioProd.AutoActualizaTablaUnidadPrecio1Click(
   var
     p1: Currency;
 begin
+  if FCatalogoSoloLectura then
+  begin
+    AvisarPrecioCentralizado;
+    Exit;
+  end;
   if GlbUsaPUnidadStd = 0 then Exit;
   ProgressBar1.Visible:= True;
   dmInventario.tblInventarioProd.Last;  
@@ -2782,6 +2905,11 @@ var
     tUniAuxi:integer;
     PrecioCompraAuxi:Currency;
 begin
+  if FCatalogoSoloLectura then
+  begin
+    AvisarPrecioCentralizado;
+    Exit;
+  end;
   if GlbUsaPUnidadStd = 0 then Exit;
   if (GLBPrecioMayUnidad <> 1) or (GlbUsaPUnidadLevel <> 1) then
   begin
@@ -3068,6 +3196,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit11Change(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
   begin
     if (GlbMargenPorcPrecioVta > 0) then
@@ -3190,12 +3319,17 @@ procedure TfrmInventarioProd.AplicaPorcentajeUtilidadXDefault1Click(
       utilidadTest : real;
       PrecioAct : real;
 begin
+  if FCatalogoSoloLectura then
+  begin
+    AvisarPrecioCentralizado;
+    Exit;
+  end;
   guardarRec := dmInventario.tblInventarioProd.GetBookmark;
   try
   if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then exit;
   if (glbUsaescalaPrecio = 1) then
   begin
-    if MessageDlg('øDesea aplicar porc utilidad a producto(s) seleccionado(s)?', mtWarning,[mbYes, mbNo],0) = mrNo then exit;
+    if MessageDlg('¬øDesea aplicar porc utilidad a producto(s) seleccionado(s)?', mtWarning,[mbYes, mbNo],0) = mrNo then exit;
     AplicandoPorc:=True;
     //dmInventario.tblInventarioProd.First;
     
@@ -3349,7 +3483,7 @@ begin
     if (qryCheckDesc.RecordCount >= 1) and
        (not qryCheckDescDESCRIPCION.IsNull) then
     begin
-      if MessageDlg('Existe un producto con esta descripciÛn verifique, cancelar transacciÛn?', mtWarning,[mbyes,mbno],0) = mryes then
+      if MessageDlg('Existe un producto con esta descripci√≥n verifique, cancelar transacci√≥n?', mtWarning,[mbyes,mbno],0) = mryes then
       dmInventario.tblInventarioProd.Cancel
       else
       if showing then
@@ -3363,6 +3497,7 @@ end;
 
 procedure TfrmInventarioProd.DBEdit3Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
   begin
     if ((GlbClavePrecios <> '') And (PrecioAnterior > 0.01)) and 
@@ -3372,7 +3507,7 @@ begin
       begin
         if (GlbClavePrecios <> '') and not VerificaClave then
         begin
-          MessageDlg('Precio no ser· cambiado, verifique',mtinformation,[mbok],0);
+          MessageDlg('Precio no ser√° cambiado, verifique',mtinformation,[mbok],0);
           dmInventario.tblInventarioProdPRECIO.Value:=PrecioAnterior;
           exit;
         end;
@@ -3447,7 +3582,7 @@ begin
     if (qryCheckCodBarra.RecordCount >= 1) and
        (not qryCheckCodBarraCodigo_barra.IsNull) then
     begin
-      if MessageDlg('Codigo de Barra ya existe con otro producto, verifique, cancelar transacciÛn?', mtWarning,[mbyes,mbno],0) = mryes then
+      if MessageDlg('Codigo de Barra ya existe con otro producto, verifique, cancelar transacci√≥n?', mtWarning,[mbyes,mbno],0) = mryes then
       dmInventario.tblInventarioProd.Cancel
       else
       if showing then
@@ -3659,7 +3794,7 @@ function TfrmInventarioProd.AsignarValorMinimo: Extended;
 var
   MinValue: Extended;
 begin
-  // Asignar el valor mÌnimo a MinValue
+  // Asignar el valor m√≠nimo a MinValue
 
   MinValue := GetPrecioMinimo(dmInventario.tblInventarioProdPRECIOVENTA1.Value,
                         dmInventario.tblInventarioProdPRECIOVENTA2.Value,
