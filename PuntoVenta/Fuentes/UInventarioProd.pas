@@ -772,14 +772,14 @@ begin
   LEsInsert := False;
   LRegistrarKardex := False;
 
-  LCantidadAnterior := 0;
-  LCantidadNueva := 0;
-  LCantidadKardex := 0;
+  LCantidadAnterior:= 0;
+  LCantidadNueva   := 0;
+  LCantidadKardex  := 0;
 
-  LCostoProducto := 0;
-  LPrecioVenta := 0;
+  LCostoProducto   := 0;
+  LPrecioVenta     := 0;
 
-  LTipoKardex := 0;
+  LTipoKardex      := 0;
 
   {
     ==========================================================
@@ -1074,9 +1074,43 @@ begin
       GUARDAR INVENTARIO_PRODUCTO
       ==========================================================
     }
-    VerificarPuenteCatalogo(dmInventario.tblInventarioProd.Database,
-      dmInventario.tblInventarioProd.Transaction);
-    GlbSalvarQuery(dmInventario.tblInventarioProd);
+    //VerificarPuenteCatalogo(
+    //dmInventario.tblInventarioProd.Database,
+    //dmInventario.tblInventarioProd.Transaction);
+    VerificarPuenteCatalogo(
+  dmInventario.tblInventarioProd.Database,
+  dmInventario.tblInventarioProd.Transaction
+);
+
+with dmInventario.tblInventarioProd do
+begin
+  try
+    if not Transaction.InTransaction then
+      Transaction.StartTransaction;
+
+    if State in [dsEdit, dsInsert] then
+      Post;
+
+    if UpdatesPending then
+      ApplyUpdates;
+
+    Transaction.CommitRetaining;
+
+  except
+    on E: Exception do
+    begin
+      LogInformacionTxt(
+        'ERROR GUARDANDO INVENTARIO_PRODUCTO: ' +
+        E.Message
+      );
+
+      if Transaction.InTransaction then
+        Transaction.RollbackRetaining;
+
+      raise;
+    end;
+  end;
+end;
 
     {
       Para INSERT, obtener el CODIGO generado después del guardado.
@@ -1158,19 +1192,28 @@ begin
     ibsqlUpdateIdTasa.Params[0].Value := _idTasa;
     ibsqlUpdateIdTasa.Params[1].Value := _codProd;
 
-    if _codProd > 0 then
+if _codProd > 0 then
+begin
+  if not ibsqlUpdateIdTasa.Transaction.InTransaction then
+    ibsqlUpdateIdTasa.Transaction.StartTransaction;
+
+  try
+    ibsqlUpdateIdTasa.ExecQuery;
+    ibsqlUpdateIdTasa.Transaction.CommitRetaining;
+  except
+    on E: Exception do
     begin
-      ibsqlUpdateIdTasa.ExecQuery;
+      LogInformacionTxt(
+        'ERROR ACTUALIZANDO IDTASAITBIS: ' + E.Message
+      );
 
-      if not ibsqlUpdateIdTasa.Transaction.InTransaction then
-        ibsqlUpdateIdTasa.Transaction.StartTransaction;
-
-      try
-        ibsqlUpdateIdTasa.Transaction.CommitRetaining;
-      except
+      if ibsqlUpdateIdTasa.Transaction.InTransaction then
         ibsqlUpdateIdTasa.Transaction.RollbackRetaining;
-      end;
+
+      raise;
     end;
+  end;
+end;
 
     {
       ==========================================================
@@ -1196,8 +1239,16 @@ begin
 
       try
         dmInventario.tblInventarioProd.Transaction.CommitRetaining;
-      except
-        dmInventario.tblInventarioProd.Transaction.RollbackRetaining;
+        except
+          on E: Exception do
+          begin
+            LogInformacionTxt(
+              'ERROR ACTUALIZANDO CODIGO_TEXTO: ' + E.Message);
+
+            if dmInventario.tblInventarioProd.Transaction.InTransaction then
+              dmInventario.tblInventarioProd.Transaction.RollbackRetaining;
+          raise;
+        end;
       end;
 
       edtCodBarra.Clear;
@@ -1209,7 +1260,7 @@ begin
       ==========================================================
     }
     try
-      if (GlbProsesur = 1) and (not PuenteCatalogoActivo) then
+      if (GlbProsesur = 1) and (Trim(GlbRutaDBActual2) <> '') then
       begin
         ConfigurarDatasetsSincronizacion;
 
@@ -3664,11 +3715,14 @@ end;
 
 procedure TfrmInventarioProd.SincronizarProductoActual;
 begin
-  if PuenteCatalogoActivo then Exit;
+  if GlbProsesur <> 1 then Exit;
+  if Trim(GlbRutaDBActual2) = '' then Exit;
+
   USincronizarTablaInv.SincronizarInventarioProducto(
     dmInventario.tblInventarioProd,
     tblInvComer1ro
   );
+
   GlbSalvarQuery(tblInvComer1ro);
 end;
 
@@ -3679,29 +3733,41 @@ var
 begin
   if PuenteCatalogoActivo then
   begin
-    VerificarPuenteCatalogo(dmInventario.tblInventarioProd.Database,
-      dmInventario.tblInventarioProd.Transaction);
+    VerificarPuenteCatalogo(
+      dmInventario.tblInventarioProd.Database,
+      dmInventario.tblInventarioProd.Transaction
+    );
+
     GlbSalvarQuery(dmInventario.tblInventarioProd);
-    Exit;
+
+    if (GlbProsesur <> 1) or
+       (Trim(GlbRutaDBActual2) = '') then
+      Exit;
   end;
-  if dmInventario.tblInventarioProd.State in [dsEdit, dsInsert] then
+
+  if dmInventario.tblInventarioProd.State
+     in [dsEdit, dsInsert] then
     dmInventario.tblInventarioProd.Post;
 
   ConfigurarDatasetsSincronizacion;
+
   SincronizarInventarioProducto(
     dmInventario.tblInventarioProd,
     tblInvComer1ro
   );
 
-  CodProductoOrigen := dmInventario.tblInventarioProd.FieldByName('CODIGO').AsInteger;
+  CodProductoOrigen :=
+    dmInventario.tblInventarioProd
+      .FieldByName('CODIGO').AsInteger;
 
-  CantPrecios := SincronizarTodosPreciosUnidadSurtidoraDeProducto(
-    dmInventario.tblPrecioUnidadXNivel,
-    tblPrecioUnidadXNivelComer1ro,
-    dmInventario.tblInventarioProd,
-    tblInvComer1ro,
-    CodProductoOrigen
-  );
+  CantPrecios :=
+    SincronizarTodosPreciosUnidadSurtidoraDeProducto(
+      dmInventario.tblPrecioUnidadXNivel,
+      tblPrecioUnidadXNivelComer1ro,
+      dmInventario.tblInventarioProd,
+      tblInvComer1ro,
+      CodProductoOrigen
+    );
 end;
 
 procedure TfrmInventarioProd.DBEdit3Enter(Sender: TObject);

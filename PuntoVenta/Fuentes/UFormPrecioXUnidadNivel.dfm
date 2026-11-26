@@ -516,31 +516,37 @@ object frmPrecioUnidadNivel: TfrmPrecioUnidadNivel
       item
         Expanded = False
         FieldName = 'COD_USUARIO_IN'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'COD_USUARIO_UPD'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_IN'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'IN_POR'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'FECHA_MOD'
+        Width = 64
         Visible = True
       end
       item
         Expanded = False
         FieldName = 'MOD_POR'
+        Width = 64
         Visible = True
       end>
   end

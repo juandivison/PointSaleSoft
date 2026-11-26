@@ -86,6 +86,9 @@ type
     procedure DBEdit9Enter(Sender: TObject);
   private
     { Private declarations }
+    FCatalogoSoloLectura: Boolean;
+
+    procedure ConfigurarModoCatalogo;
     procedure CalcPrecio(idx:smallint);
     function StrConvertirToFloat(valor: string): Extended;
     procedure PrepararSincronizacionComer1ro;
@@ -109,7 +112,7 @@ function EditarPreciosRecepcion(const Nombre:string;Costo:Currency;
 implementation
 
 uses UDatModInventario, UGlobal, UFormUnidades, USincronizarPrecioUnidadSurtidora,
-  UInventarioProd, UDatModConectar, UPedidoPreciosBorrador;
+  UInventarioProd, UDatModConectar, UPedidoPreciosBorrador, UPuenteCatalogoConfig;
 
 {$R *.dfm}
 
@@ -170,7 +173,9 @@ procedure TfrmPrecioUnidadNivel.BitBtn4Click(Sender: TObject);
 var
   bookM : TBookmark;
 begin
-  if (dmInventario.tblPrecioUnidadXNivel.State = dsEdit) then  
+  if FCatalogoSoloLectura then Exit;
+
+  if (dmInventario.tblPrecioUnidadXNivel.State = dsEdit) then
   begin
     //dmInventario.tblPrecioUnidadXNivel.FieldByName('AUD_COD_USUARIO').AsInteger := VarUsuarioGlb;
     //dmInventario.tblPrecioUnidadXNivel.FieldByName('AUD_APP_USER').AsString := GlbUsuarioLogueado;
@@ -205,6 +210,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.BitBtn1Click(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then  Exit;
   if _NoInsert then exit;
   if dmInventario.tblPrecioUnidadXNivel.State = dsBrowse then
   begin
@@ -222,6 +228,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.BitBtn2Click(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then  Exit;
   if dmInventario.tblPrecioUnidadXNivel.State in [dsBrowse] then
   begin
     dmInventario.tblPrecioUnidadXNivel.Edit;
@@ -232,6 +239,14 @@ end;
 
 procedure TfrmPrecioUnidadNivel.BitBtn3Click(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then
+  begin
+    if dmInventario.tblPrecioUnidadXNivel.State
+       in [dsInsert, dsEdit] then
+      dmInventario.tblPrecioUnidadXNivel.Cancel;
+    Exit;
+  end;
+
   if dmInventario.tblPrecioUnidadXNivel.State in [dsInsert, dsEdit] then
   begin
     dmInventario.tblPrecioUnidadXNivel.Cancel;
@@ -254,18 +269,19 @@ begin
   dmInventario.tblPrecioUnidadXNivel.Params[0].Value:=codigo;
   dmInventario.tblPrecioUnidadXNivel.Open;
   dmInventario.tblPrecioUnidadXNivel.Last;
-  if dmInventario.tblPrecioUnidadXNivel.RecordCount = 0 then
+  if (not FCatalogoSoloLectura) and
+   (dmInventario.tblPrecioUnidadXNivel.RecordCount = 0) then
   begin
-  if dmInventario.tblPrecioUnidadXNivel.State = dsBrowse then
-  begin
-    dmInventario.tblPrecioUnidadXNivel.Insert;
-    dmInventario.tblPrecioUnidadXNivelCOD_PRODUCTO.Value:= codigo;
-    dmInventario.tblPrecioUnidadXNivelIN_POR.Value   := StrUserName;
-    dmInventario.tblPrecioUnidadXNivelFECHA_IN.Value := Now;
-    dmInventario.tblPrecioUnidadXNivelCOD_USUARIO_IN.Value:= VarUsuarioGlb;
-    if (Showing) then
-    DBEdit4.SetFocus;
-  end;
+    if dmInventario.tblPrecioUnidadXNivel.State = dsBrowse then
+    begin
+      dmInventario.tblPrecioUnidadXNivel.Insert;
+      dmInventario.tblPrecioUnidadXNivelCOD_PRODUCTO.Value:= codigo;
+      dmInventario.tblPrecioUnidadXNivelIN_POR.Value   := StrUserName;
+      dmInventario.tblPrecioUnidadXNivelFECHA_IN.Value := Now;
+      dmInventario.tblPrecioUnidadXNivelCOD_USUARIO_IN.Value:= VarUsuarioGlb;
+      if (Showing) then
+      DBEdit4.SetFocus;
+    end;
   end;
   dmInventario.tblPrecioUnidadXNivel.EnableControls;
   dmInventario.tblPrecioUnidadXNivel.AutoCalcFields:=True;  
@@ -278,19 +294,52 @@ begin
   rxData.Open;         
   dmInventario.tblLookupUnidad.Close;
   dmInventario.tblLookupUnidad.Open;
+  //dmconectar.IBDatabase2.Databasename
+  ConfigurarModoCatalogo;
+  
+end;
 
-  //if (GLBAplicaITBISLevel = 1) then
-  //CheckBoxAplicaItbis.Checked:=true
-  //else CheckBoxAplicaItbis.Checked:=False;
-  {if dmInventario.tblPrecioUnidadXNivelCANTIDAD.IsNull then
-  begin
-    MessageDlg('Cant x unidad no indicada en UNIDADES, verifique',mtError,[mbok],0);
-    BitBtn4.Enabled:=false;
-  end; }
+procedure TfrmPrecioUnidadNivel.ConfigurarModoCatalogo;
+begin
+  FCatalogoSoloLectura :=
+    EsSucursalCatalogoCentralizado(
+      dmInventario.tblPrecioUnidadXNivel.Database,
+      dmInventario.tblPrecioUnidadXNivel.Transaction
+    );
+
+  if not FCatalogoSoloLectura then
+    Exit;
+
+  BitBtn1.Enabled := False;
+  BitBtn2.Enabled := False;
+  BitBtn3.Enabled := False;
+  BitBtn4.Enabled := False;
+  BitBtn7.Enabled := False;
+
+  DBEdit4.ReadOnly := True;
+  DBEdit5.ReadOnly := True;
+  DBEdit6.ReadOnly := True;
+  DBEdit7.ReadOnly := True;
+  DBEdit8.ReadOnly := True;
+  DBEdit9.ReadOnly := True;
+  DBEdit10.ReadOnly := True;
+  DBEdit11.ReadOnly := True;
+  DBEdit12.ReadOnly := True;
+
+  RxDBLookupCombo1.Enabled := False;
+  RxDBLookupCombo5.Enabled := False;
+
+  RxDBGrid1.ReadOnly := True;
+
+  CheckBox1.Enabled := False;
+  CheckBoxAplicaItbis.Enabled := False;
+
+  Caption := Caption + ' - Solo consulta';
 end;
 
 procedure TfrmPrecioUnidadNivel.CalcPrecio(idx:smallint);
 begin
+  if FCatalogoSoloLectura then Exit;
   ActRxData(idx);
   if (dmInventario.tblPrecioUnidadXNivel.state = dsbrowse) then Exit;
   Case idx Of
@@ -370,16 +419,19 @@ end;
 
 procedure TfrmPrecioUnidadNivel.BitBtn7Click(Sender: TObject);
 begin
- frmUnidades:=TfrmUnidades.Create(Nil);
- try
-   frmUnidades.Showmodal;
- finally
- frmUnidades.Free;
- frmUnidades:=Nil;
- end;
- dmInventario.tblLookupUnidad.Close;
- dmInventario.tblLookupUnidad.Open;
- BitBtn4.Enabled:=true;
+  if FCatalogoSoloLectura then Exit;
+
+  frmUnidades := TfrmUnidades.Create(Nil);
+  try
+    frmUnidades.ShowModal;
+  finally
+    frmUnidades.Free;
+    frmUnidades := Nil;
+  end;
+
+  dmInventario.tblLookupUnidad.Close;
+  dmInventario.tblLookupUnidad.Open;
+  BitBtn4.Enabled := True;
 end;
 
 procedure TfrmPrecioUnidadNivel.RxDBLookupCombo5Exit(Sender: TObject);
@@ -400,6 +452,7 @@ procedure TfrmPrecioUnidadNivel.CalcularPorcentaje(idx: smallint;
   Precio: Extended);
   var xValorAuxi : extended;
 begin
+  if FCatalogoSoloLectura then Exit;
   ActRxData(idx);
   if (rxDataPrecioXUnidad.Value = 0) or (rxDataPrecioXUnidad.IsNull) then
   begin
@@ -470,6 +523,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.DBEdit5Change(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then  Exit;
   if (DBEdit5.Text <> '') then
   begin
     if StrConvertirToFloat(DBEdit5.Text) > rxDataPrecioXUnidad.Value then
@@ -479,6 +533,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.DBEdit6Change(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then  Exit;
   if (DBEdit6.Text <> '') then
   begin
     if StrConvertirToFloat(DBEdit6.Text) > rxDataPrecioXUnidad.Value then
@@ -488,6 +543,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.DBEdit7Change(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then  Exit;
   if (DBEdit7.Text <> '') then
   begin
     if StrConvertirToFloat(DBEdit7.Text) > rxDataPrecioXUnidad.Value then
@@ -497,6 +553,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.DBEdit8Change(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then  Exit;
   if (DBEdit8.Text <> '') then
   begin
     if StrConvertirToFloat(DBEdit8.Text) > rxDataPrecioXUnidad.Value then
@@ -520,6 +577,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.DBEdit5Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if (PrecioAnterior > dmInventario.tblPrecioUnidadXNivelPRECIOVENTA1.Value) then
   begin
     if MessageDlg('Precio de venta menor a precio anterior, Cancelar transacción?',mtError,[mbyes,mbno],0) = mryes then
@@ -557,7 +615,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.DBEdit6Exit(Sender: TObject);
 begin
-
+  if FCatalogoSoloLectura then Exit;
   if dmInventario.tblPrecioUnidadXNivelPRECIOVENTA2.Value < rxDataPrecioXUnidad.Value then
   begin
     if dmInventario.tblPrecioUnidadXNivel.state in [dsEdit, dsInsert] then
@@ -585,6 +643,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.DBEdit7Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if dmInventario.tblPrecioUnidadXNivelPRECIOVENTA3.Value < rxDataPrecioXUnidad.Value then
   begin
     if dmInventario.tblPrecioUnidadXNivel.state in [dsEdit, dsInsert] then
@@ -610,6 +669,7 @@ end;
 
 procedure TfrmPrecioUnidadNivel.DBEdit8Exit(Sender: TObject);
 begin
+  if FCatalogoSoloLectura then Exit;
   if dmInventario.tblPrecioUnidadXNivelPRECIOVENTA4.Value < rxDataPrecioXUnidad.Value then
   begin
     if dmInventario.tblPrecioUnidadXNivel.state in [dsEdit, dsInsert] then
@@ -672,20 +732,27 @@ end;
 
 procedure TfrmPrecioUnidadNivel.GuardarPrecio;
 begin
-  if GlbProsesur = 0 then exit;
-  if dmInventario.tblPrecioUnidadXNivel.State in [dsEdit, dsInsert] then
+  if FCatalogoSoloLectura then Exit;
+  if GlbProsesur = 0 then Exit;
+  if Trim(GlbRutaDBActual2) = '' then Exit;
+
+  if dmInventario.tblPrecioUnidadXNivel.State
+     in [dsEdit, dsInsert] then
     dmInventario.tblPrecioUnidadXNivel.Post;
 
   PrepararSincronizacionComer1ro;
-    
+
   SincronizarPrecioUnidadSurtidora(
-    dmInventario.tblPrecioUnidadXNivel, // precio origen
-    frmInventarioProd.tblPrecioUnidadXNivelComer1ro,              // precio destino
-    dmInventario.tblInventarioProd,      // inventario origen
-    frmInventarioProd.tblInvComer1ro    // inventario destino
+    dmInventario.tblPrecioUnidadXNivel,
+    frmInventarioProd.tblPrecioUnidadXNivelComer1ro,
+    dmInventario.tblInventarioProd,
+    frmInventarioProd.tblInvComer1ro
   );
 
-  GlbSalvarQuery(frmInventarioProd.tblPrecioUnidadXNivelComer1ro);
+  GlbSalvarQuery(
+    frmInventarioProd.tblPrecioUnidadXNivelComer1ro
+  );
+
   GlbSalvarQuery(frmInventarioProd.tblInvComer1ro);
 end;
 
